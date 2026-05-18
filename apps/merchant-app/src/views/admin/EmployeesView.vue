@@ -14,13 +14,6 @@ function roleLabel(r: EmployeeRole): string {
 
 <template>
   <div class="admin-page">
-    <div class="ap-head">
-      <div>
-        <h2>Employees</h2>
-        <p>{{ catalog.employees.length }} staff members</p>
-      </div>
-    </div>
-
     <div class="surface-card table-wrap">
       <DataTable :value="catalog.employees" data-key="id">
         <Column header="Name" sortable field="fullName">
@@ -71,16 +64,6 @@ function roleLabel(r: EmployeeRole): string {
   display: flex;
   flex-direction: column;
   gap: 1.3rem;
-}
-.ap-head h2 {
-  margin: 0;
-  font-size: 1.4rem;
-  font-weight: 800;
-}
-.ap-head p {
-  margin: 0.2rem 0 0;
-  color: var(--text-secondary);
-  font-size: 0.86rem;
 }
 .table-wrap {
   padding: 1.4rem;

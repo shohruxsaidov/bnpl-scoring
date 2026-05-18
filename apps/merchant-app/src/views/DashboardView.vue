@@ -57,14 +57,8 @@ function openDeal(id: string) {
 
 <template>
   <div class="dash">
-    <div class="dash-head">
-      <div>
-        <h2 class="hello">Hello, {{ auth.employee?.fullName.split(' ')[0] }} 👋</h2>
-        <p class="hello-sub">
-          {{ auth.isAdmin ? 'Full tenant overview' : 'Your deals overview' }}
-        </p>
-      </div>
-      <button v-if="auth.isAgent" class="btn-gradient" @click="router.push('/wizard')">
+    <div v-if="auth.isAgent" class="page-actions">
+      <button class="btn-gradient" @click="router.push('/wizard')">
         <i class="pi pi-plus" /> New Deal
       </button>
     </div>
@@ -168,20 +162,9 @@ function openDeal(id: string) {
   flex-direction: column;
   gap: 1.4rem;
 }
-.dash-head {
+.page-actions {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.hello {
-  font-size: 1.4rem;
-  font-weight: 800;
-  margin: 0;
-}
-.hello-sub {
-  color: var(--text-secondary);
-  margin: 0.2rem 0 0;
-  font-size: 0.88rem;
+  justify-content: flex-end;
 }
 .btn-gradient {
   display: inline-flex;

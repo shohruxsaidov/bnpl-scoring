@@ -97,11 +97,7 @@ function fmt(tiyin: number) {
 
 <template>
   <div class="admin-page">
-    <div class="ap-head">
-      <div>
-        <h2>Tariffs</h2>
-        <p>{{ catalog.tariffs.length }} credit plans</p>
-      </div>
+    <div class="page-actions">
       <button class="btn-gradient" @click="openNew">
         <i class="pi pi-plus" /> Add Tariff
       </button>
@@ -204,20 +200,9 @@ function fmt(tiyin: number) {
   flex-direction: column;
   gap: 1.3rem;
 }
-.ap-head {
+.page-actions {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.ap-head h2 {
-  margin: 0;
-  font-size: 1.4rem;
-  font-weight: 800;
-}
-.ap-head p {
-  margin: 0.2rem 0 0;
-  color: var(--text-secondary);
-  font-size: 0.86rem;
+  justify-content: flex-end;
 }
 .btn-gradient {
   display: inline-flex;

@@ -38,6 +38,24 @@ const MOCK_DB: Record<string, MockCredential> = {
   },
 }
 
+const SESSION_KEY = 'auth_session'
+
+interface PersistedSession {
+  employee: Employee
+  activeRole: EmployeeRole
+}
+
+function loadSession(): { employee: Employee | null; activeRole: EmployeeRole | null } {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY)
+    if (!raw) return { employee: null, activeRole: null }
+    const s = JSON.parse(raw) as PersistedSession
+    return { employee: s.employee, activeRole: s.activeRole }
+  } catch {
+    return { employee: null, activeRole: null }
+  }
+}
+
 interface AuthState {
   employee: Employee | null
   activeRole: EmployeeRole | null
@@ -46,8 +64,7 @@ interface AuthState {
 
 export const useAuthStore = defineStore('auth', {
   state: (): AuthState => ({
-    employee: null,
-    activeRole: null,
+    ...loadSession(),
     tenant: TENANT,
   }),
 
@@ -71,15 +88,20 @@ export const useAuthStore = defineStore('auth', {
     login(employee: Employee, role: EmployeeRole) {
       this.employee = employee
       this.activeRole = role
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ employee, activeRole: role }))
     },
 
     setRole(role: EmployeeRole) {
       this.activeRole = role
+      if (this.employee) {
+        localStorage.setItem(SESSION_KEY, JSON.stringify({ employee: this.employee, activeRole: role }))
+      }
     },
 
     logout() {
       this.employee = null
       this.activeRole = null
+      localStorage.removeItem(SESSION_KEY)
     },
   },
 })

@@ -27,6 +27,9 @@ const adminNav = computed<NavItem[]>(() => [
   { label: 'Tariffs', icon: 'pi pi-percentage', to: '/admin/tariffs', show: true },
   { label: 'Employees', icon: 'pi pi-users', to: '/admin/employees', show: true },
   { label: 'Collection Board', icon: 'pi pi-table', to: '/admin/collection-board', show: true },
+  { label: 'Скоринг История', icon: 'pi pi-chart-line', to: '/admin/scoring-history', show: true },
+  { label: 'Выкуп', icon: 'pi pi-shopping-bag', to: '/admin/buyout', show: true },
+  { label: 'Платежи', icon: 'pi pi-credit-card', to: '/admin/payments', show: true },
 ])
 
 function logout() {

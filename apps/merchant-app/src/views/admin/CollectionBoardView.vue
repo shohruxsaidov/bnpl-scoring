@@ -79,12 +79,8 @@ const totalCount = buckets.value.reduce((s, b) => s + b.cards.length, 0)
 
 <template>
   <div class="board-page">
-    <!-- Header -->
-    <div class="board-header">
-      <div>
-        <h2>Коллекшн Борд</h2>
-        <p>Просроченные долги — Канбан панель управления</p>
-      </div>
+    <!-- Refresh -->
+    <div class="page-actions">
       <button class="btn-refresh" @click="refresh">
         <i class="pi pi-refresh" />
         Обновить
@@ -169,20 +165,9 @@ const totalCount = buckets.value.reduce((s, b) => s + b.cards.length, 0)
 }
 
 /* Header */
-.board-header {
+.page-actions {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-}
-.board-header h2 {
-  margin: 0;
-  font-size: 1.4rem;
-  font-weight: 800;
-}
-.board-header p {
-  margin: 0.2rem 0 0;
-  color: var(--text-secondary);
-  font-size: 0.86rem;
+  justify-content: flex-end;
 }
 .btn-refresh {
   display: inline-flex;
