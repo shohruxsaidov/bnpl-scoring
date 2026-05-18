@@ -1,0 +1,7 @@
+# Active backend slot — managed by deploy.sh, do not edit manually.
+# deploy.sh rewrites this file then reloads nginx via: docker compose kill -s HUP nginx
+
+upstream scoring_active {
+    server app-blue:3000;
+    keepalive 32;
+}

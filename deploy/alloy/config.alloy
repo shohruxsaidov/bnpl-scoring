@@ -1,0 +1,100 @@
+// Grafana Alloy — single collection agent (ADR 0007)
+// Roles:
+//   1. Receives OTLP from Node.js app → fans to Tempo (traces) and Loki (OTel logs)
+//   2. Scrapes Docker container stdout/stderr → Loki
+//   3. Scrapes app /metrics endpoint → Prometheus via remote_write
+
+// ── OTLP receiver ────────────────────────────────────────────────────────────
+// Node.js app sends traces + logs to Alloy on port 4317 (gRPC) or 4318 (HTTP).
+otelcol.receiver.otlp "app" {
+  grpc { endpoint = "0.0.0.0:4317" }
+  http { endpoint = "0.0.0.0:4318" }
+
+  output {
+    traces = [otelcol.processor.batch.default.input]
+    logs   = [otelcol.processor.batch.default.input]
+  }
+}
+
+otelcol.processor.batch "default" {
+  output {
+    traces = [otelcol.exporter.otlp.tempo.input]
+    logs   = [otelcol.exporter.loki.otel.input]
+  }
+}
+
+// ── Traces → Tempo ────────────────────────────────────────────────────────────
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+    tls { insecure = true }
+  }
+}
+
+// ── OTel logs → Loki ─────────────────────────────────────────────────────────
+otelcol.exporter.loki "otel" {
+  forward_to = [loki.write.local.receiver]
+}
+
+// ── Docker container logs → Loki ─────────────────────────────────────────────
+discovery.docker "all" {
+  host = "unix:///var/run/docker.sock"
+}
+
+loki.source.docker "containers" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.docker.all.targets
+  forward_to = [loki.write.local.receiver]
+
+  relabeling_rules = loki.relabel.containers.rules
+}
+
+loki.relabel "containers" {
+  forward_to = []
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(scoring-.*|nginx.*|postgres.*)"
+    action        = "keep"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    target_label  = "container_name"
+    regex         = "/(.*)"
+    replacement   = "$1"
+  }
+}
+
+// nginx access + error logs from shared volume
+loki.source.file "nginx" {
+  targets = [
+    {__path__ = "/var/log/nginx/access.log", job = "nginx", log_type = "access"},
+    {__path__ = "/var/log/nginx/error.log",  job = "nginx", log_type = "error"},
+  ]
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+// ── App metrics → Prometheus ──────────────────────────────────────────────────
+// Scrapes the Node.js app's /metrics endpoint (prom-client).
+// Both blue and green slots are scraped; container_name label distinguishes them.
+prometheus.scrape "app" {
+  targets = [
+    {"__address__" = "app-blue:3000",  container_name = "scoring-blue"},
+    {"__address__" = "app-green:3000", container_name = "scoring-green"},
+  ]
+  metrics_path = "/metrics"
+  scrape_interval = "15s"
+  forward_to = [prometheus.remote_write.local.receiver]
+}
+
+prometheus.remote_write "local" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}

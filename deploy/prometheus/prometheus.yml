@@ -1,0 +1,6 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Alloy pushes metrics via remote_write — no scrape targets needed here.
+# Retention is controlled by --storage.tsdb.retention.time in docker-compose.yml (ADR 0007).

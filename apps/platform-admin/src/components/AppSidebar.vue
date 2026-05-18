@@ -1,0 +1,267 @@
+<script setup lang="ts">
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import ThemeToggle from './ThemeToggle.vue'
+
+const props = defineProps<{ collapsed: boolean }>()
+const emit = defineEmits<{ (e: 'toggle'): void }>()
+
+const auth = useAuthStore()
+const router = useRouter()
+
+interface NavItem {
+  label: string
+  icon: string
+  to: string
+}
+
+const nav: NavItem[] = [
+  { label: 'Overview', icon: 'pi pi-th-large', to: '/' },
+  { label: 'Tenants', icon: 'pi pi-building', to: '/tenants' },
+  { label: 'All Deals', icon: 'pi pi-credit-card', to: '/deals' },
+  { label: 'Employees', icon: 'pi pi-users', to: '/employees' },
+  { label: 'Settings', icon: 'pi pi-cog', to: '/settings' },
+]
+
+function logout() {
+  auth.logout()
+  router.push('/login')
+}
+</script>
+
+<template>
+  <aside class="sidebar" :class="{ collapsed: props.collapsed }">
+    <div class="brand">
+      <div class="logo-mark">S</div>
+      <div v-if="!props.collapsed" class="brand-text">
+        <span class="text-gradient brand-name">Scoring</span>
+        <span class="badge-label">Platform Admin</span>
+      </div>
+      <button class="collapse-btn" title="Toggle sidebar" @click="emit('toggle')">
+        <i :class="props.collapsed ? 'pi pi-angle-right' : 'pi pi-angle-left'" />
+      </button>
+    </div>
+
+    <nav class="nav">
+      <RouterLink
+        v-for="item in nav"
+        :key="item.to"
+        :to="item.to"
+        class="nav-link"
+        active-class="active"
+        :exact-active-class="item.to === '/' ? 'active' : ''"
+        :title="item.label"
+      >
+        <i :class="item.icon" />
+        <span v-if="!props.collapsed">{{ item.label }}</span>
+      </RouterLink>
+    </nav>
+
+    <div class="footer">
+      <div v-if="!props.collapsed" class="user-block">
+        <div class="avatar">{{ auth.initials }}</div>
+        <div class="user-meta">
+          <span class="user-name">{{ auth.admin?.fullName }}</span>
+          <span class="role-chip">Platform Admin</span>
+        </div>
+      </div>
+      <div v-else class="avatar solo">{{ auth.initials }}</div>
+
+      <div class="footer-actions" :class="{ stacked: props.collapsed }">
+        <button class="logout-btn" title="Logout" @click="logout">
+          <i class="pi pi-sign-out" />
+          <span v-if="!props.collapsed">Logout</span>
+        </button>
+        <ThemeToggle />
+      </div>
+    </div>
+  </aside>
+</template>
+
+<style scoped>
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.2s ease;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+}
+.sidebar.collapsed {
+  width: 64px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 1rem 0.85rem;
+  position: relative;
+}
+.logo-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--gradient-hero);
+  color: #fff;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  gap: 0.2rem;
+}
+.brand-name {
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+.badge-label {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent-2);
+  background: color-mix(in srgb, var(--accent-2) 14%, transparent);
+  padding: 0.12rem 0.4rem;
+  border-radius: 6px;
+  width: fit-content;
+}
+.collapse-btn {
+  margin-left: auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.collapsed .collapse-btn {
+  position: absolute;
+  right: -12px;
+  top: 1.2rem;
+  background: var(--bg-base);
+  z-index: 5;
+}
+
+.nav {
+  flex: 1;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  overflow-y: auto;
+}
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 9px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.86rem;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.collapsed .nav-link {
+  justify-content: center;
+  padding: 0.6rem;
+}
+.nav-link i {
+  font-size: 1rem;
+}
+.nav-link:hover {
+  background: var(--bg-base);
+  color: var(--text-primary);
+}
+.nav-link.active {
+  background: var(--gradient-accent);
+  color: #fff;
+  box-shadow: var(--accent-glow);
+}
+
+.footer {
+  padding: 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.user-block {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--gradient-hero);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.78rem;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.avatar.solo {
+  margin: 0 auto;
+}
+.user-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  overflow: hidden;
+}
+.user-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.role-chip {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--accent-2);
+}
+.footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.footer-actions.stacked {
+  flex-direction: column;
+}
+.logout-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 9px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.logout-btn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+</style>
