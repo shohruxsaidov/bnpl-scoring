@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
+import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
@@ -15,6 +16,7 @@ import type { Product } from '@/types'
 const catalog = useCatalogStore()
 const confirm = useConfirm()
 const toast = useToast()
+const { t } = useI18n()
 
 const dialogVisible = ref(false)
 const editingId = ref<string | null>(null)
@@ -47,7 +49,7 @@ function openEdit(p: Product) {
 
 function save() {
   if (!form.name || !form.sku || !form.categoryId) {
-    toast.add({ severity: 'warn', summary: 'Missing fields', detail: 'Fill all fields', life: 2500 })
+    toast.add({ severity: 'warn', summary: t('products.missingFields'), detail: t('products.fillAllFields'), life: 2500 })
     return
   }
   const payload = {
@@ -58,24 +60,24 @@ function save() {
   }
   if (editingId.value) {
     catalog.updateProduct(editingId.value, payload)
-    toast.add({ severity: 'success', summary: 'Updated', detail: form.name, life: 2000 })
+    toast.add({ severity: 'success', summary: t('products.updated'), detail: form.name, life: 2000 })
   } else {
     catalog.addProduct(payload)
-    toast.add({ severity: 'success', summary: 'Added', detail: form.name, life: 2000 })
+    toast.add({ severity: 'success', summary: t('products.added'), detail: form.name, life: 2000 })
   }
   dialogVisible.value = false
 }
 
 function remove(p: Product) {
   confirm.require({
-    message: `Delete "${p.name}"?`,
-    header: 'Confirm delete',
+    message: t('products.deleteConfirm', { name: p.name }),
+    header: t('products.confirmDelete'),
     icon: 'pi pi-trash',
-    rejectProps: { label: 'Cancel', severity: 'secondary', outlined: true },
-    acceptProps: { label: 'Delete', severity: 'danger' },
+    rejectProps: { label: t('common.cancel'), severity: 'secondary', outlined: true },
+    acceptProps: { label: t('common.delete'), severity: 'danger' },
     accept: () => {
       catalog.deleteProduct(p.id)
-      toast.add({ severity: 'info', summary: 'Deleted', detail: p.name, life: 2000 })
+      toast.add({ severity: 'info', summary: t('products.deleted'), detail: p.name, life: 2000 })
     },
   })
 }
@@ -85,24 +87,24 @@ function remove(p: Product) {
   <div class="admin-page">
     <div class="page-actions">
       <button class="btn-gradient" @click="openNew">
-        <i class="pi pi-plus" /> Add Product
+        <i class="pi pi-plus" /> {{ $t('products.addProduct') }}
       </button>
     </div>
 
     <div class="surface-card table-wrap">
       <DataTable :value="catalog.products" paginator :rows="8" data-key="id">
-        <Column field="name" header="Name" sortable :style="{ minWidth: '200px' }" />
-        <Column header="SKU" :style="{ width: '160px' }">
+        <Column field="name" :header="$t('products.name')" sortable :style="{ minWidth: '200px' }" />
+        <Column :header="$t('products.sku')" :style="{ width: '160px' }">
           <template #body="{ data }">
             <span class="font-mono sku">{{ data.sku }}</span>
           </template>
         </Column>
-        <Column header="Category" :style="{ width: '160px' }">
+        <Column :header="$t('products.category')" :style="{ width: '160px' }">
           <template #body="{ data }">
             <span class="cat-chip">{{ catalog.categoryName(data.categoryId) }}</span>
           </template>
         </Column>
-        <Column header="Price" :style="{ width: '180px' }">
+        <Column :header="$t('products.price')" :style="{ width: '180px' }">
           <template #body="{ data }">
             <MonoAmount :value="data.price" size="sm" />
           </template>
@@ -110,10 +112,10 @@ function remove(p: Product) {
         <Column header="" :style="{ width: '90px' }">
           <template #body="{ data }">
             <div class="row-actions">
-              <button class="ra-btn" title="Edit" @click="openEdit(data)">
+              <button class="ra-btn" :title="$t('common.edit')" @click="openEdit(data)">
                 <i class="pi pi-pencil" />
               </button>
-              <button class="ra-btn danger" title="Delete" @click="remove(data)">
+              <button class="ra-btn danger" :title="$t('common.delete')" @click="remove(data)">
                 <i class="pi pi-trash" />
               </button>
             </div>
@@ -125,36 +127,36 @@ function remove(p: Product) {
     <Dialog
       v-model:visible="dialogVisible"
       modal
-      :header="editingId ? 'Edit product' : 'Add product'"
+      :header="editingId ? $t('products.editProduct') : $t('products.addProductTitle')"
       :style="{ width: '460px' }"
     >
       <div class="form">
         <div class="field">
-          <label class="field-label">Name</label>
-          <InputText v-model="form.name" placeholder="Product name" />
+          <label class="field-label">{{ $t('products.name') }}</label>
+          <InputText v-model="form.name" :placeholder="$t('products.productName')" />
         </div>
         <div class="field">
-          <label class="field-label">SKU</label>
+          <label class="field-label">{{ $t('products.sku') }}</label>
           <InputText v-model="form.sku" placeholder="ABC-123" class="font-mono" />
         </div>
         <div class="field">
-          <label class="field-label">Price (so'm)</label>
+          <label class="field-label">{{ $t('products.priceSom') }}</label>
           <InputNumber v-model="form.priceSom" :min="0" mode="decimal" fluid />
         </div>
         <div class="field">
-          <label class="field-label">Category</label>
+          <label class="field-label">{{ $t('products.category') }}</label>
           <Select
             v-model="form.categoryId"
             :options="catalog.categories"
             option-label="name"
             option-value="id"
-            placeholder="Select category"
+            :placeholder="$t('products.selectCategory')"
           />
         </div>
       </div>
       <template #footer>
-        <button class="btn-ghost" @click="dialogVisible = false">Cancel</button>
-        <button class="btn-gradient" @click="save">Save</button>
+        <button class="btn-ghost" @click="dialogVisible = false">{{ $t('common.cancel') }}</button>
+        <button class="btn-gradient" @click="save">{{ $t('common.save') }}</button>
       </template>
     </Dialog>
   </div>

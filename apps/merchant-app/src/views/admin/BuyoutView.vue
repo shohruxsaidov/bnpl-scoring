@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 type BuyoutStatus = 'pending' | 'paid'
 
@@ -16,21 +17,22 @@ interface BuyoutRecord {
   date: string
 }
 
+const { t } = useI18n()
 const search = ref('')
 const statusFilter = ref<'all' | 'pending' | 'paid'>('all')
 const merchantFilter = ref('all')
 
-const statusOptions = [
-  { label: 'Все статусы', value: 'all' },
-  { label: 'К оплате', value: 'pending' },
-  { label: 'Оплачено', value: 'paid' },
-]
+const statusOptions = computed(() => [
+  { label: t('buyout.allStatuses'), value: 'all' },
+  { label: t('buyout.statusPending'), value: 'pending' },
+  { label: t('buyout.statusPaid'), value: 'paid' },
+])
 
-const merchantOptions = [
-  { label: 'Все мерчанты', value: 'all' },
+const merchantOptions = computed(() => [
+  { label: t('buyout.allMerchants'), value: 'all' },
   { label: 'DISKONT', value: 'DISKONT' },
   { label: 'Kiyim Olami', value: 'Kiyim Olami' },
-]
+])
 
 const records = ref<BuyoutRecord[]>([
   { id: 9, agentName: 'Jasurbek Jumanazarov', agentPhone: '+998937444222', branch: 'DISKONT', clientName: 'SHOHRUH SAIDOV', clientPhone: '+998934244724', prepayment: 0, amount: 11000000, status: 'pending', date: '16/05/2026' },
@@ -92,7 +94,7 @@ function markPaid(id: number) {
         </div>
         <div class="stat-body">
           <span class="stat-value">{{ stats.total }}</span>
-          <span class="stat-label">Всего</span>
+          <span class="stat-label">{{ $t('buyout.total') }}</span>
         </div>
       </div>
       <div class="stat-card">
@@ -101,7 +103,7 @@ function markPaid(id: number) {
         </div>
         <div class="stat-body">
           <span class="stat-value">{{ stats.pending }}</span>
-          <span class="stat-label">К оплате</span>
+          <span class="stat-label">{{ $t('buyout.pending') }}</span>
         </div>
       </div>
       <div class="stat-card">
@@ -110,7 +112,7 @@ function markPaid(id: number) {
         </div>
         <div class="stat-body">
           <span class="stat-value">{{ stats.paid }}</span>
-          <span class="stat-label">Оплачено</span>
+          <span class="stat-label">{{ $t('buyout.paid') }}</span>
         </div>
       </div>
     </div>
@@ -123,7 +125,7 @@ function markPaid(id: number) {
           <input
             v-model="search"
             class="search-input"
-            placeholder="Мерчант, агент, товар..."
+            :placeholder="$t('buyout.searchPlaceholder')"
           />
         </div>
         <select v-model="statusFilter" class="filter-select">
@@ -142,14 +144,14 @@ function markPaid(id: number) {
         <table class="buyout-table">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>АГЕНТ</th>
-              <th>ФИЛИАЛ</th>
-              <th>КЛИЕНТ</th>
-              <th>ПРЕДОПЛАТА</th>
-              <th>СУММА</th>
-              <th>СТАТУС</th>
-              <th>ДАТА</th>
+              <th>{{ $t('buyout.id') }}</th>
+              <th>{{ $t('buyout.agent') }}</th>
+              <th>{{ $t('buyout.branch') }}</th>
+              <th>{{ $t('buyout.client') }}</th>
+              <th>{{ $t('buyout.prepayment') }}</th>
+              <th>{{ $t('buyout.amount') }}</th>
+              <th>{{ $t('buyout.status') }}</th>
+              <th>{{ $t('buyout.date') }}</th>
               <th />
             </tr>
           </thead>
@@ -172,11 +174,11 @@ function markPaid(id: number) {
               <td class="mono-cell">{{ row.prepayment }}</td>
               <td class="amount-cell">
                 <span class="amount-num">{{ fmtAmount(row.amount) }}</span>
-                <span class="amount-unit">сум</span>
+                <span class="amount-unit">{{ $t('buyout.som') }}</span>
               </td>
               <td>
                 <span class="status-badge" :class="row.status">
-                  {{ row.status === 'paid' ? 'Оплачено' : 'К оплате' }}
+                  {{ row.status === 'paid' ? $t('buyout.statusPaid') : $t('buyout.statusPending') }}
                 </span>
               </td>
               <td class="date-cell">{{ row.date }}</td>
@@ -187,16 +189,16 @@ function markPaid(id: number) {
                   @click="markPaid(row.id)"
                 >
                   <i class="pi pi-check-circle" />
-                  Оплачено
+                  {{ $t('buyout.statusPaid') }}
                 </button>
                 <button v-else class="btn-paid" disabled>
                   <i class="pi pi-check-circle" />
-                  Оплачено
+                  {{ $t('buyout.statusPaid') }}
                 </button>
               </td>
             </tr>
             <tr v-if="filtered.length === 0">
-              <td colspan="9" class="empty-row">Нет данных</td>
+              <td colspan="9" class="empty-row">{{ $t('buyout.noData') }}</td>
             </tr>
           </tbody>
         </table>

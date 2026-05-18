@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 interface OverdueCard {
   dealId: string
@@ -21,11 +22,12 @@ interface AgingBucket {
 }
 
 const router = useRouter()
+const { t } = useI18n()
 
 const buckets = ref<AgingBucket[]>([
   {
     key: '1-30',
-    label: '1–30 дн.',
+    label: t('collectionBoard.bucket1to30'),
     icon: 'pi pi-clock',
     color: '#ffb02e',
     collapsed: false,
@@ -36,7 +38,7 @@ const buckets = ref<AgingBucket[]>([
   },
   {
     key: '31-60',
-    label: '31–60 дн.',
+    label: t('collectionBoard.bucket31to60'),
     icon: 'pi pi-exclamation-triangle',
     color: '#ff8c42',
     collapsed: false,
@@ -46,7 +48,7 @@ const buckets = ref<AgingBucket[]>([
   },
   {
     key: '61-90',
-    label: '61–90 дн.',
+    label: t('collectionBoard.bucket61to90'),
     icon: 'pi pi-shield',
     color: '#f05c42',
     collapsed: false,
@@ -54,7 +56,7 @@ const buckets = ref<AgingBucket[]>([
   },
   {
     key: '90+',
-    label: '90+ дн.',
+    label: t('collectionBoard.bucket90plus'),
     icon: 'pi pi-ban',
     color: '#ff5c5c',
     collapsed: false,
@@ -73,8 +75,6 @@ function openDeal(dealId: string) {
 function fmt(tiyin: number) {
   return (tiyin / 100).toLocaleString('uz-UZ') + ' so\'m'
 }
-
-const totalCount = buckets.value.reduce((s, b) => s + b.cards.length, 0)
 </script>
 
 <template>
@@ -83,7 +83,7 @@ const totalCount = buckets.value.reduce((s, b) => s + b.cards.length, 0)
     <div class="page-actions">
       <button class="btn-refresh" @click="refresh">
         <i class="pi pi-refresh" />
-        Обновить
+        {{ $t('collectionBoard.refresh') }}
       </button>
     </div>
 
@@ -115,7 +115,7 @@ const totalCount = buckets.value.reduce((s, b) => s + b.cards.length, 0)
           </div>
           <button
             class="col-toggle"
-            :title="bucket.collapsed ? 'Показать' : 'Скрыть'"
+            :title="bucket.collapsed ? $t('collectionBoard.show') : $t('collectionBoard.hide')"
             @click="bucket.collapsed = !bucket.collapsed"
           >
             <i :class="bucket.collapsed ? 'pi pi-eye-slash' : 'pi pi-eye'" />
@@ -133,7 +133,7 @@ const totalCount = buckets.value.reduce((s, b) => s + b.cards.length, 0)
             <div class="card-top">
               <span class="client-name">{{ card.clientName }}</span>
               <span class="days-badge" :style="{ background: bucket.color + '22', color: bucket.color }">
-                {{ card.daysOverdue }} дн.
+                {{ card.daysOverdue }} {{ $t('collectionBoard.days') }}
               </span>
             </div>
             <div class="client-phone">{{ card.clientPhone }}</div>
@@ -141,14 +141,14 @@ const totalCount = buckets.value.reduce((s, b) => s + b.cards.length, 0)
               <span class="principal font-mono">{{ fmt(card.principal) }}</span>
               <span class="missed">
                 <i class="pi pi-times-circle" />
-                {{ card.missedCount }} платёж
+                {{ card.missedCount }} {{ $t('collectionBoard.payment') }}
               </span>
             </div>
           </button>
 
           <div v-if="bucket.cards.length === 0" class="empty-state">
             <i class="pi pi-check-circle" />
-            <span>Пусто</span>
+            <span>{{ $t('collectionBoard.empty') }}</span>
           </div>
         </div>
       </div>

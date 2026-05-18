@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useWizardStore } from '@/stores/wizard'
 import StepClient from './steps/StepClient.vue'
 import StepKarta from './steps/StepKarta.vue'
@@ -10,6 +11,21 @@ import StepVerification from './steps/StepVerification.vue'
 import StepDone from './steps/StepDone.vue'
 
 const wizard = useWizardStore()
+const { t } = useI18n()
+
+const STEP_LABEL_KEYS: Record<string, string> = {
+  client: 'wizard.stepClient',
+  karta: 'wizard.stepKarta',
+  tarif: 'wizard.stepTarif',
+  mahsulot: 'wizard.stepMahsulot',
+  payment: 'wizard.stepPayment',
+  verification: 'wizard.stepVerification',
+  done: 'wizard.stepDone',
+}
+
+function stepLabel(key: string): string {
+  return STEP_LABEL_KEYS[key] ? t(STEP_LABEL_KEYS[key]) : key
+}
 
 onMounted(() => {
   // Fresh wizard session on entry.
@@ -39,7 +55,7 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
           />
           <i v-else :class="step.icon" />
         </div>
-        <span class="step-label">{{ step.label }}</span>
+        <span class="step-label">{{ stepLabel(step.key) }}</span>
         <div v-if="idx < wizard.steps.length - 1" class="connector" />
       </div>
     </div>

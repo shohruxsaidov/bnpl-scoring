@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import { useConfirm } from 'primevue/useconfirm'
@@ -10,6 +11,7 @@ import type { Category } from '@/types'
 const catalog = useCatalogStore()
 const confirm = useConfirm()
 const toast = useToast()
+const { t } = useI18n()
 
 const dialogVisible = ref(false)
 const editingId = ref<string | null>(null)
@@ -29,23 +31,23 @@ function save() {
   if (!name.value.trim()) return
   if (editingId.value) {
     catalog.updateCategory(editingId.value, name.value.trim())
-    toast.add({ severity: 'success', summary: 'Updated', life: 2000 })
+    toast.add({ severity: 'success', summary: t('categories.updated'), life: 2000 })
   } else {
     catalog.addCategory(name.value.trim())
-    toast.add({ severity: 'success', summary: 'Added', life: 2000 })
+    toast.add({ severity: 'success', summary: t('categories.added'), life: 2000 })
   }
   dialogVisible.value = false
 }
 function remove(c: Category) {
   confirm.require({
-    message: `Delete category "${c.name}"?`,
-    header: 'Confirm delete',
+    message: t('categories.deleteConfirm', { name: c.name }),
+    header: t('categories.confirmDelete'),
     icon: 'pi pi-trash',
-    rejectProps: { label: 'Cancel', severity: 'secondary', outlined: true },
-    acceptProps: { label: 'Delete', severity: 'danger' },
+    rejectProps: { label: t('common.cancel'), severity: 'secondary', outlined: true },
+    acceptProps: { label: t('common.delete'), severity: 'danger' },
     accept: () => {
       catalog.deleteCategory(c.id)
-      toast.add({ severity: 'info', summary: 'Deleted', life: 2000 })
+      toast.add({ severity: 'info', summary: t('categories.deleted'), life: 2000 })
     },
   })
 }
@@ -55,7 +57,7 @@ function remove(c: Category) {
   <div class="admin-page">
     <div class="page-actions">
       <button class="btn-gradient" @click="openNew">
-        <i class="pi pi-plus" /> Add Category
+        <i class="pi pi-plus" /> {{ $t('categories.addCategory') }}
       </button>
     </div>
 
@@ -66,10 +68,10 @@ function remove(c: Category) {
           <span class="cat-name">{{ c.name }}</span>
         </div>
         <div class="row-actions">
-          <button class="ra-btn" title="Edit" @click="openEdit(c)">
+          <button class="ra-btn" :title="$t('common.edit')" @click="openEdit(c)">
             <i class="pi pi-pencil" />
           </button>
-          <button class="ra-btn danger" title="Delete" @click="remove(c)">
+          <button class="ra-btn danger" :title="$t('common.delete')" @click="remove(c)">
             <i class="pi pi-trash" />
           </button>
         </div>
@@ -79,16 +81,16 @@ function remove(c: Category) {
     <Dialog
       v-model:visible="dialogVisible"
       modal
-      :header="editingId ? 'Edit category' : 'Add category'"
+      :header="editingId ? $t('categories.editCategory') : $t('categories.addCategoryTitle')"
       :style="{ width: '400px' }"
     >
       <div class="field">
-        <label class="field-label">Name</label>
-        <InputText v-model="name" placeholder="Category name" @keyup.enter="save" />
+        <label class="field-label">{{ $t('categories.name') }}</label>
+        <InputText v-model="name" :placeholder="$t('categories.categoryName')" @keyup.enter="save" />
       </div>
       <template #footer>
-        <button class="btn-ghost" @click="dialogVisible = false">Cancel</button>
-        <button class="btn-gradient" @click="save">Save</button>
+        <button class="btn-ghost" @click="dialogVisible = false">{{ $t('common.cancel') }}</button>
+        <button class="btn-gradient" @click="save">{{ $t('common.save') }}</button>
       </template>
     </Dialog>
   </div>

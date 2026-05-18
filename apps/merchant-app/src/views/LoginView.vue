@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
@@ -12,11 +13,12 @@ import type { Employee, EmployeeRole } from '@/types'
 
 const auth = useAuthStore()
 const router = useRouter()
+const { t } = useI18n()
 
 const schema = toTypedSchema(
   z.object({
-    email: z.string().min(1, 'Email is required').email('Invalid email'),
-    password: z.string().min(1, 'Password is required'),
+    email: z.string().min(1, t('login.emailRequired')).email(t('login.emailInvalid')),
+    password: z.string().min(1, t('login.passwordRequired')),
   }),
 )
 
@@ -41,7 +43,7 @@ const onSubmit = handleSubmit((values) => {
   loginError.value = ''
   const employee = auth.validate(values.email, values.password)
   if (!employee) {
-    loginError.value = 'Invalid credentials. Try admin@demo.com / password'
+    loginError.value = t('login.invalidCredentials')
     return
   }
   if (employee.roles.length > 1) {
@@ -76,19 +78,19 @@ function pickRole(role: EmployeeRole) {
       <div class="glass-card fc-deal">
         <div class="gc-header">
           <span class="gc-dot dot-green" />
-          <span class="gc-tag">Deal approved</span>
+          <span class="gc-tag">{{ $t('login.dealApproved') }}</span>
           <span class="gc-id font-mono">#DEAL-1041</span>
         </div>
-        <div class="gc-amount font-mono">14,990,000 <span class="gc-currency">so'm</span></div>
+        <div class="gc-amount font-mono">14,990,000 <span class="gc-currency">{{ $t('login.som') }}</span></div>
         <div class="gc-meta">
           <span class="gc-avatar">JR</span>
           <div>
             <div class="gc-name">Jasur Rahimov</div>
-            <div class="gc-sub">12 oy · Ustama 12%</div>
+            <div class="gc-sub">12 {{ $t('login.months') }} · {{ $t('login.markup') }} 12%</div>
           </div>
         </div>
         <div class="gc-progress-row">
-          <span class="gc-sub">3 / 12 paid</span>
+          <span class="gc-sub">3 / 12 {{ $t('login.paid') }}</span>
           <div class="gc-pill-row">
             <span v-for="i in 12" :key="i" class="gc-pill" :class="{ filled: i <= 3 }" />
           </div>
@@ -98,7 +100,7 @@ function pickRole(role: EmployeeRole) {
       <!-- floating card 2: credit score -->
       <div class="glass-card fc-score">
         <div class="gc-header">
-          <span class="gc-tag">Credit Score</span>
+          <span class="gc-tag">{{ $t('login.creditScore') }}</span>
           <span class="gc-dot dot-green" />
         </div>
         <div class="score-display">
@@ -109,7 +111,7 @@ function pickRole(role: EmployeeRole) {
           <div class="score-fill" style="width: 74.2%" />
         </div>
         <div class="score-labels">
-          <span class="score-badge approved">Approved</span>
+          <span class="score-badge approved">{{ $t('login.approved') }}</span>
           <span class="gc-sub">KATM · MyID</span>
         </div>
       </div>
@@ -118,7 +120,7 @@ function pickRole(role: EmployeeRole) {
       <div class="glass-card fc-schedule">
         <div class="gc-header">
           <i class="pi pi-calendar" style="font-size:0.8rem;opacity:0.7" />
-          <span class="gc-tag">Payment schedule</span>
+          <span class="gc-tag">{{ $t('login.paymentSchedule') }}</span>
         </div>
         <div class="sch-list">
           <div class="sch-row done">
@@ -138,7 +140,7 @@ function pickRole(role: EmployeeRole) {
           </div>
           <div class="sch-row future">
             <span class="sch-dots">· · ·</span>
-            <span class="gc-sub">9 more payments</span>
+            <span class="gc-sub">9 {{ $t('login.morePayments') }}</span>
           </div>
         </div>
       </div>
@@ -147,17 +149,17 @@ function pickRole(role: EmployeeRole) {
       <div class="glass-card fc-stats">
         <div class="stat-item">
           <span class="stat-num font-mono">24</span>
-          <span class="stat-lbl">Active deals</span>
+          <span class="stat-lbl">{{ $t('login.activeDeals') }}</span>
         </div>
         <div class="stat-sep" />
         <div class="stat-item">
           <span class="stat-num font-mono">98%</span>
-          <span class="stat-lbl">On time</span>
+          <span class="stat-lbl">{{ $t('login.onTime') }}</span>
         </div>
         <div class="stat-sep" />
         <div class="stat-item">
           <span class="stat-num font-mono">4.2M</span>
-          <span class="stat-lbl">Disbursed</span>
+          <span class="stat-lbl">{{ $t('login.disbursed') }}</span>
         </div>
       </div>
 
@@ -166,7 +168,7 @@ function pickRole(role: EmployeeRole) {
         <div class="logo-mark">S</div>
         <div>
           <h1 class="brand-title">Scoring</h1>
-          <p class="brand-sub">Credit Scoring &amp; POS Lending Platform</p>
+          <p class="brand-sub">{{ $t('login.brandSub') }}</p>
         </div>
       </div>
     </div>
@@ -174,11 +176,11 @@ function pickRole(role: EmployeeRole) {
     <!-- ── Right: login form ───────────────────────────────────────────── -->
     <div class="auth-form-wrap">
       <form class="auth-card surface-card" @submit="onSubmit">
-        <h2>Welcome back</h2>
-        <p class="sub">Sign in to your merchant workspace</p>
+        <h2>{{ $t('login.welcome') }}</h2>
+        <p class="sub">{{ $t('login.subtitle') }}</p>
 
         <div class="field">
-          <label class="field-label" for="email">Email</label>
+          <label class="field-label" for="email">{{ $t('login.email') }}</label>
           <InputText
             id="email"
             v-model="email"
@@ -191,7 +193,7 @@ function pickRole(role: EmployeeRole) {
         </div>
 
         <div class="field">
-          <label class="field-label" for="password">Password</label>
+          <label class="field-label" for="password">{{ $t('login.password') }}</label>
           <Password
             id="password"
             v-model="password"
@@ -210,12 +212,12 @@ function pickRole(role: EmployeeRole) {
           <i class="pi pi-exclamation-triangle" /> {{ loginError }}
         </p>
 
-        <button type="submit" class="btn-gradient submit">Sign in</button>
+        <button type="submit" class="btn-gradient submit">{{ $t('login.signIn') }}</button>
 
         <div class="hint">
-          <strong>Demo accounts</strong>
-          <span><code>admin@demo.com</code> / <code>password</code> — both roles</span>
-          <span><code>agent@demo.com</code> / <code>password</code> — agent only</span>
+          <strong>{{ $t('login.demoAccounts') }}</strong>
+          <span><code>admin@demo.com</code> / <code>password</code> — {{ $t('login.demoBothRoles') }}</span>
+          <span><code>agent@demo.com</code> / <code>password</code> — {{ $t('login.demoAgentOnly') }}</span>
         </div>
       </form>
     </div>
@@ -224,23 +226,23 @@ function pickRole(role: EmployeeRole) {
     <Dialog
       v-model:visible="showRolePicker"
       modal
-      header="Choose a role"
+      :header="$t('login.chooseRole')"
       :style="{ width: '420px' }"
       :closable="false"
     >
       <p class="role-intro">
-        Your account has multiple roles. Pick how you want to work this session.
+        {{ $t('login.roleIntro') }}
       </p>
       <div class="role-grid">
         <button class="role-card" @click="pickRole('merchant_admin')">
           <i class="pi pi-shield" />
-          <strong>Merchant Admin</strong>
-          <small>Manage catalog, tariffs &amp; staff</small>
+          <strong>{{ $t('login.merchantAdmin') }}</strong>
+          <small>{{ $t('login.merchantAdminDesc') }}</small>
         </button>
         <button class="role-card" @click="pickRole('agent')">
           <i class="pi pi-user-plus" />
-          <strong>Agent</strong>
-          <small>Issue new credit deals</small>
+          <strong>{{ $t('login.agent') }}</strong>
+          <small>{{ $t('login.agentDesc') }}</small>
         </button>
       </div>
     </Dialog>

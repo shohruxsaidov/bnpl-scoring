@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import { useToast } from 'primevue/usetoast'
@@ -13,6 +14,7 @@ import { formatDate, formatDateTime, maskPinfl } from '@/utils/money'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const toast = useToast()
 const tenants = useTenantsStore()
 const deals = useDealsStore()
@@ -24,6 +26,18 @@ const tenant = computed(() => tenants.byId(tenantId.value))
 const tabs = ['Overview', 'Deals', 'Employees', 'Scoring Model', 'Settings'] as const
 type Tab = (typeof tabs)[number]
 const activeTab = ref<Tab>('Overview')
+
+const TAB_LABEL_KEYS: Record<Tab, string> = {
+  Overview: 'tenantDetail.tabOverview',
+  Deals: 'tenantDetail.tabDeals',
+  Employees: 'tenantDetail.tabEmployees',
+  'Scoring Model': 'tenantDetail.tabScoringModel',
+  Settings: 'tenantDetail.tabSettings',
+}
+
+function tabLabel(tab: Tab): string {
+  return t(TAB_LABEL_KEYS[tab])
+}
 
 const tenantDeals = computed(() => deals.forTenant(tenantId.value))
 const tenantEmployees = computed(() => employees.forTenant(tenantId.value))
@@ -37,22 +51,22 @@ const statusBreakdown = computed(() => {
   for (const d of tenantDeals.value) base[d.status]++
   const max = Math.max(1, ...Object.values(base))
   return [
-    { label: 'Active', count: base.active, color: 'var(--success)', max },
-    { label: 'Overdue', count: base.overdue, color: 'var(--danger)', max },
-    { label: 'Closed', count: base.closed, color: 'var(--text-secondary)', max },
-    { label: 'Declined', count: base.declined, color: 'var(--warning)', max },
-    { label: 'Scoring', count: base.scoring, color: 'var(--accent-1)', max },
+    { label: t('tenantDetail.statusActive'), count: base.active, color: 'var(--success)', max },
+    { label: t('tenantDetail.statusOverdue'), count: base.overdue, color: 'var(--danger)', max },
+    { label: t('tenantDetail.statusClosed'), count: base.closed, color: 'var(--text-secondary)', max },
+    { label: t('tenantDetail.statusDeclined'), count: base.declined, color: 'var(--warning)', max },
+    { label: t('tenantDetail.statusScoring'), count: base.scoring, color: 'var(--accent-1)', max },
   ]
 })
 
 const overviewStats = computed(() => {
-  const t = tenant.value
-  if (!t) return []
-  const overdueRate = t.dealCount > 0 ? ((t.overdueCount / t.dealCount) * 100).toFixed(1) : '0.0'
+  const tn = tenant.value
+  if (!tn) return []
+  const overdueRate = tn.dealCount > 0 ? ((tn.overdueCount / tn.dealCount) * 100).toFixed(1) : '0.0'
   return [
-    { label: 'Total deals', value: String(t.dealCount), suffix: '' },
-    { label: 'Active employees', value: String(employees.activeForTenant(t.id)), suffix: '' },
-    { label: 'Overdue rate', value: overdueRate, suffix: '%' },
+    { label: t('tenantDetail.totalDeals'), value: String(tn.dealCount), suffix: '' },
+    { label: t('tenantDetail.activeEmployees'), value: String(employees.activeForTenant(tn.id)), suffix: '' },
+    { label: t('tenantDetail.overdueRate'), value: overdueRate, suffix: '%' },
   ]
 })
 
@@ -62,7 +76,7 @@ function toggleStatus() {
   tenants.toggleStatus(tenant.value.id)
   toast.add({
     severity: was === 'active' ? 'warn' : 'success',
-    summary: was === 'active' ? 'Tenant suspended' : 'Tenant activated',
+    summary: was === 'active' ? t('tenantDetail.tenantSuspended') : t('tenantDetail.tenantActivated'),
     detail: tenant.value.name,
     life: 2000,
   })
@@ -72,7 +86,7 @@ function toggleStatus() {
 <template>
   <div v-if="tenant" class="detail">
     <button class="back" @click="router.push('/tenants')">
-      <i class="pi pi-arrow-left" /> Back to tenants
+      <i class="pi pi-arrow-left" /> {{ $t('tenantDetail.backToTenants') }}
     </button>
 
     <header class="t-header surface-card">
@@ -90,7 +104,7 @@ function toggleStatus() {
               tenant.status === 'active' ? 'var(--success-bg)' : 'var(--danger-bg)',
           }"
         >
-          {{ tenant.status === 'active' ? 'Active' : 'Suspended' }}
+          {{ tenant.status === 'active' ? $t('tenantDetail.active') : $t('tenantDetail.suspended') }}
         </span>
       </div>
       <button
@@ -98,7 +112,7 @@ function toggleStatus() {
         @click="toggleStatus"
       >
         <i :class="tenant.status === 'active' ? 'pi pi-ban' : 'pi pi-check'" />
-        {{ tenant.status === 'active' ? 'Suspend' : 'Activate' }}
+        {{ tenant.status === 'active' ? $t('tenantDetail.suspend') : $t('tenantDetail.activate') }}
       </button>
     </header>
 
@@ -110,7 +124,7 @@ function toggleStatus() {
         :class="{ active: activeTab === t }"
         @click="activeTab = t"
       >
-        {{ t }}
+        {{ tabLabel(t) }}
       </button>
     </nav>
 
@@ -118,7 +132,7 @@ function toggleStatus() {
     <section v-if="activeTab === 'Overview'" class="tab-body">
       <div class="ov-stats">
         <div class="ov-card surface-card">
-          <span class="ov-label">Volume</span>
+          <span class="ov-label">{{ $t('tenantDetail.volume') }}</span>
           <MonoAmount :value="tenant.volume" size="lg" gradient />
         </div>
         <div v-for="s in overviewStats" :key="s.label" class="ov-card surface-card">
@@ -128,7 +142,7 @@ function toggleStatus() {
       </div>
 
       <div class="surface-card chart-card">
-        <h3 class="section-title">Deals by status</h3>
+        <h3 class="section-title">{{ $t('tenantDetail.dealsByStatus') }}</h3>
         <div class="bars">
           <div v-for="b in statusBreakdown" :key="b.label" class="bar-row">
             <span class="bar-label">{{ b.label }}</span>
@@ -151,35 +165,35 @@ function toggleStatus() {
     <section v-else-if="activeTab === 'Deals'" class="tab-body">
       <div class="surface-card table-wrap">
         <DataTable :value="tenantDeals" data-key="id" paginator :rows="10" size="small">
-          <Column header="Deal ID">
+          <Column :header="$t('tenantDetail.dealId')">
             <template #body="{ data }">
               <span class="font-mono accent">{{ data.id }}</span>
             </template>
           </Column>
-          <Column header="Client">
+          <Column :header="$t('tenantDetail.client')">
             <template #body="{ data }">{{ data.clientName }}</template>
           </Column>
-          <Column header="PINFL">
+          <Column :header="$t('tenantDetail.pinfl')">
             <template #body="{ data }">
               <span class="font-mono muted">{{ maskPinfl(data.clientPinfl) }}</span>
             </template>
           </Column>
-          <Column header="Amount">
+          <Column :header="$t('tenantDetail.amount')">
             <template #body="{ data }">
               <MonoAmount :value="data.amount" size="sm" />
             </template>
           </Column>
-          <Column header="Status">
+          <Column :header="$t('tenantDetail.status')">
             <template #body="{ data }">
               <StatusBadge :status="data.status" />
             </template>
           </Column>
-          <Column header="Score">
+          <Column :header="$t('tenantDetail.score')">
             <template #body="{ data }">
               <span class="font-mono">{{ data.score || '—' }}</span>
             </template>
           </Column>
-          <Column header="Date">
+          <Column :header="$t('tenantDetail.date')">
             <template #body="{ data }">
               <span class="font-mono muted">{{ formatDate(data.createdAt) }}</span>
             </template>
@@ -192,31 +206,31 @@ function toggleStatus() {
     <section v-else-if="activeTab === 'Employees'" class="tab-body">
       <div class="surface-card table-wrap">
         <DataTable :value="tenantEmployees" data-key="id" size="small">
-          <Column header="Name">
+          <Column :header="$t('tenantDetail.name')">
             <template #body="{ data }">
               <span class="t-name-sm">{{ data.fullName }}</span>
             </template>
           </Column>
-          <Column header="Phone">
+          <Column :header="$t('tenantDetail.phone')">
             <template #body="{ data }">
               <span class="font-mono muted">{{ data.phone }}</span>
             </template>
           </Column>
-          <Column header="Roles">
+          <Column :header="$t('tenantDetail.roles')">
             <template #body="{ data }">
               <span v-for="r in data.roles" :key="r" class="chip">
-                {{ r === 'merchant_admin' ? 'Admin' : 'Agent' }}
+                {{ r === 'merchant_admin' ? $t('tenantDetail.admin') : $t('tenantDetail.agent') }}
               </span>
             </template>
           </Column>
-          <Column header="Active">
+          <Column :header="$t('tenantDetail.active')">
             <template #body="{ data }">
               <span class="dot-state" :class="{ on: data.active }">
-                {{ data.active ? 'Yes' : 'No' }}
+                {{ data.active ? $t('tenantDetail.yes') : $t('tenantDetail.no') }}
               </span>
             </template>
           </Column>
-          <Column header="Last login">
+          <Column :header="$t('tenantDetail.lastLogin')">
             <template #body="{ data }">
               <span class="font-mono muted">{{ formatDateTime(data.lastLogin) }}</span>
             </template>
@@ -229,9 +243,9 @@ function toggleStatus() {
     <section v-else-if="activeTab === 'Scoring Model'" class="tab-body">
       <div class="surface-card json-card">
         <div class="json-head">
-          <h3 class="section-title">Scoring model · {{ model.version }}</h3>
+          <h3 class="section-title">{{ $t('tenantDetail.scoringModel', { version: model.version }) }}</h3>
           <span class="muted json-meta font-mono">
-            updated {{ formatDate(model.updatedAt) }}
+            {{ $t('tenantDetail.updated', { date: formatDate(model.updatedAt) }) }}
           </span>
         </div>
         <pre class="json-block">{{ modelJson }}</pre>
@@ -242,39 +256,39 @@ function toggleStatus() {
     <section v-else class="tab-body">
       <div class="surface-card table-wrap">
         <div class="settings-head">
-          <h3 class="section-title">Tariffs</h3>
-          <span class="muted">Read-only in platform admin</span>
+          <h3 class="section-title">{{ $t('tenantDetail.tariffs') }}</h3>
+          <span class="muted">{{ $t('tenantDetail.readOnly') }}</span>
         </div>
         <DataTable :value="tariffs" data-key="id" size="small">
-          <Column header="Name">
+          <Column :header="$t('tenantDetail.name')">
             <template #body="{ data }">
               <span class="t-name-sm">{{ data.name }}</span>
             </template>
           </Column>
-          <Column header="Term">
+          <Column :header="$t('tenantDetail.term')">
             <template #body="{ data }">
-              <span class="font-mono">{{ data.termMonths }} mo</span>
+              <span class="font-mono">{{ data.termMonths }} {{ $t('tenantDetail.mo') }}</span>
             </template>
           </Column>
-          <Column header="Markup">
+          <Column :header="$t('tenantDetail.markup')">
             <template #body="{ data }">
               <span class="font-mono">{{ data.markupPercent }}%</span>
             </template>
           </Column>
-          <Column header="Credit min">
+          <Column :header="$t('tenantDetail.creditMin')">
             <template #body="{ data }">
               <MonoAmount :value="data.creditMin" size="sm" />
             </template>
           </Column>
-          <Column header="Credit max">
+          <Column :header="$t('tenantDetail.creditMax')">
             <template #body="{ data }">
               <MonoAmount :value="data.creditMax" size="sm" />
             </template>
           </Column>
-          <Column header="Active">
+          <Column :header="$t('tenantDetail.active')">
             <template #body="{ data }">
               <span class="dot-state" :class="{ on: data.active }">
-                {{ data.active ? 'Yes' : 'No' }}
+                {{ data.active ? $t('tenantDetail.yes') : $t('tenantDetail.no') }}
               </span>
             </template>
           </Column>
@@ -285,8 +299,8 @@ function toggleStatus() {
 
   <div v-else class="not-found surface-card">
     <i class="pi pi-exclamation-circle" />
-    <p>Tenant not found.</p>
-    <button class="btn-ghost" @click="router.push('/tenants')">Back to tenants</button>
+    <p>{{ $t('tenantDetail.notFound') }}</p>
+    <button class="btn-ghost" @click="router.push('/tenants')">{{ $t('tenantDetail.backToTenants') }}</button>
   </div>
 </template>
 

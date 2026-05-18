@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps<{ collapsed: boolean }>()
@@ -8,6 +9,7 @@ const emit = defineEmits<{ (e: 'toggle'): void }>()
 
 const auth = useAuthStore()
 const router = useRouter()
+const { t } = useI18n()
 
 interface NavItem {
   label: string
@@ -17,19 +19,19 @@ interface NavItem {
 }
 
 const mainNav = computed<NavItem[]>(() => [
-  { label: 'Dashboard', icon: 'pi pi-th-large', to: '/', show: true },
-  { label: 'New Deal', icon: 'pi pi-plus-circle', to: '/wizard', show: auth.isAgent },
+  { label: t('nav.dashboard'), icon: 'pi pi-th-large', to: '/', show: true },
+  { label: t('nav.newDeal'), icon: 'pi pi-plus-circle', to: '/wizard', show: auth.isAgent },
 ])
 
 const adminNav = computed<NavItem[]>(() => [
-  { label: 'Products', icon: 'pi pi-box', to: '/admin/products', show: true },
-  { label: 'Categories', icon: 'pi pi-tags', to: '/admin/categories', show: true },
-  { label: 'Tariffs', icon: 'pi pi-percentage', to: '/admin/tariffs', show: true },
-  { label: 'Employees', icon: 'pi pi-users', to: '/admin/employees', show: true },
-  { label: 'Collection Board', icon: 'pi pi-table', to: '/admin/collection-board', show: true },
-  { label: 'Скоринг История', icon: 'pi pi-chart-line', to: '/admin/scoring-history', show: true },
-  { label: 'Выкуп', icon: 'pi pi-shopping-bag', to: '/admin/buyout', show: true },
-  { label: 'Платежи', icon: 'pi pi-credit-card', to: '/admin/payments', show: true },
+  { label: t('nav.products'), icon: 'pi pi-box', to: '/admin/products', show: true },
+  { label: t('nav.categories'), icon: 'pi pi-tags', to: '/admin/categories', show: true },
+  { label: t('nav.tariffs'), icon: 'pi pi-percentage', to: '/admin/tariffs', show: true },
+  { label: t('nav.employees'), icon: 'pi pi-users', to: '/admin/employees', show: true },
+  { label: t('nav.collectionBoard'), icon: 'pi pi-table', to: '/admin/collection-board', show: true },
+  { label: t('nav.scoringHistory'), icon: 'pi pi-chart-line', to: '/admin/scoring-history', show: true },
+  { label: t('nav.buyout'), icon: 'pi pi-shopping-bag', to: '/admin/buyout', show: true },
+  { label: t('nav.payments'), icon: 'pi pi-credit-card', to: '/admin/payments', show: true },
 ])
 
 function logout() {
@@ -46,7 +48,7 @@ function logout() {
         <span class="text-gradient brand-name">Scoring</span>
         <span class="tenant">{{ auth.tenant.name }}</span>
       </div>
-      <button class="collapse-btn" title="Toggle sidebar" @click="emit('toggle')">
+      <button class="collapse-btn" :title="$t('nav.toggleSidebar')" @click="emit('toggle')">
         <i :class="props.collapsed ? 'pi pi-angle-right' : 'pi pi-angle-left'" />
       </button>
     </div>
@@ -66,7 +68,7 @@ function logout() {
       </template>
 
       <div v-if="auth.isAdmin" class="divider">
-        <span v-if="!props.collapsed">ADMIN</span>
+        <span v-if="!props.collapsed">{{ $t('nav.admin') }}</span>
         <span v-else class="dot-divider" />
       </div>
 
@@ -95,9 +97,9 @@ function logout() {
       </div>
       <div v-else class="avatar solo">{{ auth.employee?.fullName.charAt(0) }}</div>
 
-      <button class="logout-btn" title="Logout" @click="logout">
+      <button class="logout-btn" :title="$t('nav.logout')" @click="logout">
         <i class="pi pi-sign-out" />
-        <span v-if="!props.collapsed">Logout</span>
+        <span v-if="!props.collapsed">{{ $t('nav.logout') }}</span>
       </button>
     </div>
   </aside>

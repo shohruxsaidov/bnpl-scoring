@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 type PaymentStatus = 'confirmed' | 'pending' | 'cancelled'
 type PaymentType = 'cash' | 'card' | 'transfer'
@@ -16,28 +17,29 @@ interface Payment {
   date: string
 }
 
+const { t } = useI18n()
 const activeTab = ref<TabKey>('all')
 const search = ref('')
 const statusFilter = ref<'all' | PaymentStatus>('all')
 
-const tabs: { key: TabKey; label: string; icon: string }[] = [
-  { key: 'all', label: 'Платежи', icon: 'pi pi-credit-card' },
-  { key: 'manual', label: 'Ручные платежи', icon: 'pi pi-pen-to-square' },
-  { key: 'scheduled', label: 'Плановые платежи', icon: 'pi pi-calendar' },
-]
+const tabs = computed<{ key: TabKey; label: string; icon: string }[]>(() => [
+  { key: 'all', label: t('payments.tabAll'), icon: 'pi pi-credit-card' },
+  { key: 'manual', label: t('payments.tabManual'), icon: 'pi pi-pen-to-square' },
+  { key: 'scheduled', label: t('payments.tabScheduled'), icon: 'pi pi-calendar' },
+])
 
-const statusOptions = [
-  { label: 'Все', value: 'all' },
-  { label: 'Подтверждён', value: 'confirmed' },
-  { label: 'Ожидание', value: 'pending' },
-  { label: 'Отменён', value: 'cancelled' },
-]
+const statusOptions = computed(() => [
+  { label: t('payments.all'), value: 'all' },
+  { label: t('payments.statusConfirmed'), value: 'confirmed' },
+  { label: t('payments.statusPending'), value: 'pending' },
+  { label: t('payments.statusCancelled'), value: 'cancelled' },
+])
 
-const typeLabels: Record<PaymentType, string> = {
-  cash: 'Наличные',
-  card: 'Карта',
-  transfer: 'Перевод',
-}
+const typeLabels = computed<Record<PaymentType, string>>(() => ({
+  cash: t('payments.typeCash'),
+  card: t('payments.typeCard'),
+  transfer: t('payments.typeTransfer'),
+}))
 
 const payments = ref<Payment[]>([])
 
@@ -112,7 +114,7 @@ function fmtAmount(tiyin: number) {
         </div>
         <div class="stat-body">
           <span class="stat-value">{{ stats.total }}</span>
-          <span class="stat-label">Всего платежей</span>
+          <span class="stat-label">{{ $t('payments.totalPayments') }}</span>
         </div>
       </div>
       <div class="stat-card">
@@ -121,7 +123,7 @@ function fmtAmount(tiyin: number) {
         </div>
         <div class="stat-body">
           <span class="stat-value">{{ stats.confirmed }}</span>
-          <span class="stat-label">Подтверждён</span>
+          <span class="stat-label">{{ $t('payments.confirmed') }}</span>
         </div>
       </div>
       <div class="stat-card">
@@ -130,7 +132,7 @@ function fmtAmount(tiyin: number) {
         </div>
         <div class="stat-body">
           <span class="stat-value">{{ stats.pending }}</span>
-          <span class="stat-label">Ожидание</span>
+          <span class="stat-label">{{ $t('payments.pending') }}</span>
         </div>
       </div>
       <div class="stat-card">
@@ -138,8 +140,8 @@ function fmtAmount(tiyin: number) {
           <i class="pi pi-chart-line" />
         </div>
         <div class="stat-body">
-          <span class="stat-value">{{ fmtAmount(stats.totalAmount) }} so'm</span>
-          <span class="stat-label">Общая сумма</span>
+          <span class="stat-value">{{ fmtAmount(stats.totalAmount) }} {{ $t('payments.som') }}</span>
+          <span class="stat-label">{{ $t('payments.totalAmount') }}</span>
         </div>
       </div>
     </div>
@@ -160,7 +162,7 @@ function fmtAmount(tiyin: number) {
       </div>
       <button v-if="activeTab === 'manual'" class="btn-add-payment" @click="openDialog">
         <i class="pi pi-plus" />
-        Внести платёж
+        {{ $t('payments.addPayment') }}
       </button>
     </div>
 
@@ -172,7 +174,7 @@ function fmtAmount(tiyin: number) {
           <input
             v-model="search"
             class="search-input"
-            placeholder="Клиент, договор, сумма..."
+            :placeholder="$t('payments.searchPlaceholder')"
           />
         </div>
         <select v-model="statusFilter" class="filter-select">
@@ -186,13 +188,13 @@ function fmtAmount(tiyin: number) {
         <table class="payments-table">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>КЛИЕНТ</th>
-              <th>ДОГОВОР</th>
-              <th>СУММА</th>
-              <th>ТИП</th>
-              <th>СТАТУС</th>
-              <th>ДАТА</th>
+              <th>{{ $t('payments.id') }}</th>
+              <th>{{ $t('payments.client') }}</th>
+              <th>{{ $t('payments.contract') }}</th>
+              <th>{{ $t('payments.amount') }}</th>
+              <th>{{ $t('payments.type') }}</th>
+              <th>{{ $t('payments.status') }}</th>
+              <th>{{ $t('payments.date') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -207,14 +209,14 @@ function fmtAmount(tiyin: number) {
               <td class="mono-cell">{{ row.contractId }}</td>
               <td class="amount-cell">
                 <span class="amount-num">{{ fmtAmount(row.amount) }}</span>
-                <span class="amount-unit">so'm</span>
+                <span class="amount-unit">{{ $t('payments.som') }}</span>
               </td>
               <td>
                 <span class="type-badge">{{ typeLabels[row.type] }}</span>
               </td>
               <td>
                 <span class="status-badge" :class="row.status">
-                  {{ row.status === 'confirmed' ? 'Подтверждён' : row.status === 'pending' ? 'Ожидание' : 'Отменён' }}
+                  {{ row.status === 'confirmed' ? $t('payments.statusConfirmed') : row.status === 'pending' ? $t('payments.statusPending') : $t('payments.statusCancelled') }}
                 </span>
               </td>
               <td class="date-cell">{{ row.date }}</td>
@@ -225,12 +227,12 @@ function fmtAmount(tiyin: number) {
         <!-- Empty state -->
         <div v-if="filtered.length === 0" class="empty-state">
           <i class="pi pi-credit-card" />
-          <span>Платежи не найдены</span>
+          <span>{{ $t('payments.notFound') }}</span>
         </div>
       </div>
 
       <div class="table-footer">
-        {{ filtered.length }} платежей
+        {{ $t('payments.paymentsCount', { count: filtered.length }) }}
       </div>
     </div>
 
@@ -240,7 +242,7 @@ function fmtAmount(tiyin: number) {
         <div v-if="dialogOpen" class="dialog-overlay" @click.self="closeDialog">
           <div class="dialog">
             <div class="dialog-header">
-              <span class="dialog-title">Внести ручной платёж</span>
+              <span class="dialog-title">{{ $t('payments.addManualPayment') }}</span>
               <button class="dialog-close" @click="closeDialog">
                 <i class="pi pi-times" />
               </button>
@@ -248,19 +250,19 @@ function fmtAmount(tiyin: number) {
 
             <div class="dialog-body">
               <div class="field">
-                <label class="field-label">Договор</label>
+                <label class="field-label">{{ $t('payments.contractLabel') }}</label>
                 <div class="field-search-wrap">
                   <i class="pi pi-search field-search-icon" />
                   <input
                     v-model="form.contractSearch"
                     class="field-input field-search"
-                    placeholder="Поиск по номеру договора..."
+                    :placeholder="$t('payments.contractSearch')"
                   />
                 </div>
               </div>
 
               <div class="field">
-                <label class="field-label">Сумма</label>
+                <label class="field-label">{{ $t('payments.amountLabel') }}</label>
                 <div class="field-amount-wrap">
                   <input
                     v-model="form.amount"
@@ -269,31 +271,31 @@ function fmtAmount(tiyin: number) {
                     min="0"
                     placeholder="500 000"
                   />
-                  <span class="amount-suffix">so'm</span>
+                  <span class="amount-suffix">{{ $t('payments.som') }}</span>
                 </div>
               </div>
 
               <div class="field">
-                <label class="field-label">Тип оплаты</label>
+                <label class="field-label">{{ $t('payments.paymentType') }}</label>
                 <select v-model="form.paymentType" class="field-input field-select">
                   <option v-for="opt in paymentTypeOptions" :key="opt" :value="opt">{{ opt }}</option>
                 </select>
               </div>
 
               <div class="field">
-                <label class="field-label">Примечание</label>
+                <label class="field-label">{{ $t('payments.note') }}</label>
                 <textarea
                   v-model="form.note"
                   class="field-input field-textarea"
-                  placeholder="Дополнительно..."
+                  :placeholder="$t('payments.notePlaceholder')"
                   rows="3"
                 />
               </div>
             </div>
 
             <div class="dialog-footer">
-              <button class="btn-cancel" @click="closeDialog">Отмена</button>
-              <button class="btn-submit" @click="submitPayment">Внести</button>
+              <button class="btn-cancel" @click="closeDialog">{{ $t('common.cancel') }}</button>
+              <button class="btn-submit" @click="submitPayment">{{ $t('payments.submit') }}</button>
             </div>
           </div>
         </div>

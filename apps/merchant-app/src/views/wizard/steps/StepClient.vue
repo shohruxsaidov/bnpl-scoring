@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import Checkbox from 'primevue/checkbox'
 import { useWizardStore } from '@/stores/wizard'
@@ -7,6 +8,7 @@ import { mockDelay } from '@/utils/money'
 import type { Client } from '@/types'
 
 const wizard = useWizardStore()
+const { t } = useI18n()
 
 // ── Mock client database (existing clients in the system) ──────────────────
 const MOCK_DB: Client[] = [
@@ -77,7 +79,7 @@ const katmDone = ref(!!wizard.sessionData.katmConsent && !!wizard.sessionData.cl
 // ── Actions ────────────────────────────────────────────────────────────────
 function validatePinfl(): boolean {
   if (!/^\d{14}$/.test(pinfl.value)) {
-    pinflError.value = 'PINFL must be exactly 14 digits'
+    pinflError.value = t('stepClient.pinflInvalid')
     return false
   }
   pinflError.value = ''
@@ -157,9 +159,9 @@ const canContinue = computed(
 )
 
 const myidStatusText = computed(() => {
-  if (myidPhase.value === 'waiting') return 'Waiting for client to open MyID app…'
-  if (myidPhase.value === 'biometric') return 'Biometric check in progress…'
-  return 'Identity verified'
+  if (myidPhase.value === 'waiting') return t('stepClient.waitingMyid')
+  if (myidPhase.value === 'biometric') return t('stepClient.biometricInProgress')
+  return t('stepClient.identityVerified')
 })
 </script>
 
@@ -167,17 +169,17 @@ const myidStatusText = computed(() => {
   <div class="step-card surface-card">
     <header class="sc-head">
       <div>
-        <h2>Клиент</h2>
-        <p>Search for an existing client or create one via MyID identity verification.</p>
+        <h2>{{ $t('stepClient.title') }}</h2>
+        <p>{{ $t('stepClient.subtitle') }}</p>
       </div>
       <button v-if="phase !== 'search' && phase !== 'searching'" class="btn-link" @click="resetSearch">
-        <i class="pi pi-refresh" /> New search
+        <i class="pi pi-refresh" /> {{ $t('stepClient.newSearch') }}
       </button>
     </header>
 
     <!-- ── PHASE: search ─────────────────────────────────────────────────── -->
     <div v-if="phase === 'search' || phase === 'searching'" class="search-box">
-      <label class="field-label">Client PINFL</label>
+      <label class="field-label">{{ $t('stepClient.clientPinfl') }}</label>
       <div class="search-row">
         <InputText
           v-model="pinfl"
@@ -191,45 +193,44 @@ const myidStatusText = computed(() => {
         <button class="btn-gradient" :disabled="phase === 'searching'" @click="searchClient">
           <i v-if="phase === 'searching'" class="pi pi-spin pi-spinner" />
           <i v-else class="pi pi-search" />
-          {{ phase === 'searching' ? 'Searching…' : 'Search' }}
+          {{ phase === 'searching' ? $t('stepClient.searching') : $t('stepClient.search') }}
         </button>
       </div>
       <span v-if="pinflError" class="field-error">{{ pinflError }}</span>
       <p class="search-hint">
-        Enter the 14-digit PINFL. If the client exists we'll load their record instantly.
-        If not, you'll verify their identity via <strong>MyID</strong>.
+        {{ $t('stepClient.searchHint') }}
       </p>
     </div>
 
     <!-- ── PHASE: found ──────────────────────────────────────────────────── -->
     <div v-else-if="phase === 'found'" class="client-card found">
       <div class="client-card-header">
-        <span class="tag tag-success"><i class="pi pi-check-circle" /> Existing client found</span>
+        <span class="tag tag-success"><i class="pi pi-check-circle" /> {{ $t('stepClient.existingFound') }}</span>
       </div>
       <div class="client-grid">
         <div class="client-field">
-          <span class="cf-label">Full name</span>
+          <span class="cf-label">{{ $t('stepClient.fullName') }}</span>
           <span class="cf-value">{{ confirmedClient!.fullName }}</span>
         </div>
         <div class="client-field">
-          <span class="cf-label">PINFL</span>
+          <span class="cf-label">{{ $t('stepClient.pinfl') }}</span>
           <span class="cf-value font-mono">{{ confirmedClient!.pinfl }}</span>
         </div>
         <div class="client-field">
-          <span class="cf-label">Phone</span>
+          <span class="cf-label">{{ $t('stepClient.phone') }}</span>
           <span class="cf-value font-mono">{{ confirmedClient!.phone }}</span>
         </div>
         <div class="client-field">
-          <span class="cf-label">Passport</span>
+          <span class="cf-label">{{ $t('stepClient.passport') }}</span>
           <span class="cf-value font-mono">{{ confirmedClient!.passportSerial }}</span>
         </div>
         <div class="client-field">
-          <span class="cf-label">Date of birth</span>
+          <span class="cf-label">{{ $t('stepClient.birthDate') }}</span>
           <span class="cf-value">{{ confirmedClient!.birthDate }}</span>
         </div>
       </div>
       <button class="btn-gradient mt-1" @click="useFoundClient">
-        Use this client <i class="pi pi-arrow-right" />
+        {{ $t('stepClient.useClient') }} <i class="pi pi-arrow-right" />
       </button>
     </div>
 
@@ -237,12 +238,12 @@ const myidStatusText = computed(() => {
     <div v-else-if="phase === 'not_found'" class="not-found-box">
       <div class="nf-icon"><i class="pi pi-user-minus" /></div>
       <div>
-        <p class="nf-title">No client found for PINFL <span class="font-mono">{{ pinfl }}</span></p>
-        <p class="nf-sub">To create a new client record, verify their identity through the <strong>MyID</strong> biometric system.</p>
+        <p class="nf-title">{{ $t('stepClient.noClientFound', { pinfl }) }}</p>
+        <p class="nf-sub">{{ $t('stepClient.noClientSub') }}</p>
       </div>
       <button class="btn-myid" @click="startMyId">
         <span class="myid-logo">MyID</span>
-        Start identity verification
+        {{ $t('stepClient.startVerification') }}
       </button>
     </div>
 
@@ -250,7 +251,7 @@ const myidStatusText = computed(() => {
     <div v-else-if="phase === 'myid_pending'" class="myid-panel">
       <div class="myid-header">
         <span class="myid-logo-lg">MyID</span>
-        <span class="myid-title">Identity Verification</span>
+        <span class="myid-title">{{ $t('stepClient.identityVerification') }}</span>
       </div>
 
       <div class="myid-body">
@@ -347,9 +348,9 @@ const myidStatusText = computed(() => {
         <div class="myid-steps">
           <div
             v-for="(step, idx) in [
-              { label: 'Open MyID app', phase: 'waiting' },
-              { label: 'Biometric check', phase: 'biometric' },
-              { label: 'Identity confirmed', phase: 'done' },
+              { label: $t('stepClient.openMyidApp'), phase: 'waiting' },
+              { label: $t('stepClient.biometricCheck'), phase: 'biometric' },
+              { label: $t('stepClient.identityConfirmed'), phase: 'done' },
             ]"
             :key="idx"
             class="myid-step"
@@ -374,32 +375,32 @@ const myidStatusText = computed(() => {
     <!-- ── PHASE: myid_done ──────────────────────────────────────────────── -->
     <div v-else-if="phase === 'myid_done'" class="client-card new">
       <div class="client-card-header">
-        <span class="tag tag-accent"><i class="pi pi-id-card" /> New client — identity verified via MyID</span>
+        <span class="tag tag-accent"><i class="pi pi-id-card" /> {{ $t('stepClient.newClientVerified') }}</span>
       </div>
       <div class="client-grid">
         <div class="client-field">
-          <span class="cf-label">Full name</span>
+          <span class="cf-label">{{ $t('stepClient.fullName') }}</span>
           <span class="cf-value">{{ confirmedClient!.fullName }}</span>
         </div>
         <div class="client-field">
-          <span class="cf-label">PINFL</span>
+          <span class="cf-label">{{ $t('stepClient.pinfl') }}</span>
           <span class="cf-value font-mono">{{ confirmedClient!.pinfl }}</span>
         </div>
         <div class="client-field">
-          <span class="cf-label">Phone</span>
+          <span class="cf-label">{{ $t('stepClient.phone') }}</span>
           <span class="cf-value font-mono">{{ confirmedClient!.phone }}</span>
         </div>
         <div class="client-field">
-          <span class="cf-label">Passport</span>
+          <span class="cf-label">{{ $t('stepClient.passport') }}</span>
           <span class="cf-value font-mono">{{ confirmedClient!.passportSerial }}</span>
         </div>
         <div class="client-field">
-          <span class="cf-label">Date of birth</span>
+          <span class="cf-label">{{ $t('stepClient.birthDate') }}</span>
           <span class="cf-value">{{ confirmedClient!.birthDate }}</span>
         </div>
       </div>
       <button class="btn-gradient mt-1" @click="confirmNewClient">
-        Confirm & continue <i class="pi pi-arrow-right" />
+        {{ $t('stepClient.confirmContinue') }} <i class="pi pi-arrow-right" />
       </button>
     </div>
 
@@ -412,14 +413,14 @@ const myidStatusText = computed(() => {
           <strong>{{ confirmedClient!.fullName }}</strong>
           <span class="font-mono ml-1 text-secondary">{{ confirmedClient!.pinfl }}</span>
         </span>
-        <span v-if="isNewClient" class="tag tag-accent tag-sm">New · MyID verified</span>
-        <span v-else class="tag tag-success tag-sm">Existing client</span>
+        <span v-if="isNewClient" class="tag tag-accent tag-sm">{{ $t('stepClient.newMyidVerified') }}</span>
+        <span v-else class="tag tag-success tag-sm">{{ $t('stepClient.existingClient') }}</span>
       </div>
 
       <div class="katm-box">
         <label class="consent">
           <Checkbox v-model="katmConsent" binary />
-          <span>Client gives <strong>KATM consent</strong> (bureau query authorisation per law №301)</span>
+          <span>{{ $t('stepClient.katmConsent', { katm: $t('stepClient.katmConsentBold') }) }}</span>
         </label>
         <button
           class="btn-ghost"
@@ -429,23 +430,23 @@ const myidStatusText = computed(() => {
           <i v-if="katmLoading" class="pi pi-spin pi-spinner" />
           <i v-else-if="katmDone" class="pi pi-check" />
           <i v-else class="pi pi-database" />
-          {{ katmLoading ? 'Querying KATM…' : katmDone ? 'KATM done' : 'Query KATM' }}
+          {{ katmLoading ? $t('stepClient.queryingKatm') : katmDone ? $t('stepClient.katmDone') : $t('stepClient.queryKatm') }}
         </button>
       </div>
 
       <transition name="fade">
         <div v-if="katmDone" class="katm-result">
           <i class="pi pi-check-circle" />
-          KATM responded — credit history loaded. Client is eligible to proceed.
+          {{ $t('stepClient.katmResult') }}
         </div>
       </transition>
     </template>
 
     <!-- ── Footer ────────────────────────────────────────────────────────── -->
     <footer class="sc-foot">
-      <span class="hint">Step 1 of 7</span>
+      <span class="hint">{{ $t('stepClient.stepOf') }}</span>
       <button class="btn-gradient" :disabled="!canContinue" @click="onNext">
-        Continue <i class="pi pi-arrow-right" />
+        {{ $t('common.continue') }} <i class="pi pi-arrow-right" />
       </button>
     </footer>
   </div>

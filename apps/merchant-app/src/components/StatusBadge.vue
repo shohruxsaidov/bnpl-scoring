@@ -1,23 +1,28 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { DealStatus } from '@/types'
 
 const props = defineProps<{ status: DealStatus }>()
+const { t } = useI18n()
 
-const MAP: Record<
+const COLORS: Record<
   DealStatus,
-  { label: string; fg: string; bg: string }
+  { fg: string; bg: string }
 > = {
-  draft: { label: 'Draft', fg: 'var(--text-secondary)', bg: 'var(--bg-surface)' },
-  scoring: { label: 'Scoring', fg: 'var(--warning)', bg: 'var(--warning-bg)' },
-  approved: { label: 'Approved', fg: 'var(--success)', bg: 'var(--success-bg)' },
-  declined: { label: 'Declined', fg: 'var(--danger)', bg: 'var(--danger-bg)' },
-  active: { label: 'Active', fg: 'var(--success)', bg: 'var(--success-bg)' },
-  closed: { label: 'Closed', fg: 'var(--text-secondary)', bg: 'var(--bg-surface)' },
-  overdue: { label: 'Overdue', fg: 'var(--danger)', bg: 'var(--danger-bg)' },
+  draft: { fg: 'var(--text-secondary)', bg: 'var(--bg-surface)' },
+  scoring: { fg: 'var(--warning)', bg: 'var(--warning-bg)' },
+  approved: { fg: 'var(--success)', bg: 'var(--success-bg)' },
+  declined: { fg: 'var(--danger)', bg: 'var(--danger-bg)' },
+  active: { fg: 'var(--success)', bg: 'var(--success-bg)' },
+  closed: { fg: 'var(--text-secondary)', bg: 'var(--bg-surface)' },
+  overdue: { fg: 'var(--danger)', bg: 'var(--danger-bg)' },
 }
 
-const cfg = computed(() => MAP[props.status])
+const cfg = computed(() => ({
+  ...COLORS[props.status],
+  label: t(`status.${props.status}`),
+}))
 </script>
 
 <template>

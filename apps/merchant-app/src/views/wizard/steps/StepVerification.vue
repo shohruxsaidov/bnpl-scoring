@@ -60,57 +60,57 @@ async function signSubmit() {
   <div class="step-card surface-card">
     <header class="sc-head">
       <div>
-        <h2>Верификация</h2>
-        <p>Review every detail before signing the contract.</p>
+        <h2>{{ $t('stepVerification.title') }}</h2>
+        <p>{{ $t('stepVerification.subtitle') }}</p>
       </div>
     </header>
 
     <div class="summary-grid">
       <section class="sum-block">
-        <h4><i class="pi pi-user" /> Client</h4>
+        <h4><i class="pi pi-user" /> {{ $t('stepVerification.client') }}</h4>
         <dl>
-          <div><dt>Name</dt><dd>{{ sd.client?.fullName }}</dd></div>
-          <div><dt>PINFL</dt><dd class="font-mono">{{ sd.client?.pinfl }}</dd></div>
-          <div><dt>Phone</dt><dd>{{ sd.client?.phone }}</dd></div>
-          <div><dt>Passport</dt><dd class="font-mono">{{ sd.client?.passportSerial }}</dd></div>
+          <div><dt>{{ $t('stepVerification.name') }}</dt><dd>{{ sd.client?.fullName }}</dd></div>
+          <div><dt>{{ $t('stepVerification.pinfl') }}</dt><dd class="font-mono">{{ sd.client?.pinfl }}</dd></div>
+          <div><dt>{{ $t('stepVerification.phone') }}</dt><dd>{{ sd.client?.phone }}</dd></div>
+          <div><dt>{{ $t('stepVerification.passport') }}</dt><dd class="font-mono">{{ sd.client?.passportSerial }}</dd></div>
         </dl>
       </section>
 
       <section class="sum-block">
-        <h4><i class="pi pi-credit-card" /> Card &amp; Score</h4>
+        <h4><i class="pi pi-credit-card" /> {{ $t('stepVerification.cardScore') }}</h4>
         <dl>
-          <div><dt>Card</dt><dd class="font-mono">{{ sd.selectedCard?.maskedPan }}</dd></div>
-          <div><dt>Bank</dt><dd>{{ sd.selectedCard?.bank }}</dd></div>
-          <div><dt>Score</dt><dd class="font-mono">{{ sd.cardScore?.score }}</dd></div>
-          <div><dt>Decision</dt><dd>{{ sd.cardScore?.decision }}</dd></div>
+          <div><dt>{{ $t('stepVerification.card') }}</dt><dd class="font-mono">{{ sd.selectedCard?.maskedPan }}</dd></div>
+          <div><dt>{{ $t('stepVerification.bank') }}</dt><dd>{{ sd.selectedCard?.bank }}</dd></div>
+          <div><dt>{{ $t('stepVerification.score') }}</dt><dd class="font-mono">{{ sd.cardScore?.score }}</dd></div>
+          <div><dt>{{ $t('stepVerification.decision') }}</dt><dd>{{ sd.cardScore?.decision }}</dd></div>
         </dl>
       </section>
 
       <section class="sum-block">
-        <h4><i class="pi pi-percentage" /> Tariff</h4>
+        <h4><i class="pi pi-percentage" /> {{ $t('stepVerification.tariff') }}</h4>
         <dl>
-          <div><dt>Plan</dt><dd>{{ sd.tariff?.name }}</dd></div>
-          <div><dt>Term</dt><dd>{{ sd.tariff?.termMonths }} months</dd></div>
-          <div><dt>Ustama</dt><dd>{{ sd.tariff?.markupPercent }}%</dd></div>
-          <div><dt>Payment day</dt><dd class="font-mono">{{ sd.paymentDay }}</dd></div>
+          <div><dt>{{ $t('stepVerification.plan') }}</dt><dd>{{ sd.tariff?.name }}</dd></div>
+          <div><dt>{{ $t('stepVerification.term') }}</dt><dd>{{ sd.tariff?.termMonths }} {{ $t('stepVerification.months') }}</dd></div>
+          <div><dt>{{ $t('stepVerification.ustama') }}</dt><dd>{{ sd.tariff?.markupPercent }}%</dd></div>
+          <div><dt>{{ $t('stepVerification.paymentDay') }}</dt><dd class="font-mono">{{ sd.paymentDay }}</dd></div>
         </dl>
       </section>
 
       <section class="sum-block totals">
-        <h4><i class="pi pi-wallet" /> Amounts</h4>
+        <h4><i class="pi pi-wallet" /> {{ $t('stepVerification.amounts') }}</h4>
         <div class="amt-row">
-          <span>Principal</span>
+          <span>{{ $t('stepVerification.principal') }}</span>
           <MonoAmount :value="principal" size="sm" :gradient="false" />
         </div>
         <div class="amt-row">
-          <span>Total payable</span>
+          <span>{{ $t('stepVerification.totalPayable') }}</span>
           <MonoAmount :value="totalPayable" size="md" />
         </div>
       </section>
     </div>
 
     <section class="basket-block">
-      <h4><i class="pi pi-shopping-bag" /> Basket ({{ wizard.basketCount }} items)</h4>
+      <h4><i class="pi pi-shopping-bag" /> {{ $t('stepVerification.basket', { count: wizard.basketCount }) }}</h4>
       <div
         v-for="item in sd.basket"
         :key="item.product.id"
@@ -127,7 +127,7 @@ async function signSubmit() {
     </section>
 
     <section class="sched-block">
-      <h4><i class="pi pi-calendar" /> Schedule preview</h4>
+      <h4><i class="pi pi-calendar" /> {{ $t('stepVerification.schedulePreview') }}</h4>
       <div class="sched-strip">
         <div v-for="row in sd.schedule" :key="row.index" class="sched-chip">
           <span class="font-mono sc-date">{{ fmtDate(row.date) }}</span>
@@ -138,12 +138,12 @@ async function signSubmit() {
 
     <footer class="sc-foot">
       <button class="btn-ghost" :disabled="submitting" @click="wizard.back()">
-        <i class="pi pi-arrow-left" /> Back
+        <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
       </button>
       <button class="btn-gradient sign" :disabled="submitting" @click="signSubmit">
         <i v-if="submitting" class="pi pi-spin pi-spinner" />
         <i v-else class="pi pi-verified" />
-        {{ submitting ? 'Creating deal…' : 'Sign &amp; Submit' }}
+        {{ submitting ? $t('stepVerification.creatingDeal') : $t('stepVerification.signSubmit') }}
       </button>
     </footer>
   </div>

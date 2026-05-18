@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 interface ScoringRecord {
   id: string
@@ -15,14 +16,15 @@ interface ScoringRecord {
 }
 
 const router = useRouter()
+const { t } = useI18n()
 const search = ref('')
 const statusFilter = ref<'all' | 'approved' | 'declined'>('all')
 
-const statusOptions = [
-  { label: 'Все', value: 'all' },
-  { label: 'Подтверждён', value: 'approved' },
-  { label: 'Отклонён', value: 'declined' },
-]
+const statusOptions = computed(() => [
+  { label: t('scoringHistory.all'), value: 'all' },
+  { label: t('scoringHistory.approved'), value: 'approved' },
+  { label: t('scoringHistory.declined'), value: 'declined' },
+])
 
 const records = ref<ScoringRecord[]>([
   { id: 'PROC-20260516-2646', clientName: 'SHOHRUH SAIDOV', clientPhone: '+998934244724', score: 625, limit: 150000000, region: '', address: '', date: '16/05/2026', status: 'pending' },
@@ -97,7 +99,7 @@ function openDetail(id: string) {
     <div class="page-actions">
       <button class="btn-recalc" @click="recalculate">
         <i class="pi pi-refresh" />
-        Пересчитать
+        {{ $t('scoringHistory.recalculate') }}
       </button>
     </div>
 
@@ -109,7 +111,7 @@ function openDetail(id: string) {
         </div>
         <div class="stat-body">
           <span class="stat-value">{{ stats.total }}</span>
-          <span class="stat-label">Всего запросов</span>
+          <span class="stat-label">{{ $t('scoringHistory.totalRequests') }}</span>
         </div>
       </div>
       <div class="stat-card">
@@ -118,7 +120,7 @@ function openDetail(id: string) {
         </div>
         <div class="stat-body">
           <span class="stat-value">{{ stats.approved }}</span>
-          <span class="stat-label">Подтверждён</span>
+          <span class="stat-label">{{ $t('scoringHistory.approved') }}</span>
         </div>
       </div>
       <div class="stat-card">
@@ -127,7 +129,7 @@ function openDetail(id: string) {
         </div>
         <div class="stat-body">
           <span class="stat-value">{{ stats.declined }}</span>
-          <span class="stat-label">Отклонён</span>
+          <span class="stat-label">{{ $t('scoringHistory.declined') }}</span>
         </div>
       </div>
       <div class="stat-card">
@@ -136,7 +138,7 @@ function openDetail(id: string) {
         </div>
         <div class="stat-body">
           <span class="stat-value">{{ stats.avgScore }}</span>
-          <span class="stat-label">Средний балл</span>
+          <span class="stat-label">{{ $t('scoringHistory.avgScore') }}</span>
         </div>
       </div>
     </div>
@@ -150,7 +152,7 @@ function openDetail(id: string) {
           <input
             v-model="search"
             class="search-input"
-            placeholder="Поиск клиента..."
+            :placeholder="$t('scoringHistory.searchClient')"
           />
         </div>
         <select v-model="statusFilter" class="status-select">
@@ -165,13 +167,13 @@ function openDetail(id: string) {
         <table class="scoring-table">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>КЛИЕНТ</th>
-              <th>ЛИМИТ</th>
-              <th>БАЛЛ</th>
-              <th>РЕГИОН</th>
-              <th>АДРЕС</th>
-              <th>ДАТА</th>
+              <th>{{ $t('scoringHistory.id') }}</th>
+              <th>{{ $t('scoringHistory.client') }}</th>
+              <th>{{ $t('scoringHistory.limit') }}</th>
+              <th>{{ $t('scoringHistory.score') }}</th>
+              <th>{{ $t('scoringHistory.region') }}</th>
+              <th>{{ $t('scoringHistory.address') }}</th>
+              <th>{{ $t('scoringHistory.date') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -205,7 +207,7 @@ function openDetail(id: string) {
               <td class="date-cell">{{ row.date }}</td>
             </tr>
             <tr v-if="filtered.length === 0">
-              <td colspan="7" class="empty-row">Нет данных</td>
+              <td colspan="7" class="empty-row">{{ $t('scoringHistory.noData') }}</td>
             </tr>
           </tbody>
         </table>

@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useWizardStore } from '@/stores/wizard'
 import { useCatalogStore } from '@/stores/catalog'
 import MonoAmount from '@/components/MonoAmount.vue'
 
 const wizard = useWizardStore()
 const catalog = useCatalogStore()
+const { t: tr } = useI18n()
 
 const activeCategory = ref<string | null>(null)
 
@@ -26,10 +28,10 @@ const rangeMsg = computed(() => {
   const t = tariff.value
   if (!t) return ''
   if (total.value < t.creditMin)
-    return `Add ${((t.creditMin - total.value) / 100).toLocaleString('uz-UZ')} so'm more to reach minimum`
+    return tr('stepMahsulot.addMore', { amount: ((t.creditMin - total.value) / 100).toLocaleString('uz-UZ') })
   if (total.value > t.creditMax)
-    return `Over maximum by ${((total.value - t.creditMax) / 100).toLocaleString('uz-UZ')} so'm`
-  return 'Basket total is within the tariff credit range'
+    return tr('stepMahsulot.overMax', { amount: ((total.value - t.creditMax) / 100).toLocaleString('uz-UZ') })
+  return tr('stepMahsulot.withinRange')
 })
 
 function next() {
@@ -42,8 +44,8 @@ function next() {
     <div class="step-card surface-card catalog">
       <header class="sc-head">
         <div>
-          <h2>Mahsulot</h2>
-          <p>Build the basket from the product catalog.</p>
+          <h2>{{ $t('stepMahsulot.title') }}</h2>
+          <p>{{ $t('stepMahsulot.subtitle') }}</p>
         </div>
       </header>
 
@@ -53,7 +55,7 @@ function next() {
           :class="{ active: activeCategory === null }"
           @click="activeCategory = null"
         >
-          All
+          {{ $t('stepMahsulot.all') }}
         </button>
         <button
           v-for="c in catalog.categories"
@@ -76,7 +78,7 @@ function next() {
           <div class="p-bottom">
             <MonoAmount :value="p.price" size="sm" />
             <button class="add-btn" @click="wizard.addToBasket(p)">
-              <i class="pi pi-plus" /> Add
+              <i class="pi pi-plus" /> {{ $t('stepMahsulot.add') }}
             </button>
           </div>
         </div>
@@ -85,13 +87,13 @@ function next() {
 
     <aside class="step-card surface-card basket">
       <h3>
-        <i class="pi pi-shopping-cart" /> Basket
+        <i class="pi pi-shopping-cart" /> {{ $t('stepMahsulot.basket') }}
         <span class="count">{{ wizard.basketCount }}</span>
       </h3>
 
       <div v-if="wizard.sessionData.basket.length === 0" class="empty-basket">
         <i class="pi pi-inbox" />
-        <span>No products yet</span>
+        <span>{{ $t('stepMahsulot.noProducts') }}</span>
       </div>
 
       <div v-else class="basket-items">
@@ -130,12 +132,14 @@ function next() {
 
       <div class="basket-summary">
         <div class="bs-row">
-          <span>Basket total</span>
+          <span>{{ $t('stepMahsulot.basketTotal') }}</span>
           <MonoAmount :value="total" size="md" />
         </div>
         <div v-if="tariff" class="bs-range font-mono">
-          Range: {{ (tariff.creditMin / 100).toLocaleString('uz-UZ') }} –
-          {{ (tariff.creditMax / 100).toLocaleString('uz-UZ') }}
+          {{ $t('stepMahsulot.range', {
+            min: (tariff.creditMin / 100).toLocaleString('uz-UZ'),
+            max: (tariff.creditMax / 100).toLocaleString('uz-UZ'),
+          }) }}
         </div>
         <div
           class="bs-status"
@@ -148,10 +152,10 @@ function next() {
 
       <div class="basket-foot">
         <button class="btn-ghost" @click="wizard.back()">
-          <i class="pi pi-arrow-left" /> Back
+          <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
         </button>
         <button class="btn-gradient" :disabled="!withinRange" @click="next">
-          Continue <i class="pi pi-arrow-right" />
+          {{ $t('common.continue') }} <i class="pi pi-arrow-right" />
         </button>
       </div>
     </aside>

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 
 const id = computed(() => route.params.id as string)
 
@@ -48,10 +50,10 @@ const detail = computed(() => ({
   },
 }))
 
-const sessionSteps: SessionStep[] = [
-  { label: 'Ожидание оценки', date: '16/05/2026', time: '14:08:54', code: '625' },
-  { label: 'На рассмотрении', date: '16/05/2026', time: '14:08:54', code: '' },
-]
+const sessionSteps = computed<SessionStep[]>(() => [
+  { label: t('scoringDetail.waitingScore'), date: '16/05/2026', time: '14:08:54', code: '625' },
+  { label: t('scoringDetail.underReview'), date: '16/05/2026', time: '14:08:54', code: '' },
+])
 
 const scoreFactors: ScoreFactor[] = [
   { label: 'Yosh', score: 150, max: 150, color: '#7b68ee' },
@@ -76,9 +78,9 @@ function scoreColor(score: number) {
 
 function statusLabel(s: string) {
   const map: Record<string, string> = {
-    review: 'review',
-    approved: 'approved',
-    declined: 'declined',
+    review: t('scoringDetail.statusReview'),
+    approved: t('scoringDetail.statusApproved'),
+    declined: t('scoringDetail.statusDeclined'),
   }
   return map[s] ?? s
 }
@@ -89,7 +91,7 @@ function statusLabel(s: string) {
     <!-- Back link -->
     <button class="back-link" @click="router.push({ name: 'admin-scoring-history' })">
       <i class="pi pi-arrow-left" />
-      Список скоринга
+      {{ $t('scoringDetail.backToList') }}
     </button>
 
     <!-- Hero card -->
@@ -105,22 +107,22 @@ function statusLabel(s: string) {
       </div>
       <div class="hero-right">
         <div class="hero-stat">
-          <span class="hs-label">Балл</span>
+          <span class="hs-label">{{ $t('scoringDetail.score') }}</span>
           <span class="hs-value">{{ detail.score }}</span>
         </div>
         <div class="hero-divider" />
         <div class="hero-stat">
-          <span class="hs-label">Лимит</span>
+          <span class="hs-label">{{ $t('scoringDetail.limit') }}</span>
           <span class="hs-value limit-val">{{ fmtLimit(detail.limit) }}</span>
         </div>
         <div class="hero-divider" />
         <div class="hero-stat">
-          <span class="hs-label">Статус</span>
+          <span class="hs-label">{{ $t('scoringDetail.status') }}</span>
           <span class="status-badge" :class="detail.status">{{ statusLabel(detail.status) }}</span>
         </div>
         <div class="hero-divider" />
         <div class="hero-stat">
-          <span class="hs-label">Дата</span>
+          <span class="hs-label">{{ $t('scoringDetail.date') }}</span>
           <span class="hs-value">{{ detail.date }}</span>
         </div>
       </div>
@@ -129,19 +131,19 @@ function statusLabel(s: string) {
     <!-- Scoring session -->
     <div class="section-card">
       <div class="section-head">
-        <span class="section-title">Скоринг сессия</span>
+        <span class="section-title">{{ $t('scoringDetail.scoringSession') }}</span>
         <div class="section-actions">
-          <button class="btn-info">Подробная информация</button>
-          <button class="btn-katm">КАТМ</button>
+          <button class="btn-info">{{ $t('scoringDetail.detailedInfo') }}</button>
+          <button class="btn-katm">{{ $t('scoringDetail.katm') }}</button>
         </div>
       </div>
       <table class="session-table">
         <thead>
           <tr>
-            <th>ПОСЛЕДОВАТЕЛЬНОСТЬ</th>
-            <th>ДАТА</th>
-            <th>ВРЕМЯ</th>
-            <th>КОД</th>
+            <th>{{ $t('scoringDetail.sequence') }}</th>
+            <th>{{ $t('scoringDetail.dateCol') }}</th>
+            <th>{{ $t('scoringDetail.timeCol') }}</th>
+            <th>{{ $t('scoringDetail.codeCol') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -158,7 +160,7 @@ function statusLabel(s: string) {
     <!-- Score distribution -->
     <div class="section-card">
       <div class="section-head">
-        <span class="section-title">Распределение баллов</span>
+        <span class="section-title">{{ $t('scoringDetail.scoreDistribution') }}</span>
       </div>
       <div class="score-factors">
         <div v-for="factor in scoreFactors" :key="factor.label" class="factor-row">
@@ -175,7 +177,7 @@ function statusLabel(s: string) {
           <span class="factor-score">{{ factor.score }}/{{ factor.max }}</span>
         </div>
         <div class="factor-total">
-          <span class="total-label">ИТОГО:</span>
+          <span class="total-label">{{ $t('scoringDetail.total') }}</span>
           <span class="total-value">{{ totalScore }} / {{ totalMax }}</span>
         </div>
       </div>
@@ -184,56 +186,56 @@ function statusLabel(s: string) {
     <!-- Personal data -->
     <div class="section-card">
       <div class="section-head">
-        <span class="section-title">Личные данные</span>
+        <span class="section-title">{{ $t('scoringDetail.personalData') }}</span>
       </div>
       <div class="personal-grid">
         <div class="pd-row">
           <div class="pd-item">
-            <span class="pd-label">Имя:</span>
+            <span class="pd-label">{{ $t('scoringDetail.firstName') }}</span>
             <span class="pd-value bold">{{ detail.firstName }}</span>
           </div>
           <div class="pd-item">
-            <span class="pd-label">Фамилия:</span>
+            <span class="pd-label">{{ $t('scoringDetail.lastName') }}</span>
             <span class="pd-value bold">{{ detail.lastName }}</span>
           </div>
         </div>
         <div class="pd-row">
           <div class="pd-item">
-            <span class="pd-label">Отчество:</span>
+            <span class="pd-label">{{ $t('scoringDetail.patronymic') }}</span>
             <span class="pd-value bold">{{ detail.patronymic }}</span>
           </div>
           <div class="pd-item">
-            <span class="pd-label">PINFL:</span>
+            <span class="pd-label">{{ $t('scoringDetail.pinfl') }}</span>
             <span class="pd-value bold mono-cell">{{ detail.pinfl }}</span>
           </div>
         </div>
         <div class="pd-row">
           <div class="pd-item">
-            <span class="pd-label">Дата рождения:</span>
+            <span class="pd-label">{{ $t('scoringDetail.birthDate') }}</span>
             <span class="pd-value">{{ detail.birthDate }}</span>
           </div>
           <div class="pd-item">
-            <span class="pd-label">Пол:</span>
+            <span class="pd-label">{{ $t('scoringDetail.gender') }}</span>
             <span class="pd-value muted">{{ detail.gender || '—' }}</span>
           </div>
         </div>
         <div class="pd-row">
           <div class="pd-item">
-            <span class="pd-label">Регион:</span>
+            <span class="pd-label">{{ $t('scoringDetail.region') }}</span>
             <span class="pd-value muted">{{ detail.region || '—' }}</span>
           </div>
           <div class="pd-item">
-            <span class="pd-label">Адрес:</span>
+            <span class="pd-label">{{ $t('scoringDetail.address') }}</span>
             <span class="pd-value muted">{{ detail.address || '—' }}</span>
           </div>
         </div>
         <div class="pd-row">
           <div class="pd-item">
-            <span class="pd-label">Паспорт:</span>
+            <span class="pd-label">{{ $t('scoringDetail.passport') }}</span>
             <span class="pd-value mono-cell">{{ detail.passport }}</span>
           </div>
           <div class="pd-item">
-            <span class="pd-label">Гражданство:</span>
+            <span class="pd-label">{{ $t('scoringDetail.citizenship') }}</span>
             <span class="pd-value bold">{{ detail.citizenship }}</span>
           </div>
         </div>
@@ -243,27 +245,27 @@ function statusLabel(s: string) {
     <!-- Platform history -->
     <div class="section-card">
       <div class="section-head">
-        <span class="section-title">История на платформе</span>
+        <span class="section-title">{{ $t('scoringDetail.platformHistory') }}</span>
       </div>
       <div class="platform-stats">
         <div class="ps-item">
-          <span class="ps-label">Всего сделок</span>
+          <span class="ps-label">{{ $t('scoringDetail.totalDeals') }}</span>
           <span class="ps-value">{{ detail.platformStats.total }}</span>
         </div>
         <div class="ps-item">
-          <span class="ps-label">Активные</span>
+          <span class="ps-label">{{ $t('scoringDetail.activeDeals') }}</span>
           <span class="ps-value">{{ detail.platformStats.active }}</span>
         </div>
         <div class="ps-item">
-          <span class="ps-label">Закрытые</span>
+          <span class="ps-label">{{ $t('scoringDetail.closedDeals') }}</span>
           <span class="ps-value">{{ detail.platformStats.closed }}</span>
         </div>
         <div class="ps-item">
-          <span class="ps-label">Просрочки</span>
+          <span class="ps-label">{{ $t('scoringDetail.overdueDeals') }}</span>
           <span class="ps-value">{{ detail.platformStats.overdue }}</span>
         </div>
         <div class="ps-item">
-          <span class="ps-label">Всего оплачено</span>
+          <span class="ps-label">{{ $t('scoringDetail.totalPaid') }}</span>
           <span class="ps-value">{{ detail.platformStats.totalPaid }}</span>
         </div>
       </div>

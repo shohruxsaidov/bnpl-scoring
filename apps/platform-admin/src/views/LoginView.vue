@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
@@ -10,11 +11,12 @@ import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
+const { t } = useI18n()
 
 const schema = toTypedSchema(
   z.object({
-    email: z.string().min(1, 'Email is required').email('Invalid email'),
-    password: z.string().min(1, 'Password is required'),
+    email: z.string().min(1, t('login.emailRequired')).email(t('login.emailInvalid')),
+    password: z.string().min(1, t('login.passwordRequired')),
   }),
 )
 
@@ -32,7 +34,7 @@ const onSubmit = handleSubmit((values) => {
   loginError.value = ''
   const admin = auth.validate(values.email, values.password)
   if (!admin) {
-    loginError.value = 'Invalid credentials. Try platform@scoring.uz / admin123'
+    loginError.value = t('login.invalidCredentials')
     return
   }
   auth.login(admin)
@@ -51,16 +53,16 @@ const onSubmit = handleSubmit((values) => {
         <div class="logo-mark">S</div>
         <div>
           <h1 class="brand-title">Scoring</h1>
-          <span class="brand-badge">Platform Admin</span>
+          <span class="brand-badge">{{ $t('login.platformAdmin') }}</span>
         </div>
       </div>
 
       <form class="auth-card surface-card" @submit="onSubmit">
-        <h2>Sign in</h2>
-        <p class="sub">Internal operations console</p>
+        <h2>{{ $t('login.signIn') }}</h2>
+        <p class="sub">{{ $t('login.subtitle') }}</p>
 
         <div class="field">
-          <label class="field-label" for="email">Email</label>
+          <label class="field-label" for="email">{{ $t('login.email') }}</label>
           <InputText
             id="email"
             v-model="email"
@@ -73,7 +75,7 @@ const onSubmit = handleSubmit((values) => {
         </div>
 
         <div class="field">
-          <label class="field-label" for="password">Password</label>
+          <label class="field-label" for="password">{{ $t('login.password') }}</label>
           <Password
             id="password"
             v-model="password"
@@ -92,15 +94,15 @@ const onSubmit = handleSubmit((values) => {
           <i class="pi pi-exclamation-triangle" /> {{ loginError }}
         </p>
 
-        <button type="submit" class="btn-gradient submit">Sign in</button>
+        <button type="submit" class="btn-gradient submit">{{ $t('login.signIn') }}</button>
 
         <div class="hint">
-          <strong>Demo account</strong>
+          <strong>{{ $t('login.demoAccount') }}</strong>
           <span><code>platform@scoring.uz</code> / <code>admin123</code></span>
         </div>
       </form>
 
-      <p class="foot">Credit Scoring &amp; POS Lending Platform · Internal use only</p>
+      <p class="foot">{{ $t('login.footer') }}</p>
     </div>
   </div>
 </template>

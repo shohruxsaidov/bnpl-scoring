@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
@@ -12,21 +13,22 @@ import type { Deal, DealStatus } from '@/types'
 
 const deals = useDealsStore()
 const tenants = useTenantsStore()
+const { t } = useI18n()
 
 const statusFilter = ref<DealStatus | null>(null)
 const tenantFilter = ref<string | null>(null)
 
-const statusOptions: { label: string; value: DealStatus | null }[] = [
-  { label: 'All statuses', value: null },
-  { label: 'Active', value: 'active' },
-  { label: 'Overdue', value: 'overdue' },
-  { label: 'Closed', value: 'closed' },
-  { label: 'Declined', value: 'declined' },
-  { label: 'Scoring', value: 'scoring' },
-]
+const statusOptions = computed<{ label: string; value: DealStatus | null }[]>(() => [
+  { label: t('deals.allStatuses'), value: null },
+  { label: t('deals.statusActive'), value: 'active' },
+  { label: t('deals.statusOverdue'), value: 'overdue' },
+  { label: t('deals.statusClosed'), value: 'closed' },
+  { label: t('deals.statusDeclined'), value: 'declined' },
+  { label: t('deals.statusScoring'), value: 'scoring' },
+])
 
 const tenantOptions = computed(() => [
-  { label: 'All tenants', value: null },
+  { label: t('deals.allTenants'), value: null },
   ...tenants.options,
 ])
 
@@ -43,12 +45,12 @@ function tenantName(id: string): string {
 }
 
 const selected = ref<Deal | null>(null)
-const decisionLabel: Record<string, string> = {
-  approved: 'Approved',
-  declined: 'Declined',
-  partial: 'Partial limit',
-  manual_review: 'Manual review',
-}
+const decisionLabel = computed<Record<string, string>>(() => ({
+  approved: t('deals.decisionApproved'),
+  declined: t('deals.decisionDeclined'),
+  partial: t('deals.decisionPartial'),
+  manual_review: t('deals.decisionManualReview'),
+}))
 
 function openDeal(d: Deal) {
   selected.value = d
@@ -62,26 +64,26 @@ function closePanel() {
   <div class="deals">
     <div class="filters surface-card">
       <div class="filter">
-        <span class="filter-label">Status</span>
+        <span class="filter-label">{{ $t('deals.status') }}</span>
         <Select
           v-model="statusFilter"
           :options="statusOptions"
           option-label="label"
           option-value="value"
-          placeholder="All statuses"
+          :placeholder="$t('deals.allStatuses')"
         />
       </div>
       <div class="filter">
-        <span class="filter-label">Tenant</span>
+        <span class="filter-label">{{ $t('deals.tenant') }}</span>
         <Select
           v-model="tenantFilter"
           :options="tenantOptions"
           option-label="label"
           option-value="value"
-          placeholder="All tenants"
+          :placeholder="$t('deals.allTenants')"
         />
       </div>
-      <span class="result-count muted">{{ filtered.length }} deals</span>
+      <span class="result-count muted">{{ $t('deals.dealsCount', { count: filtered.length }) }}</span>
     </div>
 
     <div class="surface-card table-wrap">
@@ -95,41 +97,41 @@ function closePanel() {
         :selection="selected"
         @row-click="openDeal($event.data as Deal)"
       >
-        <Column header="Deal ID">
+        <Column :header="$t('deals.dealId')">
           <template #body="{ data }">
             <span class="font-mono accent">{{ data.id }}</span>
           </template>
         </Column>
-        <Column header="Tenant">
+        <Column :header="$t('deals.tenant')">
           <template #body="{ data }">{{ tenantName(data.tenantId) }}</template>
         </Column>
-        <Column header="Client">
+        <Column :header="$t('deals.client')">
           <template #body="{ data }">{{ data.clientName }}</template>
         </Column>
-        <Column header="Amount">
+        <Column :header="$t('deals.amount')">
           <template #body="{ data }">
             <MonoAmount :value="data.amount" size="sm" />
           </template>
         </Column>
-        <Column header="Status">
+        <Column :header="$t('deals.status')">
           <template #body="{ data }">
             <StatusBadge :status="data.status" />
           </template>
         </Column>
-        <Column header="Score">
+        <Column :header="$t('deals.score')">
           <template #body="{ data }">
             <span class="font-mono">{{ data.score || '—' }}</span>
           </template>
         </Column>
-        <Column header="Decision">
+        <Column :header="$t('deals.decision')">
           <template #body="{ data }">
             <span class="muted">{{ decisionLabel[data.decision] }}</span>
           </template>
         </Column>
-        <Column header="Agent">
+        <Column :header="$t('deals.agent')">
           <template #body="{ data }">{{ data.agentName }}</template>
         </Column>
-        <Column header="Date">
+        <Column :header="$t('deals.date')">
           <template #body="{ data }">
             <span class="font-mono muted">{{ formatDate(data.createdAt) }}</span>
           </template>
@@ -152,41 +154,41 @@ function closePanel() {
 
         <div class="so-body">
           <div class="so-section">
-            <h4>Client</h4>
+            <h4>{{ $t('deals.clientSection') }}</h4>
             <div class="kv">
-              <span>Name</span><span>{{ selected.clientName }}</span>
+              <span>{{ $t('deals.name') }}</span><span>{{ selected.clientName }}</span>
             </div>
             <div class="kv">
-              <span>PINFL</span><span class="font-mono">{{ selected.clientPinfl }}</span>
+              <span>{{ $t('deals.pinfl') }}</span><span class="font-mono">{{ selected.clientPinfl }}</span>
             </div>
             <div class="kv">
-              <span>Phone</span><span class="font-mono">{{ selected.clientPhone }}</span>
+              <span>{{ $t('deals.phone') }}</span><span class="font-mono">{{ selected.clientPhone }}</span>
             </div>
             <div class="kv">
-              <span>Tenant</span><span>{{ tenantName(selected.tenantId) }}</span>
+              <span>{{ $t('deals.tenant') }}</span><span>{{ tenantName(selected.tenantId) }}</span>
             </div>
             <div class="kv">
-              <span>Agent</span><span>{{ selected.agentName }}</span>
+              <span>{{ $t('deals.agent') }}</span><span>{{ selected.agentName }}</span>
             </div>
           </div>
 
           <div class="so-section">
-            <h4>Tariff</h4>
+            <h4>{{ $t('deals.tariffSection') }}</h4>
             <div class="kv">
-              <span>Plan</span><span>{{ selected.tariffName }}</span>
+              <span>{{ $t('deals.plan') }}</span><span>{{ selected.tariffName }}</span>
             </div>
             <div class="kv">
-              <span>Principal</span>
+              <span>{{ $t('deals.principal') }}</span>
               <span><MonoAmount :value="selected.amount" size="sm" /></span>
             </div>
             <div class="kv">
-              <span>Total payable</span>
+              <span>{{ $t('deals.totalPayable') }}</span>
               <span><MonoAmount :value="selected.totalPayable" size="sm" /></span>
             </div>
           </div>
 
           <div class="so-section">
-            <h4>Basket</h4>
+            <h4>{{ $t('deals.basket') }}</h4>
             <div v-for="(b, i) in selected.basket" :key="i" class="basket-row">
               <span class="b-name">{{ b.name }}</span>
               <span class="b-qty font-mono">×{{ b.quantity }}</span>
@@ -195,7 +197,7 @@ function closePanel() {
           </div>
 
           <div v-if="selected.factors.length" class="so-section">
-            <h4>Score breakdown · {{ selected.score }}</h4>
+            <h4>{{ $t('deals.scoreBreakdown', { score: selected.score }) }}</h4>
             <div v-for="(f, i) in selected.factors" :key="i" class="factor-row">
               <span class="f-label">{{ f.label }}</span>
               <span
@@ -209,19 +211,19 @@ function closePanel() {
           </div>
 
           <div class="so-section">
-            <h4>Schedule preview</h4>
+            <h4>{{ $t('deals.schedulePreview') }}</h4>
             <div v-for="row in selected.schedule.slice(0, 3)" :key="row.index" class="sch-row">
               <span class="font-mono muted">#{{ row.index }}</span>
               <span class="font-mono">{{ formatDate(row.date) }}</span>
               <span class="font-mono sch-amt">{{ formatSom(row.amount) }}</span>
             </div>
             <span class="muted sch-more">
-              + {{ Math.max(0, selected.schedule.length - 3) }} more payments
+              {{ $t('deals.morePayments', { count: Math.max(0, selected.schedule.length - 3) }) }}
             </span>
           </div>
 
           <button class="btn-ghost full">
-            Open full detail <i class="pi pi-external-link" />
+            {{ $t('deals.openFullDetail') }} <i class="pi pi-external-link" />
           </button>
         </div>
       </div>

@@ -40,23 +40,23 @@ function downloadContract() {
     <div class="check-burst">
       <i class="pi pi-check" />
     </div>
-    <h2>Готово!</h2>
-    <p>The deal has been created and the contract is ready to sign.</p>
+    <h2>{{ $t('stepDone.title') }}</h2>
+    <p>{{ $t('stepDone.subtitle') }}</p>
 
     <div class="deal-id-box">
-      <span class="dib-label">Deal ID</span>
+      <span class="dib-label">{{ $t('stepDone.dealId') }}</span>
       <span class="dib-id font-mono text-gradient">{{ dealId }}</span>
     </div>
 
     <div class="actions">
       <button class="btn-ghost" @click="downloadContract">
-        <i class="pi pi-download" /> Download Kontrakt
+        <i class="pi pi-download" /> {{ $t('stepDone.downloadContract') }}
       </button>
       <button class="btn-ghost" @click="newDeal">
-        <i class="pi pi-plus" /> New Deal
+        <i class="pi pi-plus" /> {{ $t('stepDone.newDeal') }}
       </button>
       <button class="btn-gradient" @click="backToDashboard">
-        <i class="pi pi-home" /> Back to Dashboard
+        <i class="pi pi-home" /> {{ $t('stepDone.backToDashboard') }}
       </button>
     </div>
   </div>

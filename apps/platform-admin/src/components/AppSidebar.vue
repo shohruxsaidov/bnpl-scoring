@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import ThemeToggle from './ThemeToggle.vue'
 
@@ -8,6 +10,7 @@ const emit = defineEmits<{ (e: 'toggle'): void }>()
 
 const auth = useAuthStore()
 const router = useRouter()
+const { t } = useI18n()
 
 interface NavItem {
   label: string
@@ -15,13 +18,13 @@ interface NavItem {
   to: string
 }
 
-const nav: NavItem[] = [
-  { label: 'Overview', icon: 'pi pi-th-large', to: '/' },
-  { label: 'Tenants', icon: 'pi pi-building', to: '/tenants' },
-  { label: 'All Deals', icon: 'pi pi-credit-card', to: '/deals' },
-  { label: 'Employees', icon: 'pi pi-users', to: '/employees' },
-  { label: 'Settings', icon: 'pi pi-cog', to: '/settings' },
-]
+const nav = computed<NavItem[]>(() => [
+  { label: t('nav.overview'), icon: 'pi pi-th-large', to: '/' },
+  { label: t('nav.tenants'), icon: 'pi pi-building', to: '/tenants' },
+  { label: t('nav.allDeals'), icon: 'pi pi-credit-card', to: '/deals' },
+  { label: t('nav.employees'), icon: 'pi pi-users', to: '/employees' },
+  { label: t('nav.settings'), icon: 'pi pi-cog', to: '/settings' },
+])
 
 function logout() {
   auth.logout()
@@ -35,9 +38,9 @@ function logout() {
       <div class="logo-mark">S</div>
       <div v-if="!props.collapsed" class="brand-text">
         <span class="text-gradient brand-name">Scoring</span>
-        <span class="badge-label">Platform Admin</span>
+        <span class="badge-label">{{ $t('nav.platformAdmin') }}</span>
       </div>
-      <button class="collapse-btn" title="Toggle sidebar" @click="emit('toggle')">
+      <button class="collapse-btn" :title="$t('nav.toggleSidebar')" @click="emit('toggle')">
         <i :class="props.collapsed ? 'pi pi-angle-right' : 'pi pi-angle-left'" />
       </button>
     </div>
@@ -62,15 +65,15 @@ function logout() {
         <div class="avatar">{{ auth.initials }}</div>
         <div class="user-meta">
           <span class="user-name">{{ auth.admin?.fullName }}</span>
-          <span class="role-chip">Platform Admin</span>
+          <span class="role-chip">{{ $t('nav.platformAdmin') }}</span>
         </div>
       </div>
       <div v-else class="avatar solo">{{ auth.initials }}</div>
 
       <div class="footer-actions" :class="{ stacked: props.collapsed }">
-        <button class="logout-btn" title="Logout" @click="logout">
+        <button class="logout-btn" :title="$t('nav.logout')" @click="logout">
           <i class="pi pi-sign-out" />
-          <span v-if="!props.collapsed">Logout</span>
+          <span v-if="!props.collapsed">{{ $t('nav.logout') }}</span>
         </button>
         <ThemeToggle />
       </div>

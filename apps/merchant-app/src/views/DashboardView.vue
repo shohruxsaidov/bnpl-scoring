@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
@@ -14,18 +15,19 @@ import type { Deal, DealStatus } from '@/types'
 const auth = useAuthStore()
 const deals = useDealsStore()
 const router = useRouter()
+const { t } = useI18n()
 
 const statusFilter = ref<DealStatus | null>(null)
-const statusOptions: { label: string; value: DealStatus | null }[] = [
-  { label: 'All statuses', value: null },
-  { label: 'Draft', value: 'draft' },
-  { label: 'Scoring', value: 'scoring' },
-  { label: 'Approved', value: 'approved' },
-  { label: 'Declined', value: 'declined' },
-  { label: 'Active', value: 'active' },
-  { label: 'Closed', value: 'closed' },
-  { label: 'Overdue', value: 'overdue' },
-]
+const statusOptions = computed<{ label: string; value: DealStatus | null }[]>(() => [
+  { label: t('dashboard.allStatuses'), value: null },
+  { label: t('status.draft'), value: 'draft' },
+  { label: t('status.scoring'), value: 'scoring' },
+  { label: t('status.approved'), value: 'approved' },
+  { label: t('status.declined'), value: 'declined' },
+  { label: t('status.active'), value: 'active' },
+  { label: t('status.closed'), value: 'closed' },
+  { label: t('status.overdue'), value: 'overdue' },
+])
 
 const visibleDeals = computed<Deal[]>(() => {
   const base = auth.isAdmin
@@ -59,28 +61,28 @@ function openDeal(id: string) {
   <div class="dash">
     <div v-if="auth.isAgent" class="page-actions">
       <button class="btn-gradient" @click="router.push('/wizard')">
-        <i class="pi pi-plus" /> New Deal
+        <i class="pi pi-plus" /> {{ $t('dashboard.newDeal') }}
       </button>
     </div>
 
     <div class="stats">
       <div class="stat-card surface-card">
-        <span class="stat-label">Total deals</span>
+        <span class="stat-label">{{ $t('dashboard.totalDeals') }}</span>
         <span class="stat-value font-mono">{{ stats.total }}</span>
         <i class="pi pi-briefcase stat-icon" />
       </div>
       <div class="stat-card surface-card">
-        <span class="stat-label">Active deals</span>
+        <span class="stat-label">{{ $t('dashboard.activeDeals') }}</span>
         <span class="stat-value font-mono" style="color: var(--success)">{{ stats.active }}</span>
         <i class="pi pi-bolt stat-icon" />
       </div>
       <div class="stat-card surface-card">
-        <span class="stat-label">Disbursed</span>
+        <span class="stat-label">{{ $t('dashboard.disbursed') }}</span>
         <MonoAmount :value="stats.disbursed" size="lg" />
         <i class="pi pi-wallet stat-icon" />
       </div>
       <div class="stat-card surface-card">
-        <span class="stat-label">Overdue</span>
+        <span class="stat-label">{{ $t('dashboard.overdue') }}</span>
         <span class="stat-value font-mono" style="color: var(--danger)">{{ stats.overdue }}</span>
         <i class="pi pi-exclamation-triangle stat-icon" />
       </div>
@@ -88,13 +90,13 @@ function openDeal(id: string) {
 
     <div class="table-card surface-card">
       <div class="table-head">
-        <h3>Deals</h3>
+        <h3>{{ $t('dashboard.deals') }}</h3>
         <Select
           v-model="statusFilter"
           :options="statusOptions"
           option-label="label"
           option-value="value"
-          placeholder="Filter status"
+          :placeholder="$t('dashboard.filterStatus')"
           class="filter-select"
         />
       </div>
@@ -107,7 +109,7 @@ function openDeal(id: string) {
         class="deals-table"
         :pt="{ table: { style: 'min-width: 60rem' } }"
       >
-        <Column field="clientName" header="Client" sortable>
+        <Column field="clientName" :header="$t('dashboard.client')" sortable>
           <template #body="{ data }">
             <div class="client-cell">
               <div class="client-avatar">{{ data.clientName.charAt(0) }}</div>
@@ -118,38 +120,38 @@ function openDeal(id: string) {
             </div>
           </template>
         </Column>
-        <Column header="Deal ID">
+        <Column :header="$t('dashboard.dealId')">
           <template #body="{ data }">
             <span class="font-mono deal-id">{{ data.id }}</span>
           </template>
         </Column>
-        <Column field="status" header="Status" sortable>
+        <Column field="status" :header="$t('dashboard.status')" sortable>
           <template #body="{ data }">
             <StatusBadge :status="data.status" />
           </template>
         </Column>
-        <Column field="tariffName" header="Tariff" sortable>
+        <Column field="tariffName" :header="$t('dashboard.tariff')" sortable>
           <template #body="{ data }">
             <span class="tariff-pill">{{ data.tariffName }}</span>
           </template>
         </Column>
-        <Column header="Amount">
+        <Column :header="$t('dashboard.amount')">
           <template #body="{ data }">
             <MonoAmount :value="data.amount" size="sm" />
           </template>
         </Column>
-        <Column header="Date">
+        <Column :header="$t('dashboard.date')">
           <template #body="{ data }">
             <span class="font-mono date-cell">{{ formatDate(data.createdAt) }}</span>
           </template>
         </Column>
         <Column header="" :style="{ width: '6rem' }">
           <template #body="{ data }">
-            <button class="open-btn" @click="openDeal(data.id)">Open</button>
+            <button class="open-btn" @click="openDeal(data.id)">{{ $t('dashboard.open') }}</button>
           </template>
         </Column>
         <template #empty>
-          <div class="empty">No deals match this filter.</div>
+          <div class="empty">{{ $t('dashboard.noDeals') }}</div>
         </template>
       </DataTable>
     </div>

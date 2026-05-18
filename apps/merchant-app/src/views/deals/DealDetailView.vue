@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useDealsStore } from '@/stores/deals'
 import { useCatalogStore } from '@/stores/catalog'
 import StatusBadge from '@/components/StatusBadge.vue'
@@ -8,6 +9,7 @@ import { formatDate, formatSomShort } from '@/utils/money'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const deals = useDealsStore()
 const catalog = useCatalogStore()
 
@@ -17,15 +19,15 @@ const agent = computed(() =>
 )
 
 const activeTab = ref('sdelki')
-const TABS = [
-  { key: 'sdelki', label: 'Сделки' },
-  { key: 'status', label: 'Статус' },
-  { key: 'kontrakty', label: 'Контракты' },
-  { key: 'uchet', label: 'Учёт по сделкам' },
-  { key: 'prosrochki', label: 'Просрочки' },
-  { key: 'grafik', label: 'График рассрочки' },
-  { key: 'avtoplatezh', label: 'Автоплатёж' },
-]
+const TABS = computed(() => [
+  { key: 'sdelki', label: t('dealDetail.tabDeals') },
+  { key: 'status', label: t('dealDetail.tabStatus') },
+  { key: 'kontrakty', label: t('dealDetail.tabContracts') },
+  { key: 'uchet', label: t('dealDetail.tabAccounting') },
+  { key: 'prosrochki', label: t('dealDetail.tabOverdue') },
+  { key: 'grafik', label: t('dealDetail.tabSchedule') },
+  { key: 'avtoplatezh', label: t('dealDetail.tabAutopay') },
+])
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -53,7 +55,7 @@ const ustama = computed(() => {
 })
 
 function paymentDayText(day: number): string {
-  return `Har oyning ${day}-ida to'lov qilinadi`
+  return t('dealDetail.autopayDesc', { day })
 }
 
 function basketTotal(item: { product: { price: number }; quantity: number }): number {
@@ -128,56 +130,56 @@ const timeline = computed((): TimelineEvent[] => {
   const all: Array<Omit<TimelineEvent, 'variant'> & { forStatuses: string[] }> = [
     {
       key: 'created',
-      label: 'Сделка создана',
-      description: `Агент ${agent.value?.fullName ?? '—'} открыл сделку`,
+      label: t('dealDetail.tlCreated'),
+      description: t('dealDetail.tlCreatedDesc', { agent: agent.value?.fullName ?? '—' }),
       icon: 'pi-plus-circle',
       time: d.createdAt,
       forStatuses: ['draft', 'scoring', 'approved', 'declined', 'active', 'overdue', 'closed'],
     },
     {
       key: 'scoring',
-      label: 'Скоринг запущен',
-      description: 'KATM-запрос и карточный скоринг выполнены',
+      label: t('dealDetail.tlScoring'),
+      description: t('dealDetail.tlScoringDesc'),
       icon: 'pi-search',
       time: add(3),
       forStatuses: ['scoring', 'approved', 'declined', 'active', 'overdue', 'closed'],
     },
     {
       key: 'approved',
-      label: 'Одобрено',
-      description: `Скор: ${d.score} — лимит подтверждён`,
+      label: t('dealDetail.tlApproved'),
+      description: t('dealDetail.tlApprovedDesc', { score: d.score }),
       icon: 'pi-check-circle',
       time: add(6),
       forStatuses: ['approved', 'active', 'overdue', 'closed'],
     },
     {
       key: 'declined',
-      label: 'Отклонено',
-      description: `Скор: ${d.score} — ниже минимального порога`,
+      label: t('dealDetail.tlDeclined'),
+      description: t('dealDetail.tlDeclinedDesc', { score: d.score }),
       icon: 'pi-times-circle',
       time: add(6),
       forStatuses: ['declined'],
     },
     {
       key: 'active',
-      label: 'Активен',
-      description: 'Контракт подписан, рассрочка запущена',
+      label: t('dealDetail.tlActive'),
+      description: t('dealDetail.tlActiveDesc'),
       icon: 'pi-bolt',
       time: add(15),
       forStatuses: ['active', 'overdue', 'closed'],
     },
     {
       key: 'overdue',
-      label: 'Просрочка',
-      description: 'Платёж не поступил в срок',
+      label: t('dealDetail.tlOverdue'),
+      description: t('dealDetail.tlOverdueDesc'),
       icon: 'pi-exclamation-triangle',
       time: add(d.termMonths * 43200 * 0.4),
       forStatuses: ['overdue'],
     },
     {
       key: 'closed',
-      label: 'Завершён',
-      description: 'Все платежи выполнены, сделка закрыта',
+      label: t('dealDetail.tlClosed'),
+      description: t('dealDetail.tlClosedDesc'),
       icon: 'pi-verified',
       time: add(d.termMonths * 43200),
       forStatuses: ['closed'],
@@ -212,7 +214,7 @@ const ledger = computed((): LedgerEntry[] => {
   let balance = deal.value.totalPayable
   return paid.map((r) => {
     balance -= r.amount
-    return { date: r.date, amount: r.amount, type: 'Платёж рассрочки', balance }
+    return { date: r.date, amount: r.amount, type: t('dealDetail.installmentPayment'), balance }
   })
 })
 
@@ -240,17 +242,17 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
     <div class="page-hdr">
       <div class="breadcrumb">
         <button class="bc-back" @click="router.push('/')">
-          <i class="pi pi-arrow-left" /> Договоры
+          <i class="pi pi-arrow-left" /> {{ $t('dealDetail.contracts') }}
         </button>
         <span class="bc-sep">/</span>
         <span class="bc-current font-mono">{{ deal.id }}</span>
       </div>
       <div class="hdr-actions">
         <button class="btn-ghost btn-sm">
-          <i class="pi pi-file-pdf" /> Договор PDF
+          <i class="pi pi-file-pdf" /> {{ $t('dealDetail.contractPdf') }}
         </button>
         <button class="btn-cancel btn-sm">
-          <i class="pi pi-times-circle" /> Отменить
+          <i class="pi pi-times-circle" /> {{ $t('dealDetail.cancel') }}
         </button>
       </div>
     </div>
@@ -273,37 +275,37 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
       <div class="top-section">
         <div class="fields-grid">
           <div class="field-row">
-            <span class="fl">Фин-продукт</span>
-            <span class="fv">{{ deal.termMonths }} мес</span>
-            <span class="fl">Дата сделки</span>
+            <span class="fl">{{ $t('dealDetail.finProduct') }}</span>
+            <span class="fv">{{ deal.termMonths }} {{ $t('dealDetail.month') }}</span>
+            <span class="fl">{{ $t('dealDetail.dealDate') }}</span>
             <span class="fv">{{ formatDateTime(deal.createdAt) }}</span>
           </div>
           <div class="field-row">
-            <span class="fl">Номер сделки</span>
+            <span class="fl">{{ $t('dealDetail.dealNumber') }}</span>
             <span class="fv font-mono">{{ deal.id }}</span>
-            <span class="fl">Статус</span>
+            <span class="fl">{{ $t('dealDetail.status') }}</span>
             <span class="fv"><StatusBadge :status="deal.status" /></span>
           </div>
           <div class="field-row">
-            <span class="fl">Стоимость сделки</span>
-            <span class="fv font-mono">{{ formatSomShort(deal.totalPayable) }} сум</span>
-            <span class="fl">Цена мерчанта</span>
-            <span class="fv font-mono">{{ formatSomShort(deal.amount) }} сум</span>
+            <span class="fl">{{ $t('dealDetail.dealCost') }}</span>
+            <span class="fv font-mono">{{ formatSomShort(deal.totalPayable) }} {{ $t('dealDetail.som') }}</span>
+            <span class="fl">{{ $t('dealDetail.merchantPrice') }}</span>
+            <span class="fv font-mono">{{ formatSomShort(deal.amount) }} {{ $t('dealDetail.som') }}</span>
           </div>
           <div class="field-row">
-            <span class="fl">Фин-продукт</span>
-            <span class="fv">{{ deal.termMonths }} мес</span>
-            <span class="fl">День оплаты</span>
+            <span class="fl">{{ $t('dealDetail.finProduct') }}</span>
+            <span class="fv">{{ deal.termMonths }} {{ $t('dealDetail.month') }}</span>
+            <span class="fl">{{ $t('dealDetail.paymentDay') }}</span>
             <span class="fv">{{ paymentDayText(deal.paymentDay) }}</span>
           </div>
           <div class="field-row">
-            <span class="fl">Предоплата</span>
-            <span class="fv font-mono">0 сум</span>
-            <span class="fl">Наценка</span>
+            <span class="fl">{{ $t('dealDetail.prepayment') }}</span>
+            <span class="fv font-mono">0 {{ $t('dealDetail.som') }}</span>
+            <span class="fl">{{ $t('dealDetail.markup') }}</span>
             <span class="fv">{{ ustama }}</span>
           </div>
           <div class="field-row last">
-            <span class="fl">Комиссия</span>
+            <span class="fl">{{ $t('dealDetail.commission') }}</span>
             <span class="fv font-mono">0</span>
             <span class="fl"></span>
             <span class="fv"></span>
@@ -311,12 +313,12 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
         </div>
         <div class="side-panels">
           <div class="side-panel">
-            <span class="panel-role">Агент</span>
+            <span class="panel-role">{{ $t('dealDetail.agent') }}</span>
             <span class="panel-name">{{ agent?.fullName ?? '—' }}</span>
             <span class="panel-phone font-mono">{{ agent?.phone ?? '' }}</span>
           </div>
           <div class="side-panel">
-            <span class="panel-role">Клиент</span>
+            <span class="panel-role">{{ $t('dealDetail.client') }}</span>
             <span class="panel-name">{{ deal.clientName }}</span>
             <span class="panel-phone font-mono">{{ deal.clientPhone }}</span>
           </div>
@@ -324,12 +326,12 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
       </div>
 
       <div class="section">
-        <h4 class="section-title">Товары ({{ deal.basket.length }})</h4>
+        <h4 class="section-title">{{ $t('dealDetail.products') }} ({{ deal.basket.length }})</h4>
         <table class="data-table">
           <thead>
             <tr>
-              <th>#</th><th>Наименование</th><th>МХИК</th>
-              <th>Кол-во</th><th>Цена</th><th>Всего</th><th>Маркировка</th>
+              <th>{{ $t('dealDetail.thNum') }}</th><th>{{ $t('dealDetail.thName') }}</th><th>{{ $t('dealDetail.thMxik') }}</th>
+              <th>{{ $t('dealDetail.thQty') }}</th><th>{{ $t('dealDetail.thPrice') }}</th><th>{{ $t('dealDetail.thTotal') }}</th><th>{{ $t('dealDetail.thMarking') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -347,35 +349,35 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
       </div>
 
       <div class="section">
-        <h4 class="section-title">Фискальный чек</h4>
+        <h4 class="section-title">{{ $t('dealDetail.fiscalReceipt') }}</h4>
         <div class="receipt-rows">
           <div class="receipt-row">
-            <span class="fl">Маркировка:</span>
-            <span class="receipt-val danger">Нет</span>
+            <span class="fl">{{ $t('dealDetail.marking') }}</span>
+            <span class="receipt-val danger">{{ $t('dealDetail.no') }}</span>
           </div>
           <div class="receipt-row">
-            <span class="fl">Фискальный чек:</span>
-            <span class="receipt-val muted">Не создан</span>
+            <span class="fl">{{ $t('dealDetail.fiscalReceiptLabel') }}</span>
+            <span class="receipt-val muted">{{ $t('dealDetail.notCreated') }}</span>
           </div>
         </div>
-        <button class="link-btn">Создать фискальный чек</button>
+        <button class="link-btn">{{ $t('dealDetail.createFiscalReceipt') }}</button>
       </div>
 
       <div class="section">
-        <h4 class="section-title">Контракты</h4>
+        <h4 class="section-title">{{ $t('dealDetail.contracts') }}</h4>
         <table class="data-table">
           <thead>
             <tr>
-              <th>Номер контракта</th><th>Тип</th>
-              <th>Клиент</th><th>Срок</th><th>Дата</th>
+              <th>{{ $t('dealDetail.contractNumber') }}</th><th>{{ $t('dealDetail.type') }}</th>
+              <th>{{ $t('dealDetail.client') }}</th><th>{{ $t('dealDetail.term') }}</th><th>{{ $t('dealDetail.dateCol') }}</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td class="font-mono">{{ deal.id }}</td>
-              <td>Мурабаха</td>
+              <td>{{ $t('dealDetail.murabaha') }}</td>
               <td>{{ deal.clientName }}</td>
-              <td>{{ deal.termMonths }} мес</td>
+              <td>{{ deal.termMonths }} {{ $t('dealDetail.month') }}</td>
               <td class="font-mono">{{ formatDate(deal.createdAt) }}</td>
             </tr>
           </tbody>
@@ -386,7 +388,7 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
     <!-- ── Статус ──────────────────────────────────────────────────────── -->
     <div v-else-if="activeTab === 'status'" class="surface-card deal-card">
       <div class="section">
-        <h4 class="section-title">История статусов</h4>
+        <h4 class="section-title">{{ $t('dealDetail.statusHistory') }}</h4>
         <div class="timeline">
           <div
             v-for="(event, i) in timeline"
@@ -415,48 +417,48 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
       <div class="section">
         <div class="kontrakt-header">
           <div>
-            <h4 class="section-title" style="margin-bottom: 0.2rem">Контракт № {{ deal.id }}</h4>
-            <span class="muted" style="font-size: 0.82rem">Тип: Мурабаха · Дата: {{ formatDate(deal.createdAt) }}</span>
+            <h4 class="section-title" style="margin-bottom: 0.2rem">{{ $t('dealDetail.contractNo', { id: deal.id }) }}</h4>
+            <span class="muted" style="font-size: 0.82rem">{{ $t('dealDetail.typeDate', { date: formatDate(deal.createdAt) }) }}</span>
           </div>
-          <span class="k-badge">Действующий</span>
+          <span class="k-badge">{{ $t('dealDetail.activeContract') }}</span>
         </div>
       </div>
 
       <div class="section">
-        <h4 class="section-title">Стороны договора</h4>
+        <h4 class="section-title">{{ $t('dealDetail.contractParties') }}</h4>
         <div class="k-parties">
           <div class="k-party">
-            <span class="kp-role">Продавец (Мурабаха)</span>
+            <span class="kp-role">{{ $t('dealDetail.seller') }}</span>
             <span class="kp-name">TechnoMart LLC</span>
-            <span class="kp-sub muted">ИНН: 302 184 711 · г. Ташкент</span>
+            <span class="kp-sub muted">{{ $t('dealDetail.inn') }}</span>
           </div>
           <div class="k-party">
-            <span class="kp-role">Покупатель</span>
+            <span class="kp-role">{{ $t('dealDetail.buyer') }}</span>
             <span class="kp-name">{{ deal.clientName }}</span>
-            <span class="kp-sub muted font-mono">ПИНФЛ: {{ deal.clientPinfl }}</span>
+            <span class="kp-sub muted font-mono">{{ $t('dealDetail.pinfl', { pinfl: deal.clientPinfl }) }}</span>
             <span class="kp-sub muted font-mono">{{ deal.clientPhone }}</span>
           </div>
         </div>
       </div>
 
       <div class="section">
-        <h4 class="section-title">Финансовые условия</h4>
+        <h4 class="section-title">{{ $t('dealDetail.financialTerms') }}</h4>
         <div class="k-terms">
-          <div class="k-term"><span class="fl">Цена мерчанта</span><span class="kv font-mono">{{ formatSomShort(deal.amount) }} сум</span></div>
-          <div class="k-term"><span class="fl">Наценка (Устама)</span><span class="kv">{{ ustama }}</span></div>
-          <div class="k-term"><span class="fl">Стоимость сделки</span><span class="kv font-mono">{{ formatSomShort(deal.totalPayable) }} сум</span></div>
-          <div class="k-term"><span class="fl">Срок рассрочки</span><span class="kv">{{ deal.termMonths }} месяцев</span></div>
-          <div class="k-term"><span class="fl">Ежемесячный платёж</span><span class="kv font-mono">{{ formatSomShort(Math.round(deal.totalPayable / deal.termMonths)) }} сум</span></div>
-          <div class="k-term"><span class="fl">День оплаты</span><span class="kv">{{ deal.paymentDay }}-е число каждого месяца</span></div>
-          <div class="k-term"><span class="fl">Предоплата</span><span class="kv font-mono">0 сум</span></div>
+          <div class="k-term"><span class="fl">{{ $t('dealDetail.merchantPriceTerm') }}</span><span class="kv font-mono">{{ formatSomShort(deal.amount) }} {{ $t('dealDetail.som') }}</span></div>
+          <div class="k-term"><span class="fl">{{ $t('dealDetail.markupUstama') }}</span><span class="kv">{{ ustama }}</span></div>
+          <div class="k-term"><span class="fl">{{ $t('dealDetail.dealCostTerm') }}</span><span class="kv font-mono">{{ formatSomShort(deal.totalPayable) }} {{ $t('dealDetail.som') }}</span></div>
+          <div class="k-term"><span class="fl">{{ $t('dealDetail.installmentTerm') }}</span><span class="kv">{{ $t('dealDetail.monthsValue', { count: deal.termMonths }) }}</span></div>
+          <div class="k-term"><span class="fl">{{ $t('dealDetail.monthlyPayment') }}</span><span class="kv font-mono">{{ formatSomShort(Math.round(deal.totalPayable / deal.termMonths)) }} {{ $t('dealDetail.som') }}</span></div>
+          <div class="k-term"><span class="fl">{{ $t('dealDetail.paymentDayTerm') }}</span><span class="kv">{{ $t('dealDetail.paymentDayValue', { day: deal.paymentDay }) }}</span></div>
+          <div class="k-term"><span class="fl">{{ $t('dealDetail.prepayment') }}</span><span class="kv font-mono">0 {{ $t('dealDetail.som') }}</span></div>
         </div>
       </div>
 
       <div class="section">
-        <h4 class="section-title">Товары по контракту</h4>
+        <h4 class="section-title">{{ $t('dealDetail.contractProducts') }}</h4>
         <table class="data-table">
           <thead>
-            <tr><th>#</th><th>Наименование</th><th>МХИК</th><th>Кол-во</th><th>Цена</th><th>Всего</th></tr>
+            <tr><th>{{ $t('dealDetail.thNum') }}</th><th>{{ $t('dealDetail.thName') }}</th><th>{{ $t('dealDetail.thMxik') }}</th><th>{{ $t('dealDetail.thQty') }}</th><th>{{ $t('dealDetail.thPrice') }}</th><th>{{ $t('dealDetail.thTotal') }}</th></tr>
           </thead>
           <tbody>
             <tr v-for="(item, i) in deal.basket" :key="item.product.id">
@@ -472,20 +474,20 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
       </div>
 
       <div class="section">
-        <h4 class="section-title">Подписи</h4>
+        <h4 class="section-title">{{ $t('dealDetail.signatures') }}</h4>
         <div class="k-sigs">
           <div class="k-sig">
             <i class="pi pi-check-circle" style="color: var(--success)" />
             <div>
-              <div class="ks-name">Агент: {{ agent?.fullName ?? '—' }}</div>
-              <div class="muted" style="font-size: 0.8rem">Подписано: {{ formatDateTime(deal.createdAt) }}</div>
+              <div class="ks-name">{{ $t('dealDetail.agentSigned', { name: agent?.fullName ?? '—' }) }}</div>
+              <div class="muted" style="font-size: 0.8rem">{{ $t('dealDetail.signedAt', { date: formatDateTime(deal.createdAt) }) }}</div>
             </div>
           </div>
           <div class="k-sig">
             <i class="pi pi-check-circle" style="color: var(--success)" />
             <div>
-              <div class="ks-name">Клиент: {{ deal.clientName }}</div>
-              <div class="muted" style="font-size: 0.8rem">OTP подтверждение: {{ formatDateTime(deal.createdAt) }}</div>
+              <div class="ks-name">{{ $t('dealDetail.clientSigned', { name: deal.clientName }) }}</div>
+              <div class="muted" style="font-size: 0.8rem">{{ $t('dealDetail.otpConfirmed', { date: formatDateTime(deal.createdAt) }) }}</div>
             </div>
           </div>
         </div>
@@ -497,36 +499,36 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
       <div class="section">
         <div class="uchet-summary">
           <div class="us-card">
-            <span class="us-label">Итого к оплате</span>
-            <span class="us-val font-mono">{{ formatSomShort(deal.totalPayable) }} сум</span>
+            <span class="us-label">{{ $t('dealDetail.totalDue') }}</span>
+            <span class="us-val font-mono">{{ formatSomShort(deal.totalPayable) }} {{ $t('dealDetail.som') }}</span>
           </div>
           <div class="us-card success">
-            <span class="us-label">Оплачено</span>
-            <span class="us-val font-mono">{{ formatSomShort(paidTotal) }} сум</span>
+            <span class="us-label">{{ $t('dealDetail.paid') }}</span>
+            <span class="us-val font-mono">{{ formatSomShort(paidTotal) }} {{ $t('dealDetail.som') }}</span>
           </div>
           <div class="us-card warn">
-            <span class="us-label">Остаток</span>
-            <span class="us-val font-mono">{{ formatSomShort(remainingBalance) }} сум</span>
+            <span class="us-label">{{ $t('dealDetail.remaining') }}</span>
+            <span class="us-val font-mono">{{ formatSomShort(remainingBalance) }} {{ $t('dealDetail.som') }}</span>
           </div>
         </div>
       </div>
 
       <div class="section">
-        <h4 class="section-title">Транзакции</h4>
+        <h4 class="section-title">{{ $t('dealDetail.transactions') }}</h4>
         <div v-if="ledger.length === 0" class="empty-state">
           <i class="pi pi-inbox" />
-          <p>Платежей ещё не было</p>
+          <p>{{ $t('dealDetail.noPayments') }}</p>
         </div>
         <table v-else class="data-table">
           <thead>
-            <tr><th>Дата</th><th>Тип операции</th><th>Сумма</th><th>Остаток</th></tr>
+            <tr><th>{{ $t('dealDetail.dateCol') }}</th><th>{{ $t('dealDetail.operationType') }}</th><th>{{ $t('dealDetail.amountCol') }}</th><th>{{ $t('dealDetail.balanceCol') }}</th></tr>
           </thead>
           <tbody>
             <tr v-for="(entry, i) in ledger" :key="i">
               <td class="font-mono">{{ formatDateShort(entry.date) }}</td>
               <td>{{ entry.type }}</td>
-              <td class="font-mono" style="color: var(--success)">+ {{ formatSomShort(entry.amount) }} сум</td>
-              <td class="font-mono">{{ formatSomShort(entry.balance) }} сум</td>
+              <td class="font-mono" style="color: var(--success)">+ {{ formatSomShort(entry.amount) }} {{ $t('dealDetail.som') }}</td>
+              <td class="font-mono">{{ formatSomShort(entry.balance) }} {{ $t('dealDetail.som') }}</td>
             </tr>
           </tbody>
         </table>
@@ -538,27 +540,27 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
       <div class="section">
         <div v-if="overdueRows.length === 0" class="empty-state">
           <i class="pi pi-check-circle" style="color: var(--success)" />
-          <p style="color: var(--success)">Просрочек нет</p>
-          <span class="muted" style="font-size: 0.85rem">Все платежи выполнены в срок</span>
+          <p style="color: var(--success)">{{ $t('dealDetail.noOverdue') }}</p>
+          <span class="muted" style="font-size: 0.85rem">{{ $t('dealDetail.allPaidOnTime') }}</span>
         </div>
         <template v-else>
           <div class="overdue-alert">
             <i class="pi pi-exclamation-triangle" />
-            <span>Обнаружено {{ overdueRows.length }} просроченных платежей</span>
+            <span>{{ $t('dealDetail.overdueDetected', { count: overdueRows.length }) }}</span>
           </div>
           <table class="data-table" style="margin-top: 1rem">
             <thead>
-              <tr><th>Платёж</th><th>Дата платежа</th><th>Сумма</th><th>Дней просрочки</th><th>Статус</th></tr>
+              <tr><th>{{ $t('dealDetail.payment') }}</th><th>{{ $t('dealDetail.paymentDate') }}</th><th>{{ $t('dealDetail.amountCol') }}</th><th>{{ $t('dealDetail.daysOverdue') }}</th><th>{{ $t('dealDetail.status') }}</th></tr>
             </thead>
             <tbody>
               <tr v-for="row in overdueRows" :key="row.index">
                 <td class="font-mono">{{ row.index }}</td>
                 <td class="font-mono">{{ formatDateShort(row.date) }}</td>
-                <td class="font-mono">{{ formatSomShort(row.amount) }} сум</td>
+                <td class="font-mono">{{ formatSomShort(row.amount) }} {{ $t('dealDetail.som') }}</td>
                 <td>
-                  <span class="days-badge">{{ row.daysOverdue }} дн.</span>
+                  <span class="days-badge">{{ row.daysOverdue }} {{ $t('dealDetail.days') }}</span>
                 </td>
-                <td><span class="overdue-pill">Просрочен</span></td>
+                <td><span class="overdue-pill">{{ $t('dealDetail.overduePill') }}</span></td>
               </tr>
             </tbody>
           </table>
@@ -570,27 +572,27 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
     <div v-else-if="activeTab === 'grafik'" class="surface-card deal-card">
       <div class="section">
         <div class="grafik-header">
-          <h4 class="section-title" style="margin: 0">График платежей</h4>
+          <h4 class="section-title" style="margin: 0">{{ $t('dealDetail.paymentSchedule') }}</h4>
           <div class="grafik-legend">
-            <span class="leg paid">Оплачено</span>
-            <span class="leg overdue">Просрочено</span>
-            <span class="leg pending">Ожидается</span>
+            <span class="leg paid">{{ $t('dealDetail.legendPaid') }}</span>
+            <span class="leg overdue">{{ $t('dealDetail.legendOverdue') }}</span>
+            <span class="leg pending">{{ $t('dealDetail.legendPending') }}</span>
           </div>
         </div>
       </div>
       <div class="section" style="padding-top: 0; border-top: none">
         <table class="data-table">
           <thead>
-            <tr><th>#</th><th>Дата платежа</th><th>Сумма</th><th>Статус</th></tr>
+            <tr><th>{{ $t('dealDetail.thNum') }}</th><th>{{ $t('dealDetail.paymentDate') }}</th><th>{{ $t('dealDetail.amountCol') }}</th><th>{{ $t('dealDetail.status') }}</th></tr>
           </thead>
           <tbody>
             <tr v-for="row in schedule" :key="row.index">
               <td class="font-mono muted">{{ row.index }}</td>
               <td class="font-mono">{{ formatDateShort(row.date) }}</td>
-              <td class="font-mono">{{ formatSomShort(row.amount) }} сум</td>
+              <td class="font-mono">{{ formatSomShort(row.amount) }} {{ $t('dealDetail.som') }}</td>
               <td>
                 <span class="row-pill" :class="row.status">
-                  {{ row.status === 'paid' ? 'Оплачено' : row.status === 'overdue' ? 'Просрочено' : 'Ожидается' }}
+                  {{ row.status === 'paid' ? $t('dealDetail.pillPaid') : row.status === 'overdue' ? $t('dealDetail.pillOverdue') : $t('dealDetail.pillPending') }}
                 </span>
               </td>
             </tr>
@@ -599,16 +601,16 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
       </div>
       <div class="section grafik-footer">
         <div class="gf-item">
-          <span class="fl">Всего платежей</span>
+          <span class="fl">{{ $t('dealDetail.totalPayments') }}</span>
           <span class="font-mono">{{ deal.termMonths }}</span>
         </div>
         <div class="gf-item">
-          <span class="fl">Оплачено</span>
+          <span class="fl">{{ $t('dealDetail.paid') }}</span>
           <span class="font-mono" style="color: var(--success)">{{ schedule.filter(r => r.status === 'paid').length }}</span>
         </div>
         <div class="gf-item">
-          <span class="fl">Остаток</span>
-          <span class="font-mono">{{ formatSomShort(remainingBalance) }} сум</span>
+          <span class="fl">{{ $t('dealDetail.remaining') }}</span>
+          <span class="font-mono">{{ formatSomShort(remainingBalance) }} {{ $t('dealDetail.som') }}</span>
         </div>
       </div>
     </div>
@@ -618,8 +620,8 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
       <div class="section">
         <div class="auto-toggle-row">
           <div>
-            <div class="at-title">Автоплатёж</div>
-            <div class="muted at-desc">Платёж списывается автоматически {{ deal.paymentDay }}-го числа каждого месяца</div>
+            <div class="at-title">{{ $t('dealDetail.autopay') }}</div>
+            <div class="muted at-desc">{{ $t('dealDetail.autopayDesc', { day: deal.paymentDay }) }}</div>
           </div>
           <button
             class="toggle-btn"
@@ -632,54 +634,54 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
       </div>
 
       <div class="section">
-        <h4 class="section-title">Привязанная карта</h4>
+        <h4 class="section-title">{{ $t('dealDetail.linkedCard') }}</h4>
         <div class="card-row">
           <div class="card-icon"><i class="pi pi-credit-card" /></div>
           <div class="card-info">
             <div class="card-num font-mono">Uzcard •••• •••• •••• 7824</div>
-            <div class="muted" style="font-size: 0.8rem">{{ deal.clientName }} · Действует до 08/2028</div>
+            <div class="muted" style="font-size: 0.8rem">{{ $t('dealDetail.validUntil', { name: deal.clientName, date: '08/2028' }) }}</div>
           </div>
-          <span class="card-active-badge">Активна</span>
+          <span class="card-active-badge">{{ $t('dealDetail.cardActive') }}</span>
         </div>
       </div>
 
       <div class="section">
-        <h4 class="section-title">Следующий платёж</h4>
+        <h4 class="section-title">{{ $t('dealDetail.nextPayment') }}</h4>
         <div v-if="nextPayment" class="next-payment">
           <div class="np-item">
-            <span class="fl">Дата</span>
+            <span class="fl">{{ $t('dealDetail.dateCol') }}</span>
             <span class="font-mono">{{ formatDateShort(nextPayment.date) }}</span>
           </div>
           <div class="np-item">
-            <span class="fl">Сумма</span>
-            <span class="font-mono">{{ formatSomShort(nextPayment.amount) }} сум</span>
+            <span class="fl">{{ $t('dealDetail.amountCol') }}</span>
+            <span class="font-mono">{{ formatSomShort(nextPayment.amount) }} {{ $t('dealDetail.som') }}</span>
           </div>
           <div class="np-item">
-            <span class="fl">Карта</span>
+            <span class="fl">{{ $t('dealDetail.cardLabel') }}</span>
             <span class="font-mono muted">Uzcard •••• 7824</span>
           </div>
         </div>
         <div v-else class="empty-state">
           <i class="pi pi-check-circle" style="color: var(--success)" />
-          <p style="color: var(--success)">Все платежи выполнены</p>
+          <p style="color: var(--success)">{{ $t('dealDetail.allPaid') }}</p>
         </div>
       </div>
 
       <div class="section">
-        <h4 class="section-title">История автоплатежей</h4>
+        <h4 class="section-title">{{ $t('dealDetail.autopayHistory') }}</h4>
         <div v-if="ledger.length === 0" class="empty-state">
-          <i class="pi pi-inbox" /><p>Нет операций</p>
+          <i class="pi pi-inbox" /><p>{{ $t('dealDetail.noOperations') }}</p>
         </div>
         <table v-else class="data-table">
           <thead>
-            <tr><th>Дата</th><th>Сумма</th><th>Карта</th><th>Статус</th></tr>
+            <tr><th>{{ $t('dealDetail.dateCol') }}</th><th>{{ $t('dealDetail.amountCol') }}</th><th>{{ $t('dealDetail.cardLabel') }}</th><th>{{ $t('dealDetail.status') }}</th></tr>
           </thead>
           <tbody>
             <tr v-for="(e, i) in ledger" :key="i">
               <td class="font-mono">{{ formatDateShort(e.date) }}</td>
-              <td class="font-mono">{{ formatSomShort(e.amount) }} сум</td>
+              <td class="font-mono">{{ formatSomShort(e.amount) }} {{ $t('dealDetail.som') }}</td>
               <td class="font-mono muted">Uzcard •••• 7824</td>
-              <td><span class="row-pill paid">Списано</span></td>
+              <td><span class="row-pill paid">{{ $t('dealDetail.debited') }}</span></td>
             </tr>
           </tbody>
         </table>
@@ -689,8 +691,8 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
 
   <div v-else class="not-found surface-card">
     <i class="pi pi-exclamation-circle" />
-    <p>Сделка не найдена.</p>
-    <button class="btn-gradient" @click="router.push('/')">На главную</button>
+    <p>{{ $t('dealDetail.notFound') }}</p>
+    <button class="btn-gradient" @click="router.push('/')">{{ $t('dealDetail.toHome') }}</button>
   </div>
 </template>
 

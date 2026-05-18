@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
@@ -15,11 +16,12 @@ const employees = useEmployeesStore()
 const tenants = useTenantsStore()
 const confirm = useConfirm()
 const toast = useToast()
+const { t } = useI18n()
 
 const tenantFilter = ref<string | null>(null)
 
 const tenantOptions = computed(() => [
-  { label: 'All tenants', value: null },
+  { label: t('employees.allTenants'), value: null },
   ...tenants.options,
 ])
 
@@ -35,7 +37,7 @@ function toggleActive(e: Employee) {
   employees.toggleActive(e.id)
   toast.add({
     severity: 'info',
-    summary: e.active ? 'Employee blocked' : 'Employee re-activated',
+    summary: e.active ? t('employees.employeeBlocked') : t('employees.employeeReactivated'),
     detail: e.fullName,
     life: 2000,
   })
@@ -43,17 +45,17 @@ function toggleActive(e: Employee) {
 
 function confirmBlock(e: Employee) {
   confirm.require({
-    header: 'Block employee',
-    message: `Block "${e.fullName}"? They will no longer be able to sign in.`,
+    header: t('employees.blockEmployee'),
+    message: t('employees.blockConfirm', { name: e.fullName }),
     icon: 'pi pi-ban',
-    acceptLabel: 'Block',
-    rejectLabel: 'Cancel',
+    acceptLabel: t('employees.block'),
+    rejectLabel: t('common.cancel'),
     acceptClass: 'p-button-danger',
     accept: () => {
       employees.block(e.id)
       toast.add({
         severity: 'warn',
-        summary: 'Employee blocked',
+        summary: t('employees.employeeBlocked'),
         detail: e.fullName,
         life: 2500,
       })
@@ -66,17 +68,17 @@ function confirmBlock(e: Employee) {
   <div class="employees">
     <div class="filters surface-card">
       <div class="filter">
-        <span class="filter-label">Tenant</span>
+        <span class="filter-label">{{ $t('employees.tenant') }}</span>
         <Select
           v-model="tenantFilter"
           :options="tenantOptions"
           option-label="label"
           option-value="value"
-          placeholder="All tenants"
+          :placeholder="$t('employees.allTenants')"
         />
       </div>
       <span class="result-count muted">
-        {{ filtered.length }} employees · {{ employees.activeCount }} active platform-wide
+        {{ $t('employees.summary', { count: filtered.length, active: employees.activeCount }) }}
       </span>
     </div>
 
@@ -88,39 +90,39 @@ function confirmBlock(e: Employee) {
         :rows="12"
         size="small"
       >
-        <Column header="Name" sortable field="fullName">
+        <Column :header="$t('employees.name')" sortable field="fullName">
           <template #body="{ data }">
             <span class="e-name">{{ data.fullName }}</span>
           </template>
         </Column>
-        <Column header="Phone">
+        <Column :header="$t('employees.phone')">
           <template #body="{ data }">
             <span class="font-mono muted">{{ data.phone }}</span>
           </template>
         </Column>
-        <Column header="Email">
+        <Column :header="$t('employees.email')">
           <template #body="{ data }">
             <span class="font-mono muted">{{ data.email }}</span>
           </template>
         </Column>
-        <Column header="Tenant">
+        <Column :header="$t('employees.tenant')">
           <template #body="{ data }">
             <span class="chip">{{ tenantName(data.tenantId) }}</span>
           </template>
         </Column>
-        <Column header="Roles">
+        <Column :header="$t('employees.roles')">
           <template #body="{ data }">
             <span v-for="r in data.roles" :key="r" class="chip role">
-              {{ r === 'merchant_admin' ? 'Admin' : 'Agent' }}
+              {{ r === 'merchant_admin' ? $t('employees.admin') : $t('employees.agent') }}
             </span>
           </template>
         </Column>
-        <Column header="Last login">
+        <Column :header="$t('employees.lastLogin')">
           <template #body="{ data }">
             <span class="font-mono muted">{{ formatDateTime(data.lastLogin) }}</span>
           </template>
         </Column>
-        <Column header="Active">
+        <Column :header="$t('employees.active')">
           <template #body="{ data }">
             <ToggleSwitch
               :model-value="data.active"
@@ -128,12 +130,12 @@ function confirmBlock(e: Employee) {
             />
           </template>
         </Column>
-        <Column header="Actions">
+        <Column :header="$t('employees.actions')">
           <template #body="{ data }">
             <button
               class="icon-btn danger"
               :disabled="!data.active"
-              title="Block"
+              :title="$t('employees.block')"
               @click="confirmBlock(data)"
             >
               <i class="pi pi-ban" />

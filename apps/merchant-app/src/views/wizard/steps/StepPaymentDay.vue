@@ -55,13 +55,13 @@ function fmtDate(iso: string) {
   <div class="step-card surface-card">
     <header class="sc-head">
       <div>
-        <h2>To'lov kuni</h2>
-        <p>Choose the monthly payment day and preview the schedule.</p>
+        <h2>{{ $t('stepPayment.title') }}</h2>
+        <p>{{ $t('stepPayment.subtitle') }}</p>
       </div>
     </header>
 
     <div class="day-section">
-      <label class="field-label">Payment day of month</label>
+      <label class="field-label">{{ $t('stepPayment.paymentDay') }}</label>
       <div class="day-grid">
         <button
           v-for="d in days"
@@ -77,23 +77,23 @@ function fmtDate(iso: string) {
 
     <div class="schedule">
       <div class="sch-head">
-        <h3>Installment schedule</h3>
+        <h3>{{ $t('stepPayment.installmentSchedule') }}</h3>
         <div class="sch-total">
-          <span>Total payable</span>
+          <span>{{ $t('stepPayment.totalPayable') }}</span>
           <MonoAmount :value="totalPayable" size="md" />
         </div>
       </div>
 
       <div class="sch-table">
         <div class="sch-row sch-head-row">
-          <span>#</span>
-          <span>Month</span>
-          <span>Due date</span>
-          <span class="ta-right">Amount</span>
+          <span>{{ $t('stepPayment.num') }}</span>
+          <span>{{ $t('stepPayment.month') }}</span>
+          <span>{{ $t('stepPayment.dueDate') }}</span>
+          <span class="ta-right">{{ $t('stepPayment.amount') }}</span>
         </div>
         <div v-for="row in schedule" :key="row.index" class="sch-row">
           <span class="font-mono">{{ row.index }}</span>
-          <span>Month {{ row.index }}</span>
+          <span>{{ $t('stepPayment.monthN', { n: row.index }) }}</span>
           <span class="font-mono">{{ fmtDate(row.date) }}</span>
           <span class="ta-right">
             <MonoAmount :value="row.amount" size="sm" :gradient="false" />
@@ -104,10 +104,10 @@ function fmtDate(iso: string) {
 
     <footer class="sc-foot">
       <button class="btn-ghost" @click="wizard.back()">
-        <i class="pi pi-arrow-left" /> Back
+        <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
       </button>
       <button class="btn-gradient" @click="next">
-        Continue <i class="pi pi-arrow-right" />
+        {{ $t('common.continue') }} <i class="pi pi-arrow-right" />
       </button>
     </footer>
   </div>

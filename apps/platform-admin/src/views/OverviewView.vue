@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import { useTenantsStore } from '@/stores/tenants'
@@ -13,30 +14,31 @@ import type { IntegrationStatus } from '@/types'
 const tenants = useTenantsStore()
 const deals = useDealsStore()
 const router = useRouter()
+const { t } = useI18n()
 
 const recentDeals = computed(() => deals.recent(10))
 
 const stats = computed(() => [
-  { label: 'Total Tenants', value: String(tenants.total), icon: 'pi pi-building', tone: '' },
+  { label: t('overview.totalTenants'), value: String(tenants.total), icon: 'pi pi-building', tone: '' },
   {
-    label: 'Active Tenants',
+    label: t('overview.activeTenants'),
     value: String(tenants.activeCount),
     icon: 'pi pi-check-circle',
     tone: 'var(--success)',
   },
-  { label: 'Total Deals', value: '847', icon: 'pi pi-credit-card', tone: '' },
+  { label: t('overview.totalDeals'), value: '847', icon: 'pi pi-credit-card', tone: '' },
   {
-    label: 'Overdue Deals',
+    label: t('overview.overdueDeals'),
     value: '23',
     icon: 'pi pi-exclamation-triangle',
     tone: 'var(--danger)',
   },
   {
-    label: 'Platform Volume',
+    label: t('overview.platformVolume'),
     value: formatSomCompact(8_420_000_000_00),
     icon: 'pi pi-chart-line',
     tone: '',
-    suffix: "so'm",
+    suffix: t('common.som'),
   },
 ])
 
@@ -44,18 +46,18 @@ const tenantHealth = computed(() =>
   [...tenants.tenants].sort((a, b) => b.dealCount - a.dealCount).slice(0, 12),
 )
 
-const integrations: IntegrationStatus[] = [
-  { key: 'katm', label: 'KATM', health: 'operational', detail: 'Bureau queries OK' },
-  { key: 'myid', label: 'MyID', health: 'operational', detail: 'Identity OK' },
+const integrations = computed<IntegrationStatus[]>(() => [
+  { key: 'katm', label: 'KATM', health: 'operational', detail: t('overview.katmDetail') },
+  { key: 'myid', label: 'MyID', health: 'operational', detail: t('overview.myidDetail') },
   {
     key: 'plumgate',
     label: 'PlumGate',
     health: 'degraded',
-    detail: 'High latency 2.8s',
+    detail: t('overview.plumgateDetail'),
   },
-  { key: 'payme', label: 'Payme', health: 'operational', detail: 'Payments OK' },
-  { key: 'click', label: 'Click', health: 'operational', detail: 'Payments OK' },
-]
+  { key: 'payme', label: 'Payme', health: 'operational', detail: t('overview.paymeDetail') },
+  { key: 'click', label: 'Click', health: 'operational', detail: t('overview.clickDetail') },
+])
 
 function tenantName(id: string): string {
   return tenants.byId(id)?.name ?? '—'
@@ -83,36 +85,36 @@ function openTenant(id: string) {
     <div class="grid">
       <section class="surface-card panel">
         <header class="panel-head">
-          <h3 class="section-title">Recent Deals</h3>
+          <h3 class="section-title">{{ $t('overview.recentDeals') }}</h3>
           <button class="btn-ghost sm" @click="router.push('/deals')">
-            View all <i class="pi pi-arrow-right" />
+            {{ $t('overview.viewAll') }} <i class="pi pi-arrow-right" />
           </button>
         </header>
         <DataTable :value="recentDeals" data-key="id" :rows="10" size="small">
-          <Column header="Deal ID">
+          <Column :header="$t('overview.dealId')">
             <template #body="{ data }">
               <span class="font-mono accent">{{ data.id }}</span>
             </template>
           </Column>
-          <Column header="Tenant">
+          <Column :header="$t('overview.tenant')">
             <template #body="{ data }">{{ tenantName(data.tenantId) }}</template>
           </Column>
-          <Column header="Client PINFL">
+          <Column :header="$t('overview.clientPinfl')">
             <template #body="{ data }">
               <span class="font-mono muted">{{ maskPinfl(data.clientPinfl) }}</span>
             </template>
           </Column>
-          <Column header="Amount">
+          <Column :header="$t('overview.amount')">
             <template #body="{ data }">
               <MonoAmount :value="data.amount" size="sm" />
             </template>
           </Column>
-          <Column header="Status">
+          <Column :header="$t('overview.status')">
             <template #body="{ data }">
               <StatusBadge :status="data.status" />
             </template>
           </Column>
-          <Column header="Date">
+          <Column :header="$t('overview.date')">
             <template #body="{ data }">
               <span class="font-mono muted">{{ formatDate(data.createdAt) }}</span>
             </template>
@@ -122,7 +124,7 @@ function openTenant(id: string) {
 
       <section class="surface-card panel">
         <header class="panel-head">
-          <h3 class="section-title">Tenant Health</h3>
+          <h3 class="section-title">{{ $t('overview.tenantHealth') }}</h3>
         </header>
         <ul class="health-list">
           <li
@@ -138,12 +140,12 @@ function openTenant(id: string) {
               }"
             />
             <span class="health-name">{{ t.name }}</span>
-            <span class="health-meta font-mono">{{ t.dealCount }} deals</span>
+            <span class="health-meta font-mono">{{ t.dealCount }} {{ $t('overview.deals') }}</span>
             <span
               class="health-overdue font-mono"
               :class="{ zero: t.overdueCount === 0 }"
             >
-              {{ t.overdueCount }} overdue
+              {{ t.overdueCount }} {{ $t('overview.overdue') }}
             </span>
           </li>
         </ul>
@@ -152,7 +154,7 @@ function openTenant(id: string) {
 
     <section class="surface-card integ">
       <header class="panel-head">
-        <h3 class="section-title">Integration Status</h3>
+        <h3 class="section-title">{{ $t('overview.integrationStatus') }}</h3>
       </header>
       <div class="integ-row">
         <div v-for="i in integrations" :key="i.key" class="integ-item">
@@ -166,7 +168,7 @@ function openTenant(id: string) {
           <div class="integ-text">
             <span class="integ-label">{{ i.label }}</span>
             <span class="integ-state">
-              {{ i.health === 'operational' ? 'Operational' : 'Degraded' }}
+              {{ i.health === 'operational' ? $t('overview.operational') : $t('overview.degraded') }}
             </span>
           </div>
           <span class="integ-detail">{{ i.detail }}</span>

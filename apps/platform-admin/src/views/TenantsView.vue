@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
@@ -20,17 +21,18 @@ const tenants = useTenantsStore()
 const router = useRouter()
 const confirm = useConfirm()
 const toast = useToast()
+const { t } = useI18n()
 
 const showAdd = ref(false)
 
 const schema = toTypedSchema(
   z.object({
-    name: z.string().min(2, 'Name is required'),
+    name: z.string().min(2, t('tenants.nameRequired')),
     slug: z
       .string()
-      .min(2, 'Slug is required')
-      .regex(/^[a-z0-9-]+$/, 'Lowercase letters, digits and dashes only'),
-    contactEmail: z.string().min(1, 'Email is required').email('Invalid email'),
+      .min(2, t('tenants.slugRequired'))
+      .regex(/^[a-z0-9-]+$/, t('tenants.slugFormat')),
+    contactEmail: z.string().min(1, t('tenants.emailRequired')).email(t('tenants.emailInvalid')),
   }),
 )
 
@@ -47,8 +49,8 @@ const submitAdd = handleSubmit((values) => {
   tenants.add(values)
   toast.add({
     severity: 'success',
-    summary: 'Tenant created',
-    detail: `${values.name} added`,
+    summary: t('tenants.tenantCreated'),
+    detail: t('tenants.tenantAdded', { name: values.name }),
     life: 2500,
   })
   showAdd.value = false
@@ -60,30 +62,30 @@ function openAdd() {
   showAdd.value = true
 }
 
-function toggleStatus(t: Tenant) {
-  tenants.toggleStatus(t.id)
+function toggleStatus(tenant: Tenant) {
+  tenants.toggleStatus(tenant.id)
   toast.add({
     severity: 'info',
-    summary: t.status === 'active' ? 'Tenant suspended' : 'Tenant activated',
-    detail: t.name,
+    summary: tenant.status === 'active' ? t('tenants.tenantSuspended') : t('tenants.tenantActivated'),
+    detail: tenant.name,
     life: 2000,
   })
 }
 
-function confirmDelete(t: Tenant) {
+function confirmDelete(tenant: Tenant) {
   confirm.require({
-    header: 'Delete tenant',
-    message: `Permanently delete "${t.name}"? This cannot be undone.`,
+    header: t('tenants.deleteTenant'),
+    message: t('tenants.deleteConfirm', { name: tenant.name }),
     icon: 'pi pi-exclamation-triangle',
-    acceptLabel: 'Delete',
-    rejectLabel: 'Cancel',
+    acceptLabel: t('common.delete'),
+    rejectLabel: t('common.cancel'),
     acceptClass: 'p-button-danger',
     accept: () => {
-      tenants.remove(t.id)
+      tenants.remove(tenant.id)
       toast.add({
         severity: 'warn',
-        summary: 'Tenant deleted',
-        detail: t.name,
+        summary: t('tenants.tenantDeleted'),
+        detail: tenant.name,
         life: 2500,
       })
     },
@@ -94,9 +96,9 @@ function confirmDelete(t: Tenant) {
 <template>
   <div class="tenants">
     <div class="head">
-      <p class="muted count">{{ tenants.total }} tenants · {{ tenants.activeCount }} active</p>
+      <p class="muted count">{{ $t('tenants.summary', { total: tenants.total, active: tenants.activeCount }) }}</p>
       <button class="btn-gradient" @click="openAdd">
-        <i class="pi pi-plus" /> Add Tenant
+        <i class="pi pi-plus" /> {{ $t('tenants.addTenant') }}
       </button>
     </div>
 
@@ -108,17 +110,17 @@ function confirmDelete(t: Tenant) {
         :rows="10"
         size="small"
       >
-        <Column header="Name" sortable field="name">
+        <Column :header="$t('tenants.name')" sortable field="name">
           <template #body="{ data }">
             <span class="t-name">{{ data.name }}</span>
           </template>
         </Column>
-        <Column header="Slug">
+        <Column :header="$t('tenants.slug')">
           <template #body="{ data }">
             <span class="font-mono muted">{{ data.slug }}</span>
           </template>
         </Column>
-        <Column header="Active">
+        <Column :header="$t('tenants.active')">
           <template #body="{ data }">
             <ToggleSwitch
               :model-value="data.status === 'active'"
@@ -126,44 +128,44 @@ function confirmDelete(t: Tenant) {
             />
           </template>
         </Column>
-        <Column header="Deals" sortable field="dealCount">
+        <Column :header="$t('tenants.deals')" sortable field="dealCount">
           <template #body="{ data }">
             <span class="font-mono">{{ data.dealCount }}</span>
           </template>
         </Column>
-        <Column header="Employees" sortable field="employeeCount">
+        <Column :header="$t('tenants.employees')" sortable field="employeeCount">
           <template #body="{ data }">
             <span class="font-mono">{{ data.employeeCount }}</span>
           </template>
         </Column>
-        <Column header="Volume" sortable field="volume">
+        <Column :header="$t('tenants.volume')" sortable field="volume">
           <template #body="{ data }">
             <MonoAmount :value="data.volume" size="sm" />
           </template>
         </Column>
-        <Column header="Created">
+        <Column :header="$t('tenants.created')">
           <template #body="{ data }">
             <span class="font-mono muted">{{ formatDate(data.createdAt) }}</span>
           </template>
         </Column>
-        <Column header="Actions">
+        <Column :header="$t('tenants.actions')">
           <template #body="{ data }">
             <div class="actions">
               <button
                 class="icon-btn"
-                title="View"
+                :title="$t('tenants.view')"
                 @click="router.push(`/tenants/${data.id}`)"
               >
                 <i class="pi pi-eye" />
               </button>
               <button
                 class="icon-btn"
-                :title="data.status === 'active' ? 'Suspend' : 'Activate'"
+                :title="data.status === 'active' ? $t('tenants.suspend') : $t('tenants.activate')"
                 @click="toggleStatus(data)"
               >
                 <i :class="data.status === 'active' ? 'pi pi-ban' : 'pi pi-check'" />
               </button>
-              <button class="icon-btn danger" title="Delete" @click="confirmDelete(data)">
+              <button class="icon-btn danger" :title="$t('tenants.delete')" @click="confirmDelete(data)">
                 <i class="pi pi-trash" />
               </button>
             </div>
@@ -175,12 +177,12 @@ function confirmDelete(t: Tenant) {
     <Dialog
       v-model:visible="showAdd"
       modal
-      header="Add Tenant"
+      :header="$t('tenants.addTenantTitle')"
       :style="{ width: '440px' }"
     >
       <form id="add-tenant-form" @submit="submitAdd">
         <div class="field">
-          <label class="field-label" for="t-name">Business name</label>
+          <label class="field-label" for="t-name">{{ $t('tenants.businessName') }}</label>
           <InputText
             id="t-name"
             v-model="name"
@@ -191,7 +193,7 @@ function confirmDelete(t: Tenant) {
           <span v-if="errors.name" class="field-error">{{ errors.name }}</span>
         </div>
         <div class="field">
-          <label class="field-label" for="t-slug">Slug</label>
+          <label class="field-label" for="t-slug">{{ $t('tenants.slugLabel') }}</label>
           <InputText
             id="t-slug"
             v-model="slug"
@@ -202,7 +204,7 @@ function confirmDelete(t: Tenant) {
           <span v-if="errors.slug" class="field-error">{{ errors.slug }}</span>
         </div>
         <div class="field">
-          <label class="field-label" for="t-email">Contact email</label>
+          <label class="field-label" for="t-email">{{ $t('tenants.contactEmail') }}</label>
           <InputText
             id="t-email"
             v-model="contactEmail"
@@ -214,9 +216,9 @@ function confirmDelete(t: Tenant) {
         </div>
       </form>
       <template #footer>
-        <button class="btn-ghost" @click="showAdd = false">Cancel</button>
+        <button class="btn-ghost" @click="showAdd = false">{{ $t('common.cancel') }}</button>
         <button type="submit" form="add-tenant-form" class="btn-gradient">
-          Create tenant
+          {{ $t('tenants.createTenant') }}
         </button>
       </template>
     </Dialog>

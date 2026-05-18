@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
+import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
@@ -14,6 +15,7 @@ import type { Tariff } from '@/types'
 const catalog = useCatalogStore()
 const confirm = useConfirm()
 const toast = useToast()
+const { t } = useI18n()
 
 const dialogVisible = ref(false)
 const editingId = ref<string | null>(null)
@@ -55,7 +57,7 @@ function openEdit(t: Tariff) {
 
 function save() {
   if (!form.name) {
-    toast.add({ severity: 'warn', summary: 'Name required', life: 2000 })
+    toast.add({ severity: 'warn', summary: t('tariffs.nameRequired'), life: 2000 })
     return
   }
   const payload = {
@@ -68,24 +70,24 @@ function save() {
   }
   if (editingId.value) {
     catalog.updateTariff(editingId.value, payload)
-    toast.add({ severity: 'success', summary: 'Updated', life: 2000 })
+    toast.add({ severity: 'success', summary: t('tariffs.updated'), life: 2000 })
   } else {
     catalog.addTariff(payload)
-    toast.add({ severity: 'success', summary: 'Added', life: 2000 })
+    toast.add({ severity: 'success', summary: t('tariffs.added'), life: 2000 })
   }
   dialogVisible.value = false
 }
 
-function remove(t: Tariff) {
+function remove(tariff: Tariff) {
   confirm.require({
-    message: `Delete tariff "${t.name}"?`,
-    header: 'Confirm delete',
+    message: t('tariffs.deleteConfirm', { name: tariff.name }),
+    header: t('tariffs.confirmDelete'),
     icon: 'pi pi-trash',
-    rejectProps: { label: 'Cancel', severity: 'secondary', outlined: true },
-    acceptProps: { label: 'Delete', severity: 'danger' },
+    rejectProps: { label: t('common.cancel'), severity: 'secondary', outlined: true },
+    acceptProps: { label: t('common.delete'), severity: 'danger' },
     accept: () => {
-      catalog.deleteTariff(t.id)
-      toast.add({ severity: 'info', summary: 'Deleted', life: 2000 })
+      catalog.deleteTariff(tariff.id)
+      toast.add({ severity: 'info', summary: t('tariffs.deleted'), life: 2000 })
     },
   })
 }
@@ -99,35 +101,35 @@ function fmt(tiyin: number) {
   <div class="admin-page">
     <div class="page-actions">
       <button class="btn-gradient" @click="openNew">
-        <i class="pi pi-plus" /> Add Tariff
+        <i class="pi pi-plus" /> {{ $t('tariffs.addTariff') }}
       </button>
     </div>
 
     <div class="surface-card table-wrap">
       <DataTable :value="catalog.tariffs" data-key="id">
-        <Column field="name" header="Name" sortable>
+        <Column field="name" :header="$t('tariffs.name')" sortable>
           <template #body="{ data }">
             <span class="t-name">{{ data.name }}</span>
           </template>
         </Column>
-        <Column header="Term">
+        <Column :header="$t('tariffs.term')">
           <template #body="{ data }">
-            <span class="font-mono">{{ data.termMonths }} mo</span>
+            <span class="font-mono">{{ data.termMonths }} {{ $t('tariffs.mo') }}</span>
           </template>
         </Column>
-        <Column header="Ustama">
+        <Column :header="$t('tariffs.markup')">
           <template #body="{ data }">
             <span class="markup font-mono">{{ data.markupPercent }}%</span>
           </template>
         </Column>
-        <Column header="Credit range">
+        <Column :header="$t('tariffs.creditRange')">
           <template #body="{ data }">
             <span class="font-mono range">
-              {{ fmt(data.creditMin) }} – {{ fmt(data.creditMax) }} so'm
+              {{ fmt(data.creditMin) }} – {{ fmt(data.creditMax) }} {{ $t('common.som') }}
             </span>
           </template>
         </Column>
-        <Column header="Active">
+        <Column :header="$t('tariffs.active')">
           <template #body="{ data }">
             <ToggleSwitch
               :model-value="data.active"
@@ -138,10 +140,10 @@ function fmt(tiyin: number) {
         <Column header="" :style="{ width: '8rem' }">
           <template #body="{ data }">
             <div class="row-actions">
-              <button class="ra-btn" title="Edit" @click="openEdit(data)">
+              <button class="ra-btn" :title="$t('common.edit')" @click="openEdit(data)">
                 <i class="pi pi-pencil" />
               </button>
-              <button class="ra-btn danger" title="Delete" @click="remove(data)">
+              <button class="ra-btn danger" :title="$t('common.delete')" @click="remove(data)">
                 <i class="pi pi-trash" />
               </button>
             </div>
@@ -153,42 +155,42 @@ function fmt(tiyin: number) {
     <Dialog
       v-model:visible="dialogVisible"
       modal
-      :header="editingId ? 'Edit tariff' : 'Add tariff'"
+      :header="editingId ? $t('tariffs.editTariff') : $t('tariffs.addTariffTitle')"
       :style="{ width: '480px' }"
     >
       <div class="form">
         <div class="field">
-          <label class="field-label">Name</label>
+          <label class="field-label">{{ $t('tariffs.name') }}</label>
           <InputText v-model="form.name" placeholder="12 oy · 12%" />
         </div>
         <div class="grid2">
           <div class="field">
-            <label class="field-label">Term (months)</label>
+            <label class="field-label">{{ $t('tariffs.termMonths') }}</label>
             <InputNumber v-model="form.termMonths" :min="1" :max="36" fluid />
           </div>
           <div class="field">
-            <label class="field-label">Ustama %</label>
+            <label class="field-label">{{ $t('tariffs.markupPercent') }}</label>
             <InputNumber v-model="form.markupPercent" :min="0" :max="100" fluid />
           </div>
         </div>
         <div class="grid2">
           <div class="field">
-            <label class="field-label">Credit min (so'm)</label>
+            <label class="field-label">{{ $t('tariffs.creditMin') }}</label>
             <InputNumber v-model="form.creditMinSom" :min="0" fluid />
           </div>
           <div class="field">
-            <label class="field-label">Credit max (so'm)</label>
+            <label class="field-label">{{ $t('tariffs.creditMax') }}</label>
             <InputNumber v-model="form.creditMaxSom" :min="0" fluid />
           </div>
         </div>
         <label class="active-toggle">
           <ToggleSwitch v-model="form.active" />
-          <span>Active</span>
+          <span>{{ $t('tariffs.active') }}</span>
         </label>
       </div>
       <template #footer>
-        <button class="btn-ghost" @click="dialogVisible = false">Cancel</button>
-        <button class="btn-gradient" @click="save">Save</button>
+        <button class="btn-ghost" @click="dialogVisible = false">{{ $t('common.cancel') }}</button>
+        <button class="btn-gradient" @click="save">{{ $t('common.save') }}</button>
       </template>
     </Dialog>
   </div>

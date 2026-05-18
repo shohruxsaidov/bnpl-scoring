@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import ToggleSwitch from 'primevue/toggleswitch'
@@ -6,9 +7,10 @@ import { useCatalogStore } from '@/stores/catalog'
 import type { EmployeeRole } from '@/types'
 
 const catalog = useCatalogStore()
+const { t } = useI18n()
 
 function roleLabel(r: EmployeeRole): string {
-  return r === 'merchant_admin' ? 'Merchant Admin' : 'Agent'
+  return r === 'merchant_admin' ? t('employees.merchantAdmin') : t('employees.agent')
 }
 </script>
 
@@ -16,7 +18,7 @@ function roleLabel(r: EmployeeRole): string {
   <div class="admin-page">
     <div class="surface-card table-wrap">
       <DataTable :value="catalog.employees" data-key="id">
-        <Column header="Name" sortable field="fullName">
+        <Column :header="$t('employees.name')" sortable field="fullName">
           <template #body="{ data }">
             <div class="emp-cell">
               <div class="emp-avatar">{{ data.fullName.charAt(0) }}</div>
@@ -27,12 +29,12 @@ function roleLabel(r: EmployeeRole): string {
             </div>
           </template>
         </Column>
-        <Column header="Phone">
+        <Column :header="$t('employees.phone')">
           <template #body="{ data }">
             <span class="font-mono phone">{{ data.phone }}</span>
           </template>
         </Column>
-        <Column header="Roles">
+        <Column :header="$t('employees.roles')">
           <template #body="{ data }">
             <div class="roles">
               <span
@@ -46,7 +48,7 @@ function roleLabel(r: EmployeeRole): string {
             </div>
           </template>
         </Column>
-        <Column header="Active">
+        <Column :header="$t('employees.active')">
           <template #body="{ data }">
             <ToggleSwitch
               :model-value="data.active"

@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import { useWizardStore } from '@/stores/wizard'
 import type { Card, CardScoreResult, ScoreDecision } from '@/types'
 
 const wizard = useWizardStore()
+const { t } = useI18n()
 
 const cards = ref<Card[]>([
   {
@@ -88,10 +90,10 @@ const decisionMeta = computed(() => {
   if (!result.value) return null
   const d = result.value.decision
   if (d === 'approved')
-    return { label: 'Approved', color: 'var(--success)', bg: 'var(--success-bg)' }
+    return { label: t('stepKarta.approved'), color: 'var(--success)', bg: 'var(--success-bg)' }
   if (d === 'manual_review')
-    return { label: 'Manual review', color: 'var(--warning)', bg: 'var(--warning-bg)' }
-  return { label: 'Declined', color: 'var(--danger)', bg: 'var(--danger-bg)' }
+    return { label: t('stepKarta.manualReview'), color: 'var(--warning)', bg: 'var(--warning-bg)' }
+  return { label: t('stepKarta.declined'), color: 'var(--danger)', bg: 'var(--danger-bg)' }
 })
 
 function next() {
@@ -107,8 +109,8 @@ function next() {
   <div class="step-card surface-card">
     <header class="sc-head">
       <div>
-        <h2>Karta</h2>
-        <p>Select a card and run Plumgate card scoring.</p>
+        <h2>{{ $t('stepKarta.title') }}</h2>
+        <p>{{ $t('stepKarta.subtitle') }}</p>
       </div>
     </header>
 
@@ -136,13 +138,13 @@ function next() {
 
       <button v-if="!adding" class="add-card" @click="adding = true">
         <i class="pi pi-plus" />
-        <span>Add card</span>
+        <span>{{ $t('stepKarta.addCard') }}</span>
       </button>
     </div>
 
     <div v-if="adding" class="add-form">
       <div class="field">
-        <label class="field-label">Card number</label>
+        <label class="field-label">{{ $t('stepKarta.cardNumber') }}</label>
         <InputText
           v-model="newPan"
           placeholder="8600 1234 5678 9012"
@@ -151,12 +153,12 @@ function next() {
         />
       </div>
       <div class="field" style="max-width: 140px">
-        <label class="field-label">Expiry</label>
+        <label class="field-label">{{ $t('stepKarta.expiry') }}</label>
         <InputText v-model="newExpiry" placeholder="08/27" class="font-mono" />
       </div>
       <div class="add-actions">
-        <button class="btn-ghost" @click="adding = false">Cancel</button>
-        <button class="btn-gradient" @click="addCard">Add</button>
+        <button class="btn-ghost" @click="adding = false">{{ $t('stepKarta.cancel') }}</button>
+        <button class="btn-gradient" @click="addCard">{{ $t('stepKarta.add') }}</button>
       </div>
     </div>
 
@@ -168,7 +170,7 @@ function next() {
       >
         <i v-if="scoring" class="pi pi-spin pi-spinner" />
         <i v-else class="pi pi-shield" />
-        {{ scoring ? 'Scoring card…' : 'Verify card' }}
+        {{ scoring ? $t('stepKarta.scoringCard') : $t('stepKarta.verifyCard') }}
       </button>
 
       <div v-if="scoring" class="progress-track">
@@ -180,7 +182,7 @@ function next() {
     <transition name="fade">
       <div v-if="result" class="score-result">
         <div class="sr-score">
-          <span class="sr-label">Card Score</span>
+          <span class="sr-label">{{ $t('stepKarta.cardScore') }}</span>
           <span class="sr-value font-mono text-gradient">{{ result.score }}</span>
         </div>
         <div
@@ -194,10 +196,10 @@ function next() {
 
     <footer class="sc-foot">
       <button class="btn-ghost" @click="wizard.back()">
-        <i class="pi pi-arrow-left" /> Back
+        <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
       </button>
       <button class="btn-gradient" :disabled="!result" @click="next">
-        Continue <i class="pi pi-arrow-right" />
+        {{ $t('common.continue') }} <i class="pi pi-arrow-right" />
       </button>
     </footer>
   </div>

@@ -36,17 +36,17 @@ function next() {
   <div class="step-card surface-card">
     <header class="sc-head">
       <div>
-        <h2>Tarif</h2>
-        <p>Pick a credit plan. Plans outside the approved limit are disabled.</p>
+        <h2>{{ $t('stepTarif.title') }}</h2>
+        <p>{{ $t('stepTarif.subtitle') }}</p>
       </div>
       <div class="score-pill">
         <div>
-          <span class="sp-label">Score</span>
+          <span class="sp-label">{{ $t('stepTarif.score') }}</span>
           <span class="sp-value font-mono text-gradient">{{ score }}</span>
         </div>
         <div class="sp-sep" />
         <div>
-          <span class="sp-label">Approved limit</span>
+          <span class="sp-label">{{ $t('stepTarif.approvedLimit') }}</span>
           <MonoAmount :value="limit" size="md" />
         </div>
       </div>
@@ -72,30 +72,30 @@ function next() {
           />
         </div>
         <div class="tc-term">
-          <i class="pi pi-calendar" /> {{ t.termMonths }} months
+          <i class="pi pi-calendar" /> {{ t.termMonths }} {{ $t('stepTarif.months') }}
         </div>
         <div class="tc-markup">
-          Ustama: <strong>{{ t.markupPercent }}%</strong>
+          {{ $t('stepTarif.ustama') }} <strong>{{ t.markupPercent }}%</strong>
         </div>
         <div class="tc-range">
-          <span class="tcr-label">Credit range</span>
+          <span class="tcr-label">{{ $t('stepTarif.creditRange') }}</span>
           <span class="font-mono tcr-val">
             {{ (t.creditMin / 100).toLocaleString('uz-UZ') }} –
             {{ (t.creditMax / 100).toLocaleString('uz-UZ') }}
           </span>
         </div>
         <span v-if="!isAffordable(t)" class="locked">
-          <i class="pi pi-lock" /> Out of limit range
+          <i class="pi pi-lock" /> {{ $t('stepTarif.outOfLimit') }}
         </span>
       </button>
     </div>
 
     <footer class="sc-foot">
       <button class="btn-ghost" @click="wizard.back()">
-        <i class="pi pi-arrow-left" /> Back
+        <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
       </button>
       <button class="btn-gradient" :disabled="!selectedId" @click="next">
-        Continue <i class="pi pi-arrow-right" />
+        {{ $t('common.continue') }} <i class="pi pi-arrow-right" />
       </button>
     </footer>
   </div>

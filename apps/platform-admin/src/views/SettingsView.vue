@@ -1,40 +1,42 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import { useToast } from 'primevue/usetoast'
 import type { IntegrationEndpoint, PlatformConfigItem } from '@/types'
 
 const toast = useToast()
+const { t } = useI18n()
 
-const endpoints: IntegrationEndpoint[] = [
-  { label: 'KATM base URL', value: 'https://api.katm.uz/v2', masked: false },
-  { label: 'KATM timeout', value: '8000 ms', masked: false },
-  { label: 'MyID client ID', value: 'myid_c_••••••••3f2a', masked: true },
-  { label: 'PlumGate API key', value: 'plm_••••••••••••••••', masked: true },
-  { label: 'Payme merchant ID', value: '5e8f1c2a9b4d6e7f0a1b2c3d', masked: false },
-  { label: 'Click service ID', value: 'clk_svc_44219', masked: false },
-]
+const endpoints = computed<IntegrationEndpoint[]>(() => [
+  { label: t('settings.katmBaseUrl'), value: 'https://api.katm.uz/v2', masked: false },
+  { label: t('settings.katmTimeout'), value: '8000 ms', masked: false },
+  { label: t('settings.myidClientId'), value: 'myid_c_••••••••3f2a', masked: true },
+  { label: t('settings.plumgateApiKey'), value: 'plm_••••••••••••••••', masked: true },
+  { label: t('settings.paymeMerchantId'), value: '5e8f1c2a9b4d6e7f0a1b2c3d', masked: false },
+  { label: t('settings.clickServiceId'), value: 'clk_svc_44219', masked: false },
+])
 
 const config = ref<PlatformConfigItem[]>([
-  { key: 'otp_expiry', label: 'Default OTP expiry', value: 300, unit: 's', numeric: true },
+  { key: 'otp_expiry', label: t('settings.otpExpiry'), value: 300, unit: 's', numeric: true },
   {
     key: 'max_wizard',
-    label: 'Max wizard sessions per agent',
+    label: t('settings.maxWizard'),
     value: 5,
     unit: '',
     numeric: true,
   },
   {
     key: 'hard_deny',
-    label: 'Score hard-deny threshold',
+    label: t('settings.hardDeny'),
     value: 0.0,
     unit: '',
     numeric: true,
   },
   {
     key: 'partial_limit',
-    label: 'Score partial limit threshold',
+    label: t('settings.partialLimit'),
     value: 0.8,
     unit: '',
     numeric: true,

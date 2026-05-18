@@ -21,7 +21,7 @@ onMounted(() => {
 <template>
   <button
     class="theme-toggle"
-    :title="isDark ? 'Switch to light' : 'Switch to dark'"
+    :title="isDark ? $t('theme.switchLight') : $t('theme.switchDark')"
     @click="toggle"
   >
     <i :class="isDark ? 'pi pi-sun' : 'pi pi-moon'" />
