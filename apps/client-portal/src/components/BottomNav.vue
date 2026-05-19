@@ -1,37 +1,28 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useNotificationsStore } from '@/stores/notifications'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const notifications = useNotificationsStore()
 
 const unread = computed(() => notifications.unreadCount)
 
 interface NavItem {
   name: string
-  label: string
+  labelKey: string
   icon: string
-  /** route names considered "active" for this tab */
   match: string[]
 }
 
 const items: NavItem[] = [
-  { name: 'home', label: 'Home', icon: 'pi-home', match: ['home'] },
-  {
-    name: 'deals',
-    label: 'Deals',
-    icon: 'pi-credit-card',
-    match: ['deals', 'deal-detail'],
-  },
-  {
-    name: 'notifications',
-    label: 'Alerts',
-    icon: 'pi-bell',
-    match: ['notifications'],
-  },
-  { name: 'profile', label: 'Profile', icon: 'pi-user', match: ['profile'] },
+  { name: 'home', labelKey: 'nav.home', icon: 'pi-home', match: ['home'] },
+  { name: 'deals', labelKey: 'nav.deals', icon: 'pi-credit-card', match: ['deals', 'deal-detail'] },
+  { name: 'notifications', labelKey: 'nav.alerts', icon: 'pi-bell', match: ['notifications'] },
+  { name: 'profile', labelKey: 'nav.profile', icon: 'pi-user', match: ['profile'] },
 ]
 
 function isActive(item: NavItem): boolean {
@@ -60,7 +51,7 @@ function go(item: NavItem) {
           >{{ unread }}</span
         >
       </span>
-      <span class="nav-label">{{ item.label }}</span>
+      <span class="nav-label">{{ t(item.labelKey) }}</span>
     </button>
   </nav>
 </template>

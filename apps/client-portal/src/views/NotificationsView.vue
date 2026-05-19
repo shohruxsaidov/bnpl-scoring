@@ -24,9 +24,9 @@ function onClick(id: string) {
   <div class="notifications">
     <header class="head">
       <div>
-        <h1>Notifications</h1>
+        <h1>{{ $t('notifications.title') }}</h1>
         <p class="sub">
-          {{ store.unreadCount }} unread of {{ store.items.length }}
+          {{ $t('notifications.unreadOf', { count: store.unreadCount, total: store.items.length }) }}
         </p>
       </div>
       <button
@@ -34,7 +34,7 @@ function onClick(id: string) {
         :disabled="!hasUnread"
         @click="store.markAllRead()"
       >
-        Mark all read
+        {{ $t('notifications.markAllRead') }}
       </button>
     </header>
 
@@ -55,9 +55,7 @@ function onClick(id: string) {
             <span v-if="!n.read" class="ntf-dot" />
           </div>
           <p class="ntf-text">{{ n.body }}</p>
-          <span class="ntf-time font-mono">{{
-            relativeTime(n.createdAt)
-          }}</span>
+          <span class="ntf-time font-mono">{{ relativeTime(n.createdAt) }}</span>
         </div>
       </button>
     </div>

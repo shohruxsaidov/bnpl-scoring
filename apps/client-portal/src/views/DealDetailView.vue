@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import { useDealsStore } from '@/stores/deals'
 import StatusBadge from '@/components/StatusBadge.vue'
@@ -11,16 +12,17 @@ const route = useRoute()
 const router = useRouter()
 const deals = useDealsStore()
 const toast = useToast()
+const { t } = useI18n()
 
 const deal = computed(() => deals.byId(route.params.id as string))
 
 type Tab = 'schedule' | 'payments' | 'contract'
 const tab = ref<Tab>('schedule')
 
-const tabs: { key: Tab; label: string; icon: string }[] = [
-  { key: 'schedule', label: 'Schedule', icon: 'pi-calendar' },
-  { key: 'payments', label: 'Payments', icon: 'pi-wallet' },
-  { key: 'contract', label: 'Contract', icon: 'pi-file' },
+const tabs: { key: Tab; labelKey: string; icon: string }[] = [
+  { key: 'schedule', labelKey: 'dealDetail.tabSchedule', icon: 'pi-calendar' },
+  { key: 'payments', labelKey: 'dealDetail.tabPayments', icon: 'pi-wallet' },
+  { key: 'contract', labelKey: 'dealDetail.tabContract', icon: 'pi-file' },
 ]
 
 function back() {
@@ -30,8 +32,8 @@ function back() {
 function downloadContract() {
   toast.add({
     severity: 'info',
-    summary: 'Download started',
-    detail: `Kontrakt ${deal.value?.contract.number}.pdf is being prepared`,
+    summary: t('dealDetail.downloadStarted'),
+    detail: t('dealDetail.downloadDetail', { number: deal.value?.contract.number }),
     life: 3000,
   })
 }
@@ -40,8 +42,8 @@ function pay() {
   if (!deal.value) return
   toast.add({
     severity: 'success',
-    summary: 'Payment started',
-    detail: `Redirecting to pay for ${deal.value.merchant}`,
+    summary: t('dealDetail.paymentStarted'),
+    detail: t('dealDetail.payDetail', { merchant: deal.value.merchant }),
     life: 3000,
   })
 }
@@ -50,7 +52,7 @@ function pay() {
 <template>
   <div v-if="deal" class="detail">
     <button class="back-btn" @click="back">
-      <i class="pi pi-arrow-left" /> Back
+      <i class="pi pi-arrow-left" /> {{ $t('dealDetail.back') }}
     </button>
 
     <header class="dh surface-card">
@@ -65,29 +67,25 @@ function pay() {
       <div class="dh-meta">
         <span>{{ deal.tariffLabel }}</span>
         <span class="dot">·</span>
-        <span>{{ deal.termMonths }} oy</span>
+        <span>{{ deal.termMonths }} {{ $t('common.mo') }}</span>
         <span class="dot">·</span>
-        <span>Ustama {{ deal.markupPercent }}%</span>
+        <span>{{ $t('dealDetail.markup') }} {{ deal.markupPercent }}%</span>
       </div>
       <div class="dh-progress">
         <div class="dh-track">
           <div
             class="dh-fill"
-            :style="{
-              width: `${(deal.paymentsMade / deal.paymentsTotal) * 100}%`,
-            }"
+            :style="{ width: `${(deal.paymentsMade / deal.paymentsTotal) * 100}%` }"
           />
         </div>
-        <span class="dh-progress-label font-mono"
-          >{{ deal.paymentsMade }}/{{ deal.paymentsTotal }}</span
-        >
+        <span class="dh-progress-label font-mono">{{ deal.paymentsMade }}/{{ deal.paymentsTotal }}</span>
       </div>
       <button
         v-if="deal.status !== 'closed'"
         class="btn-gradient dh-pay"
         @click="pay"
       >
-        Pay next instalment
+        {{ $t('dealDetail.payInstalment') }}
       </button>
     </header>
 
@@ -101,17 +99,17 @@ function pay() {
         @click="tab = t.key"
       >
         <i class="pi" :class="t.icon" />
-        {{ t.label }}
+        {{ $t(t.labelKey) }}
       </button>
     </nav>
 
     <!-- Schedule -->
     <section v-if="tab === 'schedule'" class="panel surface-card">
       <div class="sched-head">
-        <span class="col-no">#</span>
-        <span class="col-date">Date</span>
-        <span class="col-amt">Amount</span>
-        <span class="col-st">Status</span>
+        <span class="col-no">{{ $t('dealDetail.colNo') }}</span>
+        <span class="col-date">{{ $t('dealDetail.colDate') }}</span>
+        <span class="col-amt">{{ $t('dealDetail.colAmt') }}</span>
+        <span class="col-st">{{ $t('dealDetail.colStatus') }}</span>
       </div>
       <div
         v-for="row in deal.schedule"
@@ -120,19 +118,17 @@ function pay() {
         :class="{ overdue: row.status === 'overdue' }"
       >
         <span class="col-no font-mono">{{ row.no }}</span>
-        <span class="col-date font-mono">{{
-          formatDateLong(row.dueDate)
-        }}</span>
+        <span class="col-date font-mono">{{ formatDateLong(row.dueDate) }}</span>
         <span class="col-amt font-mono">{{ formatSomShort(row.amount) }}</span>
         <span class="col-st">
           <span v-if="row.status === 'paid'" class="pill paid">
-            <i class="pi pi-check" /> Paid
+            <i class="pi pi-check" /> {{ $t('dealDetail.statusPaid') }}
           </span>
           <span v-else-if="row.status === 'overdue'" class="pill overdue">
-            <i class="pi pi-exclamation-triangle" /> Overdue
+            <i class="pi pi-exclamation-triangle" /> {{ $t('dealDetail.statusOverdue') }}
           </span>
           <span v-else class="pill upcoming">
-            <i class="pi pi-clock" /> Upcoming
+            <i class="pi pi-clock" /> {{ $t('dealDetail.statusUpcoming') }}
           </span>
         </span>
       </div>
@@ -141,29 +137,19 @@ function pay() {
     <!-- Payments -->
     <section v-else-if="tab === 'payments'" class="panel surface-card">
       <div v-if="!deal.payments.length" class="empty">
-        No payments recorded yet.
+        {{ $t('dealDetail.noPayments') }}
       </div>
-      <div
-        v-for="p in deal.payments"
-        :key="p.id"
-        class="pay-row"
-      >
+      <div v-for="p in deal.payments" :key="p.id" class="pay-row">
         <div class="pay-icon">
           <i class="pi pi-check-circle" />
         </div>
         <div class="pay-mid">
-          <span class="pay-date font-mono">{{
-            formatDateLong(p.date)
-          }}</span>
+          <span class="pay-date font-mono">{{ formatDateLong(p.date) }}</span>
           <span class="pay-txn font-mono">{{ p.txnId }}</span>
         </div>
         <div class="pay-right">
-          <span class="pay-amt font-mono"
-            >{{ formatSomShort(p.amount) }} so'm</span
-          >
-          <span class="pay-provider" :class="p.provider.toLowerCase()">{{
-            p.provider
-          }}</span>
+          <span class="pay-amt font-mono">{{ formatSomShort(p.amount) }} {{ $t('common.som') }}</span>
+          <span class="pay-provider" :class="p.provider.toLowerCase()">{{ p.provider }}</span>
         </div>
       </div>
     </section>
@@ -173,37 +159,33 @@ function pay() {
       <div class="ct-doc">
         <div class="ct-icon"><i class="pi pi-file-pdf" /></div>
         <div class="ct-info">
-          <div class="ct-title">
-            Kontrakt {{ deal.contract.number }}
-          </div>
-          <div class="ct-sub">
-            Signed {{ formatDateLong(deal.contract.signedAt) }}
-          </div>
+          <div class="ct-title">{{ $t('dealDetail.contractTitle', { number: deal.contract.number }) }}</div>
+          <div class="ct-sub">{{ $t('dealDetail.contractSigned', { date: formatDateLong(deal.contract.signedAt) }) }}</div>
         </div>
         <span v-if="deal.contract.signed" class="pill paid">
-          <i class="pi pi-check" /> Signed
+          <i class="pi pi-check" /> {{ $t('dealDetail.signed') }}
         </span>
       </div>
 
       <div v-if="deal.contract.myIdVerified" class="ct-myid">
         <i class="pi pi-verified" />
         <div>
-          <strong>MyID verified</strong>
-          <span>Identity confirmed via MyID biometric check</span>
+          <strong>{{ $t('dealDetail.myidVerified') }}</strong>
+          <span>{{ $t('dealDetail.myidDetail') }}</span>
         </div>
       </div>
 
       <button class="btn-gradient ct-download" @click="downloadContract">
-        <i class="pi pi-download" /> Download PDF
+        <i class="pi pi-download" /> {{ $t('dealDetail.downloadPdf') }}
       </button>
     </section>
   </div>
 
   <div v-else class="missing">
     <i class="pi pi-exclamation-circle" />
-    <p>Deal not found.</p>
+    <p>{{ $t('dealDetail.notFound') }}</p>
     <button class="btn-ghost" @click="router.push({ name: 'deals' })">
-      Back to deals
+      {{ $t('dealDetail.backToDeals') }}
     </button>
   </div>
 </template>
@@ -231,7 +213,6 @@ function pay() {
   color: var(--accent-2);
 }
 
-/* header card */
 .dh {
   padding: 1.5rem;
   display: flex;
@@ -291,7 +272,6 @@ function pay() {
   margin-top: 0.3rem;
 }
 
-/* tabs */
 .tabs {
   display: flex;
   gap: 0.5rem;
@@ -324,7 +304,6 @@ function pay() {
   font-size: 0.85rem;
 }
 
-/* panels */
 .panel {
   padding: 1.25rem;
 }
@@ -335,7 +314,6 @@ function pay() {
   padding: 1.5rem 0;
 }
 
-/* schedule */
 .sched-head {
   display: grid;
   grid-template-columns: 32px 1fr auto auto;
@@ -396,7 +374,6 @@ function pay() {
   color: var(--danger);
 }
 
-/* payments */
 .pay-row {
   display: flex;
   align-items: center;
@@ -467,7 +444,6 @@ function pay() {
   color: #4a7dff;
 }
 
-/* contract */
 .contract {
   display: flex;
   flex-direction: column;
@@ -530,7 +506,6 @@ function pay() {
   gap: 0.5rem;
 }
 
-/* missing */
 .missing {
   display: flex;
   flex-direction: column;

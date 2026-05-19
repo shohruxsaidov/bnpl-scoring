@@ -60,7 +60,7 @@ function saveEdit(item: PlatformConfigItem) {
   editingKey.value = null
   toast.add({
     severity: 'success',
-    summary: 'Setting saved',
+    summary: t('settings.settingSaved'),
     detail: `${item.label} → ${item.value}${item.unit ? ' ' + item.unit : ''}`,
     life: 2500,
   })
@@ -71,8 +71,8 @@ function saveEdit(item: PlatformConfigItem) {
   <div class="settings">
     <section class="surface-card panel">
       <header class="panel-head">
-        <h3 class="section-title">Integration endpoints</h3>
-        <span class="muted">Read-only · managed via infra</span>
+        <h3 class="section-title">{{ $t('settings.integrationEndpoints') }}</h3>
+        <span class="muted">{{ $t('settings.readOnlyInfra') }}</span>
       </header>
       <div class="rows">
         <div v-for="e in endpoints" :key="e.label" class="row">
@@ -87,8 +87,8 @@ function saveEdit(item: PlatformConfigItem) {
 
     <section class="surface-card panel">
       <header class="panel-head">
-        <h3 class="section-title">Platform config</h3>
-        <span class="muted">Inline-editable</span>
+        <h3 class="section-title">{{ $t('settings.platformConfig') }}</h3>
+        <span class="muted">{{ $t('settings.inlineEditable') }}</span>
       </header>
       <div class="rows">
         <div v-for="item in config" :key="item.key" class="row">
@@ -104,10 +104,10 @@ function saveEdit(item: PlatformConfigItem) {
                 class="edit-input"
               />
               <InputText v-else v-model="(draft as string)" class="edit-input" />
-              <button class="icon-btn ok" title="Save" @click="saveEdit(item)">
+              <button class="icon-btn ok" :title="$t('settings.save')" @click="saveEdit(item)">
                 <i class="pi pi-check" />
               </button>
-              <button class="icon-btn" title="Cancel" @click="cancelEdit">
+              <button class="icon-btn" :title="$t('common.cancel')" @click="cancelEdit">
                 <i class="pi pi-times" />
               </button>
             </div>
@@ -117,7 +117,7 @@ function saveEdit(item: PlatformConfigItem) {
             <span class="row-value font-mono">
               {{ item.value }}<span v-if="item.unit" class="unit"> {{ item.unit }}</span>
             </span>
-            <button class="icon-btn" title="Edit" @click="startEdit(item)">
+            <button class="icon-btn" :title="$t('common.edit')" @click="startEdit(item)">
               <i class="pi pi-pencil" />
             </button>
           </template>

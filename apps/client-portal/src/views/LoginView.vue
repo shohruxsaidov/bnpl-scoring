@@ -1,21 +1,22 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
+const { t } = useI18n()
 
 type Step = 'phone' | 'otp'
 const step = ref<Step>('phone')
 
 /* ── Phone step ──────────────────────────────────────────────────────────── */
-const phoneDigits = ref('') // up to 9 local digits after +998
+const phoneDigits = ref('')
 const phoneError = ref('')
 
 const phoneDisplay = computed(() => {
   const d = phoneDigits.value
-  // XX XXX XX XX
   const parts = [
     d.slice(0, 2),
     d.slice(2, 5),
@@ -36,12 +37,12 @@ const fullPhone = computed(() => `+998${phoneDigits.value}`)
 function submitPhone() {
   phoneError.value = ''
   if (phoneDigits.value.length !== 9) {
-    phoneError.value = 'Enter a valid 9-digit number'
+    phoneError.value = t('login.phoneError')
     return
   }
   const ok = auth.requestOtp(fullPhone.value)
   if (!ok) {
-    phoneError.value = 'No account for this number. Try +998 91 555 22 33'
+    phoneError.value = t('login.noAccount')
     return
   }
   step.value = 'otp'
@@ -67,7 +68,6 @@ function onOtpInput(idx: number, e: Event) {
     otp.value[idx] = ''
     return
   }
-  // take last typed digit (handles overwrite)
   otp.value[idx] = val.slice(-1)
   if (idx < 3) {
     nextTick(() => otpRefs.value[idx + 1]?.focus())
@@ -98,12 +98,12 @@ function onOtpPaste(e: ClipboardEvent) {
 function submitOtp() {
   otpError.value = ''
   if (otpCode.value.length !== 4) {
-    otpError.value = 'Enter the 4-digit code'
+    otpError.value = t('login.codeError')
     return
   }
   const ok = auth.verifyOtp(otpCode.value)
   if (!ok) {
-    otpError.value = 'Invalid code. Any 4 digits work in the demo.'
+    otpError.value = t('login.invalidCode')
     return
   }
   router.push({ name: 'home' })
@@ -162,21 +162,21 @@ onBeforeUnmount(() => {
       <div class="glass-card fc-deal">
         <div class="gc-header">
           <span class="gc-dot dot-amber" />
-          <span class="gc-tag">Next payment</span>
+          <span class="gc-tag">{{ $t('login.heroTag') }}</span>
           <span class="gc-id font-mono">#DEAL-1001</span>
         </div>
         <div class="gc-amount font-mono">
-          1,399,167 <span class="gc-currency">so'm</span>
+          1,399,167 <span class="gc-currency">{{ $t('login.heroSom') }}</span>
         </div>
         <div class="gc-meta">
           <span class="gc-avatar">TS</span>
           <div>
             <div class="gc-name">TechShop Tashkent</div>
-            <div class="gc-sub">Due Jul 15 · 12 oy</div>
+            <div class="gc-sub">Due Jul 15 · 12 {{ $t('common.mo') }}</div>
           </div>
         </div>
         <div class="gc-progress-row">
-          <span class="gc-sub">3 / 12 paid</span>
+          <span class="gc-sub">3 / 12 {{ $t('login.heroPaid') }}</span>
           <div class="gc-pill-row">
             <span
               v-for="i in 12"
@@ -192,10 +192,10 @@ onBeforeUnmount(() => {
       <div class="glass-card fc-paid">
         <div class="gc-header">
           <i class="pi pi-check-circle" style="font-size: 0.85rem; color: #00d4aa" />
-          <span class="gc-tag">Payment confirmed</span>
+          <span class="gc-tag">{{ $t('login.heroPayConfirmed') }}</span>
         </div>
         <div class="gc-amount font-mono">
-          1,399,167 <span class="gc-currency">so'm</span>
+          1,399,167 <span class="gc-currency">{{ $t('login.heroSom') }}</span>
         </div>
         <div class="gc-sub">Paid Jun 15 via Payme</div>
       </div>
@@ -204,7 +204,7 @@ onBeforeUnmount(() => {
       <div class="glass-card fc-schedule">
         <div class="gc-header">
           <i class="pi pi-calendar" style="font-size: 0.8rem; opacity: 0.7" />
-          <span class="gc-tag">Schedule</span>
+          <span class="gc-tag">{{ $t('login.heroSchedule') }}</span>
         </div>
         <div class="sch-list">
           <div class="sch-row done">
@@ -224,7 +224,7 @@ onBeforeUnmount(() => {
           </div>
           <div class="sch-row future">
             <span class="sch-dots">· · ·</span>
-            <span class="gc-sub">9 more payments</span>
+            <span class="gc-sub">9 {{ $t('login.heroMore') }}</span>
           </div>
         </div>
       </div>
@@ -233,7 +233,7 @@ onBeforeUnmount(() => {
         <div class="logo-mark">S</div>
         <div>
           <h1 class="brand-title">Scoring</h1>
-          <p class="brand-sub">Your instalments, in one place</p>
+          <p class="brand-sub">{{ $t('login.heroBrandSub') }}</p>
         </div>
       </div>
     </div>
@@ -248,11 +248,11 @@ onBeforeUnmount(() => {
 
         <!-- step: phone -->
         <template v-if="step === 'phone'">
-          <h2>Welcome</h2>
-          <p class="sub">Sign in with your phone number to view your deals</p>
+          <h2>{{ $t('login.welcome') }}</h2>
+          <p class="sub">{{ $t('login.subtitle') }}</p>
 
           <div class="field">
-            <label class="field-label" for="phone">Phone number</label>
+            <label class="field-label" for="phone">{{ $t('login.phoneLabel') }}</label>
             <div class="phone-input" :class="{ invalid: !!phoneError }">
               <span class="prefix font-mono">+998</span>
               <input
@@ -270,26 +270,23 @@ onBeforeUnmount(() => {
           </div>
 
           <button class="btn-gradient submit" @click="submitPhone">
-            Send OTP
+            {{ $t('login.sendOtp') }}
           </button>
 
           <div class="hint">
-            <strong>Demo account</strong>
-            <span
-              >Phone <code>+998 91 555 22 33</code> — any 4-digit code
-              works</span
-            >
+            <strong>{{ $t('login.demoAccount') }}</strong>
+            <span>{{ $t('login.demoHint', { phone: '+998 91 555 22 33' }) }}</span>
           </div>
         </template>
 
         <!-- step: otp -->
         <template v-else>
           <button class="back-link" @click="backToPhone">
-            <i class="pi pi-arrow-left" /> Change number
+            <i class="pi pi-arrow-left" /> {{ $t('login.changeNumber') }}
           </button>
-          <h2>Enter code</h2>
+          <h2>{{ $t('login.enterCode') }}</h2>
           <p class="sub">
-            We sent a 4-digit code to
+            {{ $t('login.codeSentTo') }}
             <strong class="font-mono">{{ fullPhone }}</strong>
           </p>
 
@@ -308,20 +305,18 @@ onBeforeUnmount(() => {
               @keydown="onOtpKeydown(idx, $event)"
             />
           </div>
-          <span v-if="otpError" class="field-error center">{{
-            otpError
-          }}</span>
+          <span v-if="otpError" class="field-error center">{{ otpError }}</span>
 
           <button class="btn-gradient submit" @click="submitOtp">
-            Verify &amp; sign in
+            {{ $t('login.verifySignIn') }}
           </button>
 
           <div class="resend">
-            <span v-if="seconds > 0" class="font-mono"
-              >Resend in {{ seconds }}s</span
-            >
+            <span v-if="seconds > 0" class="font-mono">
+              {{ $t('login.resendIn', { sec: seconds }) }}
+            </span>
             <button v-else class="resend-btn" @click="resend">
-              Resend code
+              {{ $t('login.resendCode') }}
             </button>
           </div>
         </template>
@@ -337,7 +332,6 @@ onBeforeUnmount(() => {
   min-height: 100vh;
 }
 
-/* ── Hero panel ─────────────────────────────────────────────────────────── */
 .auth-hero {
   position: relative;
   overflow: hidden;
@@ -568,34 +562,18 @@ onBeforeUnmount(() => {
 }
 
 @keyframes float1 {
-  0%,
-  100% {
-    transform: translateX(-45%) rotate(-2deg) translateY(0);
-  }
-  50% {
-    transform: translateX(-45%) rotate(-2deg) translateY(-10px);
-  }
+  0%, 100% { transform: translateX(-45%) rotate(-2deg) translateY(0); }
+  50%       { transform: translateX(-45%) rotate(-2deg) translateY(-10px); }
 }
 @keyframes float2 {
-  0%,
-  100% {
-    transform: rotate(2deg) translateY(0);
-  }
-  50% {
-    transform: rotate(2deg) translateY(-12px);
-  }
+  0%, 100% { transform: rotate(2deg) translateY(0); }
+  50%       { transform: rotate(2deg) translateY(-12px); }
 }
 @keyframes float3 {
-  0%,
-  100% {
-    transform: rotate(-2.5deg) translateY(0);
-  }
-  50% {
-    transform: rotate(-2.5deg) translateY(-9px);
-  }
+  0%, 100% { transform: rotate(-2.5deg) translateY(0); }
+  50%       { transform: rotate(-2.5deg) translateY(-9px); }
 }
 
-/* ── Right side ─────────────────────────────────────────────────────────── */
 .auth-form-wrap {
   display: grid;
   place-items: center;
@@ -758,7 +736,6 @@ onBeforeUnmount(() => {
   text-decoration: underline;
 }
 
-/* ── Mobile: hide hero, show form full-width ────────────────────────────── */
 @media (max-width: 860px) {
   .auth-page {
     grid-template-columns: 1fr;

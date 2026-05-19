@@ -26,8 +26,8 @@ function openDeal(id: string) {
 <template>
   <div class="deals">
     <header class="head">
-      <h1>My deals</h1>
-      <p class="sub">All your instalment credits</p>
+      <h1>{{ $t('deals.title') }}</h1>
+      <p class="sub">{{ $t('deals.subtitle') }}</p>
     </header>
 
     <div class="filters">
@@ -38,11 +38,11 @@ function openDeal(id: string) {
         :class="{ active: filter === f }"
         @click="filter = f"
       >
-        {{ f === 'all' ? 'All' : f === 'active' ? 'Active' : 'Closed' }}
+        {{ f === 'all' ? $t('deals.filterAll') : f === 'active' ? $t('deals.filterActive') : $t('deals.filterClosed') }}
       </button>
     </div>
 
-    <div v-if="!list.length" class="empty">No deals in this category.</div>
+    <div v-if="!list.length" class="empty">{{ $t('deals.empty') }}</div>
 
     <div
       v-for="deal in list"
@@ -60,23 +60,19 @@ function openDeal(id: string) {
 
       <div class="dc-amount">
         <MonoAmount :value="deal.amount" size="lg" :gradient="true" />
-        <span class="dc-tariff"
-          >{{ deal.termMonths }} oy · {{ deal.markupPercent }}%</span
-        >
+        <span class="dc-tariff">{{ deal.termMonths }} {{ $t('common.mo') }} · {{ deal.markupPercent }}%</span>
       </div>
 
       <div class="dc-foot">
         <div class="dc-track">
           <div
             class="dc-fill"
-            :style="{
-              width: `${(deal.paymentsMade / deal.paymentsTotal) * 100}%`,
-            }"
+            :style="{ width: `${(deal.paymentsMade / deal.paymentsTotal) * 100}%` }"
           />
         </div>
-        <span class="dc-foot-label"
-          >{{ deal.paymentsMade }}/{{ deal.paymentsTotal }} paid</span
-        >
+        <span class="dc-foot-label">
+          {{ $t('deals.paidOf', { paid: deal.paymentsMade, total: deal.paymentsTotal }) }}
+        </span>
       </div>
 
       <div
@@ -85,13 +81,11 @@ function openDeal(id: string) {
         :class="{ overdue: deal.status === 'overdue' }"
       >
         <i class="pi pi-calendar" />
-        Next:
-        <span class="font-mono">{{
-          formatDateLong(deal.nextPaymentDate)
-        }}</span>
+        {{ $t('deals.next') }}
+        <span class="font-mono">{{ formatDateLong(deal.nextPaymentDate) }}</span>
       </div>
       <div v-else class="dc-next done">
-        <i class="pi pi-check-circle" /> Fully paid
+        <i class="pi pi-check-circle" /> {{ $t('deals.fullyPaid') }}
       </div>
     </div>
   </div>

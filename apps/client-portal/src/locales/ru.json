@@ -1,0 +1,132 @@
+{
+  "common": {
+    "som": "сум",
+    "mo": "мес",
+    "back": "Назад",
+    "save": "Сохранить",
+    "cancel": "Отмена"
+  },
+  "status": {
+    "scoring": "Скоринг",
+    "draft": "Черновик",
+    "approved": "Одобрено",
+    "active": "Активный",
+    "overdue": "Просрочен",
+    "closed": "Закрыт",
+    "declined": "Отклонён"
+  },
+  "theme": {
+    "switchLight": "Переключить на светлую",
+    "switchDark": "Переключить на тёмную"
+  },
+  "topbar": {
+    "notifications": "Уведомления"
+  },
+  "nav": {
+    "home": "Главная",
+    "deals": "Сделки",
+    "alerts": "Оповещения",
+    "profile": "Профиль"
+  },
+  "login": {
+    "heroTag": "Следующий платёж",
+    "heroSom": "сум",
+    "heroPaid": "оплачено",
+    "heroMore": "платежей осталось",
+    "heroSchedule": "График",
+    "heroPayConfirmed": "Платёж подтверждён",
+    "heroBrandSub": "Ваши рассрочки — в одном месте",
+    "welcome": "Добро пожаловать",
+    "subtitle": "Войдите по номеру телефона, чтобы просматривать сделки",
+    "phoneLabel": "Номер телефона",
+    "sendOtp": "Отправить OTP",
+    "demoAccount": "Демо аккаунт",
+    "demoHint": "Телефон {phone} — любой 4-значный код подойдёт",
+    "phoneError": "Введите корректный 9-значный номер",
+    "noAccount": "Аккаунт для этого номера не найден. Попробуйте +998 91 555 22 33",
+    "changeNumber": "Изменить номер",
+    "enterCode": "Введите код",
+    "codeSentTo": "Мы отправили 4-значный код на",
+    "codeError": "Введите 4-значный код",
+    "invalidCode": "Неверный код. В демо-режиме подходит любой 4-значный код.",
+    "verifySignIn": "Подтвердить и войти",
+    "resendIn": "Повторная отправка через {sec}с",
+    "resendCode": "Отправить код повторно"
+  },
+  "home": {
+    "greeting": "Привет, {name}!",
+    "greetSub": "Краткий обзор ваших рассрочек",
+    "overdueTitle": "Просрочка платежа",
+    "overdueBody": "У вас {count} просроченный платёж. Оплатите, чтобы избежать штрафов.",
+    "activeDeals": "Активные сделки",
+    "totalPaid": "Итого оплачено",
+    "nextPayment": "Следующий платёж",
+    "activeSection": "Активные сделки",
+    "noActive": "Активных сделок нет.",
+    "paymentsMade": "{made} из {total} платежей",
+    "overdueSince": "Просрочено с",
+    "nextPaymentLabel": "Следующий платёж",
+    "details": "Подробнее",
+    "pay": "Оплатить",
+    "showClosed": "Показать {count} закрытых",
+    "hideClosed": "Скрыть {count} закрытых",
+    "payStarted": "Платёж начат",
+    "payDetail": "Переход к оплате для {merchant}"
+  },
+  "deals": {
+    "title": "Мои сделки",
+    "subtitle": "Все ваши кредиты в рассрочку",
+    "filterAll": "Все",
+    "filterActive": "Активные",
+    "filterClosed": "Закрытые",
+    "empty": "В этой категории сделок нет.",
+    "paidOf": "{paid}/{total} оплачено",
+    "next": "Следующий:",
+    "fullyPaid": "Полностью оплачено"
+  },
+  "dealDetail": {
+    "back": "Назад",
+    "payInstalment": "Оплатить следующий взнос",
+    "tabSchedule": "График",
+    "tabPayments": "Платежи",
+    "tabContract": "Договор",
+    "colNo": "#",
+    "colDate": "Дата",
+    "colAmt": "Сумма",
+    "colStatus": "Статус",
+    "statusPaid": "Оплачено",
+    "statusOverdue": "Просрочен",
+    "statusUpcoming": "Предстоящий",
+    "noPayments": "Платежей пока нет.",
+    "markup": "Наценка",
+    "contractTitle": "Контракт {number}",
+    "contractSigned": "Подписан {date}",
+    "signed": "Подписан",
+    "myidVerified": "Верифицировано через MyID",
+    "myidDetail": "Личность подтверждена через биометрическую проверку MyID",
+    "downloadPdf": "Скачать PDF",
+    "notFound": "Сделка не найдена.",
+    "backToDeals": "К списку сделок",
+    "downloadStarted": "Загрузка началась",
+    "paymentStarted": "Платёж начат",
+    "downloadDetail": "Контракт {number}.pdf подготавливается",
+    "payDetail": "Переход к оплате для {merchant}"
+  },
+  "profile": {
+    "personalInfo": "Личная информация",
+    "fullName": "Полное имя",
+    "phone": "Телефон",
+    "pinfl": "ПИНФЛ",
+    "passport": "Паспорт",
+    "linkedCards": "Привязанные карты",
+    "preferences": "Настройки",
+    "appearance": "Внешний вид",
+    "appearanceHint": "Переключение между светлой и тёмной темой",
+    "logout": "Выйти"
+  },
+  "notifications": {
+    "title": "Уведомления",
+    "unreadOf": "{count} непрочитанных из {total}",
+    "markAllRead": "Отметить все как прочитанные"
+  }
+}

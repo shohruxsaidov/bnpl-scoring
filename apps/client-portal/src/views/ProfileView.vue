@@ -41,31 +41,27 @@ function logout() {
     </header>
 
     <section class="block surface-card">
-      <h2 class="block-title">Personal information</h2>
+      <h2 class="block-title">{{ $t('profile.personalInfo') }}</h2>
       <div class="row">
-        <span class="row-label">Full name</span>
+        <span class="row-label">{{ $t('profile.fullName') }}</span>
         <span class="row-value">{{ client.fullName }}</span>
       </div>
       <div class="row">
-        <span class="row-label">Phone</span>
+        <span class="row-label">{{ $t('profile.phone') }}</span>
         <span class="row-value font-mono">{{ client.phone }}</span>
       </div>
       <div class="row">
-        <span class="row-label">PINFL</span>
-        <span class="row-value font-mono">{{
-          maskPinfl(client.pinfl)
-        }}</span>
+        <span class="row-label">{{ $t('profile.pinfl') }}</span>
+        <span class="row-value font-mono">{{ maskPinfl(client.pinfl) }}</span>
       </div>
       <div class="row">
-        <span class="row-label">Passport</span>
-        <span class="row-value font-mono">{{
-          client.passportSerial
-        }}</span>
+        <span class="row-label">{{ $t('profile.passport') }}</span>
+        <span class="row-value font-mono">{{ client.passportSerial }}</span>
       </div>
     </section>
 
     <section class="block surface-card">
-      <h2 class="block-title">Linked cards</h2>
+      <h2 class="block-title">{{ $t('profile.linkedCards') }}</h2>
       <div v-for="c in cards" :key="c.id" class="card-row">
         <span class="card-icon"><i class="pi pi-credit-card" /></span>
         <div class="card-info">
@@ -76,18 +72,18 @@ function logout() {
     </section>
 
     <section class="block surface-card">
-      <h2 class="block-title">Preferences</h2>
+      <h2 class="block-title">{{ $t('profile.preferences') }}</h2>
       <div class="row toggle-row">
         <div>
-          <span class="row-value">Appearance</span>
-          <span class="row-hint">Switch between light and dark</span>
+          <span class="row-value">{{ $t('profile.appearance') }}</span>
+          <span class="row-hint">{{ $t('profile.appearanceHint') }}</span>
         </div>
         <ThemeToggle />
       </div>
     </section>
 
     <button class="logout" @click="logout">
-      <i class="pi pi-sign-out" /> Log out
+      <i class="pi pi-sign-out" /> {{ $t('profile.logout') }}
     </button>
   </div>
 </template>

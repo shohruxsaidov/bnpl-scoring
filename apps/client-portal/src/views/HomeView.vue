@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/stores/auth'
 import { useDealsStore } from '@/stores/deals'
 import StatusBadge from '@/components/StatusBadge.vue'
 import MonoAmount from '@/components/MonoAmount.vue'
-import { formatDateShort, formatDateLong, formatSom } from '@/utils/money'
+import { formatDateShort, formatDateLong } from '@/utils/money'
 import type { Deal } from '@/types'
 
 const auth = useAuthStore()
 const deals = useDealsStore()
 const router = useRouter()
 const toast = useToast()
+const { t } = useI18n()
 
 const firstName = computed(() => auth.client?.fullName.split(' ')[0] ?? '')
 
@@ -35,8 +37,8 @@ function openDeal(id: string) {
 function pay(deal: Deal) {
   toast.add({
     severity: 'success',
-    summary: 'Payment started',
-    detail: `Redirecting to pay ${formatSom(deal.nextPaymentAmount)} for ${deal.merchant}`,
+    summary: t('home.payStarted'),
+    detail: t('home.payDetail', { merchant: deal.merchant }),
     life: 3000,
   })
 }
@@ -46,8 +48,8 @@ function pay(deal: Deal) {
   <div class="home">
     <!-- greeting -->
     <header class="greeting">
-      <h1>Salom, {{ firstName }}! <span class="wave">👋</span></h1>
-      <p class="greet-sub">Here is a snapshot of your instalments</p>
+      <h1>{{ $t('home.greeting', { name: firstName }) }} <span class="wave">👋</span></h1>
+      <p class="greet-sub">{{ $t('home.greetSub') }}</p>
     </header>
 
     <!-- overdue alert banner -->
@@ -58,12 +60,8 @@ function pay(deal: Deal) {
       >
         <i class="pi pi-exclamation-triangle" />
         <div class="ob-text">
-          <strong>Payment overdue</strong>
-          <span
-            >You have {{ overdueDeals.length }} overdue payment{{
-              overdueDeals.length === 1 ? '' : 's'
-            }}. Please pay to avoid penalties.</span
-          >
+          <strong>{{ $t('home.overdueTitle') }}</strong>
+          <span>{{ $t('home.overdueBody', { count: overdueDeals.length }) }}</span>
         </div>
         <button class="ob-close" @click="bannerDismissed = true">
           <i class="pi pi-times" />
@@ -74,25 +72,25 @@ function pay(deal: Deal) {
     <!-- summary bar -->
     <section class="summary">
       <div class="stat-card">
-        <span class="stat-label">Active deals</span>
+        <span class="stat-label">{{ $t('home.activeDeals') }}</span>
         <span class="stat-value">{{ activeDeals.length }}</span>
       </div>
       <div class="stat-card">
-        <span class="stat-label">Total paid</span>
+        <span class="stat-label">{{ $t('home.totalPaid') }}</span>
         <MonoAmount :value="deals.totalPaid" size="md" :gradient="true" />
       </div>
       <div class="stat-card">
-        <span class="stat-label">Next payment</span>
+        <span class="stat-label">{{ $t('home.nextPayment') }}</span>
         <span class="stat-value font-mono accent">{{ nextDate }}</span>
       </div>
     </section>
 
     <!-- active deals -->
     <section class="deals-section">
-      <h2 class="section-title">Active deals</h2>
+      <h2 class="section-title">{{ $t('home.activeSection') }}</h2>
 
       <div v-if="!activeDeals.length" class="empty">
-        You have no active deals.
+        {{ $t('home.noActive') }}
       </div>
 
       <div
@@ -110,63 +108,46 @@ function pay(deal: Deal) {
 
         <div class="dc-amount">
           <MonoAmount :value="deal.amount" size="lg" :gradient="true" />
-          <span class="dc-tariff"
-            >{{ deal.tariffLabel }} · {{ deal.termMonths }} oy ·
-            {{ deal.markupPercent }}%</span
-          >
+          <span class="dc-tariff">
+            {{ deal.tariffLabel }} · {{ deal.termMonths }} {{ $t('common.mo') }} · {{ deal.markupPercent }}%
+          </span>
         </div>
 
         <div class="dc-progress">
           <div class="dc-progress-head">
-            <span class="dc-progress-label"
-              >{{ deal.paymentsMade }} of {{ deal.paymentsTotal }} payments
-              made</span
-            >
-            <span class="dc-progress-pct font-mono"
-              >{{
-                Math.round((deal.paymentsMade / deal.paymentsTotal) * 100)
-              }}%</span
-            >
+            <span class="dc-progress-label">
+              {{ $t('home.paymentsMade', { made: deal.paymentsMade, total: deal.paymentsTotal }) }}
+            </span>
+            <span class="dc-progress-pct font-mono">
+              {{ Math.round((deal.paymentsMade / deal.paymentsTotal) * 100) }}%
+            </span>
           </div>
           <div class="dc-track">
             <div
               class="dc-fill"
-              :style="{
-                width: `${(deal.paymentsMade / deal.paymentsTotal) * 100}%`,
-              }"
+              :style="{ width: `${(deal.paymentsMade / deal.paymentsTotal) * 100}%` }"
             />
           </div>
         </div>
 
-        <div
-          class="dc-next"
-          :class="{ overdue: deal.status === 'overdue' }"
-        >
-          <i
-            :class="
-              deal.status === 'overdue'
-                ? 'pi pi-exclamation-circle'
-                : 'pi pi-calendar'
-            "
-          />
-          <span class="dc-next-label">{{
-            deal.status === 'overdue' ? 'Overdue since' : 'Next payment'
-          }}</span>
-          <span class="dc-next-date font-mono">{{
-            deal.nextPaymentDate
-              ? formatDateLong(deal.nextPaymentDate)
-              : '—'
-          }}</span>
-          <span class="dc-next-amt font-mono"
-            >{{ (deal.nextPaymentAmount / 100).toLocaleString('en-US') }} so'm</span
-          >
+        <div class="dc-next" :class="{ overdue: deal.status === 'overdue' }">
+          <i :class="deal.status === 'overdue' ? 'pi pi-exclamation-circle' : 'pi pi-calendar'" />
+          <span class="dc-next-label">
+            {{ deal.status === 'overdue' ? $t('home.overdueSince') : $t('home.nextPaymentLabel') }}
+          </span>
+          <span class="dc-next-date font-mono">
+            {{ deal.nextPaymentDate ? formatDateLong(deal.nextPaymentDate) : '—' }}
+          </span>
+          <span class="dc-next-amt font-mono">
+            {{ (deal.nextPaymentAmount / 100).toLocaleString('en-US') }} {{ $t('common.som') }}
+          </span>
         </div>
 
         <div class="dc-actions">
           <button class="btn-ghost dc-btn" @click="openDeal(deal.id)">
-            Details
+            {{ $t('home.details') }}
           </button>
-          <button class="btn-gradient dc-btn" @click="pay(deal)">Pay</button>
+          <button class="btn-gradient dc-btn" @click="pay(deal)">{{ $t('home.pay') }}</button>
         </div>
       </div>
     </section>
@@ -174,12 +155,8 @@ function pay(deal: Deal) {
     <!-- closed deals -->
     <section v-if="closedDeals.length" class="deals-section">
       <button class="toggle-closed" @click="showClosed = !showClosed">
-        <i
-          class="pi"
-          :class="showClosed ? 'pi-chevron-down' : 'pi-chevron-right'"
-        />
-        {{ showClosed ? 'Hide' : 'Show' }} {{ closedDeals.length }} closed
-        deal{{ closedDeals.length === 1 ? '' : 's' }}
+        <i class="pi" :class="showClosed ? 'pi-chevron-down' : 'pi-chevron-right'" />
+        {{ $t(showClosed ? 'home.hideClosed' : 'home.showClosed', { count: closedDeals.length }) }}
       </button>
 
       <transition name="slide">
@@ -195,11 +172,7 @@ function pay(deal: Deal) {
               <div class="dc-id font-mono">{{ deal.id }}</div>
             </div>
             <div class="closed-right">
-              <MonoAmount
-                :value="deal.amount"
-                size="sm"
-                :gradient="false"
-              />
+              <MonoAmount :value="deal.amount" size="sm" :gradient="false" />
               <StatusBadge :status="deal.status" />
             </div>
           </div>
@@ -231,7 +204,6 @@ function pay(deal: Deal) {
   font-size: 0.9rem;
 }
 
-/* overdue banner */
 .overdue-banner {
   display: flex;
   align-items: flex-start;
@@ -269,7 +241,6 @@ function pay(deal: Deal) {
   padding: 0.1rem;
 }
 
-/* summary */
 .summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -303,7 +274,6 @@ function pay(deal: Deal) {
   font-size: 1.15rem;
 }
 
-/* section */
 .section-title {
   margin: 0 0 0.9rem;
   font-size: 1.05rem;
@@ -320,7 +290,6 @@ function pay(deal: Deal) {
   text-align: center;
 }
 
-/* deal card */
 .deal-card {
   padding: 1.3rem;
   margin-bottom: 1rem;
@@ -431,7 +400,6 @@ function pay(deal: Deal) {
   padding: 0.8rem 1rem;
 }
 
-/* closed deals */
 .toggle-closed {
   display: flex;
   align-items: center;
@@ -475,7 +443,6 @@ function pay(deal: Deal) {
   gap: 0.4rem;
 }
 
-/* transitions */
 .slide-enter-active,
 .slide-leave-active {
   transition: all 0.2s ease;

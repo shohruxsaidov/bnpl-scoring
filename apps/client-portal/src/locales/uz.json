@@ -1,0 +1,132 @@
+{
+  "common": {
+    "som": "so'm",
+    "mo": "oy",
+    "back": "Orqaga",
+    "save": "Saqlash",
+    "cancel": "Bekor qilish"
+  },
+  "status": {
+    "scoring": "Skoring",
+    "draft": "Qoralama",
+    "approved": "Tasdiqlangan",
+    "active": "Faol",
+    "overdue": "Muddati o'tgan",
+    "closed": "Yopilgan",
+    "declined": "Rad etilgan"
+  },
+  "theme": {
+    "switchLight": "Yorug' rejimga o'tish",
+    "switchDark": "Qorong'i rejimga o'tish"
+  },
+  "topbar": {
+    "notifications": "Bildirishnomalar"
+  },
+  "nav": {
+    "home": "Bosh sahifa",
+    "deals": "Shartnomalar",
+    "alerts": "Ogohlantirishlar",
+    "profile": "Profil"
+  },
+  "login": {
+    "heroTag": "Keyingi to'lov",
+    "heroSom": "so'm",
+    "heroPaid": "ta to'landi",
+    "heroMore": "ta to'lov qoldi",
+    "heroSchedule": "Jadval",
+    "heroPayConfirmed": "To'lov tasdiqlandi",
+    "heroBrandSub": "Taqsimot to'lovlaringiz, bir joyda",
+    "welcome": "Xush kelibsiz",
+    "subtitle": "Taqsimotlaringizni ko'rish uchun telefon raqamingizni kiriting",
+    "phoneLabel": "Telefon raqami",
+    "sendOtp": "OTP yuborish",
+    "demoAccount": "Demo hisob",
+    "demoHint": "Telefon {phone} — istalgan 4 xonali kod ishlaydi",
+    "phoneError": "To'g'ri 9 xonali raqam kiriting",
+    "noAccount": "Bu raqam uchun hisob topilmadi. +998 91 555 22 33 ni sinab ko'ring",
+    "changeNumber": "Raqamni o'zgartirish",
+    "enterCode": "Kodni kiriting",
+    "codeSentTo": "4 xonali kod yuborildi:",
+    "codeError": "4 xonali kodni kiriting",
+    "invalidCode": "Noto'g'ri kod. Demo rejimda istalgan 4 ta raqam ishlaydi.",
+    "verifySignIn": "Tasdiqlash va kirish",
+    "resendIn": "Qayta yuborish {sec}s ichida",
+    "resendCode": "Kodni qayta yuborish"
+  },
+  "home": {
+    "greeting": "Salom, {name}!",
+    "greetSub": "Taqsimot to'lovlaringiz haqida qisqacha",
+    "overdueTitle": "To'lov muddati o'tdi",
+    "overdueBody": "Sizda {count} ta muddati o'tgan to'lov bor. Jarimadan saqlanish uchun to'lang.",
+    "activeDeals": "Faol shartnomalar",
+    "totalPaid": "Jami to'langan",
+    "nextPayment": "Keyingi to'lov",
+    "activeSection": "Faol shartnomalar",
+    "noActive": "Faol shartnomalar yo'q.",
+    "paymentsMade": "{made} ta {total} tadan to'landi",
+    "overdueSince": "Muddati o'tganidan beri",
+    "nextPaymentLabel": "Keyingi to'lov",
+    "details": "Tafsilotlar",
+    "pay": "To'lash",
+    "showClosed": "Ko'rsatish {count} ta yopilgan",
+    "hideClosed": "Yashirish {count} ta yopilgan",
+    "payStarted": "To'lov boshlandi",
+    "payDetail": "{merchant} uchun to'lovga yo'naltirilmoqda"
+  },
+  "deals": {
+    "title": "Mening shartnomalarim",
+    "subtitle": "Barcha bo'lib to'lash kreditlarim",
+    "filterAll": "Barchasi",
+    "filterActive": "Faol",
+    "filterClosed": "Yopilgan",
+    "empty": "Bu toifada shartnomalar yo'q.",
+    "paidOf": "{paid}/{total} to'landi",
+    "next": "Keyingisi:",
+    "fullyPaid": "To'liq to'langan"
+  },
+  "dealDetail": {
+    "back": "Orqaga",
+    "payInstalment": "Navbatdagi to'lovni to'lash",
+    "tabSchedule": "Jadval",
+    "tabPayments": "To'lovlar",
+    "tabContract": "Shartnoma",
+    "colNo": "#",
+    "colDate": "Sana",
+    "colAmt": "Summa",
+    "colStatus": "Holat",
+    "statusPaid": "To'langan",
+    "statusOverdue": "Muddati o'tgan",
+    "statusUpcoming": "Kelasi",
+    "noPayments": "Hali to'lovlar qayd etilmagan.",
+    "markup": "Ustama",
+    "contractTitle": "Shartnoma {number}",
+    "contractSigned": "Imzolangan {date}",
+    "signed": "Imzolangan",
+    "myidVerified": "MyID orqali tasdiqlangan",
+    "myidDetail": "Shaxs MyID biometrik tekshiruvi orqali tasdiqlangan",
+    "downloadPdf": "PDF yuklab olish",
+    "notFound": "Shartnoma topilmadi.",
+    "backToDeals": "Shartnomalar ro'yxatiga",
+    "downloadStarted": "Yuklab olish boshlandi",
+    "paymentStarted": "To'lov boshlandi",
+    "downloadDetail": "Shartnoma {number}.pdf tayyorlanmoqda",
+    "payDetail": "{merchant} uchun to'lovga yo'naltirilmoqda"
+  },
+  "profile": {
+    "personalInfo": "Shaxsiy ma'lumotlar",
+    "fullName": "To'liq ism",
+    "phone": "Telefon",
+    "pinfl": "PINFL",
+    "passport": "Pasport",
+    "linkedCards": "Ulangan kartalar",
+    "preferences": "Sozlamalar",
+    "appearance": "Ko'rinish",
+    "appearanceHint": "Yorug' va qorong'i orasida almashish",
+    "logout": "Chiqish"
+  },
+  "notifications": {
+    "title": "Bildirishnomalar",
+    "unreadOf": "{count} ta o'qilmagan, jami {total} ta",
+    "markAllRead": "Hammasini o'qilgan deb belgilash"
+  }
+}

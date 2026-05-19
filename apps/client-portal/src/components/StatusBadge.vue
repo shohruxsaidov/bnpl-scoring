@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { DealStatus } from '@/types'
 
 const props = defineProps<{ status: DealStatus }>()
+const { t } = useI18n()
 
-const MAP: Record<DealStatus, { label: string; fg: string; bg: string }> = {
-  active: { label: 'Active', fg: 'var(--success)', bg: 'var(--success-bg)' },
-  closed: { label: 'Closed', fg: 'var(--text-secondary)', bg: 'var(--bg-surface)' },
-  overdue: { label: 'Overdue', fg: 'var(--danger)', bg: 'var(--danger-bg)' },
+const COLORS: Record<DealStatus, { fg: string; bg: string }> = {
+  active: { fg: 'var(--success)', bg: 'var(--success-bg)' },
+  closed: { fg: 'var(--text-secondary)', bg: 'var(--bg-surface)' },
+  overdue: { fg: 'var(--danger)', bg: 'var(--danger-bg)' },
 }
 
-const cfg = computed(() => MAP[props.status])
+const cfg = computed(() => ({
+  ...COLORS[props.status],
+  label: t(`status.${props.status}`),
+}))
 </script>
 
 <template>

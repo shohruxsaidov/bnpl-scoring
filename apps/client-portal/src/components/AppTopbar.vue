@@ -1,16 +1,23 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import ThemeToggle from './ThemeToggle.vue'
 import { useNotificationsStore } from '@/stores/notifications'
 
 const router = useRouter()
 const notifications = useNotificationsStore()
+const { locale } = useI18n()
 
 const unread = computed(() => notifications.unreadCount)
 
 function goNotifications() {
   router.push({ name: 'notifications' })
+}
+
+function setLang(lang: 'uz' | 'ru') {
+  locale.value = lang
+  localStorage.setItem('lang', lang)
 }
 </script>
 
@@ -22,7 +29,20 @@ function goNotifications() {
     </div>
 
     <div class="right">
-      <button class="bell" title="Notifications" @click="goNotifications">
+      <div class="lang-switch">
+        <button
+          class="lang-btn"
+          :class="{ active: locale === 'uz' }"
+          @click="setLang('uz')"
+        >uz</button>
+        <span class="lang-sep">|</span>
+        <button
+          class="lang-btn"
+          :class="{ active: locale === 'ru' }"
+          @click="setLang('ru')"
+        >ru</button>
+      </div>
+      <button class="bell" :title="$t('topbar.notifications')" @click="goNotifications">
         <i class="pi pi-bell" />
         <span v-if="unread > 0" class="badge">{{ unread }}</span>
       </button>
@@ -71,6 +91,37 @@ function goNotifications() {
   display: flex;
   align-items: center;
   gap: 0.7rem;
+}
+.lang-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  border-radius: 10px;
+  padding: 0.25rem 0.5rem;
+}
+.lang-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 0.15rem 0.3rem;
+  border-radius: 6px;
+  transition: color 0.15s ease;
+}
+.lang-btn:hover {
+  color: var(--text-primary);
+}
+.lang-btn.active {
+  color: var(--accent-2);
+}
+.lang-sep {
+  color: var(--border-subtle);
+  font-size: 0.76rem;
 }
 .bell {
   position: relative;
