@@ -2,6 +2,9 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import SkeletonStatCards from '@/components/SkeletonStatCards.vue'
+import SkeletonTable from '@/components/SkeletonTable.vue'
+import { usePageLoad } from '@/composables/usePageLoad'
 
 interface ScoringRecord {
   id: string
@@ -16,6 +19,7 @@ interface ScoringRecord {
 }
 
 const router = useRouter()
+const { loading } = usePageLoad()
 const { t } = useI18n()
 const search = ref('')
 const statusFilter = ref<'all' | 'approved' | 'declined'>('all')
@@ -95,6 +99,11 @@ function openDetail(id: string) {
 
 <template>
   <div class="scoring-page">
+    <template v-if="loading">
+      <SkeletonStatCards :count="4" />
+      <SkeletonTable :rows="10" :cols="6" :has-actions="false" :has-header="true" />
+    </template>
+    <template v-else>
     <!-- Recalculate -->
     <div class="page-actions">
       <button class="btn-recalc" @click="recalculate">
@@ -213,6 +222,7 @@ function openDetail(id: string) {
         </table>
       </div>
     </div>
+    </template>
   </div>
 </template>
 

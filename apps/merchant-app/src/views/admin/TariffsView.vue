@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
+import SkeletonTable from '@/components/SkeletonTable.vue'
+import { usePageLoad } from '@/composables/usePageLoad'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
@@ -13,6 +15,7 @@ import { useCatalogStore } from '@/stores/catalog'
 import type { Tariff } from '@/types'
 
 const catalog = useCatalogStore()
+const { loading } = usePageLoad()
 const confirm = useConfirm()
 const toast = useToast()
 const { t } = useI18n()
@@ -99,6 +102,8 @@ function fmt(tiyin: number) {
 
 <template>
   <div class="admin-page">
+    <SkeletonTable v-if="loading" :rows="7" :cols="5" :has-actions="true" :has-header="true" />
+    <template v-else>
     <div class="page-actions">
       <button class="btn-gradient" @click="openNew">
         <i class="pi pi-plus" /> {{ $t('tariffs.addTariff') }}
@@ -193,6 +198,7 @@ function fmt(tiyin: number) {
         <button class="btn-gradient" @click="save">{{ $t('common.save') }}</button>
       </template>
     </Dialog>
+    </template>
   </div>
 </template>
 

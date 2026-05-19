@@ -2,7 +2,11 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import Skeleton from 'primevue/skeleton'
 import { useNotificationsStore, type AppNotification, type NotificationType } from '@/stores/notifications'
+import { usePageLoad } from '@/composables/usePageLoad'
+
+const { loading } = usePageLoad(600)
 
 const store = useNotificationsStore()
 const router = useRouter()
@@ -75,6 +79,31 @@ function open(n: AppNotification) {
 
 <template>
   <div class="notifications-page">
+    <!-- skeleton -->
+    <template v-if="loading">
+      <div class="page-top">
+        <Skeleton width="12rem" height="2.4rem" border-radius="12px" />
+        <Skeleton width="8rem" height="2.2rem" border-radius="10px" />
+      </div>
+      <div class="sk-group">
+        <Skeleton width="4rem" height="0.7rem" border-radius="4px" class="sk-day-label" />
+        <div class="surface-card sk-list">
+          <div v-for="i in 5" :key="i" class="sk-notif-row" :class="{ 'last-row': i === 5 }">
+            <Skeleton shape="circle" size="2.5rem" />
+            <div class="sk-body">
+              <div class="sk-body-top">
+                <Skeleton width="9rem" height="0.85rem" border-radius="4px" />
+                <Skeleton width="3.5rem" height="0.7rem" border-radius="4px" />
+              </div>
+              <Skeleton width="16rem" height="0.75rem" border-radius="4px" class="sk-body-line2" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- real content -->
+    <template v-else>
     <!-- header row -->
     <div class="page-top">
       <div class="tabs">
@@ -157,10 +186,27 @@ function open(n: AppNotification) {
         </div>
       </div>
     </template>
+    </template>
   </div>
 </template>
 
 <style scoped>
+/* skeleton */
+.sk-group { display: flex; flex-direction: column; gap: 0.5rem; }
+.sk-day-label { margin-left: 0.2rem; }
+.sk-list { border-radius: 14px; overflow: hidden; }
+.sk-notif-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.sk-notif-row.last-row { border-bottom: none; }
+.sk-body { flex: 1; display: flex; flex-direction: column; gap: 0.5rem; }
+.sk-body-top { display: flex; justify-content: space-between; align-items: center; }
+.sk-body-line2 { margin-top: 0.1rem; }
+
 .notifications-page {
   display: flex;
   flex-direction: column;

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
+import SkeletonTable from '@/components/SkeletonTable.vue'
+import { usePageLoad } from '@/composables/usePageLoad'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
@@ -15,6 +17,7 @@ import type { Product } from '@/types'
 
 const catalog = useCatalogStore()
 const confirm = useConfirm()
+const { loading } = usePageLoad()
 const toast = useToast()
 const { t } = useI18n()
 
@@ -85,6 +88,9 @@ function remove(p: Product) {
 
 <template>
   <div class="admin-page">
+    <SkeletonTable v-if="loading" :rows="8" :cols="4" :has-actions="true" :has-header="true" />
+
+    <template v-else>
     <div class="page-actions">
       <button class="btn-gradient" @click="openNew">
         <i class="pi pi-plus" /> {{ $t('products.addProduct') }}
@@ -159,6 +165,7 @@ function remove(p: Product) {
         <button class="btn-gradient" @click="save">{{ $t('common.save') }}</button>
       </template>
     </Dialog>
+    </template>
   </div>
 </template>
 

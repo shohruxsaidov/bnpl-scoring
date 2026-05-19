@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
+import SkeletonTable from '@/components/SkeletonTable.vue'
+import { usePageLoad } from '@/composables/usePageLoad'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import ToggleSwitch from 'primevue/toggleswitch'
@@ -8,6 +10,7 @@ import type { EmployeeRole } from '@/types'
 
 const catalog = useCatalogStore()
 const { t } = useI18n()
+const { loading } = usePageLoad()
 
 function roleLabel(r: EmployeeRole): string {
   return r === 'merchant_admin' ? t('employees.merchantAdmin') : t('employees.agent')
@@ -16,7 +19,8 @@ function roleLabel(r: EmployeeRole): string {
 
 <template>
   <div class="admin-page">
-    <div class="surface-card table-wrap">
+    <SkeletonTable v-if="loading" :rows="6" :cols="4" :has-actions="false" :has-header="false" />
+    <div v-else class="surface-card table-wrap">
       <DataTable :value="catalog.employees" data-key="id">
         <Column :header="$t('employees.name')" sortable field="fullName">
           <template #body="{ data }">

@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import SkeletonStatCards from '@/components/SkeletonStatCards.vue'
+import SkeletonTable from '@/components/SkeletonTable.vue'
+import { usePageLoad } from '@/composables/usePageLoad'
 
 type PaymentStatus = 'confirmed' | 'pending' | 'cancelled'
 type PaymentType = 'cash' | 'card' | 'transfer'
@@ -18,6 +21,7 @@ interface Payment {
 }
 
 const { t } = useI18n()
+const { loading } = usePageLoad()
 const activeTab = ref<TabKey>('all')
 const search = ref('')
 const statusFilter = ref<'all' | PaymentStatus>('all')
@@ -106,6 +110,11 @@ function fmtAmount(tiyin: number) {
 
 <template>
   <div class="payments-page">
+    <template v-if="loading">
+      <SkeletonStatCards :count="4" />
+      <SkeletonTable :rows="8" :cols="5" :has-actions="false" :has-header="true" />
+    </template>
+    <template v-else>
     <!-- Stat cards -->
     <div class="stat-grid">
       <div class="stat-card">
@@ -301,6 +310,7 @@ function fmtAmount(tiyin: number) {
         </div>
       </Transition>
     </Teleport>
+    </template>
   </div>
 </template>
 

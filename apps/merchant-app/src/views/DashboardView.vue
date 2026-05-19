@@ -10,6 +10,11 @@ import { useDealsStore } from '@/stores/deals'
 import StatusBadge from '@/components/StatusBadge.vue'
 import MonoAmount from '@/components/MonoAmount.vue'
 import { formatDate } from '@/utils/money'
+import SkeletonStatCards from '@/components/SkeletonStatCards.vue'
+import SkeletonTable from '@/components/SkeletonTable.vue'
+import { usePageLoad } from '@/composables/usePageLoad'
+
+const { loading } = usePageLoad()
 import type { Deal, DealStatus } from '@/types'
 
 const auth = useAuthStore()
@@ -59,6 +64,12 @@ function openDeal(id: string) {
 
 <template>
   <div class="dash">
+    <template v-if="loading">
+      <SkeletonStatCards :count="4" />
+      <SkeletonTable :rows="8" :cols="5" :has-actions="false" :has-header="true" />
+    </template>
+
+    <template v-else>
     <div v-if="auth.isAgent" class="page-actions">
       <button class="btn-gradient" @click="router.push('/wizard')">
         <i class="pi pi-plus" /> {{ $t('dashboard.newDeal') }}
@@ -155,6 +166,7 @@ function openDeal(id: string) {
         </template>
       </DataTable>
     </div>
+    </template>
   </div>
 </template>
 

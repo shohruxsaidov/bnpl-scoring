@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import Skeleton from 'primevue/skeleton'
 import { useNotificationsStore, type NotificationType } from '@/stores/notifications'
+import { usePageLoad } from '@/composables/usePageLoad'
+
+const { loading } = usePageLoad(500)
 
 const route = useRoute()
 const router = useRouter()
@@ -75,15 +79,58 @@ function navigate(id: string) {
   router.push(`/notifications/${id}`)
 }
 
-if (notification.value && !notification.value.read) {
-  store.markRead(notification.value.id)
-}
+watch(loading, (val) => {
+  if (!val && notification.value && !notification.value.read) {
+    store.markRead(notification.value.id)
+  }
+})
 </script>
 
 <template>
   <div class="detail-page">
+    <!-- skeleton -->
+    <template v-if="loading">
+      <div class="nav-row">
+        <Skeleton width="7rem" height="1.8rem" border-radius="8px" />
+        <Skeleton width="7rem" height="1.8rem" border-radius="8px" />
+      </div>
+      <div class="card surface-card">
+        <div class="sk-hero">
+          <Skeleton shape="circle" size="3.5rem" />
+          <div class="sk-hero-meta">
+            <Skeleton width="12rem" height="1.1rem" border-radius="6px" />
+            <Skeleton width="5rem" height="1.4rem" border-radius="999px" />
+          </div>
+        </div>
+        <div class="sk-section">
+          <Skeleton width="100%" height="0.9rem" border-radius="4px" />
+          <Skeleton width="85%" height="0.9rem" border-radius="4px" />
+          <Skeleton width="60%" height="0.9rem" border-radius="4px" />
+        </div>
+        <div class="sk-divider" />
+        <div class="sk-section">
+          <Skeleton width="4rem" height="0.65rem" border-radius="4px" />
+          <div v-for="i in 3" :key="i" class="sk-param-row">
+            <Skeleton width="1.8rem" height="1.8rem" border-radius="8px" />
+            <div class="sk-param-body">
+              <Skeleton width="4rem" height="0.6rem" border-radius="4px" />
+              <Skeleton width="7rem" height="0.85rem" border-radius="4px" />
+            </div>
+          </div>
+        </div>
+        <div class="sk-divider" />
+        <div class="sk-section sk-row">
+          <Skeleton width="1.2rem" height="1.2rem" border-radius="4px" />
+          <Skeleton width="14rem" height="0.8rem" border-radius="4px" />
+        </div>
+        <div class="sk-cta">
+          <Skeleton width="100%" height="2.6rem" border-radius="10px" />
+        </div>
+      </div>
+    </template>
+
     <!-- not found -->
-    <div v-if="!notification" class="not-found surface-card">
+    <div v-else-if="!notification" class="not-found surface-card">
       <i class="pi pi-bell-slash" />
       <p>{{ t('notifDetail.notFound') }}</p>
       <button class="btn-back" @click="router.push('/notifications')">
@@ -91,7 +138,7 @@ if (notification.value && !notification.value.read) {
       </button>
     </div>
 
-    <template v-else>
+    <template v-else-if="notification">
       <!-- back + navigation row -->
       <div class="nav-row">
         <button class="btn-ghost" @click="router.push('/notifications')">
@@ -169,6 +216,36 @@ if (notification.value && !notification.value.read) {
 </template>
 
 <style scoped>
+/* skeleton */
+.sk-hero {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.6rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.sk-hero-meta { display: flex; flex-direction: column; gap: 0.6rem; }
+.sk-section {
+  padding: 1.2rem 1.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.sk-row { flex-direction: row; align-items: center; gap: 0.6rem; }
+.sk-divider { height: 1px; background: var(--border-subtle); margin: 0 1.6rem; }
+.sk-param-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.7rem;
+  background: var(--bg-surface);
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  margin-top: 0.15rem;
+}
+.sk-param-body { display: flex; flex-direction: column; gap: 0.3rem; }
+.sk-cta { padding: 0 1.6rem 1.6rem; }
+
 .detail-page {
   display: flex;
   flex-direction: column;

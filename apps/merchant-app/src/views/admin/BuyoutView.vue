@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import SkeletonStatCards from '@/components/SkeletonStatCards.vue'
+import SkeletonTable from '@/components/SkeletonTable.vue'
+import { usePageLoad } from '@/composables/usePageLoad'
 
 type BuyoutStatus = 'pending' | 'paid'
 
@@ -18,6 +21,7 @@ interface BuyoutRecord {
 }
 
 const { t } = useI18n()
+const { loading } = usePageLoad()
 const search = ref('')
 const statusFilter = ref<'all' | 'pending' | 'paid'>('all')
 const merchantFilter = ref('all')
@@ -86,6 +90,11 @@ function markPaid(id: number) {
 
 <template>
   <div class="buyout-page">
+    <template v-if="loading">
+      <SkeletonStatCards :count="3" />
+      <SkeletonTable :rows="8" :cols="5" :has-actions="false" :has-header="true" />
+    </template>
+    <template v-else>
     <!-- Stat cards -->
     <div class="stat-grid">
       <div class="stat-card">
@@ -204,6 +213,7 @@ function markPaid(id: number) {
         </table>
       </div>
     </div>
+    </template>
   </div>
 </template>
 

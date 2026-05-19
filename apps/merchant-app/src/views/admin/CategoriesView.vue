@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import Skeleton from 'primevue/skeleton'
+import { usePageLoad } from '@/composables/usePageLoad'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import { useConfirm } from 'primevue/useconfirm'
@@ -10,6 +12,7 @@ import type { Category } from '@/types'
 
 const catalog = useCatalogStore()
 const confirm = useConfirm()
+const { loading } = usePageLoad()
 const toast = useToast()
 const { t } = useI18n()
 
@@ -55,6 +58,26 @@ function remove(c: Category) {
 
 <template>
   <div class="admin-page">
+    <!-- skeleton -->
+    <template v-if="loading">
+      <div class="page-actions">
+        <Skeleton width="10rem" height="2.2rem" border-radius="10px" />
+      </div>
+      <div class="surface-card list sk-list">
+        <div v-for="i in 6" :key="i" class="sk-cat-row">
+          <div class="sk-left">
+            <Skeleton shape="circle" size="1.5rem" />
+            <Skeleton width="8rem" height="0.85rem" border-radius="4px" />
+          </div>
+          <div class="sk-actions">
+            <Skeleton width="1.8rem" height="1.8rem" border-radius="6px" />
+            <Skeleton width="1.8rem" height="1.8rem" border-radius="6px" />
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <template v-else>
     <div class="page-actions">
       <button class="btn-gradient" @click="openNew">
         <i class="pi pi-plus" /> {{ $t('categories.addCategory') }}
@@ -93,10 +116,22 @@ function remove(c: Category) {
         <button class="btn-gradient" @click="save">{{ $t('common.save') }}</button>
       </template>
     </Dialog>
+    </template>
   </div>
 </template>
 
 <style scoped>
+.sk-list { padding: 0.8rem; }
+.sk-cat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.sk-cat-row:last-child { border-bottom: none; }
+.sk-left { display: flex; align-items: center; gap: 0.6rem; }
+.sk-actions { display: flex; gap: 0.4rem; }
 .admin-page {
   display: flex;
   flex-direction: column;
