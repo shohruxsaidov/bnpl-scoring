@@ -17,7 +17,8 @@
     "tenant": "Арендатор",
     "deals": "Все сделки",
     "employees": "Сотрудники",
-    "settings": "Настройки"
+    "settings": "Настройки",
+    "blacklist": "Чёрный список"
   },
   "breadcrumb": {
     "overview": "Обзор",
@@ -25,7 +26,8 @@
     "detail": "Детали",
     "deals": "Сделки",
     "employees": "Сотрудники",
-    "settings": "Настройки"
+    "settings": "Настройки",
+    "blacklist": "Чёрный список"
   },
   "topbar": {
     "scoring": "Скоринг",
@@ -38,9 +40,32 @@
     "allDeals": "Все сделки",
     "employees": "Сотрудники",
     "settings": "Настройки",
+    "blacklist": "Чёрный список",
     "platformAdmin": "Админ платформы",
     "logout": "Выйти",
     "toggleSidebar": "Переключить панель"
+  },
+  "blacklist": {
+    "listTitle": "Заблокированные идентификаторы",
+    "addEntry": "Добавить в список",
+    "empty": "Чёрный список пуст",
+    "noResults": "Ничего не найдено",
+    "searchPlaceholder": "Поиск по ПИНФЛ или ИНН…",
+    "entryType": "Тип идентификатора",
+    "digits": "цифр",
+    "valueRequired": "Введите значение",
+    "pinflFormat": "ПИНФЛ — ровно 14 цифр",
+    "innFormat": "ИНН — ровно 9 цифр",
+    "duplicate": "Этот идентификатор уже в чёрном списке",
+    "reason": "Причина блокировки",
+    "optional": "необязательно",
+    "reasonPlaceholder": "Мошенничество, дефолт и т.д.",
+    "block": "Заблокировать",
+    "added": "Добавлено в чёрный список",
+    "removed": "Удалено из чёрного списка",
+    "addedBy": "Добавил: {who}",
+    "removeConfirmTitle": "Удалить из чёрного списка?",
+    "removeConfirmMsg": "{value} будет разблокирован и сможет снова проходить скоринг."
   },
   "login": {
     "platformAdmin": "Админ платформы",

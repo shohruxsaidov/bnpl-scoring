@@ -17,7 +17,8 @@
     "tenant": "Ijarachi",
     "deals": "Barcha shartnomalar",
     "employees": "Xodimlar",
-    "settings": "Sozlamalar"
+    "settings": "Sozlamalar",
+    "blacklist": "Qora ro'yxat"
   },
   "breadcrumb": {
     "overview": "Umumiy ko'rinish",
@@ -25,7 +26,8 @@
     "detail": "Tafsilot",
     "deals": "Shartnomalar",
     "employees": "Xodimlar",
-    "settings": "Sozlamalar"
+    "settings": "Sozlamalar",
+    "blacklist": "Qora ro'yxat"
   },
   "topbar": {
     "scoring": "Skoring",
@@ -38,9 +40,32 @@
     "allDeals": "Barcha shartnomalar",
     "employees": "Xodimlar",
     "settings": "Sozlamalar",
+    "blacklist": "Qora ro'yxat",
     "platformAdmin": "Platforma admin",
     "logout": "Chiqish",
     "toggleSidebar": "Yon panelni almashtirish"
+  },
+  "blacklist": {
+    "listTitle": "Bloklangan identifikatorlar",
+    "addEntry": "Ro'yxatga qo'shish",
+    "empty": "Qora ro'yxat bo'sh",
+    "noResults": "Hech narsa topilmadi",
+    "searchPlaceholder": "PINFL yoki INN bo'yicha qidirish…",
+    "entryType": "Identifikator turi",
+    "digits": "raqam",
+    "valueRequired": "Qiymat kiriting",
+    "pinflFormat": "PINFL — aniq 14 ta raqam",
+    "innFormat": "INN — aniq 9 ta raqam",
+    "duplicate": "Bu identifikator allaqachon qora ro'yxatda",
+    "reason": "Bloklash sababi",
+    "optional": "ixtiyoriy",
+    "reasonPlaceholder": "Firibgarlik, default va h.k.",
+    "block": "Bloklash",
+    "added": "Qora ro'yxatga qo'shildi",
+    "removed": "Qora ro'yxatdan o'chirildi",
+    "addedBy": "Qo'shdi: {who}",
+    "removeConfirmTitle": "Qora ro'yxatdan o'chirish?",
+    "removeConfirmMsg": "{value} blokdan chiqariladi va yana skoring o'tkazishi mumkin."
   },
   "login": {
     "platformAdmin": "Platforma admin",
