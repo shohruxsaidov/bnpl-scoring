@@ -24,9 +24,42 @@
     "scoring": "Skoring",
     "notifications": "Bildirishnomalar"
   },
+  "notifications": {
+    "title": "Bildirishnomalar",
+    "markAllRead": "Barchasini o'qilgan deb belgilash",
+    "clearRead": "O'qilganlarni tozalash",
+    "empty": "Bildirishnoma yo'q",
+    "viewAll": "Barchasini ko'rish",
+    "tabAll": "Barchasi",
+    "tabUnread": "O'qilmagan",
+    "today": "Bugun",
+    "yesterday": "Kecha",
+    "justNow": "Hozir",
+    "minutesAgo": "{n} daqiqa oldin",
+    "hoursAgo": "{n} soat oldin",
+    "daysAgo": "{n} kun oldin",
+    "types": {
+      "dealApproved": "Shartnoma tasdiqlandi",
+      "dealDeclined": "Shartnoma rad etildi",
+      "paymentReceived": "To'lov qabul qilindi",
+      "overdue": "Muddati o'tgan to'lov",
+      "scoringComplete": "Skoring yakunlandi",
+      "newDeal": "Yangi shartnoma"
+    },
+    "bodies": {
+      "dealApproved": "{clientName} uchun {dealId} shartnomasi tasdiqlandi. Ball: {score}",
+      "dealDeclined": "{clientName} uchun {dealId} shartnomasi rad etildi. Ball: {score}",
+      "paymentReceived": "{clientName} dan {dealId} bo'yicha {amount} so'm to'lov qabul qilindi",
+      "overdue": "{clientName} uchun {dealId} shartnomasi bo'yicha {days} kun muddati o'tgan",
+      "scoringComplete": "{clientName} uchun skoring yakunlandi. Ball: {score}",
+      "newDeal": "{agentName} yangi shartnoma yaratdi: {dealId}"
+    }
+  },
   "routeTitle": {
     "login": "Kirish",
     "dashboard": "Bosh sahifa",
+    "notifications": "Bildirishnomalar",
+    "notificationDetail": "Bildirishnoma",
     "wizard": "Yangi shartnoma",
     "deal": "Shartnoma",
     "products": "Mahsulotlar",
@@ -41,6 +74,7 @@
   },
   "breadcrumb": {
     "dashboard": "Bosh sahifa",
+    "notifications": "Bildirishnomalar",
     "deals": "Shartnomalar",
     "newDeal": "Yangi shartnoma",
     "detail": "Tafsilot",
@@ -66,6 +100,7 @@
     "buyout": "Sotib olish",
     "payments": "To'lovlar",
     "admin": "ADMIN",
+    "notifications": "Bildirishnomalar",
     "logout": "Chiqish",
     "toggleSidebar": "Yon panelni almashtirish"
   },
@@ -576,6 +611,23 @@
     "downloadContract": "Shartnomani yuklab olish",
     "newDeal": "Yangi shartnoma",
     "backToDashboard": "Bosh sahifaga qaytish"
+  },
+  "notifDetail": {
+    "backToList": "Bildirishnomalar",
+    "details": "Tafsilotlar",
+    "read": "O'qilgan",
+    "unread": "O'qilmagan",
+    "client": "Mijoz",
+    "agent": "Agent",
+    "deal": "Shartnoma",
+    "score": "Ball",
+    "amount": "Summa",
+    "overdueDays": "Kechikkan kunlar",
+    "days": "kun",
+    "openDeal": "{id} shartnomani ochish",
+    "notFound": "Bildirishnoma topilmadi",
+    "prev": "Oldingi",
+    "next": "Keyingi"
   },
   "theme": {
     "switchLight": "Yorug' rejimga o'tish",

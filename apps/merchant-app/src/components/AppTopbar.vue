@@ -1,11 +1,19 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import ThemeToggle from './ThemeToggle.vue'
+import NotificationsPopup from './NotificationsPopup.vue'
+import { useNotificationsStore } from '@/stores/notifications'
+
+defineProps<{ showMenuBtn?: boolean }>()
+const emit = defineEmits<{ (e: 'menu'): void }>()
 
 const route = useRoute()
 const { t, locale } = useI18n()
+const notifStore = useNotificationsStore()
+
+const bellOpen = ref(false)
 
 const title = computed(() => {
   const key = route.meta.titleKey as string | undefined
@@ -32,6 +40,9 @@ const today = new Date().toLocaleDateString('uz-UZ', {
 <template>
   <header class="topbar">
     <div class="left">
+      <button v-if="showMenuBtn" class="menu-btn" @click="emit('menu')">
+        <i class="pi pi-bars" />
+      </button>
       <h1 class="page-title">{{ title }}</h1>
       <nav v-if="breadcrumb.length" class="crumbs">
         <template v-for="(c, i) in breadcrumb" :key="i">
@@ -60,10 +71,20 @@ const today = new Date().toLocaleDateString('uz-UZ', {
         </button>
       </div>
       <span class="date font-mono">{{ today }}</span>
-      <button class="bell" :title="$t('topbar.notifications')">
-        <i class="pi pi-bell" />
-        <span class="badge">3</span>
-      </button>
+      <div class="bell-wrap">
+        <button
+          class="bell"
+          :class="{ active: bellOpen }"
+          :title="$t('topbar.notifications')"
+          @click.stop="bellOpen = !bellOpen"
+        >
+          <i class="pi pi-bell" />
+          <span v-if="notifStore.unreadCount > 0" class="badge">
+            {{ notifStore.unreadCount > 9 ? '9+' : notifStore.unreadCount }}
+          </span>
+        </button>
+        <NotificationsPopup v-if="bellOpen" @close="bellOpen = false" />
+      </div>
       <ThemeToggle />
     </div>
   </header>
@@ -158,9 +179,37 @@ const today = new Date().toLocaleDateString('uz-UZ', {
   place-items: center;
   transition: all 0.15s ease;
 }
-.bell:hover {
+.bell:hover,
+.bell.active {
   color: var(--accent-2);
   border-color: var(--accent-2);
+}
+.bell-wrap {
+  position: relative;
+}
+.menu-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+  .date {
+    display: none;
+  }
+  .topbar {
+    padding: 0 1rem;
+  }
+  .right {
+    gap: 0.5rem;
+  }
 }
 .badge {
   position: absolute;

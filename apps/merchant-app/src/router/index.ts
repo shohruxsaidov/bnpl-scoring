@@ -84,6 +84,18 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/admin/ScoringHistoryDetailView.vue'),
         meta: { titleKey: 'routeTitle.scoringDetail', breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.scoringHistory', 'breadcrumb.detail'], adminOnly: true },
       },
+      {
+        path: 'notifications',
+        name: 'notifications',
+        component: () => import('@/views/NotificationsView.vue'),
+        meta: { titleKey: 'routeTitle.notifications', breadcrumbKeys: ['breadcrumb.notifications'] },
+      },
+      {
+        path: 'notifications/:id',
+        name: 'notification-detail',
+        component: () => import('@/views/NotificationDetailView.vue'),
+        meta: { titleKey: 'routeTitle.notificationDetail', breadcrumbKeys: ['breadcrumb.notifications', 'breadcrumb.detail'] },
+      },
     ],
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },

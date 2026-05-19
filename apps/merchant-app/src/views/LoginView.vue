@@ -631,4 +631,22 @@ function pickRole(role: EmployeeRole) {
 .role-card i { font-size: 1.4rem; color: var(--accent-2); }
 .role-card strong { font-size: 0.95rem; }
 .role-card small { color: var(--text-secondary); font-size: 0.74rem; }
+
+@media (max-width: 767px) {
+  .auth-page {
+    grid-template-columns: 1fr;
+  }
+  .auth-hero {
+    display: none;
+  }
+  .auth-form-wrap {
+    padding: 1.5rem 1rem;
+    align-items: flex-start;
+    padding-top: 3rem;
+  }
+  .auth-card {
+    max-width: 100%;
+    padding: 1.6rem 1.2rem;
+  }
+}
 </style>

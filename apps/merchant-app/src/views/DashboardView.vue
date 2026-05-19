@@ -178,6 +178,37 @@ function openDeal(id: string) {
   grid-template-columns: repeat(4, 1fr);
   gap: 1.1rem;
 }
+
+@media (max-width: 900px) {
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+  .stat-card {
+    padding: 1rem;
+  }
+  .stat-value {
+    font-size: 1.4rem;
+  }
+  .table-card {
+    padding: 1rem 0.75rem;
+  }
+  .table-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .filter-select {
+    min-width: unset;
+    width: 100%;
+  }
+}
 .stat-card {
   padding: 1.3rem;
   position: relative;

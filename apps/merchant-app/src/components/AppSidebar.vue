@@ -3,11 +3,13 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
+import { useNotificationsStore } from '@/stores/notifications'
 
-const props = defineProps<{ collapsed: boolean }>()
+const props = defineProps<{ collapsed: boolean; mobileOpen?: boolean; isMobile?: boolean }>()
 const emit = defineEmits<{ (e: 'toggle'): void }>()
 
 const auth = useAuthStore()
+const notificationsStore = useNotificationsStore()
 const router = useRouter()
 const { t } = useI18n()
 
@@ -21,6 +23,7 @@ interface NavItem {
 const mainNav = computed<NavItem[]>(() => [
   { label: t('nav.dashboard'), icon: 'pi pi-th-large', to: '/', show: true },
   { label: t('nav.newDeal'), icon: 'pi pi-plus-circle', to: '/wizard', show: auth.isAgent },
+  { label: t('nav.notifications'), icon: 'pi pi-bell', to: '/notifications', show: true },
 ])
 
 const adminNav = computed<NavItem[]>(() => [
@@ -41,7 +44,7 @@ function logout() {
 </script>
 
 <template>
-  <aside class="sidebar" :class="{ collapsed: props.collapsed }">
+  <aside class="sidebar" :class="{ collapsed: props.collapsed, 'mobile-open': props.mobileOpen, 'is-mobile': props.isMobile }">
     <div class="brand">
       <div class="logo-mark">S</div>
       <div v-if="!props.collapsed" class="brand-text">
@@ -59,11 +62,18 @@ function logout() {
           v-if="item.show"
           :to="item.to"
           class="nav-link"
-          active-class="active"
+          exact-active-class="active"
           :title="item.label"
         >
           <i :class="item.icon" />
           <span v-if="!props.collapsed">{{ item.label }}</span>
+          <span
+            v-if="item.to === '/notifications' && notificationsStore.unreadCount > 0"
+            class="nav-badge"
+            :class="{ solo: props.collapsed }"
+          >
+            {{ notificationsStore.unreadCount > 9 ? '9+' : notificationsStore.unreadCount }}
+          </span>
         </RouterLink>
       </template>
 
@@ -78,7 +88,7 @@ function logout() {
           :key="item.to"
           :to="item.to"
           class="nav-link"
-          active-class="active"
+          exact-active-class="active"
           :title="item.label"
         >
           <i :class="item.icon" />
@@ -120,6 +130,21 @@ function logout() {
 }
 .sidebar.collapsed {
   width: 64px;
+}
+.sidebar.is-mobile {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  height: 100dvh;
+  z-index: 50;
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+  width: 240px;
+}
+.sidebar.is-mobile.mobile-open {
+  transform: translateX(0);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
 }
 
 .brand {
@@ -193,6 +218,7 @@ function logout() {
   font-size: 0.9rem;
   transition: all 0.15s ease;
   white-space: nowrap;
+  position: relative;
 }
 .collapsed .nav-link {
   justify-content: center;
@@ -209,6 +235,25 @@ function logout() {
   background: var(--gradient-accent);
   color: #fff;
   box-shadow: var(--accent-glow);
+}
+.nav-badge {
+  margin-left: auto;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+  min-width: 17px;
+  height: 17px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+}
+.nav-badge.solo {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  margin: 0;
 }
 .divider {
   font-size: 0.65rem;

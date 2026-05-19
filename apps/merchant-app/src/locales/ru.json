@@ -24,9 +24,42 @@
     "scoring": "Скоринг",
     "notifications": "Уведомления"
   },
+  "notifications": {
+    "title": "Уведомления",
+    "markAllRead": "Отметить все как прочитанные",
+    "clearRead": "Удалить прочитанные",
+    "empty": "Нет уведомлений",
+    "viewAll": "Посмотреть все",
+    "tabAll": "Все",
+    "tabUnread": "Непрочитанные",
+    "today": "Сегодня",
+    "yesterday": "Вчера",
+    "justNow": "Только что",
+    "minutesAgo": "{n} мин назад",
+    "hoursAgo": "{n} ч назад",
+    "daysAgo": "{n} дн назад",
+    "types": {
+      "dealApproved": "Сделка одобрена",
+      "dealDeclined": "Сделка отклонена",
+      "paymentReceived": "Платёж получен",
+      "overdue": "Просроченный платёж",
+      "scoringComplete": "Скоринг завершён",
+      "newDeal": "Новая сделка"
+    },
+    "bodies": {
+      "dealApproved": "Сделка {dealId} для {clientName} одобрена. Балл: {score}",
+      "dealDeclined": "Сделка {dealId} для {clientName} отклонена. Балл: {score}",
+      "paymentReceived": "Получен платёж {amount} сум от {clientName} по {dealId}",
+      "overdue": "Просрочка {days} дней по сделке {dealId} клиента {clientName}",
+      "scoringComplete": "Скоринг завершён для {clientName}. Балл: {score}",
+      "newDeal": "{agentName} создал новую сделку: {dealId}"
+    }
+  },
   "routeTitle": {
     "login": "Войти",
     "dashboard": "Главная",
+    "notifications": "Уведомления",
+    "notificationDetail": "Уведомление",
     "wizard": "Новая сделка",
     "deal": "Сделка",
     "products": "Товары",
@@ -41,6 +74,7 @@
   },
   "breadcrumb": {
     "dashboard": "Главная",
+    "notifications": "Уведомления",
     "deals": "Сделки",
     "newDeal": "Новая сделка",
     "detail": "Детали",
@@ -66,6 +100,7 @@
     "buyout": "Выкуп",
     "payments": "Платежи",
     "admin": "АДМИН",
+    "notifications": "Уведомления",
     "logout": "Выйти",
     "toggleSidebar": "Переключить панель"
   },
@@ -576,6 +611,23 @@
     "downloadContract": "Скачать контракт",
     "newDeal": "Новая сделка",
     "backToDashboard": "Вернуться на главную"
+  },
+  "notifDetail": {
+    "backToList": "Уведомления",
+    "details": "Подробности",
+    "read": "Прочитано",
+    "unread": "Непрочитано",
+    "client": "Клиент",
+    "agent": "Агент",
+    "deal": "Сделка",
+    "score": "Балл",
+    "amount": "Сумма",
+    "overdueDays": "Дней просрочки",
+    "days": "дн",
+    "openDeal": "Открыть сделку {id}",
+    "notFound": "Уведомление не найдено",
+    "prev": "Предыдущее",
+    "next": "Следующее"
   },
   "theme": {
     "switchLight": "Переключить на светлую",
