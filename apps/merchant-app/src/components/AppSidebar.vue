@@ -49,7 +49,7 @@ function logout() {
       <div class="logo-mark">S</div>
       <div v-if="!props.collapsed" class="brand-text">
         <span class="text-gradient brand-name">Scoring</span>
-        <span class="tenant">{{ auth.tenant.name }}</span>
+        <span class="tenant">{{ auth.roleLabel }}</span>
       </div>
       <button class="collapse-btn" :title="$t('nav.toggleSidebar')" @click="emit('toggle')">
         <i :class="props.collapsed ? 'pi pi-angle-right' : 'pi pi-angle-left'" />

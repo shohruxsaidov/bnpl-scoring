@@ -1,30 +1,14 @@
 import { defineStore } from 'pinia'
 import type { PlatformAdmin } from '@/types'
 
-interface MockCredential {
-  password: string
-  admin: PlatformAdmin
-}
-
-const MOCK_DB: Record<string, MockCredential> = {
-  'platform@scoring.uz': {
-    password: 'admin123',
-    admin: {
-      id: 'padm_001',
-      fullName: 'Operations Lead',
-      email: 'platform@scoring.uz',
-    },
-  },
-}
+const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
 interface AuthState {
   admin: PlatformAdmin | null
 }
 
 export const useAuthStore = defineStore('auth', {
-  state: (): AuthState => ({
-    admin: null,
-  }),
+  state: (): AuthState => ({ admin: null }),
 
   getters: {
     isAuthenticated: (s): boolean => s.admin !== null,
@@ -40,18 +24,26 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
-    /** Validate credentials. Returns the matched admin or null. */
-    validate(email: string, password: string): PlatformAdmin | null {
-      const record = MOCK_DB[email.trim().toLowerCase()]
-      if (!record || record.password !== password) return null
-      return record.admin
+    async login(email: string, password: string): Promise<void> {
+      const res = await fetch(`${API}/auth/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ email, password }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.code ?? 'error')
+      }
+      const body = await res.json()
+      this.admin = body.user
     },
 
-    login(admin: PlatformAdmin) {
-      this.admin = admin
-    },
-
-    logout() {
+    async logout(): Promise<void> {
+      await fetch(`${API}/auth/admin/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      }).catch(() => {})
       this.admin = null
     },
   },

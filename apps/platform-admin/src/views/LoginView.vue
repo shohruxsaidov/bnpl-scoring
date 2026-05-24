@@ -29,16 +29,19 @@ const [email, emailAttrs] = defineField('email')
 const [password, passwordAttrs] = defineField('password')
 
 const loginError = ref('')
+const loading = ref(false)
 
-const onSubmit = handleSubmit((values) => {
+const onSubmit = handleSubmit(async (values) => {
   loginError.value = ''
-  const admin = auth.validate(values.email, values.password)
-  if (!admin) {
+  loading.value = true
+  try {
+    await auth.login(values.email, values.password)
+    router.push('/')
+  } catch {
     loginError.value = t('login.invalidCredentials')
-    return
+  } finally {
+    loading.value = false
   }
-  auth.login(admin)
-  router.push('/')
 })
 </script>
 
@@ -94,7 +97,9 @@ const onSubmit = handleSubmit((values) => {
           <i class="pi pi-exclamation-triangle" /> {{ loginError }}
         </p>
 
-        <button type="submit" class="btn-gradient submit">{{ $t('login.signIn') }}</button>
+        <button type="submit" class="btn-gradient submit" :disabled="loading">
+          {{ loading ? $t('login.signingIn') : $t('login.signIn') }}
+        </button>
 
         <div class="hint">
           <strong>{{ $t('login.demoAccount') }}</strong>

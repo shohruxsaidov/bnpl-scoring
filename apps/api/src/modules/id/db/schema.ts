@@ -28,6 +28,27 @@ export const otpVerifications = pgTable('otp_verifications', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
+export const adminUsers = pgTable('admin_users', {
+  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  passwordHash: varchar('password_hash', { length: 500 }).notNull(),
+  fullName: varchar('full_name', { length: 200 }).notNull(),
+  active: boolean('active').notNull().default(true),
+  createdById: bigint('created_by_id', { mode: 'bigint' }), // null for the initial seeded admin
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+export const adminSessions = pgTable('admin_sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  adminUserId: bigint('admin_user_id', { mode: 'bigint' })
+    .notNull()
+    .references(() => adminUsers.id, { onDelete: 'cascade' }),
+  sessionTokenHash: varchar('session_token_hash', { length: 255 }).notNull(),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  revokedAt: timestamp('revoked_at', { withTimezone: true }),
+})
+
 // merchant_id and branch_id reference merchants/branches tables not yet built.
 export const merchantUsers = pgTable('merchant_users', {
   id: bigserial('id', { mode: 'bigint' }).primaryKey(),

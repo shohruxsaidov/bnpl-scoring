@@ -9,7 +9,7 @@ import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Dialog from 'primevue/dialog'
 import { useAuthStore } from '@/stores/auth'
-import type { Employee, EmployeeRole } from '@/types'
+import type { EmployeeRole } from '@/types'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -31,33 +31,33 @@ const [email, emailAttrs] = defineField('email')
 const [password, passwordAttrs] = defineField('password')
 
 const loginError = ref('')
-const pendingEmployee = ref<Employee | null>(null)
-const showRolePicker = ref(false)
+const loading = ref(false)
 
-function finish(employee: Employee, role: EmployeeRole) {
-  auth.login(employee, role)
-  router.push('/')
+const roleConfig: Record<string, { icon: string; label: string; desc: string }> = {
+  merchant_admin: { icon: 'pi pi-shield', label: t('login.merchantAdmin'), desc: t('login.merchantAdminDesc') },
+  branch_admin: { icon: 'pi pi-building', label: t('login.branchAdmin'), desc: t('login.branchAdminDesc') },
+  agent: { icon: 'pi pi-user-plus', label: t('login.agent'), desc: t('login.agentDesc') },
 }
 
-const onSubmit = handleSubmit((values) => {
+const onSubmit = handleSubmit(async (values) => {
   loginError.value = ''
-  const employee = auth.validate(values.email, values.password)
-  if (!employee) {
+  loading.value = true
+  try {
+    await auth.login(values.email, values.password)
+    if (!auth.requiresRolePicker) router.push('/')
+  } catch {
     loginError.value = t('login.invalidCredentials')
-    return
-  }
-  if (employee.roles.length > 1) {
-    pendingEmployee.value = employee
-    showRolePicker.value = true
-  } else {
-    finish(employee, employee.roles[0])
+  } finally {
+    loading.value = false
   }
 })
 
-function pickRole(role: EmployeeRole) {
-  if (pendingEmployee.value) {
-    showRolePicker.value = false
-    finish(pendingEmployee.value, role)
+async function pickRole(role: EmployeeRole) {
+  try {
+    await auth.selectRole(role)
+    router.push('/')
+  } catch {
+    loginError.value = t('login.invalidCredentials')
   }
 }
 </script>
@@ -212,7 +212,9 @@ function pickRole(role: EmployeeRole) {
           <i class="pi pi-exclamation-triangle" /> {{ loginError }}
         </p>
 
-        <button type="submit" class="btn-gradient submit">{{ $t('login.signIn') }}</button>
+        <button type="submit" class="btn-gradient submit" :disabled="loading">
+          {{ loading ? $t('login.signingIn') : $t('login.signIn') }}
+        </button>
 
         <div class="hint">
           <strong>{{ $t('login.demoAccounts') }}</strong>
@@ -224,25 +226,23 @@ function pickRole(role: EmployeeRole) {
 
     <!-- role picker dialog -->
     <Dialog
-      v-model:visible="showRolePicker"
+      :visible="auth.requiresRolePicker"
       modal
       :header="$t('login.chooseRole')"
       :style="{ width: '420px' }"
       :closable="false"
     >
-      <p class="role-intro">
-        {{ $t('login.roleIntro') }}
-      </p>
+      <p class="role-intro">{{ $t('login.roleIntro') }}</p>
       <div class="role-grid">
-        <button class="role-card" @click="pickRole('merchant_admin')">
-          <i class="pi pi-shield" />
-          <strong>{{ $t('login.merchantAdmin') }}</strong>
-          <small>{{ $t('login.merchantAdminDesc') }}</small>
-        </button>
-        <button class="role-card" @click="pickRole('agent')">
-          <i class="pi pi-user-plus" />
-          <strong>{{ $t('login.agent') }}</strong>
-          <small>{{ $t('login.agentDesc') }}</small>
+        <button
+          v-for="role in (auth.rolePicker?.roles ?? [])"
+          :key="role"
+          class="role-card"
+          @click="pickRole(role)"
+        >
+          <i :class="roleConfig[role]?.icon" />
+          <strong>{{ roleConfig[role]?.label }}</strong>
+          <small>{{ roleConfig[role]?.desc }}</small>
         </button>
       </div>
     </Dialog>

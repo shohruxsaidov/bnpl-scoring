@@ -70,6 +70,7 @@
   "login": {
     "platformAdmin": "Platforma admin",
     "signIn": "Kirish",
+    "signingIn": "Kirilmoqda...",
     "subtitle": "Ichki operatsiyalar konsoli",
     "email": "Email",
     "password": "Parol",

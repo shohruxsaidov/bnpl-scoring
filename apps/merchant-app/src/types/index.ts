@@ -2,7 +2,7 @@
 // Domain types — Credit Scoring & POS Lending Platform
 // ---------------------------------------------------------------------------
 
-export type EmployeeRole = 'agent' | 'merchant_admin'
+export type EmployeeRole = 'agent' | 'branch_admin' | 'merchant_admin'
 
 export interface Tenant {
   id: string

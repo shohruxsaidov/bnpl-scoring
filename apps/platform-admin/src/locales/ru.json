@@ -70,6 +70,7 @@
   "login": {
     "platformAdmin": "Админ платформы",
     "signIn": "Войти",
+    "signingIn": "Вход...",
     "subtitle": "Внутренняя операционная консоль",
     "email": "Email",
     "password": "Пароль",

@@ -5,23 +5,18 @@ import { env } from "../env.js";
 
 declare module "fastify" {
   interface FastifyInstance {
-    /**
-     * Route-level preHandler that verifies the `access_token` cookie.
-     * Populates `request.user` with the decoded access-token payload on success,
-     * otherwise replies 401 and short-circuits the request.
-     */
-    verifyClientJwt: (
-      request: FastifyRequest,
-      reply: FastifyReply,
-    ) => Promise<void>;
+    verifyClientJwt: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    verifyAdminJwt: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    verifyMerchantJwt: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
   }
 }
 
 declare module "@fastify/jwt" {
   interface FastifyJWT {
-    // Decoded payload exposed on `request.user` after `jwtVerify()`.
-    // Reg-token payloads are verified explicitly via `app.jwt.verify<T>()`.
-    user: { sub: string; type: "client" };
+    user:
+      | { sub: string; type: "client" }
+      | { sub: string; type: "admin" }
+      | { sub: string; type: "merchant"; merchantId: string; branchId: string; role: string };
   }
 }
 
@@ -37,6 +32,42 @@ export default fp(async function jwtPlugin(app: FastifyInstance) {
     async function (request: FastifyRequest, reply: FastifyReply) {
       try {
         await request.jwtVerify();
+      } catch {
+        await reply.code(401).send({ code: "unauthorized" });
+      }
+    },
+  );
+
+  app.decorate(
+    "verifyAdminJwt",
+    async function (request: FastifyRequest, reply: FastifyReply) {
+      try {
+        const token = request.cookies["admin_access_token"];
+        if (!token) throw new Error("missing token");
+        const payload = app.jwt.verify<{ sub: string; type: "admin" }>(token);
+        if (payload.type !== "admin") throw new Error("wrong type");
+        request.user = payload;
+      } catch {
+        await reply.code(401).send({ code: "unauthorized" });
+      }
+    },
+  );
+
+  app.decorate(
+    "verifyMerchantJwt",
+    async function (request: FastifyRequest, reply: FastifyReply) {
+      try {
+        const token = request.cookies["merchant_access_token"];
+        if (!token) throw new Error("missing token");
+        const payload = app.jwt.verify<{
+          sub: string;
+          type: "merchant";
+          merchantId: string;
+          branchId: string;
+          role: string;
+        }>(token);
+        if (payload.type !== "merchant") throw new Error("wrong type");
+        request.user = payload;
       } catch {
         await reply.code(401).send({ code: "unauthorized" });
       }
