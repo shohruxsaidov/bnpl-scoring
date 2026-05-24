@@ -12,6 +12,13 @@ export interface Client {
   passportSerial: string
 }
 
+/** Authenticated user as returned by the client auth API. */
+export interface AuthUser {
+  id: string
+  phone: string
+  fullName: string
+}
+
 export interface LinkedCard {
   id: string
   brand: string

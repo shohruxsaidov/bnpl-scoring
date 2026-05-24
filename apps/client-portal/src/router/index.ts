@@ -9,6 +9,12 @@ const routes: RouteRecordRaw[] = [
     meta: { public: true, title: 'Sign in' },
   },
   {
+    path: '/register',
+    name: 'register',
+    component: () => import('@/views/RegisterView.vue'),
+    meta: { public: true, title: 'Create account' },
+  },
+  {
     path: '/',
     component: () => import('@/components/AppShell.vue'),
     children: [
@@ -56,7 +62,9 @@ router.beforeEach((to) => {
   const auth = useAuthStore()
 
   if (to.meta.public) {
-    if (auth.isAuthenticated && to.name === 'login') return { name: 'home' }
+    if (auth.isAuthenticated && (to.name === 'login' || to.name === 'register')) {
+      return { name: 'home' }
+    }
     return true
   }
 

@@ -6,6 +6,10 @@ A three-party platform where **Finsum Nasiya** (capital owner) funds instalment 
 
 ### People
 
+**Platform Admin**:
+A Finsum Nasiya staff member with system-wide access. Manages Tariffs, Merchants, the Scoring Model, and Payouts. Identified by email. The only actor who can create other Platform Admin accounts. Has no `merchant_id` or Branch scope.
+_Avoid_: Superadmin, system user, operator
+
 **Merchant**:
 A business entity that operates on the platform with one or more Branches. Has its own product catalog and selects which Finsum-managed Tariffs to offer its clients.
 _Avoid_: Tenant, partner, store
@@ -156,6 +160,18 @@ _Avoid_: Settlement log, payout history
 - A **Deal** produces exactly one **Kontrakt**
 - A **Kontrakt** produces exactly one **Payout** obligation toward the Merchant
 
+## Auth identity tables
+
+Three separate tables back the three auth flows:
+
+| Table | Actor | Credential |
+|---|---|---|
+| `admin_users` | Platform Admin | Email + password |
+| `merchant_users` | Employee | Email + password |
+| `users` | Client | Phone + OTP (registration adds PINFL + MyID) |
+
+`users` is an intentional divergence from the domain term "Client" — the table name was chosen for simplicity. The domain term "Client" remains correct everywhere else (code, API, UI).
+
 ## Flagged ambiguities
 
 - "Договор", "Сделка", and "Контракт" all appeared in the UI — resolved: **Договор = Deal** (the financing record), **Сделка** is a synonym for Deal used in tab labels only, **Контракт = Kontrakt** (the generated legal document). Never use "Contract" for the Deal itself.
@@ -171,7 +187,7 @@ Key decisions live in `docs/adr/` as thematic files:
 | `0001-backend-stack-architecture.md` | Node.js 25 + Fastify 5, modular monolith, REST API, Drizzle ORM, pg-boss |
 | `0002-multi-tenancy-domain-model.md` | Shared DB + `merchant_id`, per-merchant product catalog, sub-resource endpoints, soft delete |
 | `0003-frontend-stack-ui.md` | Turborepo monorepo, Vue 3 + PrimeVue, ClickUp dual theme, responsive design, SSE wizard progress, lazy tab queries |
-| `0004-authentication-authorization.md` | Three separate auth endpoints (scoped JWTs), client OTP login, single-role session + login picker |
+| `0004-authentication-authorization.md` | Three tables (`admin_users`, `merchant_users`, `users`), scoped JWTs, client phone+OTP+MyID registration, single-role session + login picker, server-side sessions |
 | `0005-integrations-infrastructure.md` | Payme + Click payments, webhook idempotency, overdue notifications (SMS + in-app), Garage object storage |
 | `0006deployment-strategy.md` | Docker + nginx, blue-green zero-downtime backend, atomic symlink frontend, expand/contract migrations |
 | `0007-observability.md` | Loki (logs) + Tempo (traces) + Prometheus (metrics) + Grafana Alloy + OpenTelemetry SDK, all self-hosted |

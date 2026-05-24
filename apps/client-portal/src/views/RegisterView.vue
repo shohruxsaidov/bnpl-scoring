@@ -1,41 +1,60 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onBeforeUnmount } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore, API_URL } from '@/stores/auth'
+import type { AuthUser } from '@/types'
 
 const auth = useAuthStore()
 const router = useRouter()
 const { t } = useI18n()
 
-type Step = 'phone' | 'otp'
-const step = ref<Step>('phone')
+type Step = 1 | 2 | 3 | 4
+const step = ref<Step>(1)
 
-/* ── Phone step ──────────────────────────────────────────────────────────── */
+const steps = [
+  { n: 1, label: 'register.stepPhone' },
+  { n: 2, label: 'register.stepOtp' },
+  { n: 3, label: 'register.stepIdentity' },
+  { n: 4, label: 'register.stepMyid' },
+] as const
+
+/** Reg tokens carried between steps. */
+const regToken = ref('')
+const myidSessionId = ref('')
+const devOtp = ref('')
+
+/** Generic POST helper returning parsed body, throwing Error(code) on failure. */
+async function post(path: string, body: unknown): Promise<any> {
+  const res = await fetch(`${API_URL}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(body),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.code ?? 'error')
+  return data
+}
+
+/* ── Step 1 — phone ─────────────────────────────────────────────────────── */
 const phoneDigits = ref('')
 const phoneError = ref('')
+const phoneLoading = ref(false)
 
 const phoneDisplay = computed(() => {
   const d = phoneDigits.value
-  const parts = [
-    d.slice(0, 2),
-    d.slice(2, 5),
-    d.slice(5, 7),
-    d.slice(7, 9),
-  ].filter(Boolean)
-  return parts.join(' ')
+  return [d.slice(0, 2), d.slice(2, 5), d.slice(5, 7), d.slice(7, 9)]
+    .filter(Boolean)
+    .join(' ')
 })
+const fullPhone = computed(() => `+998${phoneDigits.value}`)
 
 function onPhoneInput(e: Event) {
   const raw = (e.target as HTMLInputElement).value.replace(/\D/g, '')
   phoneDigits.value = raw.slice(0, 9)
   phoneError.value = ''
 }
-
-const fullPhone = computed(() => `+998${phoneDigits.value}`)
-
-const phoneLoading = ref(false)
-const otpLoading = ref(false)
 
 async function submitPhone() {
   phoneError.value = ''
@@ -46,26 +65,23 @@ async function submitPhone() {
   if (phoneLoading.value) return
   phoneLoading.value = true
   try {
-    await auth.requestLoginOtp(phoneDigits.value)
-    step.value = 'otp'
-    startCountdown()
+    const data = await post('/auth/client/register/phone', { phone: phoneDigits.value })
+    devOtp.value = data.devOtp ?? ''
+    step.value = 2
     nextTick(() => otpRefs.value[0]?.focus())
   } catch (err) {
     const code = (err as Error).message
-    phoneError.value = code === 'no_account' ? t('login.noAccount') : t('login.requestFailed')
+    phoneError.value = code === 'phone_taken' ? t('register.phoneTaken') : t('register.requestFailed')
   } finally {
     phoneLoading.value = false
   }
 }
 
-function goToRegister() {
-  router.push({ name: 'register' })
-}
-
-/* ── OTP step ────────────────────────────────────────────────────────────── */
+/* ── Step 2 — otp ───────────────────────────────────────────────────────── */
 const otp = ref<string[]>(['', '', '', ''])
 const otpRefs = ref<HTMLInputElement[]>([])
 const otpError = ref('')
+const otpLoading = ref(false)
 
 const otpCode = computed(() => otp.value.join(''))
 
@@ -116,66 +132,98 @@ async function submitOtp() {
   if (otpLoading.value) return
   otpLoading.value = true
   try {
-    await auth.verifyLoginOtp(otpCode.value)
-    router.push({ name: 'home' })
+    const data = await post('/auth/client/register/otp', {
+      phone: phoneDigits.value,
+      code: otpCode.value,
+    })
+    regToken.value = data.regToken
+    step.value = 3
   } catch (err) {
     const code = (err as Error).message
-    otpError.value = code === 'invalid_otp' ? t('login.invalidCode') : t('login.requestFailed')
+    otpError.value = code === 'invalid_otp' ? t('login.invalidCode') : t('register.requestFailed')
   } finally {
     otpLoading.value = false
   }
 }
 
-/* ── Resend countdown ────────────────────────────────────────────────────── */
-const seconds = ref(59)
-let timer: ReturnType<typeof setInterval> | null = null
+/* ── Step 3 — identity ──────────────────────────────────────────────────── */
+const fullName = ref('')
+const pinflDigits = ref('')
+const identityError = ref('')
+const identityLoading = ref(false)
 
-function startCountdown() {
-  seconds.value = 59
-  if (timer) clearInterval(timer)
-  timer = setInterval(() => {
-    if (seconds.value > 0) {
-      seconds.value -= 1
-    } else if (timer) {
-      clearInterval(timer)
-      timer = null
-    }
-  }, 1000)
+function onPinflInput(e: Event) {
+  const raw = (e.target as HTMLInputElement).value.replace(/\D/g, '')
+  pinflDigits.value = raw.slice(0, 14)
+  identityError.value = ''
 }
 
-function resend() {
-  if (seconds.value > 0) return
-  otp.value = ['', '', '', '']
-  otpError.value = ''
-  startCountdown()
-  nextTick(() => otpRefs.value[0]?.focus())
-}
-
-function backToPhone() {
-  step.value = 'phone'
-  otp.value = ['', '', '', '']
-  otpError.value = ''
-  if (timer) {
-    clearInterval(timer)
-    timer = null
+async function submitIdentity() {
+  identityError.value = ''
+  if (!fullName.value.trim()) {
+    identityError.value = t('register.fullNameLabel')
+    return
+  }
+  if (pinflDigits.value.length !== 14) {
+    identityError.value = t('register.pinflError')
+    return
+  }
+  if (identityLoading.value) return
+  identityLoading.value = true
+  try {
+    const data = await post('/auth/client/register/pinfl', {
+      regToken: regToken.value,
+      pinfl: pinflDigits.value,
+      fullName: fullName.value.trim(),
+    })
+    regToken.value = data.regToken
+    myidSessionId.value = data.myidSessionId
+    step.value = 4
+  } catch (err) {
+    const code = (err as Error).message
+    identityError.value = code === 'pinfl_taken' ? t('register.pinflTaken') : t('register.requestFailed')
+  } finally {
+    identityLoading.value = false
   }
 }
 
-onBeforeUnmount(() => {
-  if (timer) clearInterval(timer)
-})
+/* ── Step 4 — MyID ──────────────────────────────────────────────────────── */
+const myidError = ref('')
+const myidLoading = ref(false)
+
+async function completeMyid() {
+  myidError.value = ''
+  if (myidLoading.value) return
+  myidLoading.value = true
+  try {
+    const data = await post('/auth/client/register/complete', {
+      regToken: regToken.value,
+      myidSessionId: myidSessionId.value,
+    })
+    auth.setUser(data.user as AuthUser)
+    router.push({ name: 'home' })
+  } catch (err) {
+    const code = (err as Error).message
+    myidError.value = code === 'pinfl_taken' ? t('register.pinflTaken') : t('register.requestFailed')
+  } finally {
+    myidLoading.value = false
+  }
+}
+
+function goToLogin() {
+  router.push({ name: 'login' })
+}
 </script>
 
 <template>
   <div class="auth-page">
-    <!-- ── Left hero panel ──────────────────────────────────────────────── -->
+    <!-- ── Left hero panel (mirrors LoginView) ──────────────────────────── -->
     <div class="auth-hero">
       <div class="orb orb-1" />
       <div class="orb orb-2" />
       <div class="orb orb-3" />
       <div class="dot-grid" />
 
-      <!-- floating card 1: next payment -->
       <div class="glass-card fc-deal">
         <div class="gc-header">
           <span class="gc-dot dot-amber" />
@@ -195,17 +243,11 @@ onBeforeUnmount(() => {
         <div class="gc-progress-row">
           <span class="gc-sub">3 / 12 {{ $t('login.heroPaid') }}</span>
           <div class="gc-pill-row">
-            <span
-              v-for="i in 12"
-              :key="i"
-              class="gc-pill"
-              :class="{ filled: i <= 3 }"
-            />
+            <span v-for="i in 12" :key="i" class="gc-pill" :class="{ filled: i <= 3 }" />
           </div>
         </div>
       </div>
 
-      <!-- floating card 2: payment confirmed -->
       <div class="glass-card fc-paid">
         <div class="gc-header">
           <i class="pi pi-check-circle" style="font-size: 0.85rem; color: #00d4aa" />
@@ -217,7 +259,6 @@ onBeforeUnmount(() => {
         <div class="gc-sub">Paid Jun 15 via Payme</div>
       </div>
 
-      <!-- floating card 3: schedule -->
       <div class="glass-card fc-schedule">
         <div class="gc-header">
           <i class="pi pi-calendar" style="font-size: 0.8rem; opacity: 0.7" />
@@ -255,7 +296,7 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- ── Right: auth form ─────────────────────────────────────────────── -->
+    <!-- ── Right: wizard card ───────────────────────────────────────────── -->
     <div class="auth-form-wrap">
       <div class="auth-card surface-card">
         <div class="mobile-brand">
@@ -263,17 +304,33 @@ onBeforeUnmount(() => {
           <span class="brand-title sm">Scoring</span>
         </div>
 
-        <!-- step: phone -->
-        <template v-if="step === 'phone'">
-          <h2>{{ $t('login.welcome') }}</h2>
-          <p class="sub">{{ $t('login.subtitle') }}</p>
+        <!-- progress indicator -->
+        <div class="stepper">
+          <div
+            v-for="s in steps"
+            :key="s.n"
+            class="step-item"
+            :class="{ active: step === s.n, done: step > s.n }"
+          >
+            <div class="step-dot">
+              <i v-if="step > s.n" class="pi pi-check" />
+              <span v-else>{{ s.n }}</span>
+            </div>
+            <span class="step-label">{{ $t(s.label) }}</span>
+          </div>
+        </div>
+
+        <!-- step 1: phone -->
+        <template v-if="step === 1">
+          <h2>{{ $t('register.phoneTitle') }}</h2>
+          <p class="sub">{{ $t('register.phoneSub') }}</p>
 
           <div class="field">
-            <label class="field-label" for="phone">{{ $t('login.phoneLabel') }}</label>
+            <label class="field-label" for="reg-phone">{{ $t('login.phoneLabel') }}</label>
             <div class="phone-input" :class="{ invalid: !!phoneError }">
               <span class="prefix font-mono">+998</span>
               <input
-                id="phone"
+                id="reg-phone"
                 class="phone-field font-mono"
                 inputmode="numeric"
                 autocomplete="tel"
@@ -288,24 +345,21 @@ onBeforeUnmount(() => {
 
           <button class="btn-gradient submit" :disabled="phoneLoading" @click="submitPhone">
             <i v-if="phoneLoading" class="pi pi-spin pi-spinner" />
-            <span v-else>{{ $t('login.sendOtp') }}</span>
+            <span v-else>{{ $t('register.next') }}</span>
           </button>
 
-          <button class="link-btn" @click="goToRegister">
-            {{ $t('register.noAccount') }} <strong>{{ $t('register.signUp') }}</strong>
+          <button class="link-btn" @click="goToLogin">
+            {{ $t('register.haveAccount') }} <strong>{{ $t('register.signIn') }}</strong>
           </button>
         </template>
 
-        <!-- step: otp -->
-        <template v-else>
-          <button class="back-link" @click="backToPhone">
-            <i class="pi pi-arrow-left" /> {{ $t('login.changeNumber') }}
+        <!-- step 2: otp -->
+        <template v-else-if="step === 2">
+          <button class="back-link" @click="step = 1">
+            <i class="pi pi-arrow-left" /> {{ $t('register.back') }}
           </button>
-          <h2>{{ $t('login.enterCode') }}</h2>
-          <p class="sub">
-            {{ $t('login.codeSentTo') }}
-            <strong class="font-mono">{{ fullPhone }}</strong>
-          </p>
+          <h2>{{ $t('register.otpTitle') }}</h2>
+          <p class="sub">{{ $t('register.otpSub', { phone: fullPhone }) }}</p>
 
           <div class="otp-row" @paste="onOtpPaste">
             <input
@@ -324,21 +378,72 @@ onBeforeUnmount(() => {
           </div>
           <span v-if="otpError" class="field-error center">{{ otpError }}</span>
 
-          <div v-if="auth.devOtp" class="dev-otp">
-            DEV OTP: <strong class="font-mono">{{ auth.devOtp }}</strong>
+          <div v-if="devOtp" class="dev-otp">
+            DEV OTP: <strong class="font-mono">{{ devOtp }}</strong>
           </div>
 
           <button class="btn-gradient submit" :disabled="otpLoading" @click="submitOtp">
             <i v-if="otpLoading" class="pi pi-spin pi-spinner" />
-            <span v-else>{{ $t('login.verifySignIn') }}</span>
+            <span v-else>{{ $t('register.next') }}</span>
           </button>
+        </template>
 
-          <div class="resend">
-            <span v-if="seconds > 0" class="font-mono">
-              {{ $t('login.resendIn', { sec: seconds }) }}
-            </span>
-            <button v-else class="resend-btn" @click="resend">
-              {{ $t('login.resendCode') }}
+        <!-- step 3: identity -->
+        <template v-else-if="step === 3">
+          <button class="back-link" @click="step = 2">
+            <i class="pi pi-arrow-left" /> {{ $t('register.back') }}
+          </button>
+          <h2>{{ $t('register.identityTitle') }}</h2>
+          <p class="sub">{{ $t('register.identitySub') }}</p>
+
+          <div class="field">
+            <label class="field-label" for="reg-name">{{ $t('register.fullNameLabel') }}</label>
+            <input
+              id="reg-name"
+              v-model="fullName"
+              class="text-field"
+              type="text"
+              autocomplete="name"
+              :placeholder="$t('register.fullNamePlaceholder')"
+              @input="identityError = ''"
+            />
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="reg-pinfl">{{ $t('register.pinflLabel') }}</label>
+            <input
+              id="reg-pinfl"
+              class="text-field font-mono"
+              type="text"
+              inputmode="numeric"
+              :placeholder="$t('register.pinflPlaceholder')"
+              :value="pinflDigits"
+              @input="onPinflInput"
+              @keyup.enter="submitIdentity"
+            />
+            <span v-if="identityError" class="field-error">{{ identityError }}</span>
+          </div>
+
+          <button class="btn-gradient submit" :disabled="identityLoading" @click="submitIdentity">
+            <i v-if="identityLoading" class="pi pi-spin pi-spinner" />
+            <span v-else>{{ $t('register.next') }}</span>
+          </button>
+        </template>
+
+        <!-- step 4: myid -->
+        <template v-else>
+          <div class="myid">
+            <div class="myid-shield">
+              <i class="pi pi-shield" />
+            </div>
+            <h2>{{ $t('register.myidTitle') }}</h2>
+            <p class="sub center">{{ $t('register.myidSub') }}</p>
+
+            <span v-if="myidError" class="field-error center">{{ myidError }}</span>
+
+            <button class="btn-gradient submit" :disabled="myidLoading" @click="completeMyid">
+              <i v-if="myidLoading" class="pi pi-spin pi-spinner" />
+              <span v-else>{{ $t('register.myidComplete') }}</span>
             </button>
           </div>
         </template>
@@ -625,6 +730,69 @@ onBeforeUnmount(() => {
   font-size: 1.25rem;
   color: var(--text-primary);
 }
+
+/* stepper */
+.stepper {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.4rem;
+  margin-bottom: 1.8rem;
+}
+.step-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  position: relative;
+}
+.step-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 13px;
+  left: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--border-subtle);
+  z-index: 0;
+}
+.step-item.done:not(:last-child)::after {
+  background: var(--accent-1);
+}
+.step-dot {
+  position: relative;
+  z-index: 1;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.78rem;
+  font-weight: 800;
+  background: var(--bg-base);
+  border: 2px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+.step-item.active .step-dot {
+  border-color: var(--accent-1);
+  color: var(--accent-2);
+}
+.step-item.done .step-dot {
+  background: var(--accent-1);
+  border-color: var(--accent-1);
+  color: #fff;
+}
+.step-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-align: center;
+}
+.step-item.active .step-label {
+  color: var(--text-primary);
+}
+
 .auth-card h2 {
   margin: 0 0 0.35rem;
   font-size: 1.55rem;
@@ -635,6 +803,9 @@ onBeforeUnmount(() => {
   color: var(--text-secondary);
   font-size: 0.92rem;
   line-height: 1.5;
+}
+.sub.center {
+  text-align: center;
 }
 .field {
   margin-bottom: 1.2rem;
@@ -676,23 +847,49 @@ onBeforeUnmount(() => {
   color: var(--text-secondary);
   opacity: 0.5;
 }
+.text-field {
+  width: 100%;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: var(--bg-base);
+  padding: 0.85rem 1rem;
+  font-size: 1rem;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.text-field:focus {
+  border-color: var(--accent-1);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-1) 20%, transparent);
+}
+.text-field::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+.field-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.field-error {
+  display: block;
+  margin-top: 0.45rem;
+  font-size: 0.8rem;
+  color: var(--danger);
+}
+.field-error.center {
+  text-align: center;
+  margin-bottom: 0.6rem;
+}
 .submit {
   width: 100%;
   margin-top: 0.4rem;
 }
-.hint {
-  margin-top: 1.7rem;
-  padding-top: 1.3rem;
-  border-top: 1px solid var(--border-subtle);
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-.hint code {
-  font-family: 'JetBrains Mono', monospace;
-  color: var(--accent-2);
+.submit:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 .link-btn {
   width: 100%;
@@ -710,24 +907,6 @@ onBeforeUnmount(() => {
 }
 .link-btn:hover strong {
   text-decoration: underline;
-}
-.dev-otp {
-  margin-bottom: 0.9rem;
-  padding: 0.6rem 0.8rem;
-  border: 1px dashed var(--border-subtle);
-  border-radius: 10px;
-  font-size: 0.8rem;
-  text-align: center;
-  color: var(--text-secondary);
-}
-.dev-otp strong {
-  color: var(--accent-2);
-  font-size: 1rem;
-  letter-spacing: 0.15em;
-}
-.submit:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
 }
 .back-link {
   display: inline-flex;
@@ -771,26 +950,44 @@ onBeforeUnmount(() => {
 .otp-box.invalid {
   border-color: var(--danger);
 }
-.field-error.center {
+.dev-otp {
+  margin-bottom: 0.9rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px dashed var(--border-subtle);
+  border-radius: 10px;
+  font-size: 0.8rem;
   text-align: center;
-  margin-bottom: 0.6rem;
-}
-.resend {
-  text-align: center;
-  margin-top: 1.3rem;
-  font-size: 0.85rem;
   color: var(--text-secondary);
 }
-.resend-btn {
-  background: transparent;
-  border: none;
+.dev-otp strong {
   color: var(--accent-2);
-  font-weight: 700;
-  font-size: 0.85rem;
-  cursor: pointer;
+  font-size: 1rem;
+  letter-spacing: 0.15em;
 }
-.resend-btn:hover {
-  text-decoration: underline;
+
+/* myid step */
+.myid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-top: 0.5rem;
+}
+.myid-shield {
+  width: 84px;
+  height: 84px;
+  border-radius: 24px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 1.3rem;
+  font-size: 2.3rem;
+  color: #16a34a;
+  background: color-mix(in srgb, #16a34a 14%, transparent);
+  border: 1px solid color-mix(in srgb, #16a34a 35%, transparent);
+}
+.myid .submit {
+  width: 100%;
+  margin-top: 1rem;
 }
 
 @media (max-width: 860px) {

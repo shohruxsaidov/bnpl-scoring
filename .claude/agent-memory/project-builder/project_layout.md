@@ -1,13 +1,13 @@
 ---
 name: project-layout
-description: pnpm/Turborepo monorepo scaffolded — apps/{api,merchant,portal,admin} + packages/{types,db}
+description: pnpm/Turborepo monorepo — apps/{api,client-portal,merchant-app,platform-admin} + packages/types
 metadata:
   type: project
 ---
 
-The `scoring` repo is a pnpm + Turborepo monorepo (root `package.json`, `pnpm-workspace.yaml`, `turbo.json`, `tsconfig.base.json`). As of 2026-05-17 the full skeleton is scaffolded and typechecks clean (`pnpm turbo run typecheck` → 8/8 pass).
+The `scoring` repo is a pnpm + Turborepo monorepo (root `package.json`, `pnpm-workspace.yaml`, `turbo.json`, `tsconfig.base.json`). Use `pnpm --filter @scoring/<name> ...` for per-app commands; npm install fails at the root.
 
-**Workspace members:** `apps/api` (Fastify 5 modular monolith), `apps/merchant` / `apps/portal` / `apps/admin` (Vue 3.5 + Vite + PrimeVue Aura + Tailwind v4), `packages/types` (shared domain types), `packages/db` (Drizzle schema). Old standalone `apps/merchant-app` from the prior prototype no longer exists.
+**Workspace members (verified 2026-05-24):** `apps/api` (Fastify 5 + Drizzle + postgres-js, modular monolith), `apps/client-portal` / `apps/merchant-app` / `apps/platform-admin` (Vue 3.5 + Vite + PrimeVue + Tailwind v4 + vue-i18n + Pinia + vue-router), `packages/types` (shared domain types). There is no `packages/db`; the API owns its Drizzle schema under `apps/api/src/modules/<domain>/db/schema.ts`, re-exported via `apps/api/src/db/schema.ts`. **client-portal dev port is 5175** (the API CORS origin allowlist points at it).
 
 **Deviations from the spec/ADRs (intentional, environment-driven):**
 - Node is v22.20.0, not 25 → API uses `tsx watch` for dev + `tsc` build instead of `node --experimental-strip-types`. Same ergonomics, actually runnable here.
@@ -18,4 +18,4 @@ The `scoring` repo is a pnpm + Turborepo monorepo (root `package.json`, `pnpm-wo
 
 **Build order matters:** `packages/db` excludes `drizzle.config.ts` from its tsconfig (drizzle-kit reads it directly); frontends need `paths: { "@/*": ["src/*"] }` in tsconfig + an `env.d.ts` SFC shim for `vue-tsc`.
 
-**How to apply:** Always read `docs/adr/` (5 files: 0001 backend, 0002 multi-tenancy, 0003 frontend, 0004 auth, 0005 integrations + 0006-0009) for authoritative rationale, not this memory. Frontends proxy `/api` → `localhost:3000`; dev ports merchant 5173 / portal 5174 / admin 5175.
+**How to apply:** Always read `docs/adr/` for authoritative rationale, not this memory. The API runs on `localhost:3000`. See [[client-auth-design]] for the implemented client auth flow.

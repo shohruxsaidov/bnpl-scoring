@@ -3,13 +3,12 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import ThemeToggle from '@/components/ThemeToggle.vue'
-import { maskPinfl } from '@/utils/money'
 import type { LinkedCard } from '@/types'
 
 const auth = useAuthStore()
 const router = useRouter()
 
-const client = computed(() => auth.client)
+const client = computed(() => auth.user)
 
 const initials = computed(() => {
   const n = client.value?.fullName ?? ''
@@ -26,8 +25,8 @@ const cards: LinkedCard[] = [
   { id: 'card_2', brand: 'HUMO', pan: '9860 **** **** 0192' },
 ]
 
-function logout() {
-  auth.logout()
+async function logout() {
+  await auth.logout()
   router.push({ name: 'login' })
 }
 </script>
@@ -49,14 +48,6 @@ function logout() {
       <div class="row">
         <span class="row-label">{{ $t('profile.phone') }}</span>
         <span class="row-value font-mono">{{ client.phone }}</span>
-      </div>
-      <div class="row">
-        <span class="row-label">{{ $t('profile.pinfl') }}</span>
-        <span class="row-value font-mono">{{ maskPinfl(client.pinfl) }}</span>
-      </div>
-      <div class="row">
-        <span class="row-label">{{ $t('profile.passport') }}</span>
-        <span class="row-value font-mono">{{ client.passportSerial }}</span>
       </div>
     </section>
 

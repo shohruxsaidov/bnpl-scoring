@@ -1,64 +1,73 @@
 import { defineStore } from 'pinia'
-import type { Client } from '@/types'
+import type { AuthUser } from '@/types'
 
-/** The single mock client this portal recognises. */
-const MOCK_CLIENT: Client = {
-  id: 'cli_001',
-  fullName: 'Jasur Rahimov',
-  phone: '+998 91 555 22 33',
-  pinfl: '31203016740011',
-  passportSerial: 'AB 4521098',
-}
-
-/** Normalise a phone string down to digits only for comparison. */
-function digits(input: string): string {
-  return input.replace(/\D/g, '')
-}
+const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
 interface AuthState {
-  client: Client | null
-  /** phone the OTP was "sent" to (digits only) */
+  user: AuthUser | null
   pendingPhone: string
+  /** Dev-only OTP echoed by the API (NODE_ENV !== 'production'). */
+  devOtp: string
+}
+
+/** Throw an Error carrying the API error `code` for failed responses. */
+async function ensureOk(res: Response): Promise<unknown> {
+  if (res.ok) return res.json().catch(() => ({}))
+  const body = (await res.json().catch(() => ({}))) as { code?: string }
+  throw new Error(body.code ?? 'error')
 }
 
 export const useAuthStore = defineStore('auth', {
-  state: (): AuthState => ({
-    client: null,
-    pendingPhone: '',
-  }),
+  state: (): AuthState => ({ user: null, pendingPhone: '', devOtp: '' }),
 
   getters: {
-    isAuthenticated: (s): boolean => s.client !== null,
+    isAuthenticated: (s): boolean => s.user !== null,
   },
 
   actions: {
-    /**
-     * Validate the phone number and "send" an OTP.
-     * Returns true if the phone matches the known mock client.
-     */
-    requestOtp(phone: string): boolean {
-      const d = digits(phone)
-      const known = digits(MOCK_CLIENT.phone)
-      if (d !== known) return false
-      this.pendingPhone = d
-      return true
+    async requestLoginOtp(phone: string): Promise<void> {
+      const res = await fetch(`${API}/auth/client/login/phone`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ phone }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(body.code ?? 'error')
+      }
+      this.pendingPhone = phone
+      this.devOtp = body.devOtp ?? ''
     },
 
-    /**
-     * Verify the OTP. Any 4-digit code is accepted in the mock.
-     * Establishes a session on success.
-     */
-    verifyOtp(code: string): boolean {
-      if (!/^\d{4}$/.test(code)) return false
-      if (!this.pendingPhone) return false
-      this.client = MOCK_CLIENT
+    async verifyLoginOtp(code: string): Promise<void> {
+      const res = await fetch(`${API}/auth/client/login/otp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ phone: this.pendingPhone, code }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.code ?? 'error')
+      }
+      const body = await res.json()
+      this.user = body.user
       this.pendingPhone = ''
-      return true
+      this.devOtp = ''
     },
 
-    logout() {
-      this.client = null
-      this.pendingPhone = ''
+    async logout(): Promise<void> {
+      await fetch(`${API}/auth/client/logout`, { method: 'POST', credentials: 'include' }).catch(() => {})
+      this.user = null
+    },
+
+    setUser(user: AuthUser) {
+      this.user = user
     },
   },
 })
+
+/** Base API URL, shared with the registration wizard. */
+export const API_URL = API
+export { ensureOk }

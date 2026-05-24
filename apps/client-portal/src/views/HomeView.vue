@@ -16,7 +16,7 @@ const router = useRouter()
 const toast = useToast()
 const { t } = useI18n()
 
-const firstName = computed(() => auth.client?.fullName.split(' ')[0] ?? '')
+const firstName = computed(() => auth.user?.fullName.split(' ')[0] ?? '')
 
 const activeDeals = computed(() => deals.activeDeals)
 const closedDeals = computed(() => deals.closedDeals)
