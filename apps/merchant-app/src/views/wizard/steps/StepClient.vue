@@ -4,56 +4,36 @@ import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import Checkbox from 'primevue/checkbox'
 import { useWizardStore } from '@/stores/wizard'
-import { mockDelay } from '@/utils/money'
+import { useAuthStore } from '@/stores/auth'
 import type { Client } from '@/types'
 
 const wizard = useWizardStore()
+const auth = useAuthStore()
 const { t } = useI18n()
 
-// ── Mock client database (existing clients in the system) ──────────────────
-const MOCK_DB: Client[] = [
-  {
-    pinfl: '31203016740011',
-    fullName: 'Jasur Rahimov',
-    phone: '+998 91 234 56 78',
-    passportSerial: 'AB1234567',
-    birthDate: '1988-03-21',
-  },
-  {
-    pinfl: '52109026740022',
-    fullName: 'Madina Sobirova',
-    phone: '+998 90 345 67 89',
-    passportSerial: 'CD2345678',
-    birthDate: '1995-09-10',
-  },
-  {
-    pinfl: '30501996740033',
-    fullName: 'Bekzod Aliyev',
-    phone: '+998 93 456 78 90',
-    passportSerial: 'EF3456789',
-    birthDate: '1990-05-30',
-  },
-]
+const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
-// MyID returns verified identity for unknown PINFLs
-const MYID_IDENTITY: Omit<Client, 'pinfl'> = {
-  fullName: 'Akmal Tursunov',
-  passportSerial: 'GH9876543',
-  birthDate: '1994-08-15',
-  phone: '+998 93 777 88 99',
+async function apiFetch(path: string, opts: RequestInit = {}): Promise<any> {
+  const res = await fetch(`${API}${path}`, {
+    ...opts,
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...(opts.headers ?? {}) },
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.code ?? 'error')
+  return data
 }
 
 // ── Phase state machine ────────────────────────────────────────────────────
 type Phase =
-  | 'search'        // initial: enter PINFL
-  | 'searching'     // mock search in progress
-  | 'found'         // existing client found
-  | 'not_found'     // PINFL not in system
-  | 'myid_pending'  // MyID verification in progress
-  | 'myid_done'     // MyID verified, new client created
-  | 'katm'          // client confirmed (found or new), KATM section active
+  | 'search'
+  | 'searching'
+  | 'found'
+  | 'not_found'
+  | 'myid_pending'
+  | 'myid_done'
+  | 'katm'
 
-// Restore state if wizard session already has a client (going back)
 function initialPhase(): Phase {
   if (wizard.sessionData.client) return 'katm'
   return 'search'
@@ -62,21 +42,26 @@ function initialPhase(): Phase {
 const phase = ref<Phase>(initialPhase())
 const pinfl = ref(wizard.sessionData.client?.pinfl ?? '')
 const pinflError = ref('')
-const searching = ref(false)
+const searchError = ref('')
 
 const confirmedClient = ref<Client | null>(wizard.sessionData.client)
 const isNewClient = ref(wizard.sessionData.isNewClient)
 
-// MyID progress sub-phase
-type MyIdPhase = 'waiting' | 'biometric' | 'done'
-const myidPhase = ref<MyIdPhase>('waiting')
+// MyID
+const myidIframeUrl = ref<string | null>(null)
+const myidMock = ref(false)
+const myidError = ref('')
+
+// Phone (collected for new clients)
+const clientPhone = ref('')
+const phoneError = ref('')
 
 // KATM
 const katmConsent = ref(wizard.sessionData.katmConsent)
 const katmLoading = ref(false)
 const katmDone = ref(!!wizard.sessionData.katmConsent && !!wizard.sessionData.client)
 
-// ── Actions ────────────────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────
 function validatePinfl(): boolean {
   if (!/^\d{14}$/.test(pinfl.value)) {
     pinflError.value = t('stepClient.pinflInvalid')
@@ -86,22 +71,30 @@ function validatePinfl(): boolean {
   return true
 }
 
+function normalizePhone(raw: string): string {
+  const digits = raw.replace(/\D/g, '')
+  const national = digits.startsWith('998') ? digits.slice(3) : digits
+  return `+998${national}`
+}
+
+// ── Actions ────────────────────────────────────────────────────────────────
 async function searchClient() {
   if (!validatePinfl()) return
+  searchError.value = ''
   phase.value = 'searching'
-  searching.value = true
-
-  await mockDelay(null, 1200)
-
-  const existing = MOCK_DB.find((c) => c.pinfl === pinfl.value)
-  searching.value = false
-
-  if (existing) {
-    confirmedClient.value = existing
+  try {
+    const data = await apiFetch(`/merchant/client/search?pinfl=${pinfl.value}`)
+    confirmedClient.value = data.client as Client
     isNewClient.value = false
     phase.value = 'found'
-  } else {
-    phase.value = 'not_found'
+  } catch (err) {
+    const code = (err as Error).message
+    if (code === 'client_not_found') {
+      phase.value = 'not_found'
+    } else {
+      searchError.value = t('stepClient.searchFailed')
+      phase.value = 'search'
+    }
   }
 }
 
@@ -110,17 +103,55 @@ function useFoundClient() {
 }
 
 async function startMyId() {
+  myidError.value = ''
   phase.value = 'myid_pending'
-  myidPhase.value = 'waiting'
-  await mockDelay(null, 2000)
-  myidPhase.value = 'biometric'
-  await mockDelay(null, 1800)
-  myidPhase.value = 'done'
+  try {
+    const data = await apiFetch('/merchant/client/myid-session', {
+      method: 'POST',
+      body: JSON.stringify({ pinfl: pinfl.value }),
+    })
+    myidMock.value = !!data.mock
+    myidIframeUrl.value = data.iframeUrl ?? null
+    if (!data.mock) listenForMyidMessage()
+  } catch {
+    myidError.value = t('stepClient.myidFailed')
+    phase.value = 'not_found'
+  }
+}
 
-  const newClient: Client = { pinfl: pinfl.value, ...MYID_IDENTITY }
-  confirmedClient.value = newClient
-  isNewClient.value = true
-  phase.value = 'myid_done'
+function listenForMyidMessage() {
+  function onMessage(e: MessageEvent) {
+    if (typeof e.data !== 'object' || !e.data) return
+    const { code } = e.data as { code?: string }
+    if (code) {
+      window.removeEventListener('message', onMessage)
+      completeMyid(code)
+    }
+  }
+  window.addEventListener('message', onMessage)
+}
+
+async function completeMyid(myidCode?: string) {
+  myidError.value = ''
+  phoneError.value = ''
+  const phone = normalizePhone(clientPhone.value)
+  if (!phone || phone.length < 12) {
+    phoneError.value = t('stepClient.phoneRequired')
+    return
+  }
+  try {
+    const data = await apiFetch('/merchant/client/myid-complete', {
+      method: 'POST',
+      body: JSON.stringify({ pinfl: pinfl.value, phone, myidCode: myidCode ?? 'mock' }),
+    })
+    confirmedClient.value = data.client as Client
+    isNewClient.value = true
+    phase.value = 'myid_done'
+  } catch (err) {
+    const code = (err as Error).message
+    myidError.value = code === 'pinfl_mismatch' ? t('stepClient.pinflMismatch') : t('stepClient.myidFailed')
+    phase.value = 'not_found'
+  }
 }
 
 function confirmNewClient() {
@@ -130,7 +161,7 @@ function confirmNewClient() {
 async function queryKatm() {
   if (!katmConsent.value) return
   katmLoading.value = true
-  await mockDelay(null, 1500)
+  await new Promise((r) => setTimeout(r, 800))
   katmLoading.value = false
   katmDone.value = true
 }
@@ -141,7 +172,10 @@ function resetSearch() {
   isNewClient.value = false
   katmConsent.value = false
   katmDone.value = false
-  myidPhase.value = 'waiting'
+  myidIframeUrl.value = null
+  myidMock.value = false
+  myidError.value = ''
+  clientPhone.value = ''
 }
 
 function onNext() {
@@ -154,15 +188,10 @@ function onNext() {
   wizard.complete('client')
 }
 
-const canContinue = computed(
-  () => !!confirmedClient.value && katmDone.value,
+const canContinue = computed(() => !!confirmedClient.value && katmDone.value)
+const clientFullName = computed(() =>
+  confirmedClient.value ? `${confirmedClient.value.firstName} ${confirmedClient.value.lastName}` : ''
 )
-
-const myidStatusText = computed(() => {
-  if (myidPhase.value === 'waiting') return t('stepClient.waitingMyid')
-  if (myidPhase.value === 'biometric') return t('stepClient.biometricInProgress')
-  return t('stepClient.identityVerified')
-})
 </script>
 
 <template>
@@ -197,6 +226,7 @@ const myidStatusText = computed(() => {
         </button>
       </div>
       <span v-if="pinflError" class="field-error">{{ pinflError }}</span>
+      <span v-if="searchError" class="field-error">{{ searchError }}</span>
       <p class="search-hint">
         {{ $t('stepClient.searchHint') }}
       </p>
@@ -210,7 +240,7 @@ const myidStatusText = computed(() => {
       <div class="client-grid">
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.fullName') }}</span>
-          <span class="cf-value">{{ confirmedClient!.fullName }}</span>
+          <span class="cf-value">{{ clientFullName }}</span>
         </div>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.pinfl') }}</span>
@@ -254,122 +284,42 @@ const myidStatusText = computed(() => {
         <span class="myid-title">{{ $t('stepClient.identityVerification') }}</span>
       </div>
 
-      <div class="myid-body">
-        <!-- Fake QR code -->
-        <div class="qr-wrap" :class="{ 'qr-done': myidPhase === 'done' }">
-          <svg viewBox="0 0 21 21" width="140" height="140" class="qr-svg">
-            <!-- top-left finder -->
-            <rect x="0" y="0" width="7" height="7" rx="1" fill="currentColor"/>
-            <rect x="1" y="1" width="5" height="5" rx="0.5" fill="var(--bg-surface)"/>
-            <rect x="2" y="2" width="3" height="3" fill="currentColor"/>
-            <!-- top-right finder -->
-            <rect x="14" y="0" width="7" height="7" rx="1" fill="currentColor"/>
-            <rect x="15" y="1" width="5" height="5" rx="0.5" fill="var(--bg-surface)"/>
-            <rect x="16" y="2" width="3" height="3" fill="currentColor"/>
-            <!-- bottom-left finder -->
-            <rect x="0" y="14" width="7" height="7" rx="1" fill="currentColor"/>
-            <rect x="1" y="15" width="5" height="5" rx="0.5" fill="var(--bg-surface)"/>
-            <rect x="2" y="16" width="3" height="3" fill="currentColor"/>
-            <!-- data modules (random-ish pattern) -->
-            <rect x="8" y="0" width="1" height="1" fill="currentColor"/>
-            <rect x="10" y="0" width="1" height="1" fill="currentColor"/>
-            <rect x="12" y="0" width="1" height="1" fill="currentColor"/>
-            <rect x="9" y="1" width="1" height="1" fill="currentColor"/>
-            <rect x="11" y="1" width="1" height="1" fill="currentColor"/>
-            <rect x="8" y="2" width="2" height="1" fill="currentColor"/>
-            <rect x="11" y="2" width="2" height="1" fill="currentColor"/>
-            <rect x="9" y="3" width="1" height="1" fill="currentColor"/>
-            <rect x="12" y="3" width="1" height="1" fill="currentColor"/>
-            <rect x="8" y="4" width="1" height="1" fill="currentColor"/>
-            <rect x="10" y="4" width="2" height="1" fill="currentColor"/>
-            <rect x="8" y="5" width="3" height="1" fill="currentColor"/>
-            <rect x="12" y="5" width="1" height="1" fill="currentColor"/>
-            <rect x="9" y="6" width="2" height="1" fill="currentColor"/>
-            <rect x="0" y="8" width="1" height="1" fill="currentColor"/>
-            <rect x="2" y="8" width="3" height="1" fill="currentColor"/>
-            <rect x="7" y="8" width="2" height="1" fill="currentColor"/>
-            <rect x="10" y="8" width="1" height="1" fill="currentColor"/>
-            <rect x="12" y="8" width="3" height="1" fill="currentColor"/>
-            <rect x="16" y="8" width="2" height="1" fill="currentColor"/>
-            <rect x="19" y="8" width="2" height="1" fill="currentColor"/>
-            <rect x="1" y="9" width="2" height="1" fill="currentColor"/>
-            <rect x="5" y="9" width="2" height="1" fill="currentColor"/>
-            <rect x="9" y="9" width="3" height="1" fill="currentColor"/>
-            <rect x="14" y="9" width="2" height="1" fill="currentColor"/>
-            <rect x="18" y="9" width="3" height="1" fill="currentColor"/>
-            <rect x="0" y="10" width="3" height="1" fill="currentColor"/>
-            <rect x="4" y="10" width="1" height="1" fill="currentColor"/>
-            <rect x="7" y="10" width="4" height="1" fill="currentColor"/>
-            <rect x="13" y="10" width="1" height="1" fill="currentColor"/>
-            <rect x="16" y="10" width="3" height="1" fill="currentColor"/>
-            <rect x="1" y="11" width="1" height="1" fill="currentColor"/>
-            <rect x="3" y="11" width="3" height="1" fill="currentColor"/>
-            <rect x="8" y="11" width="2" height="1" fill="currentColor"/>
-            <rect x="12" y="11" width="2" height="1" fill="currentColor"/>
-            <rect x="15" y="11" width="1" height="1" fill="currentColor"/>
-            <rect x="18" y="11" width="2" height="1" fill="currentColor"/>
-            <rect x="0" y="12" width="2" height="1" fill="currentColor"/>
-            <rect x="4" y="12" width="2" height="1" fill="currentColor"/>
-            <rect x="7" y="12" width="1" height="1" fill="currentColor"/>
-            <rect x="9" y="12" width="3" height="1" fill="currentColor"/>
-            <rect x="14" y="12" width="3" height="1" fill="currentColor"/>
-            <rect x="19" y="12" width="2" height="1" fill="currentColor"/>
-            <rect x="8" y="14" width="2" height="1" fill="currentColor"/>
-            <rect x="11" y="14" width="1" height="1" fill="currentColor"/>
-            <rect x="14" y="14" width="2" height="1" fill="currentColor"/>
-            <rect x="18" y="14" width="3" height="1" fill="currentColor"/>
-            <rect x="9" y="15" width="3" height="1" fill="currentColor"/>
-            <rect x="13" y="15" width="1" height="1" fill="currentColor"/>
-            <rect x="16" y="15" width="2" height="1" fill="currentColor"/>
-            <rect x="8" y="16" width="1" height="1" fill="currentColor"/>
-            <rect x="11" y="16" width="2" height="1" fill="currentColor"/>
-            <rect x="15" y="16" width="3" height="1" fill="currentColor"/>
-            <rect x="19" y="16" width="2" height="1" fill="currentColor"/>
-            <rect x="9" y="17" width="2" height="1" fill="currentColor"/>
-            <rect x="12" y="17" width="3" height="1" fill="currentColor"/>
-            <rect x="17" y="17" width="2" height="1" fill="currentColor"/>
-            <rect x="8" y="18" width="3" height="1" fill="currentColor"/>
-            <rect x="13" y="18" width="1" height="1" fill="currentColor"/>
-            <rect x="16" y="18" width="4" height="1" fill="currentColor"/>
-            <rect x="9" y="19" width="1" height="1" fill="currentColor"/>
-            <rect x="11" y="19" width="3" height="1" fill="currentColor"/>
-            <rect x="15" y="19" width="2" height="1" fill="currentColor"/>
-            <rect x="19" y="19" width="2" height="1" fill="currentColor"/>
-            <rect x="8" y="20" width="2" height="1" fill="currentColor"/>
-            <rect x="12" y="20" width="2" height="1" fill="currentColor"/>
-            <rect x="17" y="20" width="3" height="1" fill="currentColor"/>
-          </svg>
-          <div v-if="myidPhase === 'done'" class="qr-overlay">
-            <i class="pi pi-check" />
-          </div>
+      <!-- Phone field (agent enters client's phone while client does MyID) -->
+      <div class="field mb-1">
+        <label class="field-label">{{ $t('stepClient.clientPhone') }}</label>
+        <div class="phone-row">
+          <span class="phone-prefix">+998</span>
+          <InputText
+            v-model="clientPhone"
+            inputmode="numeric"
+            placeholder="91 555 22 33"
+            class="phone-field-input"
+            :invalid="!!phoneError"
+            @input="phoneError = ''"
+          />
         </div>
-
-        <!-- Steps -->
-        <div class="myid-steps">
-          <div
-            v-for="(step, idx) in [
-              { label: $t('stepClient.openMyidApp'), phase: 'waiting' },
-              { label: $t('stepClient.biometricCheck'), phase: 'biometric' },
-              { label: $t('stepClient.identityConfirmed'), phase: 'done' },
-            ]"
-            :key="idx"
-            class="myid-step"
-            :class="{
-              active: myidPhase === step.phase,
-              done: ['waiting','biometric','done'].indexOf(myidPhase) > idx,
-            }"
-          >
-            <span class="step-dot">
-              <i v-if="['waiting','biometric','done'].indexOf(myidPhase) > idx" class="pi pi-check" />
-              <i v-else-if="myidPhase === step.phase" class="pi pi-spin pi-spinner" />
-              <span v-else>{{ idx + 1 }}</span>
-            </span>
-            <span class="step-label">{{ step.label }}</span>
-          </div>
-        </div>
+        <span v-if="phoneError" class="field-error">{{ phoneError }}</span>
       </div>
 
-      <p class="myid-status">{{ myidStatusText }}</p>
+      <span v-if="myidError" class="field-error mb-1">{{ myidError }}</span>
+
+      <!-- Real MyID iframe -->
+      <iframe
+        v-if="!myidMock && myidIframeUrl"
+        :src="myidIframeUrl"
+        class="myid-frame"
+        allow="camera"
+      />
+
+      <!-- Mock mode button -->
+      <button
+        v-if="myidMock"
+        class="btn-gradient mt-1"
+        @click="completeMyid()"
+      >
+        <i class="pi pi-id-card" />
+        {{ $t('stepClient.startVerification') }} (mock)
+      </button>
     </div>
 
     <!-- ── PHASE: myid_done ──────────────────────────────────────────────── -->
@@ -380,7 +330,7 @@ const myidStatusText = computed(() => {
       <div class="client-grid">
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.fullName') }}</span>
-          <span class="cf-value">{{ confirmedClient!.fullName }}</span>
+          <span class="cf-value">{{ clientFullName }}</span>
         </div>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.pinfl') }}</span>
@@ -410,7 +360,7 @@ const myidStatusText = computed(() => {
       <div class="client-banner">
         <i class="pi pi-user" />
         <span>
-          <strong>{{ confirmedClient!.fullName }}</strong>
+          <strong>{{ clientFullName }}</strong>
           <span class="font-mono ml-1 text-secondary">{{ confirmedClient!.pinfl }}</span>
         </span>
         <span v-if="isNewClient" class="tag tag-accent tag-sm">{{ $t('stepClient.newMyidVerified') }}</span>
@@ -552,7 +502,7 @@ const myidStatusText = computed(() => {
   display: flex;
   align-items: center;
   gap: 0.8rem;
-  margin-bottom: 1.4rem;
+  margin-bottom: 1.2rem;
 }
 .myid-logo-lg {
   background: var(--gradient-hero);
@@ -564,73 +514,20 @@ const myidStatusText = computed(() => {
   letter-spacing: 0.06em;
 }
 .myid-title { font-weight: 700; font-size: 1rem; }
-
-.myid-body {
-  display: flex;
-  gap: 2rem;
-  align-items: center;
-}
-
-/* QR */
-.qr-wrap {
-  position: relative;
-  flex-shrink: 0;
-  width: 140px;
-  height: 140px;
+.myid-frame {
+  width: 100%;
+  height: 440px;
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
-  background: var(--bg-base);
-  padding: 8px;
-  border: 2px solid var(--accent-1);
-  transition: border-color 0.3s;
+  margin-top: 0.8rem;
 }
-.qr-wrap.qr-done { border-color: var(--success); }
-.qr-svg { color: var(--text-primary); display: block; }
-.qr-overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 212, 170, 0.15);
-  border-radius: 10px;
-  font-size: 3rem;
-  color: var(--success);
-}
-
-/* MyID steps */
-.myid-steps { display: flex; flex-direction: column; gap: 1rem; flex: 1; }
-.myid-step {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  font-size: 0.88rem;
-  color: var(--text-secondary);
-  transition: color 0.3s;
-}
-.myid-step.active { color: var(--accent-1); font-weight: 700; }
-.myid-step.done { color: var(--success); font-weight: 600; }
-
-.step-dot {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  border: 2px solid currentColor;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.7rem;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-.myid-step.done .step-dot { background: var(--success); border-color: var(--success); color: #fff; }
-.myid-step.active .step-dot { background: var(--accent-1); border-color: var(--accent-1); color: #fff; }
-
-.myid-status {
-  margin-top: 1.2rem;
-  font-size: 0.84rem;
-  color: var(--text-secondary);
-  text-align: center;
-}
+.field { display: flex; flex-direction: column; gap: 0.4rem; }
+.field-label { font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
+.field-error { font-size: 0.8rem; color: var(--danger); }
+.phone-row { display: flex; align-items: center; gap: 0; border: 1px solid var(--border-subtle); border-radius: 10px; overflow: hidden; }
+.phone-prefix { padding: 0.65rem 0.6rem 0.65rem 0.9rem; font-size: 0.9rem; font-weight: 700; color: var(--text-secondary); border-right: 1px solid var(--border-subtle); white-space: nowrap; }
+.phone-field-input { flex: 1; border: none !important; border-radius: 0 !important; box-shadow: none !important; padding: 0.65rem 0.9rem; }
+.mb-1 { margin-bottom: 0.8rem; }
 
 /* ── Client banner (katm phase) ── */
 .client-banner {

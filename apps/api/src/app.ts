@@ -7,7 +7,7 @@ import dbPlugin from "./plugins/db.js";
 import cookiePlugin from "./plugins/cookie.js";
 import jwtPlugin from "./plugins/jwt.js";
 import healthRoutes from "./routes/health.js";
-import { authModule } from "./modules/index.js";
+import { authModule, merchantModule } from "./modules/index.js";
 import { env } from "./env.js";
 
 export async function buildApp() {
@@ -35,6 +35,7 @@ export async function buildApp() {
   // domain modules register here as encapsulated plugins
   await app.register(healthRoutes);
   await app.register(authModule, { prefix: "/" });
+  await app.register(merchantModule, { prefix: "/" });
 
   return app;
 }

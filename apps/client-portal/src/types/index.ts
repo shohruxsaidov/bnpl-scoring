@@ -16,7 +16,8 @@ export interface Client {
 export interface AuthUser {
   id: string
   phone: string
-  fullName: string
+  firstName: string
+  lastName: string
 }
 
 export interface LinkedCard {

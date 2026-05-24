@@ -1,10 +1,17 @@
-import { bigint, bigserial, boolean, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
+import { bigint, bigserial, boolean, date, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 
 export const users = pgTable('users', {
   id: bigserial('id', { mode: 'bigint' }).primaryKey(),
   phone: varchar('phone', { length: 20 }).notNull().unique(),
   pinfl: varchar('pinfl', { length: 14 }).notNull().unique(),
-  fullName: varchar('full_name', { length: 200 }).notNull(),
+  firstName: varchar('first_name', { length: 100 }).notNull(),
+  lastName: varchar('last_name', { length: 100 }).notNull(),
+  birthDate: date('birth_date').notNull(),
+  gender: varchar('gender', { length: 10 }).notNull(),
+  nationality: varchar('nationality', { length: 10 }).notNull(),
+  passportSerial: varchar('passport_serial', { length: 5 }),
+  passportNumber: varchar('passport_number', { length: 10 }),
+  photoUrl: text('photo_url'),
   myidVerifiedAt: timestamp('myid_verified_at', { withTimezone: true }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })

@@ -32,7 +32,7 @@ async function signSubmit() {
   const id = deals.nextDealId()
   const deal: Deal = {
     id,
-    clientName: sd.value.client?.fullName ?? 'Unknown',
+    clientName: sd.value.client ? `${sd.value.client.firstName} ${sd.value.client.lastName}` : 'Unknown',
     clientPinfl: sd.value.client?.pinfl ?? '',
     clientPhone: sd.value.client?.phone ?? '',
     status: 'approved',
@@ -69,7 +69,7 @@ async function signSubmit() {
       <section class="sum-block">
         <h4><i class="pi pi-user" /> {{ $t('stepVerification.client') }}</h4>
         <dl>
-          <div><dt>{{ $t('stepVerification.name') }}</dt><dd>{{ sd.client?.fullName }}</dd></div>
+          <div><dt>{{ $t('stepVerification.name') }}</dt><dd>{{ sd.client ? `${sd.client.firstName} ${sd.client.lastName}` : '—' }}</dd></div>
           <div><dt>{{ $t('stepVerification.pinfl') }}</dt><dd class="font-mono">{{ sd.client?.pinfl }}</dd></div>
           <div><dt>{{ $t('stepVerification.phone') }}</dt><dd>{{ sd.client?.phone }}</dd></div>
           <div><dt>{{ $t('stepVerification.passport') }}</dt><dd class="font-mono">{{ sd.client?.passportSerial }}</dd></div>

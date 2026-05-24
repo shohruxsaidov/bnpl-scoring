@@ -71,6 +71,7 @@
     "pinflPlaceholder": "14 xonali raqam",
     "pinflError": "PINFL 14 ta raqamdan iborat bo'lishi kerak",
     "pinflTaken": "Bu PINFL allaqachon ro'yxatdan o'tgan",
+    "pinflMismatch": "PINFL MyID ma'lumotlari bilan mos kelmadi. Qayta urinib ko'ring",
     "phoneTaken": "Bu raqam allaqachon ro'yxatdan o'tgan. Kirishga harakat qiling",
     "myidTitle": "MyID tekshiruvi",
     "myidSub": "Shaxsingiz MyID orqali tasdiqlanmoqda",

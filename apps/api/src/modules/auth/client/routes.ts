@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { Type } from "@sinclair/typebox";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import type { FastifyInstance, FastifyReply } from "fastify";
@@ -13,6 +12,7 @@ import {
   verifyOtp,
   verifySession,
 } from "./service.js";
+import { createMyidSession, exchangeMyidCode } from "./myid";
 
 /** Normalize a 9-digit national phone number to E.164 (+998XXXXXXXXX). */
 function normalizePhone(input: string): string {
@@ -42,7 +42,6 @@ interface RegTokenPhase1 {
 interface RegTokenPhase2 {
   phone: string;
   pinfl: string;
-  fullName: string;
   myidSessionId: string;
   step: "pinfl_verified";
 }
@@ -91,11 +90,10 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
   const PinflBody = Type.Object({
     regToken: Type.String({ minLength: 1 }),
     pinfl: Type.String({ minLength: 1 }),
-    fullName: Type.String({ minLength: 1 }),
   });
   const CompleteBody = Type.Object({
     regToken: Type.String({ minLength: 1 }),
-    myidSessionId: Type.String({ minLength: 1 }),
+    myidCode: Type.String({ minLength: 1 }),
   });
 
   /* ── Registration ───────────────────────────────────────────────────────── */
@@ -149,25 +147,29 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       }
 
       const pinfl = request.body.pinfl.trim();
-      const fullName = request.body.fullName.trim();
+      if (pinfl.length !== 14 || !/^\d{14}$/.test(pinfl)) {
+        return reply.code(400).send({ code: "invalid_pinfl" });
+      }
 
       const existing = await findUserByPinfl(db, pinfl);
       if (existing) return reply.code(409).send({ code: "pinfl_taken" });
 
-      const myidSessionId = randomUUID();
+      const myidResult = await createMyidSession(pinfl);
 
       const regToken = app.jwt.sign(
         {
           phone: payload.phone,
           pinfl,
-          fullName,
-          myidSessionId,
+          myidSessionId: myidResult.sessionId,
           step: "pinfl_verified",
         } satisfies RegTokenPhase2,
         { expiresIn: "15m" },
       );
 
-      return { regToken, myidSessionId };
+      if (myidResult.mock) {
+        return { regToken, mock: true, iframeUrl: null };
+      }
+      return { regToken, mock: false, iframeUrl: myidResult.iframeUrl };
     },
   );
 
@@ -184,8 +186,14 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       if (payload.step !== "pinfl_verified") {
         return reply.code(400).send({ code: "invalid_step" });
       }
-      if (payload.myidSessionId !== request.body.myidSessionId) {
-        return reply.code(400).send({ code: "myid_mismatch" });
+
+      const myidUser = await exchangeMyidCode(
+        request.body.myidCode,
+        payload.pinfl,
+      );
+
+      if (myidUser.pinfl !== payload.pinfl) {
+        return reply.code(400).send({ code: "pinfl_mismatch" });
       }
 
       const existing = await findUserByPinfl(db, payload.pinfl);
@@ -193,15 +201,27 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
 
       const user = await createUser(db, {
         phone: payload.phone,
-        pinfl: payload.pinfl,
-        fullName: payload.fullName,
+        pinfl: myidUser.pinfl,
+        firstName: myidUser.firstName,
+        lastName: myidUser.lastName,
+        birthDate: myidUser.birthDate,
+        gender: myidUser.gender,
+        nationality: myidUser.nationality,
+        passportSerial: myidUser.passportSerial,
+        passportNumber: myidUser.passportNumber,
+        photoUrl: myidUser.photoUrl,
       });
 
       const { sessionToken } = await createSession(db, user.id);
       setAuthCookies(app, reply, user.id, sessionToken);
 
       return {
-        user: { id: user.id.toString(), phone: user.phone, fullName: user.fullName },
+        user: {
+          id: user.id.toString(),
+          phone: user.phone,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        },
       };
     },
   );
@@ -240,7 +260,12 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       setAuthCookies(app, reply, user.id, sessionToken);
 
       return {
-        user: { id: user.id.toString(), phone: user.phone, fullName: user.fullName },
+        user: {
+          id: user.id.toString(),
+          phone: user.phone,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        },
       };
     },
   );

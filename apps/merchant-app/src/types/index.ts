@@ -32,10 +32,15 @@ export type ScoreDecision = 'approved' | 'declined' | 'manual_review'
 
 export interface Client {
   pinfl: string
-  fullName: string
+  firstName: string
+  lastName: string
   phone: string
-  passportSerial: string
-  birthDate?: string
+  birthDate: string
+  gender: string
+  nationality: string
+  passportSerial: string | null
+  passportNumber: string | null
+  photoUrl: string | null
 }
 
 export interface Card {

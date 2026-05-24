@@ -110,14 +110,32 @@ export async function findUserByPinfl(db: Db, pinfl: string) {
 
 export async function createUser(
   db: Db,
-  input: { phone: string; pinfl: string; fullName: string },
+  input: {
+    phone: string;
+    pinfl: string;
+    firstName: string;
+    lastName: string;
+    birthDate: string;
+    gender: string;
+    nationality: string;
+    passportSerial: string | null;
+    passportNumber: string | null;
+    photoUrl: string | null;
+  },
 ) {
   const [row] = await db
     .insert(users)
     .values({
       phone: input.phone,
       pinfl: input.pinfl,
-      fullName: input.fullName,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      birthDate: input.birthDate,
+      gender: input.gender,
+      nationality: input.nationality,
+      passportSerial: input.passportSerial,
+      passportNumber: input.passportNumber,
+      photoUrl: input.photoUrl,
       myidVerifiedAt: new Date(),
     })
     .returning();

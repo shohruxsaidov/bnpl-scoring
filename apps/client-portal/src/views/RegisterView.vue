@@ -21,7 +21,9 @@ const steps = [
 
 /** Reg tokens carried between steps. */
 const regToken = ref('')
-const myidSessionId = ref('')
+const myidIframeUrl = ref<string | null>(null)
+const myidMock = ref(false)
+const myidCode = ref('')
 const devOtp = ref('')
 
 /** Generic POST helper returning parsed body, throwing Error(code) on failure. */
@@ -147,7 +149,6 @@ async function submitOtp() {
 }
 
 /* ── Step 3 — identity ──────────────────────────────────────────────────── */
-const fullName = ref('')
 const pinflDigits = ref('')
 const identityError = ref('')
 const identityLoading = ref(false)
@@ -160,10 +161,6 @@ function onPinflInput(e: Event) {
 
 async function submitIdentity() {
   identityError.value = ''
-  if (!fullName.value.trim()) {
-    identityError.value = t('register.fullNameLabel')
-    return
-  }
   if (pinflDigits.value.length !== 14) {
     identityError.value = t('register.pinflError')
     return
@@ -174,11 +171,12 @@ async function submitIdentity() {
     const data = await post('/auth/client/register/pinfl', {
       regToken: regToken.value,
       pinfl: pinflDigits.value,
-      fullName: fullName.value.trim(),
     })
     regToken.value = data.regToken
-    myidSessionId.value = data.myidSessionId
+    myidMock.value = !!data.mock
+    myidIframeUrl.value = data.iframeUrl ?? null
     step.value = 4
+    if (!data.mock) listenForMyidMessage()
   } catch (err) {
     const code = (err as Error).message
     identityError.value = code === 'pinfl_taken' ? t('register.pinflTaken') : t('register.requestFailed')
@@ -191,20 +189,35 @@ async function submitIdentity() {
 const myidError = ref('')
 const myidLoading = ref(false)
 
-async function completeMyid() {
+function listenForMyidMessage() {
+  function onMessage(e: MessageEvent) {
+    if (typeof e.data !== 'object' || !e.data) return
+    const { code } = e.data as { code?: string }
+    if (code) {
+      window.removeEventListener('message', onMessage)
+      myidCode.value = code
+      completeMyid(code)
+    }
+  }
+  window.addEventListener('message', onMessage)
+}
+
+async function completeMyid(code?: string) {
   myidError.value = ''
   if (myidLoading.value) return
   myidLoading.value = true
   try {
     const data = await post('/auth/client/register/complete', {
       regToken: regToken.value,
-      myidSessionId: myidSessionId.value,
+      myidCode: code ?? 'mock',
     })
     auth.setUser(data.user as AuthUser)
     router.push({ name: 'home' })
   } catch (err) {
     const code = (err as Error).message
-    myidError.value = code === 'pinfl_taken' ? t('register.pinflTaken') : t('register.requestFailed')
+    myidError.value = code === 'pinfl_taken' ? t('register.pinflTaken')
+      : code === 'pinfl_mismatch' ? t('register.pinflMismatch')
+      : t('register.requestFailed')
   } finally {
     myidLoading.value = false
   }
@@ -397,19 +410,6 @@ function goToLogin() {
           <p class="sub">{{ $t('register.identitySub') }}</p>
 
           <div class="field">
-            <label class="field-label" for="reg-name">{{ $t('register.fullNameLabel') }}</label>
-            <input
-              id="reg-name"
-              v-model="fullName"
-              class="text-field"
-              type="text"
-              autocomplete="name"
-              :placeholder="$t('register.fullNamePlaceholder')"
-              @input="identityError = ''"
-            />
-          </div>
-
-          <div class="field">
             <label class="field-label" for="reg-pinfl">{{ $t('register.pinflLabel') }}</label>
             <input
               id="reg-pinfl"
@@ -441,9 +441,23 @@ function goToLogin() {
 
             <span v-if="myidError" class="field-error center">{{ myidError }}</span>
 
-            <button class="btn-gradient submit" :disabled="myidLoading" @click="completeMyid">
+            <!-- real MyID iframe -->
+            <iframe
+              v-if="!myidMock && myidIframeUrl"
+              :src="myidIframeUrl"
+              class="myid-frame"
+              allow="camera"
+            />
+
+            <!-- mock mode button -->
+            <button
+              v-if="myidMock"
+              class="btn-gradient submit"
+              :disabled="myidLoading"
+              @click="completeMyid()"
+            >
               <i v-if="myidLoading" class="pi pi-spin pi-spinner" />
-              <span v-else>{{ $t('register.myidComplete') }}</span>
+              <span v-else>{{ $t('register.myidComplete') }} (mock)</span>
             </button>
           </div>
         </template>
@@ -988,6 +1002,13 @@ function goToLogin() {
 .myid .submit {
   width: 100%;
   margin-top: 1rem;
+}
+.myid-frame {
+  width: 100%;
+  height: 460px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  margin-top: 0.5rem;
 }
 
 @media (max-width: 860px) {
