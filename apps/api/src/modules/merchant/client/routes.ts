@@ -66,7 +66,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
       const existing = await findUserByPinfl(db, pinfl);
       if (existing) return reply.code(409).send({ code: "client_already_registered" });
 
-      const myidResult = await createMyidSession(pinfl);
+      const myidResult = await createMyidSession(pinfl, request.ip);
 
       return {
         sessionId: myidResult.sessionId,

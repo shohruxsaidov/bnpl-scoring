@@ -170,7 +170,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       const existing = await findUserByPinfl(db, pinfl);
       if (existing) return reply.code(409).send({ code: "pinfl_taken" });
 
-      const myidResult = await createMyidSession(pinfl).catch((err) => {
+      const myidResult = await createMyidSession(pinfl, request.ip).catch((err) => {
         request.log.error(
           { err },
           "MyID session creation failed, falling back to mock",

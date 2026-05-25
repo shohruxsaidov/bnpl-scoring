@@ -1,5 +1,9 @@
+import { randomUUID } from "node:crypto";
 import { env } from "../../../env";
-import { createIntegrationClient, handleHttpError } from "../../../lib/integrations";
+import {
+  createIntegrationClient,
+  handleHttpError,
+} from "../../../lib/integrations";
 import { parsePinflBirthDate, parsePinflGender } from "./pinfl";
 
 export interface MyidUserData {
@@ -21,37 +25,55 @@ export interface MyidSessionResult {
 }
 
 function myidClient() {
-  if (!env.MYID_WEB_BASE_URL) throw new Error("MYID_WEB_BASE_URL is not configured");
+  if (!env.MYID_WEB_BASE_URL)
+    throw new Error("MYID_WEB_BASE_URL is not configured");
   return createIntegrationClient(env.MYID_WEB_BASE_URL, "myid");
 }
 
-function basicAuth() {
-  return Buffer.from(
-    `${env.MYID_WEB_CLIENT_ID}:${env.MYID_WEB_CLIENT_SECRET}`,
-  ).toString("base64");
+/** Obtain a short-lived server-to-server access token via client_credentials. */
+async function getClientToken(): Promise<string> {
+  try {
+    const data = await myidClient()
+      .post("api/v1/oauth2/access-token", {
+        body: new URLSearchParams({
+          client_id: env.MYID_WEB_CLIENT_ID!,
+          client_secret: env.MYID_WEB_CLIENT_SECRET!,
+          grant_type: "client_credentials",
+        }),
+      })
+      .json<{ access_token: string }>();
+    return data.access_token;
+  } catch (err) {
+    return handleHttpError(err, "myid.clientToken");
+  }
 }
 
 /** Create a MyID WebSDK session for the given PINFL. */
 export async function createMyidSession(
   pinfl: string,
+  ipAddress: string,
 ): Promise<MyidSessionResult> {
   const birthDate = parsePinflBirthDate(pinfl);
+  const token = await getClientToken();
 
   try {
     const data = await myidClient()
       .post("api/v1/web/sessions", {
-        headers: { Authorization: `Basic ${basicAuth()}` },
+        headers: { Authorization: `Bearer ${token}` },
         json: {
           client_id: env.MYID_WEB_CLIENT_ID,
+          external_id: randomUUID(),
           pinfl,
           birth_date: birthDate,
+          ip_address: ipAddress,
+          max_retries: 3,
         },
       })
       .json<{ session_id: string; url: string }>();
 
     return {
       sessionId: data.session_id,
-      iframeUrl: `${env.MYID_WEB_IFRAME_URL}?session_id=${data.session_id}`,
+      iframeUrl: `${env.MYID_WEB_IFRAME_URL}?session_id=${data.session_id}&pinfl=${pinfl}&birth_date=${birthDate}`,
       mock: false,
     };
   } catch (err) {
@@ -64,14 +86,14 @@ export async function exchangeMyidCode(
   code: string,
   pinfl: string,
 ): Promise<MyidUserData> {
+  const token = await getClientToken();
   const client = myidClient();
-  const auth = basicAuth();
 
   let access_token: string;
   try {
     const tokenData = await client
       .post("api/v1/oauth2/token", {
-        headers: { Authorization: `Basic ${auth}` },
+        headers: { Authorization: `Bearer ${token}` },
         body: new URLSearchParams({
           grant_type: "authorization_code",
           code,
