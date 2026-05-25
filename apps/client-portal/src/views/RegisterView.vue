@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore, API_URL } from '@/stores/auth'
@@ -9,7 +9,7 @@ const auth = useAuthStore()
 const router = useRouter()
 const { t } = useI18n()
 
-type Step = 1 | 2 | 3 | 4
+type Step = 1 | 2 | 3 | 4 | 5
 const step = ref<Step>(1)
 
 const steps = [
@@ -17,6 +17,7 @@ const steps = [
   { n: 2, label: 'register.stepOtp' },
   { n: 3, label: 'register.stepIdentity' },
   { n: 4, label: 'register.stepMyid' },
+  { n: 5, label: 'register.stepVerified' },
 ] as const
 
 /** Reg tokens carried between steps. */
@@ -188,6 +189,7 @@ async function submitIdentity() {
 /* ── Step 4 — MyID ──────────────────────────────────────────────────────── */
 const myidError = ref('')
 const myidLoading = ref(false)
+const verifiedUser = ref<AuthUser | null>(null)
 
 function listenForMyidMessage() {
   function onMessage(e: MessageEvent) {
@@ -195,7 +197,6 @@ function listenForMyidMessage() {
     const { code } = e.data as { code?: string }
     if (code) {
       window.removeEventListener('message', onMessage)
-      myidCode.value = code
       completeMyid(code)
     }
   }
@@ -211,17 +212,26 @@ async function completeMyid(code?: string) {
       regToken: regToken.value,
       myidCode: code ?? 'mock',
     })
-    auth.setUser(data.user as AuthUser)
-    router.push({ name: 'home' })
+    const user = data.user as AuthUser
+    auth.setUser(user)
+    verifiedUser.value = user
+    step.value = 5
   } catch (err) {
     const code = (err as Error).message
     myidError.value = code === 'pinfl_taken' ? t('register.pinflTaken')
       : code === 'pinfl_mismatch' ? t('register.pinflMismatch')
-      : t('register.requestFailed')
+        : t('register.requestFailed')
   } finally {
     myidLoading.value = false
   }
 }
+
+// Auto-complete when MYID_MOCK mode and we reach step 4
+watch(step, (s) => {
+  if (s === 4 && myidMock.value) {
+    setTimeout(() => completeMyid(), 600)
+  }
+})
 
 function goToLogin() {
   router.push({ name: 'login' })
@@ -319,12 +329,7 @@ function goToLogin() {
 
         <!-- progress indicator -->
         <div class="stepper">
-          <div
-            v-for="s in steps"
-            :key="s.n"
-            class="step-item"
-            :class="{ active: step === s.n, done: step > s.n }"
-          >
+          <div v-for="s in steps" :key="s.n" class="step-item" :class="{ active: step === s.n, done: step > s.n }">
             <div class="step-dot">
               <i v-if="step > s.n" class="pi pi-check" />
               <span v-else>{{ s.n }}</span>
@@ -342,16 +347,8 @@ function goToLogin() {
             <label class="field-label" for="reg-phone">{{ $t('login.phoneLabel') }}</label>
             <div class="phone-input" :class="{ invalid: !!phoneError }">
               <span class="prefix font-mono">+998</span>
-              <input
-                id="reg-phone"
-                class="phone-field font-mono"
-                inputmode="numeric"
-                autocomplete="tel"
-                placeholder="91 555 22 33"
-                :value="phoneDisplay"
-                @input="onPhoneInput"
-                @keyup.enter="submitPhone"
-              />
+              <input id="reg-phone" class="phone-field font-mono" inputmode="numeric" autocomplete="tel"
+                placeholder="91 555 22 33" :value="phoneDisplay" @input="onPhoneInput" @keyup.enter="submitPhone" />
             </div>
             <span v-if="phoneError" class="field-error">{{ phoneError }}</span>
           </div>
@@ -375,19 +372,9 @@ function goToLogin() {
           <p class="sub">{{ $t('register.otpSub', { phone: fullPhone }) }}</p>
 
           <div class="otp-row" @paste="onOtpPaste">
-            <input
-              v-for="(_, idx) in otp"
-              :key="idx"
-              :ref="(el) => setOtpRef(el, idx)"
-              class="otp-box font-mono"
-              :class="{ invalid: !!otpError }"
-              type="text"
-              inputmode="numeric"
-              maxlength="1"
-              :value="otp[idx]"
-              @input="onOtpInput(idx, $event)"
-              @keydown="onOtpKeydown(idx, $event)"
-            />
+            <input v-for="(_, idx) in otp" :key="idx" :ref="(el) => setOtpRef(el, idx)" class="otp-box font-mono"
+              :class="{ invalid: !!otpError }" type="text" inputmode="numeric" maxlength="1" :value="otp[idx]"
+              @input="onOtpInput(idx, $event)" @keydown="onOtpKeydown(idx, $event)" />
           </div>
           <span v-if="otpError" class="field-error center">{{ otpError }}</span>
 
@@ -411,16 +398,9 @@ function goToLogin() {
 
           <div class="field">
             <label class="field-label" for="reg-pinfl">{{ $t('register.pinflLabel') }}</label>
-            <input
-              id="reg-pinfl"
-              class="text-field font-mono"
-              type="text"
-              inputmode="numeric"
-              :placeholder="$t('register.pinflPlaceholder')"
-              :value="pinflDigits"
-              @input="onPinflInput"
-              @keyup.enter="submitIdentity"
-            />
+            <input id="reg-pinfl" class="text-field font-mono" type="text" inputmode="numeric"
+              :placeholder="$t('register.pinflPlaceholder')" :value="pinflDigits" @input="onPinflInput"
+              @keyup.enter="submitIdentity" />
             <span v-if="identityError" class="field-error">{{ identityError }}</span>
           </div>
 
@@ -431,33 +411,56 @@ function goToLogin() {
         </template>
 
         <!-- step 4: myid -->
-        <template v-else>
+        <template v-else-if="step === 4">
           <div class="myid">
             <div class="myid-shield">
-              <i class="pi pi-shield" />
+              <i v-if="myidLoading" class="pi pi-spin pi-spinner" />
+              <i v-else class="pi pi-shield" />
             </div>
             <h2>{{ $t('register.myidTitle') }}</h2>
-            <p class="sub center">{{ $t('register.myidSub') }}</p>
+            <p class="sub center">{{ myidLoading ? $t('register.myidVerifying') : $t('register.myidSub') }}</p>
 
             <span v-if="myidError" class="field-error center">{{ myidError }}</span>
 
-            <!-- real MyID iframe -->
-            <iframe
-              v-if="!myidMock && myidIframeUrl"
-              :src="myidIframeUrl"
-              class="myid-frame"
-              allow="camera"
-            />
+            <iframe v-if="!myidMock && myidIframeUrl" :src="myidIframeUrl" class="myid-frame" allow="camera" />
+          </div>
+        </template>
 
-            <!-- mock mode button -->
-            <button
-              v-if="myidMock"
-              class="btn-gradient submit"
-              :disabled="myidLoading"
-              @click="completeMyid()"
-            >
-              <i v-if="myidLoading" class="pi pi-spin pi-spinner" />
-              <span v-else>{{ $t('register.myidComplete') }} (mock)</span>
+        <!-- step 5: verified -->
+        <template v-else>
+          <div class="verified">
+            <div class="verified-icon">
+              <i class="pi pi-check-circle" />
+            </div>
+            <h2>{{ $t('register.verifiedTitle') }}</h2>
+            <p class="sub center">{{ $t('register.verifiedSub') }}</p>
+
+            <div class="verified-grid">
+              <div class="vf">
+                <span class="vf-label">{{ $t('register.verifiedName') }}</span>
+                <span class="vf-value">{{ verifiedUser?.firstName }} {{ verifiedUser?.lastName }}</span>
+              </div>
+              <div class="vf">
+                <span class="vf-label">{{ $t('register.verifiedPhone') }}</span>
+                <span class="vf-value font-mono">{{ verifiedUser?.phone }}</span>
+              </div>
+              <div class="vf">
+                <span class="vf-label">{{ $t('register.verifiedPinfl') }}</span>
+                <span class="vf-value font-mono">{{ pinflDigits }}</span>
+              </div>
+              <div class="vf">
+                <span class="vf-label">{{ $t('register.verifiedBirth') }}</span>
+                <span class="vf-value">{{ verifiedUser?.birthDate }}</span>
+              </div>
+              <div v-if="verifiedUser?.passportSerial" class="vf">
+                <span class="vf-label">{{ $t('register.verifiedPassport') }}</span>
+                <span class="vf-value font-mono">{{ verifiedUser.passportSerial }} {{ verifiedUser.passportNumber
+                  }}</span>
+              </div>
+            </div>
+
+            <button class="btn-gradient submit" @click="router.push({ name: 'home' })">
+              {{ $t('register.goHome') }} <i class="pi pi-arrow-right" />
             </button>
           </div>
         </template>
@@ -482,12 +485,14 @@ function goToLogin() {
   justify-content: flex-end;
   padding: 2.5rem;
 }
+
 .orb {
   position: absolute;
   border-radius: 50%;
   filter: blur(70px);
   pointer-events: none;
 }
+
 .orb-1 {
   width: 420px;
   height: 420px;
@@ -495,6 +500,7 @@ function goToLogin() {
   top: -80px;
   right: -100px;
 }
+
 .orb-2 {
   width: 300px;
   height: 300px;
@@ -502,6 +508,7 @@ function goToLogin() {
   bottom: 80px;
   left: -80px;
 }
+
 .orb-3 {
   width: 200px;
   height: 200px;
@@ -509,6 +516,7 @@ function goToLogin() {
   top: 42%;
   left: 55%;
 }
+
 .dot-grid {
   position: absolute;
   inset: 0;
@@ -528,6 +536,7 @@ function goToLogin() {
   color: #fff;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
 }
+
 .fc-deal {
   top: 6%;
   left: 50%;
@@ -535,6 +544,7 @@ function goToLogin() {
   width: 250px;
   animation: float1 5s ease-in-out infinite;
 }
+
 .fc-paid {
   top: 40%;
   left: 4%;
@@ -542,6 +552,7 @@ function goToLogin() {
   transform: rotate(2deg);
   animation: float2 6s ease-in-out infinite;
 }
+
 .fc-schedule {
   top: 34%;
   right: 4%;
@@ -556,16 +567,19 @@ function goToLogin() {
   gap: 0.45rem;
   margin-bottom: 0.6rem;
 }
+
 .gc-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
 }
+
 .dot-amber {
   background: #ffb02e;
   box-shadow: 0 0 6px #ffb02e;
 }
+
 .gc-tag {
   font-size: 0.72rem;
   font-weight: 700;
@@ -574,27 +588,32 @@ function goToLogin() {
   letter-spacing: 0.05em;
   flex: 1;
 }
+
 .gc-id {
   font-size: 0.68rem;
   opacity: 0.55;
 }
+
 .gc-amount {
   font-size: 1.25rem;
   font-weight: 800;
   line-height: 1;
   margin-bottom: 0.65rem;
 }
+
 .gc-currency {
   font-size: 0.7em;
   font-weight: 600;
   opacity: 0.75;
 }
+
 .gc-meta {
   display: flex;
   align-items: center;
   gap: 0.55rem;
   margin-bottom: 0.65rem;
 }
+
 .gc-avatar {
   width: 28px;
   height: 28px;
@@ -606,30 +625,36 @@ function goToLogin() {
   place-items: center;
   flex-shrink: 0;
 }
+
 .gc-name {
   font-size: 0.82rem;
   font-weight: 700;
 }
+
 .gc-sub {
   font-size: 0.7rem;
   opacity: 0.6;
 }
+
 .gc-progress-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
 }
+
 .gc-pill-row {
   display: flex;
   gap: 2px;
 }
+
 .gc-pill {
   width: 12px;
   height: 4px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.25);
 }
+
 .gc-pill.filled {
   background: #00d4aa;
 }
@@ -639,32 +664,40 @@ function goToLogin() {
   flex-direction: column;
   gap: 0.42rem;
 }
+
 .sch-row {
   display: flex;
   align-items: center;
   gap: 0.45rem;
   font-size: 0.75rem;
 }
+
 .sch-row.done {
   opacity: 0.6;
 }
+
 .sch-row.done i {
   color: #00d4aa;
 }
+
 .sch-row.upcoming {
   font-weight: 700;
 }
+
 .sch-row.upcoming i {
   color: #ffb02e;
 }
+
 .sch-row.future {
   opacity: 0.4;
   font-size: 0.7rem;
 }
+
 .sch-amt {
   margin-left: auto;
   font-size: 0.72rem;
 }
+
 .sch-dots {
   letter-spacing: 0.15em;
 }
@@ -676,6 +709,7 @@ function goToLogin() {
   align-items: center;
   gap: 1rem;
 }
+
 .logo-mark {
   width: 48px;
   height: 48px;
@@ -689,6 +723,7 @@ function goToLogin() {
   color: #fff;
   flex-shrink: 0;
 }
+
 .brand-title {
   margin: 0;
   font-size: 1.6rem;
@@ -696,6 +731,7 @@ function goToLogin() {
   color: #fff;
   line-height: 1;
 }
+
 .brand-sub {
   margin: 0.2rem 0 0;
   font-size: 0.82rem;
@@ -703,16 +739,39 @@ function goToLogin() {
 }
 
 @keyframes float1 {
-  0%, 100% { transform: translateX(-45%) rotate(-2deg) translateY(0); }
-  50%       { transform: translateX(-45%) rotate(-2deg) translateY(-10px); }
+
+  0%,
+  100% {
+    transform: translateX(-45%) rotate(-2deg) translateY(0);
+  }
+
+  50% {
+    transform: translateX(-45%) rotate(-2deg) translateY(-10px);
+  }
 }
+
 @keyframes float2 {
-  0%, 100% { transform: rotate(2deg) translateY(0); }
-  50%       { transform: rotate(2deg) translateY(-12px); }
+
+  0%,
+  100% {
+    transform: rotate(2deg) translateY(0);
+  }
+
+  50% {
+    transform: rotate(2deg) translateY(-12px);
+  }
 }
+
 @keyframes float3 {
-  0%, 100% { transform: rotate(-2.5deg) translateY(0); }
-  50%       { transform: rotate(-2.5deg) translateY(-9px); }
+
+  0%,
+  100% {
+    transform: rotate(-2.5deg) translateY(0);
+  }
+
+  50% {
+    transform: rotate(-2.5deg) translateY(-9px);
+  }
 }
 
 .auth-form-wrap {
@@ -721,17 +780,20 @@ function goToLogin() {
   padding: 2rem;
   background: var(--bg-base);
 }
+
 .auth-card {
   width: 100%;
   max-width: 400px;
   padding: 2.4rem;
 }
+
 .mobile-brand {
   display: none;
   align-items: center;
   gap: 0.55rem;
   margin-bottom: 1.6rem;
 }
+
 .logo-mark.sm {
   width: 36px;
   height: 36px;
@@ -740,6 +802,7 @@ function goToLogin() {
   border: none;
   font-size: 1rem;
 }
+
 .brand-title.sm {
   font-size: 1.25rem;
   color: var(--text-primary);
@@ -753,6 +816,7 @@ function goToLogin() {
   gap: 0.4rem;
   margin-bottom: 1.8rem;
 }
+
 .step-item {
   flex: 1;
   display: flex;
@@ -761,6 +825,7 @@ function goToLogin() {
   gap: 0.4rem;
   position: relative;
 }
+
 .step-item:not(:last-child)::after {
   content: '';
   position: absolute;
@@ -771,9 +836,11 @@ function goToLogin() {
   background: var(--border-subtle);
   z-index: 0;
 }
+
 .step-item.done:not(:last-child)::after {
   background: var(--accent-1);
 }
+
 .step-dot {
   position: relative;
   z-index: 1;
@@ -788,21 +855,25 @@ function goToLogin() {
   border: 2px solid var(--border-subtle);
   color: var(--text-secondary);
 }
+
 .step-item.active .step-dot {
   border-color: var(--accent-1);
   color: var(--accent-2);
 }
+
 .step-item.done .step-dot {
   background: var(--accent-1);
   border-color: var(--accent-1);
   color: #fff;
 }
+
 .step-label {
   font-size: 0.66rem;
   font-weight: 700;
   color: var(--text-secondary);
   text-align: center;
 }
+
 .step-item.active .step-label {
   color: var(--text-primary);
 }
@@ -812,18 +883,22 @@ function goToLogin() {
   font-size: 1.55rem;
   font-weight: 800;
 }
+
 .sub {
   margin: 0 0 1.8rem;
   color: var(--text-secondary);
   font-size: 0.92rem;
   line-height: 1.5;
 }
+
 .sub.center {
   text-align: center;
 }
+
 .field {
   margin-bottom: 1.2rem;
 }
+
 .phone-input {
   display: flex;
   align-items: center;
@@ -833,20 +908,24 @@ function goToLogin() {
   overflow: hidden;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
+
 .phone-input:focus-within {
   border-color: var(--accent-1);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-1) 20%, transparent);
 }
+
 .phone-input.invalid {
   border-color: var(--danger);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 18%, transparent);
 }
+
 .phone-input .prefix {
   padding: 0.85rem 0.6rem 0.85rem 1rem;
   color: var(--text-secondary);
   font-weight: 700;
   border-right: 1px solid var(--border-subtle);
 }
+
 .phone-field {
   flex: 1;
   border: none;
@@ -857,10 +936,12 @@ function goToLogin() {
   color: var(--text-primary);
   letter-spacing: 0.06em;
 }
+
 .phone-field::placeholder {
   color: var(--text-secondary);
   opacity: 0.5;
 }
+
 .text-field {
   width: 100%;
   border: 1px solid var(--border-subtle);
@@ -872,14 +953,17 @@ function goToLogin() {
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
+
 .text-field:focus {
   border-color: var(--accent-1);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-1) 20%, transparent);
 }
+
 .text-field::placeholder {
   color: var(--text-secondary);
   opacity: 0.5;
 }
+
 .field-label {
   display: block;
   margin-bottom: 0.5rem;
@@ -887,24 +971,29 @@ function goToLogin() {
   font-weight: 600;
   color: var(--text-secondary);
 }
+
 .field-error {
   display: block;
   margin-top: 0.45rem;
   font-size: 0.8rem;
   color: var(--danger);
 }
+
 .field-error.center {
   text-align: center;
   margin-bottom: 0.6rem;
 }
+
 .submit {
   width: 100%;
   margin-top: 0.4rem;
 }
+
 .submit:disabled {
   opacity: 0.7;
   cursor: not-allowed;
 }
+
 .link-btn {
   width: 100%;
   margin-top: 1rem;
@@ -915,13 +1004,16 @@ function goToLogin() {
   cursor: pointer;
   text-align: center;
 }
+
 .link-btn strong {
   color: var(--accent-2);
   font-weight: 700;
 }
+
 .link-btn:hover strong {
   text-decoration: underline;
 }
+
 .back-link {
   display: inline-flex;
   align-items: center;
@@ -935,15 +1027,18 @@ function goToLogin() {
   padding: 0;
   margin-bottom: 1rem;
 }
+
 .back-link:hover {
   color: var(--accent-2);
 }
+
 .otp-row {
   display: flex;
   gap: 0.75rem;
   justify-content: space-between;
   margin-bottom: 0.6rem;
 }
+
 .otp-box {
   width: 100%;
   aspect-ratio: 1;
@@ -957,13 +1052,16 @@ function goToLogin() {
   outline: none;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
+
 .otp-box:focus {
   border-color: var(--accent-1);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-1) 20%, transparent);
 }
+
 .otp-box.invalid {
   border-color: var(--danger);
 }
+
 .dev-otp {
   margin-bottom: 0.9rem;
   padding: 0.6rem 0.8rem;
@@ -973,6 +1071,7 @@ function goToLogin() {
   text-align: center;
   color: var(--text-secondary);
 }
+
 .dev-otp strong {
   color: var(--accent-2);
   font-size: 1rem;
@@ -987,6 +1086,7 @@ function goToLogin() {
   text-align: center;
   padding-top: 0.5rem;
 }
+
 .myid-shield {
   width: 84px;
   height: 84px;
@@ -999,10 +1099,12 @@ function goToLogin() {
   background: color-mix(in srgb, #16a34a 14%, transparent);
   border: 1px solid color-mix(in srgb, #16a34a 35%, transparent);
 }
+
 .myid .submit {
   width: 100%;
   margin-top: 1rem;
 }
+
 .myid-frame {
   width: 100%;
   height: 460px;
@@ -1011,18 +1113,83 @@ function goToLogin() {
   margin-top: 0.5rem;
 }
 
+/* verified step */
+.verified {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-top: 0.5rem;
+}
+
+.verified-icon {
+  width: 84px;
+  height: 84px;
+  border-radius: 24px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 1.3rem;
+  font-size: 2.3rem;
+  color: #16a34a;
+  background: color-mix(in srgb, #16a34a 14%, transparent);
+  border: 1px solid color-mix(in srgb, #16a34a 35%, transparent);
+}
+
+.verified-grid {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1.4rem 0 1.6rem;
+  text-align: left;
+}
+
+.vf {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.vf:last-child {
+  border-bottom: none;
+}
+
+.vf-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.vf-value {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.verified .submit {
+  width: 100%;
+}
+
 @media (max-width: 860px) {
   .auth-page {
     grid-template-columns: 1fr;
   }
+
   .auth-hero {
     display: none;
   }
+
   .auth-form-wrap {
     background: var(--bg-surface);
     padding: 1.25rem;
     align-content: center;
   }
+
   .mobile-brand {
     display: flex;
   }

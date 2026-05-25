@@ -519,7 +519,12 @@
     "katmDone": "KATM bajarildi",
     "queryKatm": "KATM so'rovi",
     "katmResult": "KATM javob berdi — kredit tarixi yuklandi. Mijoz davom etishi mumkin.",
-    "stepOf": "1-qadam / 7"
+    "stepOf": "1-qadam / 7",
+    "clientPhone": "Mijoz telefoni",
+    "phoneRequired": "Mijozning telefon raqamini kiriting",
+    "pinflMismatch": "PINFL MyID ma'lumotlari bilan mos kelmadi. Qaytadan qidiring",
+    "searchFailed": "Qidiruv xatosi. Qayta urinib ko'ring",
+    "myidFailed": "MyID xatosi. Qayta urinib ko'ring"
   },
   "stepKarta": {
     "title": "Karta",

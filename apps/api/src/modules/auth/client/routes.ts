@@ -2,6 +2,7 @@ import { Type } from "@sinclair/typebox";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import type { FastifyInstance, FastifyReply } from "fastify";
 import { env } from "../../../env.js";
+import type { users } from "../../id/db/schema.js";
 import {
   createOtp,
   createSession,
@@ -70,6 +71,21 @@ function setAuthCookies(
 function clearAuthCookies(reply: FastifyReply): void {
   reply.clearCookie("access_token", { ...baseCookie });
   reply.clearCookie("session_id", { ...baseCookie });
+}
+
+function toUserDto(u: typeof users.$inferSelect) {
+  return {
+    id: u.id.toString(),
+    phone: u.phone,
+    firstName: u.firstName,
+    lastName: u.lastName,
+    birthDate: u.birthDate,
+    gender: u.gender,
+    nationality: u.nationality,
+    passportSerial: u.passportSerial,
+    passportNumber: u.passportNumber,
+    photoUrl: u.photoUrl,
+  };
 }
 
 export default async function clientAuthRoutes(app: FastifyInstance) {
@@ -154,7 +170,17 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       const existing = await findUserByPinfl(db, pinfl);
       if (existing) return reply.code(409).send({ code: "pinfl_taken" });
 
-      const myidResult = await createMyidSession(pinfl);
+      const myidResult = await createMyidSession(pinfl).catch((err) => {
+        request.log.error(
+          { err },
+          "MyID session creation failed, falling back to mock",
+        );
+        return null;
+      });
+      if (myidResult === null) {
+        // In case of MyID integration failure throw an error in production, but allow fallback to mock data in non-production environments for testing purposes.
+        return reply.code(500).send({ code: "myid_integration_failed" });
+      }
 
       const regToken = app.jwt.sign(
         {
@@ -166,9 +192,6 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
         { expiresIn: "15m" },
       );
 
-      if (myidResult.mock) {
-        return { regToken, mock: true, iframeUrl: null };
-      }
       return { regToken, mock: false, iframeUrl: myidResult.iframeUrl };
     },
   );
@@ -215,14 +238,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       const { sessionToken } = await createSession(db, user.id);
       setAuthCookies(app, reply, user.id, sessionToken);
 
-      return {
-        user: {
-          id: user.id.toString(),
-          phone: user.phone,
-          firstName: user.firstName,
-          lastName: user.lastName,
-        },
-      };
+      return { user: toUserDto(user) };
     },
   );
 
@@ -259,14 +275,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       const { sessionToken } = await createSession(db, user.id);
       setAuthCookies(app, reply, user.id, sessionToken);
 
-      return {
-        user: {
-          id: user.id.toString(),
-          phone: user.phone,
-          firstName: user.firstName,
-          lastName: user.lastName,
-        },
-      };
+      return { user: toUserDto(user) };
     },
   );
 

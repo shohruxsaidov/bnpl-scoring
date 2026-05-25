@@ -18,6 +18,12 @@ export interface AuthUser {
   phone: string
   firstName: string
   lastName: string
+  birthDate: string
+  gender: string
+  nationality: string
+  passportSerial: string | null
+  passportNumber: string | null
+  photoUrl: string | null
 }
 
 export interface LinkedCard {
