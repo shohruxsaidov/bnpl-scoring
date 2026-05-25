@@ -218,6 +218,25 @@ export default async function merchantAuthRoutes(app: FastifyInstance) {
     return { ok: true };
   });
 
+  fastify.get(
+    "/me",
+    { preHandler: app.verifyMerchantJwt },
+    async (request, reply) => {
+      const payload = request.user as {
+        sub: string;
+        type: "merchant";
+        merchantId: string;
+        branchId: string;
+        role: string;
+      };
+      const employee = await findMerchantUserById(db, BigInt(payload.sub));
+      if (!employee || !employee.active) {
+        return reply.code(401).send({ code: "unauthorized" });
+      }
+      return { user: serializeEmployee(employee, payload.role) };
+    },
+  );
+
   fastify.post("/logout", async (request, reply) => {
     const sessionToken = request.cookies[SESSION_COOKIE];
     if (sessionToken) await revokeMerchantSession(db, sessionToken);

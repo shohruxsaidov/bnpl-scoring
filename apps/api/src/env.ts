@@ -12,6 +12,12 @@ const schema = z.object({
   MYID_WEB_IFRAME_URL: z.string().url().optional(),
   MYID_WEB_CLIENT_ID: z.string().optional(),
   MYID_WEB_CLIENT_SECRET: z.string().optional(),
+  MINIO_ENDPOINT: z.string().default("localhost"),
+  MINIO_PORT: z.coerce.number().default(9000),
+  MINIO_USE_SSL: z.coerce.boolean().default(false),
+  MINIO_ACCESS_KEY: z.string().default("minioadmin"),
+  MINIO_SECRET_KEY: z.string().default("minioadmin"),
+  MINIO_BUCKET: z.string().default("scoring-documents"),
 });
 
 export const env = schema.parse(process.env);

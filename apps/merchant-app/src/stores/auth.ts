@@ -83,6 +83,26 @@ export const useAuthStore = defineStore('auth', {
       this.rolePicker = null
     },
 
+    async restoreSession(): Promise<void> {
+      const tryMe = async (): Promise<boolean> => {
+        const res = await fetch(`${API}/auth/merchant/me`, { credentials: 'include' })
+        if (!res.ok) return false
+        const body = await res.json()
+        this.employee = body.user
+        this.activeRole = body.user.role
+        return true
+      }
+
+      if (await tryMe()) return
+
+      // Access token may have expired — try refreshing first
+      const refreshRes = await fetch(`${API}/auth/merchant/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+      if (refreshRes.ok) await tryMe()
+    },
+
     async logout(): Promise<void> {
       await fetch(`${API}/auth/merchant/logout`, {
         method: 'POST',

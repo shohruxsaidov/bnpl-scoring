@@ -170,7 +170,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       const existing = await findUserByPinfl(db, pinfl);
       if (existing) return reply.code(409).send({ code: "pinfl_taken" });
 
-      const myidResult = await createMyidSession(pinfl, request.ip).catch((err) => {
+      const myidResult = await createMyidSession(db, pinfl, request.ip).catch((err) => {
         request.log.error(
           { err },
           "MyID session creation failed, falling back to mock",
@@ -210,10 +210,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
         return reply.code(400).send({ code: "invalid_step" });
       }
 
-      const myidUser = await exchangeMyidCode(
-        request.body.myidCode,
-        payload.pinfl,
-      );
+      const myidUser = await exchangeMyidCode(db, request.body.myidCode);
 
       if (myidUser.pinfl !== payload.pinfl) {
         return reply.code(400).send({ code: "pinfl_mismatch" });

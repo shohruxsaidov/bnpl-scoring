@@ -1,14 +1,12 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import Checkbox from 'primevue/checkbox'
 import { useWizardStore } from '@/stores/wizard'
-import { useAuthStore } from '@/stores/auth'
 import type { Client } from '@/types'
 
 const wizard = useWizardStore()
-const auth = useAuthStore()
 const { t } = useI18n()
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
@@ -28,8 +26,12 @@ async function apiFetch(path: string, opts: RequestInit = {}): Promise<any> {
 type Phase =
   | 'search'
   | 'searching'
+  | 'results'
   | 'found'
   | 'not_found'
+  | 'otp_send'
+  | 'otp_verify'
+  | 'pinfl_entry'
   | 'myid_pending'
   | 'myid_done'
   | 'katm'
@@ -40,9 +42,23 @@ function initialPhase(): Phase {
 }
 
 const phase = ref<Phase>(initialPhase())
-const pinfl = ref(wizard.sessionData.client?.pinfl ?? '')
-const pinflError = ref('')
+const query = ref('')
 const searchError = ref('')
+const searchResults = ref<Client[]>([])
+
+// OTP registration flow
+const otpPhone = ref('')
+const otpPhoneError = ref('')
+const otpCode = ref('')
+const otpError = ref('')
+const otpLoading = ref(false)
+const otpVerifying = ref(false)
+const regToken = ref('')
+const devOtp = ref<string | null>(null)
+
+// PINFL (entered after OTP is verified)
+const pinfl = ref('')
+const pinflError = ref('')
 
 const confirmedClient = ref<Client | null>(wizard.sessionData.client)
 const isNewClient = ref(wizard.sessionData.isNewClient)
@@ -51,10 +67,57 @@ const isNewClient = ref(wizard.sessionData.isNewClient)
 const myidIframeUrl = ref<string | null>(null)
 const myidMock = ref(false)
 const myidError = ref('')
+const iframeRef = ref<HTMLIFrameElement | null>(null)
 
-// Phone (collected for new clients)
-const clientPhone = ref('')
-const phoneError = ref('')
+const MyIDStatus = {
+  EXCEPTION: -1,
+  IN_PROGRESS: 0,
+  LIVENESS_PASSED: 1,
+  LIVENESS_FAILED: 2,
+  RETRY: 3,
+  EXITED: 4,
+  LOADING: 100,
+  LOADED: 101,
+} as const
+const myidTimedOut = ref(false)
+let myidTimeoutId: ReturnType<typeof setTimeout> | null = null
+
+const MYID_TIMEOUT_MS = 30_000
+
+function startMyidTimer() {
+  clearMyidTimer()
+  myidTimedOut.value = false
+  myidTimeoutId = setTimeout(() => { myidTimedOut.value = true }, MYID_TIMEOUT_MS)
+}
+
+function clearMyidTimer() {
+  if (myidTimeoutId !== null) {
+    clearTimeout(myidTimeoutId)
+    myidTimeoutId = null
+  }
+}
+
+function postScreenToIframe() {
+  // iframeRef.value?.contentWindow?.postMessage(
+  //   { cmd: 'screen', screen: window.screen, height: window.innerHeight, width: window.innerWidth },
+  //   '*',
+  // )
+}
+
+function onIframeLoad() {
+  clearMyidTimer()
+  myidTimedOut.value = false
+  postScreenToIframe()
+}
+
+async function reloadMyidIframe() {
+  myidTimedOut.value = false
+  const url = myidIframeUrl.value
+  myidIframeUrl.value = null
+  await nextTick()
+  myidIframeUrl.value = url
+  startMyidTimer()
+}
 
 // KATM
 const katmConsent = ref(wizard.sessionData.katmConsent)
@@ -71,6 +134,10 @@ function validatePinfl(): boolean {
   return true
 }
 
+function isPinflLike(s: string): boolean {
+  return /^\d{14}$/.test(s.trim())
+}
+
 function normalizePhone(raw: string): string {
   const digits = raw.replace(/\D/g, '')
   const national = digits.startsWith('998') ? digits.slice(3) : digits
@@ -79,70 +146,148 @@ function normalizePhone(raw: string): string {
 
 // ── Actions ────────────────────────────────────────────────────────────────
 async function searchClient() {
-  if (!validatePinfl()) return
+  const q = query.value.trim()
+  if (!q) return
   searchError.value = ''
   phase.value = 'searching'
   try {
-    const data = await apiFetch(`/merchant/client/search?pinfl=${pinfl.value}`)
-    confirmedClient.value = data.client as Client
-    isNewClient.value = false
-    phase.value = 'found'
-  } catch (err) {
-    const code = (err as Error).message
-    if (code === 'client_not_found') {
+    const data = await apiFetch(`/merchant/client/search?q=${encodeURIComponent(q)}`)
+    searchResults.value = data.clients as Client[]
+    if (searchResults.value.length === 0) {
+      if (isPinflLike(q)) pinfl.value = q
       phase.value = 'not_found'
     } else {
-      searchError.value = t('stepClient.searchFailed')
-      phase.value = 'search'
+      phase.value = 'results'
     }
+  } catch {
+    searchError.value = t('stepClient.searchFailed')
+    phase.value = 'search'
   }
+}
+
+function selectClient(client: Client) {
+  confirmedClient.value = client
+  isNewClient.value = false
+  phase.value = 'found'
 }
 
 function useFoundClient() {
   phase.value = 'katm'
 }
 
+async function sendOtp() {
+  const phone = normalizePhone(otpPhone.value)
+  if (phone.length < 12) {
+    otpPhoneError.value = t('stepClient.phoneRequired')
+    return
+  }
+  otpPhoneError.value = ''
+  otpLoading.value = true
+  try {
+    const data = await apiFetch('/merchant/client/otp', {
+      method: 'POST',
+      body: JSON.stringify({ phone }),
+    })
+    devOtp.value = data.devOtp ?? null
+    phase.value = 'otp_verify'
+  } catch {
+    otpPhoneError.value = t('stepClient.otpSendFailed')
+  } finally {
+    otpLoading.value = false
+  }
+}
+
+async function verifyOtpCode() {
+  const phone = normalizePhone(otpPhone.value)
+  if (!otpCode.value.trim()) return
+  otpError.value = ''
+  otpVerifying.value = true
+  try {
+    const data = await apiFetch('/merchant/client/otp/verify', {
+      method: 'POST',
+      body: JSON.stringify({ phone, code: otpCode.value.trim() }),
+    })
+    regToken.value = data.regToken
+    phase.value = 'pinfl_entry'
+  } catch (err) {
+    const code = (err as Error).message
+    otpError.value = code === 'invalid_otp' ? t('stepClient.invalidOtp') : t('stepClient.otpSendFailed')
+  } finally {
+    otpVerifying.value = false
+  }
+}
+
 async function startMyId() {
+  if (!validatePinfl()) return
   myidError.value = ''
-  phase.value = 'myid_pending'
   try {
     const data = await apiFetch('/merchant/client/myid-session', {
       method: 'POST',
-      body: JSON.stringify({ pinfl: pinfl.value }),
+      body: JSON.stringify({ regToken: regToken.value, pinfl: pinfl.value }),
     })
+    regToken.value = data.regToken
     myidMock.value = !!data.mock
     myidIframeUrl.value = data.iframeUrl ?? null
-    if (!data.mock) listenForMyidMessage()
-  } catch {
-    myidError.value = t('stepClient.myidFailed')
-    phase.value = 'not_found'
-  }
-}
-
-function listenForMyidMessage() {
-  function onMessage(e: MessageEvent) {
-    if (typeof e.data !== 'object' || !e.data) return
-    const { code } = e.data as { code?: string }
-    if (code) {
-      window.removeEventListener('message', onMessage)
-      completeMyid(code)
+    phase.value = 'myid_pending'
+    if (!data.mock) startMyidTimer()
+  } catch (err) {
+    const code = (err as Error).message
+    if (code === 'client_already_registered') {
+      pinflError.value = t('stepClient.clientAlreadyRegistered')
+    } else {
+      myidError.value = t('stepClient.myidFailed')
     }
   }
-  window.addEventListener('message', onMessage)
 }
 
-async function completeMyid(myidCode?: string) {
-  myidError.value = ''
-  phoneError.value = ''
-  const phone = normalizePhone(clientPhone.value)
-  if (!phone || phone.length < 12) {
-    phoneError.value = t('stepClient.phoneRequired')
-    return
+function handleMyidMessage(e: MessageEvent) {
+  if (e.data?.source !== 'MyIDWebSDK') return
+  const { status, auth_code, result_note } = e.data as {
+    source: string
+    status: number
+    auth_code?: string
+    result_note?: string
   }
+
+  switch (status) {
+    case MyIDStatus.LIVENESS_PASSED:
+      completeMyid(auth_code)
+      break
+    case MyIDStatus.LIVENESS_FAILED:
+      clearMyidTimer()
+      myidError.value = result_note ?? t('stepClient.myidFailed')
+      phase.value = 'pinfl_entry'
+      break
+    case MyIDStatus.EXCEPTION:
+      clearMyidTimer()
+      myidError.value = t('stepClient.myidFailed')
+      phase.value = 'pinfl_entry'
+      break
+    case MyIDStatus.EXITED:
+      clearMyidTimer()
+      phase.value = 'pinfl_entry'
+      break
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('message', handleMyidMessage)
+  window.addEventListener('resize', postScreenToIframe)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('message', handleMyidMessage)
+  window.removeEventListener('resize', postScreenToIframe)
+  clearMyidTimer()
+})
+
+async function completeMyid(myidCode?: string) {
+  clearMyidTimer()
+  myidError.value = ''
   try {
     const data = await apiFetch('/merchant/client/myid-complete', {
       method: 'POST',
-      body: JSON.stringify({ pinfl: pinfl.value, phone, myidCode: myidCode ?? 'mock' }),
+      body: JSON.stringify({ regToken: regToken.value, myidCode: myidCode ?? 'mock' }),
     })
     confirmedClient.value = data.client as Client
     isNewClient.value = true
@@ -150,7 +295,7 @@ async function completeMyid(myidCode?: string) {
   } catch (err) {
     const code = (err as Error).message
     myidError.value = code === 'pinfl_mismatch' ? t('stepClient.pinflMismatch') : t('stepClient.myidFailed')
-    phase.value = 'not_found'
+    phase.value = 'pinfl_entry'
   }
 }
 
@@ -168,14 +313,25 @@ async function queryKatm() {
 
 function resetSearch() {
   phase.value = 'search'
+  query.value = ''
+  searchResults.value = []
   confirmedClient.value = null
   isNewClient.value = false
+  otpPhone.value = ''
+  otpPhoneError.value = ''
+  otpCode.value = ''
+  otpError.value = ''
+  regToken.value = ''
+  devOtp.value = null
+  pinfl.value = ''
+  pinflError.value = ''
   katmConsent.value = false
   katmDone.value = false
   myidIframeUrl.value = null
   myidMock.value = false
   myidError.value = ''
-  clientPhone.value = ''
+  myidTimedOut.value = false
+  clearMyidTimer()
 }
 
 function onNext() {
@@ -208,28 +364,36 @@ const clientFullName = computed(() =>
 
     <!-- ── PHASE: search ─────────────────────────────────────────────────── -->
     <div v-if="phase === 'search' || phase === 'searching'" class="search-box">
-      <label class="field-label">{{ $t('stepClient.clientPinfl') }}</label>
+      <label class="field-label">{{ $t('stepClient.searchLabel') }}</label>
       <div class="search-row">
-        <InputText
-          v-model="pinfl"
-          maxlength="14"
-          placeholder="31203016740099"
-          class="font-mono pinfl-input"
-          :invalid="!!pinflError"
-          :disabled="phase === 'searching'"
-          @keydown.enter="searchClient"
-        />
-        <button class="btn-gradient" :disabled="phase === 'searching'" @click="searchClient">
+        <InputText v-model="query" :placeholder="$t('stepClient.searchPlaceholder')" class="search-input"
+          :disabled="phase === 'searching'" @keydown.enter="searchClient" />
+        <button class="btn-gradient" :disabled="phase === 'searching' || !query.trim()" @click="searchClient">
           <i v-if="phase === 'searching'" class="pi pi-spin pi-spinner" />
           <i v-else class="pi pi-search" />
           {{ phase === 'searching' ? $t('stepClient.searching') : $t('stepClient.search') }}
         </button>
       </div>
-      <span v-if="pinflError" class="field-error">{{ pinflError }}</span>
       <span v-if="searchError" class="field-error">{{ searchError }}</span>
-      <p class="search-hint">
-        {{ $t('stepClient.searchHint') }}
-      </p>
+      <p class="search-hint">{{ $t('stepClient.searchHint') }}</p>
+    </div>
+
+    <!-- ── PHASE: results ────────────────────────────────────────────────── -->
+    <div v-else-if="phase === 'results'" class="results-box">
+      <p class="results-count">{{ $t('stepClient.resultsFound', { count: searchResults.length }) }}</p>
+      <ul class="results-list">
+        <li v-for="c in searchResults" :key="c.pinfl" class="result-item" @click="selectClient(c)">
+          <i class="pi pi-user result-icon" />
+          <div class="result-info">
+            <span class="result-name">{{ c.firstName }} {{ c.lastName }}</span>
+            <span class="result-pinfl font-mono">{{ c.pinfl }}</span>
+          </div>
+          <i class="pi pi-chevron-right result-arrow" />
+        </li>
+      </ul>
+      <button class="btn-link mt-1" @click="phase = 'not_found'">
+        <i class="pi pi-user-plus" /> {{ $t('stepClient.clientNotInList') }}
+      </button>
     </div>
 
     <!-- ── PHASE: found ──────────────────────────────────────────────────── -->
@@ -268,10 +432,77 @@ const clientFullName = computed(() =>
     <div v-else-if="phase === 'not_found'" class="not-found-box">
       <div class="nf-icon"><i class="pi pi-user-minus" /></div>
       <div>
-        <p class="nf-title">{{ $t('stepClient.noClientFound', { pinfl }) }}</p>
+        <p class="nf-title">{{ $t('stepClient.noClientFound') }}</p>
         <p class="nf-sub">{{ $t('stepClient.noClientSub') }}</p>
       </div>
-      <button class="btn-myid" @click="startMyId">
+      <button class="btn-myid" @click="phase = 'otp_send'">
+        <i class="pi pi-user-plus" style="font-size:1rem" />
+        {{ $t('stepClient.registerNewClient') }}
+      </button>
+    </div>
+
+    <!-- ── PHASE: otp_send ───────────────────────────────────────────────── -->
+    <div v-else-if="phase === 'otp_send'" class="reg-panel">
+      <div class="reg-step-head">
+        <span class="reg-step-badge">1 / 3</span>
+        <span class="reg-step-title">{{ $t('stepClient.otpSendTitle') }}</span>
+      </div>
+      <p class="reg-step-sub">{{ $t('stepClient.otpSendSub') }}</p>
+      <div class="field">
+        <label class="field-label">{{ $t('stepClient.clientPhone') }}</label>
+        <div class="phone-row">
+          <span class="phone-prefix">+998</span>
+          <InputText v-model="otpPhone" inputmode="numeric" placeholder="91 555 22 33" class="phone-field-input"
+            :invalid="!!otpPhoneError" :disabled="otpLoading" @keydown.enter="sendOtp" @input="otpPhoneError = ''" />
+        </div>
+        <span v-if="otpPhoneError" class="field-error">{{ otpPhoneError }}</span>
+      </div>
+      <button class="btn-gradient mt-1" :disabled="otpLoading || !otpPhone.trim()" @click="sendOtp">
+        <i v-if="otpLoading" class="pi pi-spin pi-spinner" />
+        <i v-else class="pi pi-send" />
+        {{ $t('stepClient.sendOtp') }}
+      </button>
+    </div>
+
+    <!-- ── PHASE: otp_verify ─────────────────────────────────────────────── -->
+    <div v-else-if="phase === 'otp_verify'" class="reg-panel">
+      <div class="reg-step-head">
+        <span class="reg-step-badge">2 / 3</span>
+        <span class="reg-step-title">{{ $t('stepClient.otpVerifyTitle') }}</span>
+      </div>
+      <p class="reg-step-sub">{{ $t('stepClient.otpVerifySub', { phone: otpPhone }) }}</p>
+      <div v-if="devOtp" class="dev-otp-badge">
+        <span class="dev-label">DEV</span>
+        <span class="dev-code">{{ devOtp }}</span>
+      </div>
+      <div class="field">
+        <label class="field-label">{{ $t('stepClient.otpCode') }}</label>
+        <InputText v-model="otpCode" inputmode="numeric" maxlength="6" placeholder="1234" class="font-mono otp-input"
+          :invalid="!!otpError" :disabled="otpVerifying" @keydown.enter="verifyOtpCode" @input="otpError = ''" />
+        <span v-if="otpError" class="field-error">{{ otpError }}</span>
+      </div>
+      <button class="btn-gradient mt-1" :disabled="otpVerifying || !otpCode.trim()" @click="verifyOtpCode">
+        <i v-if="otpVerifying" class="pi pi-spin pi-spinner" />
+        <i v-else class="pi pi-check" />
+        {{ $t('stepClient.verifyOtp') }}
+      </button>
+    </div>
+
+    <!-- ── PHASE: pinfl_entry ────────────────────────────────────────────── -->
+    <div v-else-if="phase === 'pinfl_entry'" class="reg-panel">
+      <div class="reg-step-head">
+        <span class="reg-step-badge">3 / 3</span>
+        <span class="reg-step-title">{{ $t('stepClient.pinflEntryTitle') }}</span>
+      </div>
+      <p class="reg-step-sub">{{ $t('stepClient.pinflEntrySub') }}</p>
+      <div class="field">
+        <label class="field-label">{{ $t('stepClient.clientPinfl') }}</label>
+        <InputText v-model="pinfl" maxlength="14" placeholder="31203016740099" class="font-mono" :invalid="!!pinflError"
+          @input="pinflError = ''" @keydown.enter="startMyId" />
+        <span v-if="pinflError" class="field-error">{{ pinflError }}</span>
+      </div>
+      <span v-if="myidError" class="field-error mt-1">{{ myidError }}</span>
+      <button class="btn-myid mt-1" :disabled="!pinfl.trim()" @click="startMyId">
         <span class="myid-logo">MyID</span>
         {{ $t('stepClient.startVerification') }}
       </button>
@@ -284,39 +515,23 @@ const clientFullName = computed(() =>
         <span class="myid-title">{{ $t('stepClient.identityVerification') }}</span>
       </div>
 
-      <!-- Phone field (agent enters client's phone while client does MyID) -->
-      <div class="field mb-1">
-        <label class="field-label">{{ $t('stepClient.clientPhone') }}</label>
-        <div class="phone-row">
-          <span class="phone-prefix">+998</span>
-          <InputText
-            v-model="clientPhone"
-            inputmode="numeric"
-            placeholder="91 555 22 33"
-            class="phone-field-input"
-            :invalid="!!phoneError"
-            @input="phoneError = ''"
-          />
-        </div>
-        <span v-if="phoneError" class="field-error">{{ phoneError }}</span>
-      </div>
-
       <span v-if="myidError" class="field-error mb-1">{{ myidError }}</span>
 
       <!-- Real MyID iframe -->
-      <iframe
-        v-if="!myidMock && myidIframeUrl"
-        :src="myidIframeUrl"
-        class="myid-frame"
-        allow="camera"
-      />
+      <div v-if="!myidMock && myidIframeUrl" class="myid-frame-wrap">
+        <iframe ref="iframeRef" :src="myidIframeUrl" class="myid-frame" allow="camera;fullscreen" allowfullscreen
+          @load="onIframeLoad" />
+        <div v-if="myidTimedOut" class="myid-timeout-overlay">
+          <i class="pi pi-wifi" style="font-size:2rem;opacity:0.5" />
+          <p class="myid-timeout-msg">{{ $t('stepClient.myidTimeout') }}</p>
+          <button class="btn-gradient" @click="reloadMyidIframe">
+            <i class="pi pi-refresh" /> {{ $t('stepClient.myidReload') }}
+          </button>
+        </div>
+      </div>
 
       <!-- Mock mode button -->
-      <button
-        v-if="myidMock"
-        class="btn-gradient mt-1"
-        @click="completeMyid()"
-      >
+      <button v-if="myidMock" class="btn-gradient mt-1" @click="completeMyid()">
         <i class="pi pi-id-card" />
         {{ $t('stepClient.startVerification') }} (mock)
       </button>
@@ -372,15 +587,12 @@ const clientFullName = computed(() =>
           <Checkbox v-model="katmConsent" binary />
           <span>{{ $t('stepClient.katmConsent', { katm: $t('stepClient.katmConsentBold') }) }}</span>
         </label>
-        <button
-          class="btn-ghost"
-          :disabled="!katmConsent || katmLoading || katmDone"
-          @click="queryKatm"
-        >
+        <button class="btn-ghost" :disabled="!katmConsent || katmLoading || katmDone" @click="queryKatm">
           <i v-if="katmLoading" class="pi pi-spin pi-spinner" />
           <i v-else-if="katmDone" class="pi pi-check" />
           <i v-else class="pi pi-database" />
-          {{ katmLoading ? $t('stepClient.queryingKatm') : katmDone ? $t('stepClient.katmDone') : $t('stepClient.queryKatm') }}
+          {{ katmLoading ? $t('stepClient.queryingKatm') : katmDone ? $t('stepClient.katmDone') :
+            $t('stepClient.queryKatm') }}
         </button>
       </div>
 
@@ -403,7 +615,9 @@ const clientFullName = computed(() =>
 </template>
 
 <style scoped>
-.step-card { padding: 2rem; }
+.step-card {
+  padding: 2rem;
+}
 
 .sc-head {
   display: flex;
@@ -411,14 +625,105 @@ const clientFullName = computed(() =>
   justify-content: space-between;
   gap: 1rem;
 }
-.sc-head h2 { margin: 0; font-size: 1.4rem; font-weight: 800; }
-.sc-head p { margin: 0.3rem 0 0; color: var(--text-secondary); font-size: 0.88rem; }
+
+.sc-head h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+.sc-head p {
+  margin: 0.3rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
 
 /* ── Search ── */
-.search-box { margin: 1.8rem 0; }
-.search-row { display: flex; gap: 0.8rem; margin-top: 0.5rem; }
-.pinfl-input { flex: 1; font-size: 1.05rem; letter-spacing: 0.06em; }
-.search-hint { margin-top: 0.8rem; font-size: 0.84rem; color: var(--text-secondary); }
+.search-box {
+  margin: 1.8rem 0;
+}
+
+.search-row {
+  display: flex;
+  gap: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.search-input {
+  flex: 1;
+}
+
+.search-hint {
+  margin-top: 0.8rem;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+}
+
+/* ── Results ── */
+.results-box {
+  margin: 1.8rem 0;
+}
+
+.results-count {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin: 0 0 0.8rem;
+}
+
+.results-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.result-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.result-item:hover {
+  border-color: var(--accent-1);
+  background: var(--bg-elevated, var(--bg-surface));
+}
+
+.result-icon {
+  color: var(--accent-1);
+  font-size: 1.1rem;
+}
+
+.result-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.result-name {
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.result-pinfl {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+
+.result-arrow {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
 
 /* ── Client card (found / myid_done) ── */
 .client-card {
@@ -427,25 +732,50 @@ const clientFullName = computed(() =>
   padding: 1.4rem;
   border: 1.5px solid transparent;
 }
+
 .client-card.found {
   background: var(--success-bg);
   border-color: var(--success);
 }
+
 .client-card.new {
   background: var(--bg-surface);
   border-color: var(--accent-1);
 }
-.client-card-header { margin-bottom: 1.1rem; }
+
+.client-card-header {
+  margin-bottom: 1.1rem;
+}
 
 .client-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.9rem 1.4rem;
 }
-.client-field { display: flex; flex-direction: column; gap: 0.2rem; }
-.cf-label { font-size: 0.75rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
-.cf-value { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
-.mt-1 { margin-top: 1.2rem; }
+
+.client-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.cf-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cf-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.mt-1 {
+  margin-top: 1.2rem;
+}
 
 /* ── Not found ── */
 .not-found-box {
@@ -458,9 +788,23 @@ const clientFullName = computed(() =>
   flex-direction: column;
   gap: 1rem;
 }
-.nf-icon { font-size: 2rem; color: var(--warning); }
-.nf-title { margin: 0; font-weight: 700; font-size: 0.95rem; }
-.nf-sub { margin: 0.3rem 0 0; font-size: 0.85rem; color: var(--text-secondary); }
+
+.nf-icon {
+  font-size: 2rem;
+  color: var(--warning);
+}
+
+.nf-title {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.nf-sub {
+  margin: 0.3rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
 
 .btn-myid {
   display: inline-flex;
@@ -478,7 +822,11 @@ const clientFullName = computed(() =>
   box-shadow: var(--accent-glow);
   transition: opacity 0.2s;
 }
-.btn-myid:hover { opacity: 0.88; }
+
+.btn-myid:hover {
+  opacity: 0.88;
+}
+
 .myid-logo {
   background: #fff;
   color: var(--accent-1);
@@ -487,6 +835,74 @@ const clientFullName = computed(() =>
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.06em;
+}
+
+/* ── Registration flow panels (otp_send / otp_verify / pinfl_entry) ── */
+.reg-panel {
+  margin: 1.8rem 0;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 16px;
+  padding: 1.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.reg-step-head {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.reg-step-badge {
+  background: var(--accent-1);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.reg-step-title {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.reg-step-sub {
+  margin: 0;
+  font-size: 0.86rem;
+  color: var(--text-secondary);
+}
+
+.otp-input {
+  font-size: 1.4rem;
+  letter-spacing: 0.3em;
+  max-width: 160px;
+}
+.dev-otp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #1a1a2e;
+  border: 1.5px dashed #f59e0b;
+  border-radius: 8px;
+  padding: 0.4rem 0.8rem;
+  align-self: flex-start;
+}
+.dev-label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #f59e0b;
+  letter-spacing: 0.1em;
+}
+.dev-code {
+  font-family: monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: #f59e0b;
 }
 
 /* ── MyID panel ── */
@@ -498,12 +914,14 @@ const clientFullName = computed(() =>
   padding: 1.6rem;
   box-shadow: var(--accent-glow);
 }
+
 .myid-header {
   display: flex;
   align-items: center;
   gap: 0.8rem;
   margin-bottom: 1.2rem;
 }
+
 .myid-logo-lg {
   background: var(--gradient-hero);
   color: #fff;
@@ -513,21 +931,94 @@ const clientFullName = computed(() =>
   font-weight: 800;
   letter-spacing: 0.06em;
 }
-.myid-title { font-weight: 700; font-size: 1rem; }
+
+.myid-title {
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.myid-frame-wrap {
+  position: relative;
+  margin-top: 0.8rem;
+}
+
 .myid-frame {
   width: 100%;
   height: 440px;
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
-  margin-top: 0.8rem;
+  display: block;
 }
-.field { display: flex; flex-direction: column; gap: 0.4rem; }
-.field-label { font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
-.field-error { font-size: 0.8rem; color: var(--danger); }
-.phone-row { display: flex; align-items: center; gap: 0; border: 1px solid var(--border-subtle); border-radius: 10px; overflow: hidden; }
-.phone-prefix { padding: 0.65rem 0.6rem 0.65rem 0.9rem; font-size: 0.9rem; font-weight: 700; color: var(--text-secondary); border-right: 1px solid var(--border-subtle); white-space: nowrap; }
-.phone-field-input { flex: 1; border: none !important; border-radius: 0 !important; box-shadow: none !important; padding: 0.65rem 0.9rem; }
-.mb-1 { margin-bottom: 0.8rem; }
+
+.myid-timeout-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-surface) 92%, transparent);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.9rem;
+}
+
+.myid-timeout-msg {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.field-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.field-error {
+  font-size: 0.8rem;
+  color: var(--danger);
+}
+
+.phone-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.phone-prefix {
+  padding: 0.65rem 0.6rem 0.65rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  border-right: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.phone-field-input {
+  flex: 1;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0.65rem 0.9rem;
+}
+
+.mb-1 {
+  margin-bottom: 0.8rem;
+}
 
 /* ── Client banner (katm phase) ── */
 .client-banner {
@@ -541,9 +1032,19 @@ const clientFullName = computed(() =>
   font-size: 0.9rem;
   flex-wrap: wrap;
 }
-.client-banner i { color: var(--accent-1); font-size: 1.1rem; }
-.text-secondary { color: var(--text-secondary); }
-.ml-1 { margin-left: 0.3rem; }
+
+.client-banner i {
+  color: var(--accent-1);
+  font-size: 1.1rem;
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.ml-1 {
+  margin-left: 0.3rem;
+}
 
 /* ── KATM ── */
 .katm-box {
@@ -555,8 +1056,21 @@ const clientFullName = computed(() =>
   padding: 1.1rem 1.3rem;
   border-radius: 14px;
 }
-.consent { display: flex; align-items: center; gap: 0.7rem; font-size: 0.88rem; cursor: pointer; }
-.btn-ghost { display: inline-flex; align-items: center; gap: 0.5rem; white-space: nowrap; }
+
+.consent {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+}
 
 .katm-result {
   margin-top: 1rem;
@@ -581,9 +1095,22 @@ const clientFullName = computed(() =>
   font-size: 0.8rem;
   font-weight: 700;
 }
-.tag-success { background: var(--success-bg); color: var(--success); }
-.tag-accent { background: var(--bg-surface); color: var(--accent-1); border: 1px solid var(--accent-1); }
-.tag-sm { font-size: 0.72rem; padding: 0.2rem 0.6rem; }
+
+.tag-success {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.tag-accent {
+  background: var(--bg-surface);
+  color: var(--accent-1);
+  border: 1px solid var(--accent-1);
+}
+
+.tag-sm {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.6rem;
+}
 
 /* ── Footer ── */
 .sc-foot {
@@ -594,9 +1121,24 @@ const clientFullName = computed(() =>
   padding-top: 1.4rem;
   border-top: 1px solid var(--border-subtle);
 }
-.hint { color: var(--text-secondary); font-size: 0.82rem; font-weight: 600; }
-.btn-gradient { display: inline-flex; align-items: center; gap: 0.5rem; }
-.btn-gradient:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.hint {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.btn-gradient {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-gradient:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .btn-link {
   background: none;
   border: none;
@@ -610,9 +1152,17 @@ const clientFullName = computed(() =>
   white-space: nowrap;
   padding: 0;
 }
-.btn-link:hover { text-decoration: underline; }
+
+.btn-link:hover {
+  text-decoration: underline;
+}
 
 /* ── Transition ── */
-.fade-enter-active { transition: opacity 0.3s ease; }
-.fade-enter-from { opacity: 0; }
+.fade-enter-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from {
+  opacity: 0;
+}
 </style>

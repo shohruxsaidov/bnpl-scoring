@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from 'vue'
+import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore, API_URL } from '@/stores/auth'
@@ -177,7 +177,7 @@ async function submitIdentity() {
     myidMock.value = !!data.mock
     myidIframeUrl.value = data.iframeUrl ?? null
     step.value = 4
-    if (!data.mock) listenForMyidMessage()
+    listenForMyidMessage()
   } catch (err) {
     const code = (err as Error).message
     identityError.value = code === 'pinfl_taken' ? t('register.pinflTaken') : t('register.requestFailed')
@@ -191,16 +191,14 @@ const myidError = ref('')
 const myidLoading = ref(false)
 const verifiedUser = ref<AuthUser | null>(null)
 
-function listenForMyidMessage() {
-  function onMessage(e: MessageEvent) {
-    if (typeof e.data !== 'object' || !e.data) return
-    const { code } = e.data as { code?: string }
-    if (code) {
-      window.removeEventListener('message', onMessage)
-      completeMyid(code)
-    }
+function onMessage(e: MessageEvent) {
+  debugger
+  if (typeof e.data !== 'object' || !e.data) return
+  const { code } = e.data as { code?: string }
+  if (code) {
+    window.removeEventListener('message', onMessage)
+    completeMyid(code)
   }
-  window.addEventListener('message', onMessage)
 }
 
 async function completeMyid(code?: string) {
@@ -225,6 +223,16 @@ async function completeMyid(code?: string) {
     myidLoading.value = false
   }
 }
+
+
+onMounted(() => {
+  window.addEventListener('message', onMessage)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('message', onMessage)
+})
+
 
 // Auto-complete when MYID_MOCK mode and we reach step 4
 watch(step, (s) => {
@@ -455,7 +463,7 @@ function goToLogin() {
               <div v-if="verifiedUser?.passportSerial" class="vf">
                 <span class="vf-label">{{ $t('register.verifiedPassport') }}</span>
                 <span class="vf-value font-mono">{{ verifiedUser.passportSerial }} {{ verifiedUser.passportNumber
-                  }}</span>
+                }}</span>
               </div>
             </div>
 

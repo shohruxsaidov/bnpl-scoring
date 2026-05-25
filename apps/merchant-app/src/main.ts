@@ -14,6 +14,7 @@ import router from './router'
 import uz from './locales/uz.json'
 import ru from './locales/ru.json'
 import './styles/main.css'
+import { useAuthStore } from './stores/auth'
 
 const i18n = createI18n({
   legacy: false,
@@ -25,7 +26,6 @@ const i18n = createI18n({
 const app = createApp(App)
 
 app.use(createPinia())
-app.use(router)
 app.use(i18n)
 app.use(PrimeVue, {
   ripple: true,
@@ -45,4 +45,9 @@ app.use(ToastService)
 app.use(ConfirmationService)
 app.directive('tooltip', Tooltip)
 
+await useAuthStore().restoreSession()
+
+// Router is installed after session restore so the initial navigation
+// fires with the correct auth state already set.
+app.use(router)
 app.mount('#app')

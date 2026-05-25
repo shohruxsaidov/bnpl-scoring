@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, gt, ilike, isNull, or } from "drizzle-orm";
 import type { Db } from "../../../db/index.js";
 import {
   clientSessions,
@@ -8,7 +8,7 @@ import {
 } from "../../id/db/schema.js";
 import { env } from "../../../env.js";
 
-export type OtpPurpose = "login" | "register";
+export type OtpPurpose = "login" | "register" | "client_registration";
 
 /** Hash a raw token with SHA-256, hex-encoded. */
 function hashToken(token: string): string {
@@ -97,6 +97,21 @@ export async function findUserById(db: Db, id: bigint) {
     .where(eq(users.id, id))
     .limit(1);
   return row;
+}
+
+export async function searchUsers(db: Db, q: string, limit = 20) {
+  const term = `%${q}%`;
+  return db
+    .select()
+    .from(users)
+    .where(
+      or(
+        ilike(users.firstName, term),
+        ilike(users.lastName, term),
+        ilike(users.pinfl, term),
+      ),
+    )
+    .limit(limit);
 }
 
 export async function findUserByPinfl(db: Db, pinfl: string) {

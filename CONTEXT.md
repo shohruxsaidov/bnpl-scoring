@@ -7,7 +7,7 @@ A three-party platform where **Finsum Nasiya** (capital owner) funds instalment 
 ### People
 
 **Platform Admin**:
-A Finsum Nasiya staff member with system-wide access. Manages Tariffs, Merchants, the Scoring Model, and Payouts. Identified by email. The only actor who can create other Platform Admin accounts. Has no `merchant_id` or Branch scope.
+A Finsum Nasiya staff member with system-wide access. Creates and manages Merchants, Branches, Employees, Products, Categories, Tariffs, the Scoring Model, and Payouts. Identified by email. The only actor who can create other Platform Admin accounts. Has no `merchant_id` or Branch scope.
 _Avoid_: Superadmin, system user, operator
 
 **Merchant**:
@@ -54,7 +54,7 @@ _Avoid_: Cart, order, product list
 ### Products & pricing
 
 **Product**:
-An individual item the Merchant sells on credit — has a name, tan narxi (base cost price), MXIK code, and belongs to one Category. Owned and managed by the Merchant. Shown to the Sales Agent in the Mahsulot step of the Wizard.
+An individual item the Merchant sells on credit — has a name, tan narxi (base cost price), MXIK code, and belongs to one Category. Created by the Platform Admin or a Merchant Admin on behalf of the Merchant; both actors can edit products within their scope. Shown to the Sales Agent in the Mahsulot step of the Wizard.
 _Avoid_: Catalog Item, SKU (use only as synonym), item
 
 **Tan Narxi**:
@@ -188,12 +188,13 @@ Key decisions live in `docs/adr/` as thematic files:
 | `0002-multi-tenancy-domain-model.md` | Shared DB + `merchant_id`, per-merchant product catalog, sub-resource endpoints, soft delete |
 | `0003-frontend-stack-ui.md` | Turborepo monorepo, Vue 3 + PrimeVue, ClickUp dual theme, responsive design, SSE wizard progress, lazy tab queries |
 | `0004-authentication-authorization.md` | Three tables (`admin_users`, `merchant_users`, `users`), scoped JWTs, client phone+OTP+MyID registration, single-role session + login picker, server-side sessions |
-| `0005-integrations-infrastructure.md` | Payme + Click payments, webhook idempotency, overdue notifications (SMS + in-app), Garage object storage |
+| `0005-integrations-infrastructure.md` | ky HTTP client factory, integration_logs table, fire-and-forget logging, PINFL/token redaction, MyID Bearer auth flow |
 | `0006deployment-strategy.md` | Docker + nginx, blue-green zero-downtime backend, atomic symlink frontend, expand/contract migrations |
 | `0007-observability.md` | Loki (logs) + Tempo (traces) + Prometheus (metrics) + Grafana Alloy + OpenTelemetry SDK, all self-hosted |
 | `0008-katm-integration.md` | InfoScore 077 only, PINFL client ID, Wizard Session as claim_id, consent per Deal, hard block on failure, full raw jsonb storage |
 | `0009-plumgate-card-scoring.md` | PlumGate SCORING module, Uzcard + Humo, Karta Wizard step, OTP agent-mediated, soft skip, client_cards token reuse, plumgate_scoring_sessions table |
 | `0010-scoring-trigger-timing.md` | Scoring starts in background at Karta completion (not Tarif render); Step 3 blocks on SSE `scoring.completed`; 30 s timeout triggers retry |
+| `0011-file-storage-minio.md` | MinIO (self-hosted S3) for Merchant document uploads; presigned PUT URLs; `merchant_documents` table stores URL only |
 | `0012-three-party-platform-model.md` | Finsum as capital owner; Merchant + Branch hierarchy; global Tariffs and Scoring Model; persistent platform-wide Client credit limit; Merchant paid at tan narxi on signing |
 
 ## Example dialogue

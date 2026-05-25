@@ -6,24 +6,47 @@ import rateLimit from "@fastify/rate-limit";
 import dbPlugin from "./plugins/db.js";
 import cookiePlugin from "./plugins/cookie.js";
 import jwtPlugin from "./plugins/jwt.js";
+import minioPlugin from "./plugins/minio";
 import healthRoutes from "./routes/health.js";
-import { authModule, merchantModule } from "./modules/index.js";
+import { authModule, merchantModule, adminModule } from "./modules/index.js";
 import { env } from "./env.js";
 
+const isDev = env.NODE_ENV !== "production";
+
+const logger = {
+  level: isDev ? "debug" : "info",
+  ...(isDev
+    ? {
+        transport: {
+          target: "pino-pretty",
+          options: {
+            colorize: true,
+            translateTime: "HH:MM:ss.l",
+            ignore: "pid,hostname",
+            singleLine: false,
+          },
+        },
+      }
+    : {}),
+  redact: {
+    paths: [
+      "req.headers.authorization",
+      "req.headers.cookie",
+      "req.body.password",
+      "req.body.code",
+      "req.body.regToken",
+      "req.body.pickerToken",
+    ],
+    censor: "[REDACTED]",
+  },
+};
+
 export async function buildApp() {
-  const app = Fastify({
-    logger: {
-      level: env.NODE_ENV === "production" ? "info" : "debug",
-    },
-  });
+  const app = Fastify({ logger });
 
   await app.register(helmet);
   await app.register(cors, {
-    origin: [
-      "http://localhost:5174", // merchant-app
-      "http://localhost:5175", // client-portal
-      "http://localhost:5176", // platform-admin (if needed)
-    ],
+    origin: true,
     credentials: true,
   });
   await app.register(rateLimit, { max: 100, timeWindow: "1 minute" });
@@ -31,11 +54,13 @@ export async function buildApp() {
   await app.register(cookiePlugin);
   await app.register(jwtPlugin);
   await app.register(dbPlugin);
+  await app.register(minioPlugin);
 
   // domain modules register here as encapsulated plugins
   await app.register(healthRoutes);
   await app.register(authModule, { prefix: "/" });
   await app.register(merchantModule, { prefix: "/" });
+  await app.register(adminModule, { prefix: "/" });
 
   return app;
 }
