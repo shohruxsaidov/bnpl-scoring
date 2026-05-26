@@ -25,6 +25,24 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
+    async restoreSession(): Promise<void> {
+      const tryMe = async (): Promise<boolean> => {
+        const res = await fetch(`${API}/auth/client/me`, { credentials: 'include' })
+        if (!res.ok) return false
+        const body = await res.json()
+        this.user = body.user
+        return true
+      }
+
+      if (await tryMe()) return
+
+      const refreshRes = await fetch(`${API}/auth/client/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+      if (refreshRes.ok) await tryMe()
+    },
+
     async requestLoginOtp(phone: string): Promise<void> {
       const res = await fetch(`${API}/auth/client/login/phone`, {
         method: 'POST',

@@ -271,5 +271,20 @@ export const useMerchantsStore = defineStore('merchants', {
       this.documents[merchantId] = [...(this.documents[merchantId] ?? []), body.document]
       return body.document
     },
+
+    async uploadDocument(
+      merchantId: string,
+      file: File,
+      documentType: string,
+    ): Promise<MerchantDocument> {
+      const { uploadUrl, objectName } = await this.getUploadUrl(merchantId)
+      const putRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      })
+      if (!putRes.ok) throw new Error('upload_failed')
+      return this.recordDocument(merchantId, { fileUrl: objectName, documentType })
+    },
   },
 })

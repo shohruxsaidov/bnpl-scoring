@@ -16,8 +16,19 @@
 | UI state | Pinia 3 |
 | Forms | VeeValidate + Zod 4 |
 | Theming | ClickUp token set, dual light/dark |
+| Architecture pattern | MVVM |
 
 ## Decisions
+
+**MVVM as the component architecture pattern across all three frontends.** The three layers map onto Vue 3 artifacts as follows:
+
+| MVVM Layer | Artifact | Responsibility |
+|---|---|---|
+| View | `<template>` in .vue SFCs | Declarative rendering only — v-if/v-for/event binding, no logic |
+| ViewModel | `<script setup>` in .vue SFCs | Component-local reactive state, computed values, event handlers; imports from Model layer and exposes only what the template needs |
+| Model | Pinia stores, TanStack Query hooks, composables wrapping API calls | Domain state, server state cache, HTTP calls, business rules |
+
+Raw API calls (fetch or the HTTP client) must not appear in `<script setup>` directly — they belong in a composable or store. Inline fetch helpers inside components are a pattern violation and are flagged as technical debt (`StepClient.vue:14` is a known instance).
 
 **Turborepo monorepo for all frontends and the backend.** All three frontends (Merchant App, Client Web Portal, Platform Admin) and the backend share a single Turborepo monorepo. Separate repos rejected — the frontends share domain types, formatting utilities, and UI primitives. Without a monorepo these would be duplicated or published as private packages. Turborepo provides task caching and parallel builds with minimal configuration.
 

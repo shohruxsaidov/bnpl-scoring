@@ -2,12 +2,14 @@
 import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useAuthStore, API_URL } from '@/stores/auth'
+import { useAuthStore } from '@/stores/auth'
+import { useRegistrationApi } from '@/composables/useRegistrationApi'
 import type { AuthUser } from '@/types'
 
 const auth = useAuthStore()
 const router = useRouter()
 const { t } = useI18n()
+const registrationApi = useRegistrationApi()
 
 type Step = 1 | 2 | 3 | 4 | 5
 const step = ref<Step>(1)
@@ -26,19 +28,6 @@ const myidIframeUrl = ref<string | null>(null)
 const myidMock = ref(false)
 const myidCode = ref('')
 const devOtp = ref('')
-
-/** Generic POST helper returning parsed body, throwing Error(code) on failure. */
-async function post(path: string, body: unknown): Promise<any> {
-  const res = await fetch(`${API_URL}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify(body),
-  })
-  const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(data.code ?? 'error')
-  return data
-}
 
 /* ── Step 1 — phone ─────────────────────────────────────────────────────── */
 const phoneDigits = ref('')
@@ -68,7 +57,7 @@ async function submitPhone() {
   if (phoneLoading.value) return
   phoneLoading.value = true
   try {
-    const data = await post('/auth/client/register/phone', { phone: phoneDigits.value })
+    const data = await registrationApi.sendPhone(phoneDigits.value)
     devOtp.value = data.devOtp ?? ''
     step.value = 2
     nextTick(() => otpRefs.value[0]?.focus())
@@ -135,10 +124,7 @@ async function submitOtp() {
   if (otpLoading.value) return
   otpLoading.value = true
   try {
-    const data = await post('/auth/client/register/otp', {
-      phone: phoneDigits.value,
-      code: otpCode.value,
-    })
+    const data = await registrationApi.verifyOtp(phoneDigits.value, otpCode.value)
     regToken.value = data.regToken
     step.value = 3
   } catch (err) {
@@ -169,10 +155,7 @@ async function submitIdentity() {
   if (identityLoading.value) return
   identityLoading.value = true
   try {
-    const data = await post('/auth/client/register/pinfl', {
-      regToken: regToken.value,
-      pinfl: pinflDigits.value,
-    })
+    const data = await registrationApi.submitPinfl(regToken.value, pinflDigits.value)
     regToken.value = data.regToken
     myidMock.value = !!data.mock
     myidIframeUrl.value = data.iframeUrl ?? null
@@ -206,10 +189,7 @@ async function completeMyid(code?: string) {
   if (myidLoading.value) return
   myidLoading.value = true
   try {
-    const data = await post('/auth/client/register/complete', {
-      regToken: regToken.value,
-      myidCode: code ?? 'mock',
-    })
+    const data = await registrationApi.completeMyid(regToken.value, code)
     const user = data.user as AuthUser
     auth.setUser(user)
     verifiedUser.value = user

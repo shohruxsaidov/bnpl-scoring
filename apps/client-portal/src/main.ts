@@ -10,6 +10,7 @@ import 'primeicons/primeicons.css'
 
 import App from './App.vue'
 import router from './router'
+import { useAuthStore } from '@/stores/auth'
 import uz from './locales/uz.json'
 import ru from './locales/ru.json'
 import './styles/main.css'
@@ -25,6 +26,9 @@ const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
+
+await useAuthStore().restoreSession()
+
 app.use(i18n)
 app.use(PrimeVue, {
   ripple: true,

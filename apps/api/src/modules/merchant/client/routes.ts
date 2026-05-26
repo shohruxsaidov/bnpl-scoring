@@ -66,6 +66,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
   const MyidSessionBody = Type.Object({
     regToken: Type.String({ minLength: 1 }),
     pinfl: Type.String({ minLength: 14, maxLength: 14, pattern: "^\\d{14}$" }),
+    retry: Type.Boolean({ default: false }),
   });
   const MyidCompleteBody = Type.Object({
     regToken: Type.String({ minLength: 1 }),
@@ -131,7 +132,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
       } catch {
         return reply.code(400).send({ code: "invalid_reg_token" });
       }
-      if (phase1.step !== "phone_verified") {
+      if (phase1.step !== "phone_verified" && !request.body.retry) {
         return reply.code(400).send({ code: "invalid_step" });
       }
 

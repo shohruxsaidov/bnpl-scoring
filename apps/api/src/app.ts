@@ -58,9 +58,9 @@ export async function buildApp() {
 
   // domain modules register here as encapsulated plugins
   await app.register(healthRoutes);
-  await app.register(authModule, { prefix: "/" });
-  await app.register(merchantModule, { prefix: "/" });
-  await app.register(adminModule, { prefix: "/" });
+  await app.register(authModule, { prefix: "/api/v1" });
+  await app.register(merchantModule, { prefix: "/api/v1" });
+  await app.register(adminModule, { prefix: "/api/v1" });
 
   return app;
 }

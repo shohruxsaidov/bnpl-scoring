@@ -13,6 +13,7 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
 import { useMerchantsStore } from '@/stores/merchants'
+import { useMxik, type MxikEntry, type MxikPackage } from '@/composables/useMxik'
 import { formatDateTime } from '@/utils/money'
 import type { Branch, Category, MerchantEmployee, Product } from '@/types'
 
@@ -254,76 +255,37 @@ async function submitProduct() {
 }
 
 // --- MXIK combobox -----------------------------------------------------------
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
-interface MxikPackage { code: number; name: string }
-interface MxikEntry {
-  mxikCode: string
-  mxikName: string | null
-  label: number
-  packages: MxikPackage[] | null
-}
+const {
+  mxikSuggestions,
+  mxikSearchLoading,
+  mxikLookupLoading,
+  mxikData,
+  onMxikInput: _onMxikInput,
+  selectMxikSuggestion: _selectMxikSuggestion,
+  resetMxik: _resetMxik,
+  triggerLookup: _triggerLookup,
+} = useMxik('/admin/mxik')
 
-const mxikSuggestions = ref<MxikEntry[]>([])
-const mxikSearchLoading = ref(false)
-const mxikLookupLoading = ref(false)
-const mxikData = ref<MxikEntry | null>(null)
-let mxikSearchTimer = 0
-
-async function apiFetchMxik<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, { credentials: 'include' })
-  if (!res.ok) throw new Error(`http_${res.status}`)
-  return res.json()
-}
-
-async function searchMxikSuggestions(q: string) {
-  mxikSuggestions.value = []
-  if (!q || q.length < 2) return
-  mxikSearchLoading.value = true
-  try {
-    const { results } = await apiFetchMxik<{ results: MxikEntry[] }>(`/admin/mxik/search?q=${encodeURIComponent(q)}`)
-    mxikSuggestions.value = results
-  } catch { /* silent */ } finally {
-    mxikSearchLoading.value = false
-  }
+function onMxikInputAdmin(e: Event) {
+  _onMxikInput((e.target as HTMLInputElement).value)
 }
 
 async function triggerMxikLookup() {
-  const code = productForm.value.mxikCode.trim()
-  if (code.length !== 17) return
-  mxikLookupLoading.value = true
-  mxikData.value = null
   productForm.value.packageCode = null
   productForm.value.packageName = ''
-  try {
-    const { mxik } = await apiFetchMxik<{ mxik: MxikEntry }>(`/admin/mxik/lookup?code=${encodeURIComponent(code)}`)
-    mxikData.value = mxik
-  } catch {
+  await _triggerLookup(productForm.value.mxikCode.trim()).catch(() => {
     toast.add({ severity: 'warn', summary: t('merchantDetail.mxikNotFound'), life: 2500 })
-  } finally {
-    mxikLookupLoading.value = false
-  }
-}
-
-function onMxikInputAdmin(e: Event) {
-  const val = (e.target as HTMLInputElement).value
-  clearTimeout(mxikSearchTimer)
-  if (val.length === 17) {
-    mxikSuggestions.value = []
-    triggerMxikLookup()
-  } else {
-    mxikSearchTimer = window.setTimeout(() => searchMxikSuggestions(val), 300)
-  }
+  })
 }
 
 function selectMxikSuggestionAdmin(item: MxikEntry) {
   productForm.value.mxikCode = item.mxikCode
-  mxikSuggestions.value = []
-  triggerMxikLookup()
+  _selectMxikSuggestion(item)
 }
 
 function onPackageSelectAdmin(code: number) {
-  const pkg = mxikData.value?.packages?.find((p) => p.code === code)
+  const pkg = mxikData.value?.packages?.find((p: MxikPackage) => p.code === code)
   if (pkg) {
     productForm.value.packageCode = pkg.code
     productForm.value.packageName = pkg.name
@@ -331,8 +293,7 @@ function onPackageSelectAdmin(code: number) {
 }
 
 function resetMxikAdmin() {
-  mxikData.value = null
-  mxikSuggestions.value = []
+  _resetMxik()
   productForm.value.packageCode = null
   productForm.value.packageName = ''
 }
@@ -371,17 +332,7 @@ async function submitDocument() {
   if (!documentFile.value || !documentType.value) return
   documentUploading.value = true
   try {
-    const { uploadUrl, objectName } = await merchants.getUploadUrl(merchantId.value)
-    const putRes = await fetch(uploadUrl, {
-      method: 'PUT',
-      body: documentFile.value,
-      headers: { 'Content-Type': documentFile.value.type || 'application/octet-stream' },
-    })
-    if (!putRes.ok) throw new Error('upload_failed')
-    await merchants.recordDocument(merchantId.value, {
-      fileUrl: objectName,
-      documentType: documentType.value,
-    })
+    await merchants.uploadDocument(merchantId.value, documentFile.value, documentType.value)
     toast.add({ severity: 'success', summary: t('merchantDetail.documentUploaded'), life: 2000 })
     showDocument.value = false
   } catch {

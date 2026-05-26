@@ -558,7 +558,8 @@
     "searchFailed": "Ошибка поиска. Попробуйте ещё раз",
     "myidFailed": "Ошибка MyID. Попробуйте ещё раз",
     "myidTimeout": "MyID не загрузился за 30 секунд",
-    "myidReload": "Перезагрузить"
+    "myidReload": "Перезагрузить",
+    "myidNewSession": "Создать новую сессию"
   },
   "stepKarta": {
     "title": "Карта",

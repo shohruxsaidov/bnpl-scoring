@@ -7,6 +7,7 @@ import {
   createOtp,
   createSession,
   createUser,
+  findUserById,
   findUserByPhone,
   findUserByPinfl,
   revokeSession,
@@ -277,6 +278,17 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
   );
 
   /* ── Session lifecycle ──────────────────────────────────────────────────── */
+
+  fastify.get(
+    "/me",
+    { preHandler: app.verifyClientJwt },
+    async (request, reply) => {
+      const payload = request.user as { sub: string; type: "client" };
+      const user = await findUserById(db, BigInt(payload.sub));
+      if (!user) return reply.code(401).send({ code: "unauthorized" });
+      return { user: toUserDto(user) };
+    },
+  );
 
   fastify.post("/refresh", async (request, reply) => {
     const sessionToken = request.cookies.session_id;

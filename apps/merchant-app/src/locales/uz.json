@@ -558,7 +558,8 @@
     "searchFailed": "Qidiruv xatosi. Qayta urinib ko'ring",
     "myidFailed": "MyID xatosi. Qayta urinib ko'ring",
     "myidTimeout": "MyID 30 soniya ichida yuklanmadi",
-    "myidReload": "Qayta yuklash"
+    "myidReload": "Qayta yuklash",
+    "myidNewSession": "Qayta sessiya yaratish"
   },
   "stepKarta": {
     "title": "Karta",

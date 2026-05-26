@@ -10,3 +10,5 @@ select * from merchant_users;
 
 
 select * FROM integration_logs ORDER BY created_at desc;
+
+delete from integration_logs;

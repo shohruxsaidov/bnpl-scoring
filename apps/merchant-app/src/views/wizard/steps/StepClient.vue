@@ -4,23 +4,12 @@ import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import Checkbox from 'primevue/checkbox'
 import { useWizardStore } from '@/stores/wizard'
+import { useClientApi } from '@/composables/useClientApi'
 import type { Client } from '@/types'
 
 const wizard = useWizardStore()
 const { t } = useI18n()
-
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
-
-async function apiFetch(path: string, opts: RequestInit = {}): Promise<any> {
-  const res = await fetch(`${API}${path}`, {
-    ...opts,
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...(opts.headers ?? {}) },
-  })
-  const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(data.code ?? 'error')
-  return data
-}
+const clientApi = useClientApi()
 
 // ── Phase state machine ────────────────────────────────────────────────────
 type Phase =
@@ -65,7 +54,7 @@ const isNewClient = ref(wizard.sessionData.isNewClient)
 
 // MyID
 const myidIframeUrl = ref<string | null>(null)
-const myidMock = ref(false)
+
 const myidError = ref('')
 const iframeRef = ref<HTMLIFrameElement | null>(null)
 
@@ -119,6 +108,26 @@ async function reloadMyidIframe() {
   startMyidTimer()
 }
 
+const renewingSession = ref(false)
+
+async function renewMyidSession() {
+  renewingSession.value = true
+  myidError.value = ''
+  try {
+    const data = await clientApi.createMyidSession(regToken.value, pinfl.value, true)
+    regToken.value = data.regToken
+    myidIframeUrl.value = null
+    await nextTick()
+    myidIframeUrl.value = data.iframeUrl ?? null
+    myidTimedOut.value = false
+    if (!data.mock) startMyidTimer()
+  } catch {
+    myidError.value = t('stepClient.myidFailed')
+  } finally {
+    renewingSession.value = false
+  }
+}
+
 // KATM
 const katmConsent = ref(wizard.sessionData.katmConsent)
 const katmLoading = ref(false)
@@ -151,7 +160,7 @@ async function searchClient() {
   searchError.value = ''
   phase.value = 'searching'
   try {
-    const data = await apiFetch(`/merchant/client/search?q=${encodeURIComponent(q)}`)
+    const data = await clientApi.searchClients(q)
     searchResults.value = data.clients as Client[]
     if (searchResults.value.length === 0) {
       if (isPinflLike(q)) pinfl.value = q
@@ -184,10 +193,7 @@ async function sendOtp() {
   otpPhoneError.value = ''
   otpLoading.value = true
   try {
-    const data = await apiFetch('/merchant/client/otp', {
-      method: 'POST',
-      body: JSON.stringify({ phone }),
-    })
+    const data = await clientApi.sendOtp(phone)
     devOtp.value = data.devOtp ?? null
     phase.value = 'otp_verify'
   } catch {
@@ -203,10 +209,7 @@ async function verifyOtpCode() {
   otpError.value = ''
   otpVerifying.value = true
   try {
-    const data = await apiFetch('/merchant/client/otp/verify', {
-      method: 'POST',
-      body: JSON.stringify({ phone, code: otpCode.value.trim() }),
-    })
+    const data = await clientApi.verifyOtp(phone, otpCode.value.trim())
     regToken.value = data.regToken
     phase.value = 'pinfl_entry'
   } catch (err) {
@@ -221,12 +224,8 @@ async function startMyId() {
   if (!validatePinfl()) return
   myidError.value = ''
   try {
-    const data = await apiFetch('/merchant/client/myid-session', {
-      method: 'POST',
-      body: JSON.stringify({ regToken: regToken.value, pinfl: pinfl.value }),
-    })
+    const data = await clientApi.createMyidSession(regToken.value, pinfl.value)
     regToken.value = data.regToken
-    myidMock.value = !!data.mock
     myidIframeUrl.value = data.iframeUrl ?? null
     phase.value = 'myid_pending'
     if (!data.mock) startMyidTimer()
@@ -248,6 +247,8 @@ function handleMyidMessage(e: MessageEvent) {
     auth_code?: string
     result_note?: string
   }
+
+  debugger
 
   switch (status) {
     case MyIDStatus.LIVENESS_PASSED:
@@ -285,10 +286,7 @@ async function completeMyid(myidCode?: string) {
   clearMyidTimer()
   myidError.value = ''
   try {
-    const data = await apiFetch('/merchant/client/myid-complete', {
-      method: 'POST',
-      body: JSON.stringify({ regToken: regToken.value, myidCode: myidCode ?? 'mock' }),
-    })
+    const data = await clientApi.completeMyid(regToken.value, myidCode ?? 'mock')
     confirmedClient.value = data.client as Client
     isNewClient.value = true
     phase.value = 'myid_done'
@@ -328,7 +326,7 @@ function resetSearch() {
   katmConsent.value = false
   katmDone.value = false
   myidIframeUrl.value = null
-  myidMock.value = false
+
   myidError.value = ''
   myidTimedOut.value = false
   clearMyidTimer()
@@ -518,23 +516,25 @@ const clientFullName = computed(() =>
       <span v-if="myidError" class="field-error mb-1">{{ myidError }}</span>
 
       <!-- Real MyID iframe -->
-      <div v-if="!myidMock && myidIframeUrl" class="myid-frame-wrap">
+      <div v-if="myidIframeUrl" class="myid-frame-wrap">
         <iframe ref="iframeRef" :src="myidIframeUrl" class="myid-frame" allow="camera;fullscreen" allowfullscreen
           @load="onIframeLoad" />
         <div v-if="myidTimedOut" class="myid-timeout-overlay">
           <i class="pi pi-wifi" style="font-size:2rem;opacity:0.5" />
           <p class="myid-timeout-msg">{{ $t('stepClient.myidTimeout') }}</p>
-          <button class="btn-gradient" @click="reloadMyidIframe">
-            <i class="pi pi-refresh" /> {{ $t('stepClient.myidReload') }}
-          </button>
+          <div class="myid-timeout-actions">
+            <button class="btn-outline" @click="reloadMyidIframe">
+              <i class="pi pi-refresh" /> {{ $t('stepClient.myidReload') }}
+            </button>
+            <button class="btn-gradient" :disabled="renewingSession" @click="renewMyidSession">
+              <i v-if="renewingSession" class="pi pi-spin pi-spinner" />
+              <i v-else class="pi pi-plus-circle" />
+              {{ $t('stepClient.myidNewSession') }}
+            </button>
+          </div>
         </div>
       </div>
 
-      <!-- Mock mode button -->
-      <button v-if="myidMock" class="btn-gradient mt-1" @click="completeMyid()">
-        <i class="pi pi-id-card" />
-        {{ $t('stepClient.startVerification') }} (mock)
-      </button>
     </div>
 
     <!-- ── PHASE: myid_done ──────────────────────────────────────────────── -->
@@ -881,6 +881,7 @@ const clientFullName = computed(() =>
   letter-spacing: 0.3em;
   max-width: 160px;
 }
+
 .dev-otp-badge {
   display: inline-flex;
   align-items: center;
@@ -891,12 +892,14 @@ const clientFullName = computed(() =>
   padding: 0.4rem 0.8rem;
   align-self: flex-start;
 }
+
 .dev-label {
   font-size: 0.65rem;
   font-weight: 800;
   color: #f59e0b;
   letter-spacing: 0.1em;
 }
+
 .dev-code {
   font-family: monospace;
   font-size: 1.1rem;
@@ -969,6 +972,33 @@ const clientFullName = computed(() =>
   font-weight: 600;
   color: var(--text-secondary);
   text-align: center;
+}
+
+.myid-timeout-actions {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  color: var(--text-primary);
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 0.6rem 1.1rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.btn-outline:hover {
+  border-color: var(--accent-1);
+  color: var(--accent-1);
 }
 
 .field {

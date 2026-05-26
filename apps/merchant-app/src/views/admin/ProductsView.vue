@@ -11,24 +11,13 @@ import Select from 'primevue/select'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { useCatalogStore } from '@/stores/catalog'
+import { useMxik, type MxikPackage, type MxikEntry } from '@/composables/useMxik'
 import type { Product } from '@/types'
 
 const catalog = useCatalogStore()
 const confirm = useConfirm()
 const toast = useToast()
 const { t } = useI18n()
-
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
-
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API}${path}`, {
-    ...init,
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...init?.headers },
-  })
-  if (!res.ok) throw new Error(`http_${res.status}`)
-  return res.json()
-}
 
 onMounted(() => catalog.fetchAll())
 
@@ -46,64 +35,33 @@ const form = reactive({
 
 // ── MXIK combobox state ────────────────────────────────────────────────────
 
-interface MxikPackage { code: number; name: string }
-interface MxikEntry {
-  mxikCode: string
-  mxikName: string | null
-  label: number
-  packages: MxikPackage[] | null
-}
-
-const mxikSuggestions = ref<MxikEntry[]>([])
-const mxikSearchLoading = ref(false)
-const mxikLookupLoading = ref(false)
-const mxikData = ref<MxikEntry | null>(null)
-let mxikSearchTimer = 0
-
-async function searchMxikSuggestions(q: string) {
-  mxikSuggestions.value = []
-  if (!q || q.length < 2) return
-  mxikSearchLoading.value = true
-  try {
-    const { results } = await apiFetch<{ results: MxikEntry[] }>(`/merchant/mxik/search?q=${encodeURIComponent(q)}`)
-    mxikSuggestions.value = results
-  } catch { /* silent */ } finally {
-    mxikSearchLoading.value = false
-  }
-}
-
-async function triggerLookup() {
-  const code = form.mxikCode.trim()
-  if (code.length !== 17) return
-  mxikLookupLoading.value = true
-  mxikData.value = null
-  form.packageCode = null
-  form.packageName = ''
-  try {
-    const { mxik } = await apiFetch<{ mxik: MxikEntry }>(`/merchant/mxik/lookup?code=${encodeURIComponent(code)}`)
-    mxikData.value = mxik
-  } catch {
-    toast.add({ severity: 'warn', summary: t('products.mxikNotFound'), life: 2500 })
-  } finally {
-    mxikLookupLoading.value = false
-  }
-}
+const {
+  mxikSuggestions,
+  mxikSearchLoading,
+  mxikLookupLoading,
+  mxikData,
+  onMxikInput: _onMxikInput,
+  selectMxikSuggestion: _selectMxikSuggestion,
+  resetMxik: _resetMxik,
+  triggerLookup,
+} = useMxik('/merchant/mxik')
 
 function onMxikInput(e: Event) {
   const val = (e.target as HTMLInputElement).value
-  clearTimeout(mxikSearchTimer)
-  if (val.length === 17) {
-    mxikSuggestions.value = []
-    triggerLookup()
-  } else {
-    mxikSearchTimer = window.setTimeout(() => searchMxikSuggestions(val), 300)
-  }
+  _onMxikInput(val)
+}
+
+async function triggerLookupFromForm() {
+  form.packageCode = null
+  form.packageName = ''
+  await triggerLookup(form.mxikCode.trim()).catch(() => {
+    toast.add({ severity: 'warn', summary: t('products.mxikNotFound'), life: 2500 })
+  })
 }
 
 function selectMxikSuggestion(item: MxikEntry) {
   form.mxikCode = item.mxik_code ?? item.mxikCode
-  mxikSuggestions.value = []
-  triggerLookup()
+  _selectMxikSuggestion(item)
 }
 
 function onPackageSelect(pkg: MxikPackage) {
@@ -112,8 +70,7 @@ function onPackageSelect(pkg: MxikPackage) {
 }
 
 function resetMxik() {
-  mxikData.value = null
-  mxikSuggestions.value = []
+  _resetMxik()
   form.packageCode = null
   form.packageName = ''
 }
@@ -282,13 +239,13 @@ function formatPrice(v: string) {
                   :placeholder="$t('products.mxikPlaceholder')"
                   @input="onMxikInput"
                   @blur="() => { setTimeout(() => { mxikSuggestions = [] }, 200) }"
-                  @keydown.enter.prevent="triggerLookup"
+                  @keydown.enter.prevent="triggerLookupFromForm"
                 />
                 <button
                   v-if="form.mxikCode && !mxikLookupLoading"
                   class="mxik-search-btn"
                   type="button"
-                  @click="triggerLookup"
+                  @click="triggerLookupFromForm"
                 >
                   <i class="pi pi-search" />
                 </button>

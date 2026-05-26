@@ -38,8 +38,8 @@ const adminNav = computed<NavItem[]>(() => [
   { label: t('nav.payments'), icon: 'pi pi-credit-card', to: '/admin/payments', show: true },
 ])
 
-function logout() {
-  auth.logout()
+async function logout() {
+  await auth.logout()
   router.push('/login')
 }
 </script>

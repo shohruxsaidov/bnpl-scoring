@@ -6,6 +6,7 @@ import {
   createAdminSession,
   createAdminUser,
   findAdminByEmail,
+  findAdminById,
   revokeAdminSession,
   verifyAdminSession,
   verifyPassword,
@@ -102,6 +103,19 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
   );
 
   /* ── Session lifecycle ──────────────────────────────────────────────────── */
+
+  fastify.get(
+    "/me",
+    { preHandler: app.verifyAdminJwt },
+    async (request, reply) => {
+      const payload = request.user as { sub: string; type: "admin" };
+      const admin = await findAdminById(db, BigInt(payload.sub));
+      if (!admin || !admin.active) {
+        return reply.code(401).send({ code: "unauthorized" });
+      }
+      return { user: serializeAdmin(admin) };
+    },
+  );
 
   fastify.post("/refresh", async (request, reply) => {
     const sessionToken = request.cookies[SESSION_COOKIE];
