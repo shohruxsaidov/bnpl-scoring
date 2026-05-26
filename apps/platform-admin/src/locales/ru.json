@@ -113,7 +113,6 @@
     "emailInvalid": "Неверный email",
     "passwordRequired": "Пароль обязателен",
     "invalidCredentials": "Неверные данные. Попробуйте platform@scoring.uz / admin123",
-    "demoAccount": "Демо аккаунт",
     "footer": "Платформа кредитного скоринга и POS-кредитования · Только для внутреннего использования"
   },
   "theme": {

@@ -66,30 +66,14 @@ const onSubmit = handleSubmit(async (values) => {
 
         <div class="field">
           <label class="field-label" for="email">{{ $t('login.email') }}</label>
-          <InputText
-            id="email"
-            v-model="email"
-            v-bind="emailAttrs"
-            placeholder="platform@scoring.uz"
-            :invalid="!!errors.email"
-            autocomplete="username"
-          />
+          <InputText id="email" v-model="email" v-bind="emailAttrs" :invalid="!!errors.email" autocomplete="username" />
           <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
         </div>
 
         <div class="field">
           <label class="field-label" for="password">{{ $t('login.password') }}</label>
-          <Password
-            id="password"
-            v-model="password"
-            v-bind="passwordAttrs"
-            :feedback="false"
-            toggle-mask
-            placeholder="admin123"
-            :invalid="!!errors.password"
-            input-class="w-full"
-            fluid
-          />
+          <Password id="password" v-model="password" v-bind="passwordAttrs" :feedback="false" toggle-mask
+            :invalid="!!errors.password" input-class="w-full" fluid />
           <span v-if="errors.password" class="field-error">{{ errors.password }}</span>
         </div>
 
@@ -101,10 +85,7 @@ const onSubmit = handleSubmit(async (values) => {
           {{ loading ? $t('login.signingIn') : $t('login.signIn') }}
         </button>
 
-        <div class="hint">
-          <strong>{{ $t('login.demoAccount') }}</strong>
-          <span><code>platform@scoring.uz</code> / <code>admin123</code></span>
-        </div>
+
       </form>
 
       <p class="foot">{{ $t('login.footer') }}</p>
@@ -121,12 +102,14 @@ const onSubmit = handleSubmit(async (values) => {
   place-items: center;
   background: linear-gradient(145deg, #2a2342 0%, #4c3dd0 45%, #7b68ee 75%, #9d4edd 100%);
 }
+
 .orb {
   position: absolute;
   border-radius: 50%;
   filter: blur(80px);
   pointer-events: none;
 }
+
 .orb-1 {
   width: 460px;
   height: 460px;
@@ -134,6 +117,7 @@ const onSubmit = handleSubmit(async (values) => {
   top: -120px;
   right: -120px;
 }
+
 .orb-2 {
   width: 340px;
   height: 340px;
@@ -141,6 +125,7 @@ const onSubmit = handleSubmit(async (values) => {
   bottom: -100px;
   left: -90px;
 }
+
 .dot-grid {
   position: absolute;
   inset: 0;
@@ -148,6 +133,7 @@ const onSubmit = handleSubmit(async (values) => {
   background-size: 30px 30px;
   pointer-events: none;
 }
+
 .auth-stack {
   position: relative;
   z-index: 2;
@@ -159,11 +145,13 @@ const onSubmit = handleSubmit(async (values) => {
   max-width: 400px;
   padding: 2rem;
 }
+
 .brand-head {
   display: flex;
   align-items: center;
   gap: 0.9rem;
 }
+
 .logo-mark {
   width: 46px;
   height: 46px;
@@ -176,6 +164,7 @@ const onSubmit = handleSubmit(async (values) => {
   font-weight: 800;
   color: #fff;
 }
+
 .brand-title {
   margin: 0;
   font-size: 1.5rem;
@@ -183,6 +172,7 @@ const onSubmit = handleSubmit(async (values) => {
   color: #fff;
   line-height: 1;
 }
+
 .brand-badge {
   display: inline-block;
   margin-top: 0.35rem;
@@ -196,32 +186,39 @@ const onSubmit = handleSubmit(async (values) => {
   padding: 0.15rem 0.5rem;
   border-radius: 6px;
 }
+
 .auth-card {
   width: 100%;
   padding: 2rem;
 }
+
 .auth-card h2 {
   margin: 0 0 0.3rem;
   font-size: 1.35rem;
   font-weight: 800;
 }
+
 .sub {
   margin: 0 0 1.6rem;
   color: var(--text-secondary);
   font-size: 0.86rem;
 }
+
 .field {
   margin-bottom: 1rem;
 }
+
 .field :deep(.p-password) {
   width: 100%;
 }
+
 .submit {
   width: 100%;
   margin-top: 0.4rem;
   justify-content: center;
   padding: 0.65rem 1rem;
 }
+
 .login-error {
   color: var(--danger);
   font-size: 0.8rem;
@@ -231,6 +228,7 @@ const onSubmit = handleSubmit(async (values) => {
   gap: 0.4rem;
   margin: 0 0 0.8rem;
 }
+
 .hint {
   margin-top: 1.5rem;
   padding-top: 1.1rem;
@@ -241,10 +239,12 @@ const onSubmit = handleSubmit(async (values) => {
   font-size: 0.76rem;
   color: var(--text-secondary);
 }
+
 .hint code {
   font-family: 'JetBrains Mono', monospace;
   color: var(--accent-2);
 }
+
 .foot {
   margin: 0;
   font-size: 0.72rem;

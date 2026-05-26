@@ -40,7 +40,6 @@
     "subtitle": "Taqsimotlaringizni ko'rish uchun telefon raqamingizni kiriting",
     "phoneLabel": "Telefon raqami",
     "sendOtp": "OTP yuborish",
-    "demoAccount": "Demo hisob",
     "demoHint": "Telefon {phone} — istalgan 4 xonali kod ishlaydi",
     "phoneError": "To'g'ri 9 xonali raqam kiriting",
     "noAccount": "Bu raqam uchun hisob topilmadi. +998 91 555 22 33 ni sinab ko'ring",
