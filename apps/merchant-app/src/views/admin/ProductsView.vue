@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SkeletonTable from '@/components/SkeletonTable.vue'
 import DataTable from 'primevue/datatable'
@@ -40,23 +40,29 @@ const {
   mxikSearchLoading,
   mxikLookupLoading,
   mxikData,
+  mxikLookupError,
+  selectedCode,
   onMxikInput: _onMxikInput,
   selectMxikSuggestion: _selectMxikSuggestion,
   resetMxik: _resetMxik,
-  triggerLookup,
+  clearSearch,
 } = useMxik('/merchant/mxik')
 
-function onMxikInput(e: Event) {
-  const val = (e.target as HTMLInputElement).value
-  _onMxikInput(val)
-}
+watch(mxikLookupError, (isError) => {
+  if (isError) toast.add({ severity: 'warn', summary: t('products.mxikNotFound'), life: 2500 })
+})
 
-async function triggerLookupFromForm() {
+watch(selectedCode, () => {
   form.packageCode = null
   form.packageName = ''
-  await triggerLookup(form.mxikCode.trim()).catch(() => {
-    toast.add({ severity: 'warn', summary: t('products.mxikNotFound'), life: 2500 })
-  })
+})
+
+function onMxikInput(e: Event) {
+  _onMxikInput((e.target as HTMLInputElement).value)
+}
+
+function triggerLookupFromForm() {
+  selectedCode.value = form.mxikCode.trim()
 }
 
 function selectMxikSuggestion(item: MxikEntry) {
@@ -238,7 +244,7 @@ function formatPrice(v: string) {
                   class="font-mono mxik-input"
                   :placeholder="$t('products.mxikPlaceholder')"
                   @input="onMxikInput"
-                  @blur="() => { setTimeout(() => { mxikSuggestions = [] }, 200) }"
+                  @blur="() => { setTimeout(clearSearch, 200) }"
                   @keydown.enter.prevent="triggerLookupFromForm"
                 />
                 <button

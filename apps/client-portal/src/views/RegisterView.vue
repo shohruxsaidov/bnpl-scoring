@@ -9,7 +9,17 @@ import type { AuthUser } from '@/types'
 const auth = useAuthStore()
 const router = useRouter()
 const { t } = useI18n()
-const registrationApi = useRegistrationApi()
+const {
+  sendPhoneMutation,
+  verifyOtpMutation,
+  submitPinflMutation,
+  completeMyidMutation,
+} = useRegistrationApi()
+
+const phoneLoading = sendPhoneMutation.isPending
+const otpLoading = verifyOtpMutation.isPending
+const pinflLoading = submitPinflMutation.isPending
+const myidLoading = completeMyidMutation.isPending
 
 type Step = 1 | 2 | 3 | 4 | 5
 const step = ref<Step>(1)
@@ -26,13 +36,11 @@ const steps = [
 const regToken = ref('')
 const myidIframeUrl = ref<string | null>(null)
 const myidMock = ref(false)
-const myidCode = ref('')
 const devOtp = ref('')
 
 /* ── Step 1 — phone ─────────────────────────────────────────────────────── */
 const phoneDigits = ref('')
 const phoneError = ref('')
-const phoneLoading = ref(false)
 
 const phoneDisplay = computed(() => {
   const d = phoneDigits.value
@@ -54,18 +62,15 @@ async function submitPhone() {
     phoneError.value = t('login.phoneError')
     return
   }
-  if (phoneLoading.value) return
-  phoneLoading.value = true
+  if (sendPhoneMutation.isPending.value) return
   try {
-    const data = await registrationApi.sendPhone(phoneDigits.value)
+    const data = await sendPhoneMutation.mutateAsync(phoneDigits.value)
     devOtp.value = data.devOtp ?? ''
     step.value = 2
     nextTick(() => otpRefs.value[0]?.focus())
   } catch (err) {
     const code = (err as Error).message
     phoneError.value = code === 'phone_taken' ? t('register.phoneTaken') : t('register.requestFailed')
-  } finally {
-    phoneLoading.value = false
   }
 }
 
@@ -73,7 +78,6 @@ async function submitPhone() {
 const otp = ref<string[]>(['', '', '', ''])
 const otpRefs = ref<HTMLInputElement[]>([])
 const otpError = ref('')
-const otpLoading = ref(false)
 
 const otpCode = computed(() => otp.value.join(''))
 
@@ -121,24 +125,20 @@ async function submitOtp() {
     otpError.value = t('login.codeError')
     return
   }
-  if (otpLoading.value) return
-  otpLoading.value = true
+  if (verifyOtpMutation.isPending.value) return
   try {
-    const data = await registrationApi.verifyOtp(phoneDigits.value, otpCode.value)
+    const data = await verifyOtpMutation.mutateAsync({ phone: phoneDigits.value, code: otpCode.value })
     regToken.value = data.regToken
     step.value = 3
   } catch (err) {
     const code = (err as Error).message
     otpError.value = code === 'invalid_otp' ? t('login.invalidCode') : t('register.requestFailed')
-  } finally {
-    otpLoading.value = false
   }
 }
 
 /* ── Step 3 — identity ──────────────────────────────────────────────────── */
 const pinflDigits = ref('')
 const identityError = ref('')
-const identityLoading = ref(false)
 
 function onPinflInput(e: Event) {
   const raw = (e.target as HTMLInputElement).value.replace(/\D/g, '')
@@ -152,30 +152,24 @@ async function submitIdentity() {
     identityError.value = t('register.pinflError')
     return
   }
-  if (identityLoading.value) return
-  identityLoading.value = true
+  if (submitPinflMutation.isPending.value) return
   try {
-    const data = await registrationApi.submitPinfl(regToken.value, pinflDigits.value)
+    const data = await submitPinflMutation.mutateAsync({ regToken: regToken.value, pinfl: pinflDigits.value })
     regToken.value = data.regToken
     myidMock.value = !!data.mock
     myidIframeUrl.value = data.iframeUrl ?? null
     step.value = 4
-    listenForMyidMessage()
   } catch (err) {
     const code = (err as Error).message
     identityError.value = code === 'pinfl_taken' ? t('register.pinflTaken') : t('register.requestFailed')
-  } finally {
-    identityLoading.value = false
   }
 }
 
 /* ── Step 4 — MyID ──────────────────────────────────────────────────────── */
 const myidError = ref('')
-const myidLoading = ref(false)
 const verifiedUser = ref<AuthUser | null>(null)
 
 function onMessage(e: MessageEvent) {
-  debugger
   if (typeof e.data !== 'object' || !e.data) return
   const { code } = e.data as { code?: string }
   if (code) {
@@ -187,9 +181,8 @@ function onMessage(e: MessageEvent) {
 async function completeMyid(code?: string) {
   myidError.value = ''
   if (myidLoading.value) return
-  myidLoading.value = true
   try {
-    const data = await registrationApi.completeMyid(regToken.value, code)
+    const data = await completeMyidMutation.mutateAsync({ regToken: regToken.value, myidCode: code })
     const user = data.user as AuthUser
     auth.setUser(user)
     verifiedUser.value = user
@@ -199,8 +192,6 @@ async function completeMyid(code?: string) {
     myidError.value = code === 'pinfl_taken' ? t('register.pinflTaken')
       : code === 'pinfl_mismatch' ? t('register.pinflMismatch')
         : t('register.requestFailed')
-  } finally {
-    myidLoading.value = false
   }
 }
 
@@ -392,8 +383,8 @@ function goToLogin() {
             <span v-if="identityError" class="field-error">{{ identityError }}</span>
           </div>
 
-          <button class="btn-gradient submit" :disabled="identityLoading" @click="submitIdentity">
-            <i v-if="identityLoading" class="pi pi-spin pi-spinner" />
+          <button class="btn-gradient submit" :disabled="pinflLoading" @click="submitIdentity">
+            <i v-if="pinflLoading" class="pi pi-spin pi-spinner" />
             <span v-else>{{ $t('register.next') }}</span>
           </button>
         </template>

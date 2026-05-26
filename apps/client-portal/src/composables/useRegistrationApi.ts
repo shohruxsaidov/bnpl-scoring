@@ -1,3 +1,4 @@
+import { useMutation } from '@tanstack/vue-query'
 import { API_URL } from '@/stores/auth'
 import type { AuthUser } from '@/types'
 
@@ -14,24 +15,30 @@ async function post<T = any>(path: string, body: unknown): Promise<T> {
 }
 
 export function useRegistrationApi() {
-  function sendPhone(phoneDigits: string): Promise<{ devOtp?: string }> {
-    return post('/auth/client/register/phone', { phone: phoneDigits })
-  }
+  const sendPhoneMutation = useMutation({
+    mutationFn: (phoneDigits: string) =>
+      post<{ devOtp?: string }>('/auth/client/register/phone', { phone: phoneDigits }),
+  })
 
-  function verifyOtp(phone: string, code: string): Promise<{ regToken: string }> {
-    return post('/auth/client/register/otp', { phone, code })
-  }
+  const verifyOtpMutation = useMutation({
+    mutationFn: ({ phone, code }: { phone: string; code: string }) =>
+      post<{ regToken: string }>('/auth/client/register/otp', { phone, code }),
+  })
 
-  function submitPinfl(
-    regToken: string,
-    pinfl: string,
-  ): Promise<{ regToken: string; iframeUrl?: string; mock?: boolean }> {
-    return post('/auth/client/register/pinfl', { regToken, pinfl })
-  }
+  const submitPinflMutation = useMutation({
+    mutationFn: ({ regToken, pinfl }: { regToken: string; pinfl: string }) =>
+      post<{ regToken: string; iframeUrl?: string; mock?: boolean }>('/auth/client/register/pinfl', { regToken, pinfl }),
+  })
 
-  function completeMyid(regToken: string, myidCode?: string): Promise<{ user: AuthUser }> {
-    return post('/auth/client/register/complete', { regToken, myidCode: myidCode ?? 'mock' })
-  }
+  const completeMyidMutation = useMutation({
+    mutationFn: ({ regToken, myidCode }: { regToken: string; myidCode?: string }) =>
+      post<{ user: AuthUser }>('/auth/client/register/complete', { regToken, myidCode: myidCode ?? 'mock' }),
+  })
 
-  return { sendPhone, verifyOtp, submitPinfl, completeMyid }
+  return {
+    sendPhoneMutation,
+    verifyOtpMutation,
+    submitPinflMutation,
+    completeMyidMutation,
+  }
 }

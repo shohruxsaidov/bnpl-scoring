@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import { VueQueryPlugin } from '@tanstack/vue-query'
 import PrimeVue from 'primevue/config'
 import Aura from '@primeuix/themes/aura'
 import ToastService from 'primevue/toastservice'
@@ -26,6 +27,7 @@ const i18n = createI18n({
 const app = createApp(App)
 
 app.use(createPinia())
+app.use(VueQueryPlugin)
 app.use(router)
 
 await useAuthStore().restoreSession()

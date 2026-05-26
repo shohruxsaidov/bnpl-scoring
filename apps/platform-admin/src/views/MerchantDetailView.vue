@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
@@ -261,22 +261,29 @@ const {
   mxikSearchLoading,
   mxikLookupLoading,
   mxikData,
+  mxikLookupError,
+  selectedCode,
   onMxikInput: _onMxikInput,
   selectMxikSuggestion: _selectMxikSuggestion,
   resetMxik: _resetMxik,
-  triggerLookup: _triggerLookup,
+  clearSearch,
 } = useMxik('/admin/mxik')
+
+watch(mxikLookupError, (isError) => {
+  if (isError) toast.add({ severity: 'warn', summary: t('merchantDetail.mxikNotFound'), life: 2500 })
+})
+
+watch(selectedCode, () => {
+  productForm.value.packageCode = null
+  productForm.value.packageName = ''
+})
 
 function onMxikInputAdmin(e: Event) {
   _onMxikInput((e.target as HTMLInputElement).value)
 }
 
-async function triggerMxikLookup() {
-  productForm.value.packageCode = null
-  productForm.value.packageName = ''
-  await _triggerLookup(productForm.value.mxikCode.trim()).catch(() => {
-    toast.add({ severity: 'warn', summary: t('merchantDetail.mxikNotFound'), life: 2500 })
-  })
+function triggerMxikLookup() {
+  selectedCode.value = productForm.value.mxikCode.trim()
 }
 
 function selectMxikSuggestionAdmin(item: MxikEntry) {
@@ -707,7 +714,7 @@ function truncate(value: string, max = 48): string {
               class="font-mono mxik-input"
               :placeholder="$t('merchantDetail.mxikPlaceholder')"
               @input="onMxikInputAdmin"
-              @blur="() => setTimeout(() => { mxikSuggestions = [] }, 200)"
+              @blur="() => setTimeout(clearSearch, 200)"
               @keydown.enter.prevent="triggerMxikLookup"
             />
             <button

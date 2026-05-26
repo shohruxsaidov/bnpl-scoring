@@ -9,7 +9,17 @@ import type { Client } from '@/types'
 
 const wizard = useWizardStore()
 const { t } = useI18n()
-const clientApi = useClientApi()
+const {
+  searchClientsMutation,
+  sendOtpMutation,
+  verifyOtpMutation,
+  myidSessionMutation,
+  completeMyidMutation,
+} = useClientApi()
+
+const otpLoading = sendOtpMutation.isPending
+const otpVerifying = verifyOtpMutation.isPending
+const renewingSession = myidSessionMutation.isPending
 
 // ── Phase state machine ────────────────────────────────────────────────────
 type Phase =
@@ -40,8 +50,6 @@ const otpPhone = ref('')
 const otpPhoneError = ref('')
 const otpCode = ref('')
 const otpError = ref('')
-const otpLoading = ref(false)
-const otpVerifying = ref(false)
 const regToken = ref('')
 const devOtp = ref<string | null>(null)
 
@@ -108,13 +116,10 @@ async function reloadMyidIframe() {
   startMyidTimer()
 }
 
-const renewingSession = ref(false)
-
 async function renewMyidSession() {
-  renewingSession.value = true
   myidError.value = ''
   try {
-    const data = await clientApi.createMyidSession(regToken.value, pinfl.value, true)
+    const data = await myidSessionMutation.mutateAsync({ regToken: regToken.value, pinfl: pinfl.value, retry: true })
     regToken.value = data.regToken
     myidIframeUrl.value = null
     await nextTick()
@@ -123,8 +128,6 @@ async function renewMyidSession() {
     if (!data.mock) startMyidTimer()
   } catch {
     myidError.value = t('stepClient.myidFailed')
-  } finally {
-    renewingSession.value = false
   }
 }
 
@@ -160,7 +163,7 @@ async function searchClient() {
   searchError.value = ''
   phase.value = 'searching'
   try {
-    const data = await clientApi.searchClients(q)
+    const data = await searchClientsMutation.mutateAsync(q)
     searchResults.value = data.clients as Client[]
     if (searchResults.value.length === 0) {
       if (isPinflLike(q)) pinfl.value = q
@@ -191,15 +194,12 @@ async function sendOtp() {
     return
   }
   otpPhoneError.value = ''
-  otpLoading.value = true
   try {
-    const data = await clientApi.sendOtp(phone)
+    const data = await sendOtpMutation.mutateAsync(phone)
     devOtp.value = data.devOtp ?? null
     phase.value = 'otp_verify'
   } catch {
     otpPhoneError.value = t('stepClient.otpSendFailed')
-  } finally {
-    otpLoading.value = false
   }
 }
 
@@ -207,16 +207,13 @@ async function verifyOtpCode() {
   const phone = normalizePhone(otpPhone.value)
   if (!otpCode.value.trim()) return
   otpError.value = ''
-  otpVerifying.value = true
   try {
-    const data = await clientApi.verifyOtp(phone, otpCode.value.trim())
+    const data = await verifyOtpMutation.mutateAsync({ phone, code: otpCode.value.trim() })
     regToken.value = data.regToken
     phase.value = 'pinfl_entry'
   } catch (err) {
     const code = (err as Error).message
     otpError.value = code === 'invalid_otp' ? t('stepClient.invalidOtp') : t('stepClient.otpSendFailed')
-  } finally {
-    otpVerifying.value = false
   }
 }
 
@@ -224,7 +221,7 @@ async function startMyId() {
   if (!validatePinfl()) return
   myidError.value = ''
   try {
-    const data = await clientApi.createMyidSession(regToken.value, pinfl.value)
+    const data = await myidSessionMutation.mutateAsync({ regToken: regToken.value, pinfl: pinfl.value })
     regToken.value = data.regToken
     myidIframeUrl.value = data.iframeUrl ?? null
     phase.value = 'myid_pending'
@@ -286,7 +283,7 @@ async function completeMyid(myidCode?: string) {
   clearMyidTimer()
   myidError.value = ''
   try {
-    const data = await clientApi.completeMyid(regToken.value, myidCode ?? 'mock')
+    const data = await completeMyidMutation.mutateAsync({ regToken: regToken.value, myidCode: myidCode ?? 'mock' })
     confirmedClient.value = data.client as Client
     isNewClient.value = true
     phase.value = 'myid_done'

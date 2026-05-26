@@ -1,4 +1,5 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useQuery } from '@tanstack/vue-query'
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
@@ -10,61 +11,58 @@ export interface MxikEntry {
   packages: MxikPackage[] | null
 }
 
-async function apiFetch<T>(path: string): Promise<T> {
-  const res = await fetch(`${API}${path}`, { credentials: 'include' })
+async function get<T>(url: string): Promise<T> {
+  const res = await fetch(url, { credentials: 'include' })
   if (!res.ok) throw new Error(`http_${res.status}`)
   return res.json()
 }
 
 export function useMxik(pathPrefix: string) {
-  const mxikSuggestions = ref<MxikEntry[]>([])
-  const mxikSearchLoading = ref(false)
-  const mxikLookupLoading = ref(false)
-  const mxikData = ref<MxikEntry | null>(null)
-  let mxikSearchTimer = 0
+  const searchTerm = ref('')
+  const selectedCode = ref('')
+  let debounceTimer = 0
 
-  async function searchMxikSuggestions(q: string) {
-    mxikSuggestions.value = []
-    if (!q || q.length < 2) return
-    mxikSearchLoading.value = true
-    try {
-      const { results } = await apiFetch<{ results: MxikEntry[] }>(`${pathPrefix}/search?q=${encodeURIComponent(q)}`)
-      mxikSuggestions.value = results
-    } catch { /* silent */ } finally {
-      mxikSearchLoading.value = false
-    }
-  }
+  const { data: searchData, isFetching: mxikSearchLoading } = useQuery({
+    queryKey: computed(() => ['mxik', pathPrefix, 'search', searchTerm.value]),
+    queryFn: () => get<{ results: MxikEntry[] }>(`${API}${pathPrefix}/search?q=${encodeURIComponent(searchTerm.value)}`),
+    enabled: computed(() => searchTerm.value.length >= 2 && searchTerm.value.length < 17),
+    staleTime: 5 * 60 * 1000,
+  })
 
-  async function triggerLookup(code: string) {
-    if (code.length !== 17) return
-    mxikLookupLoading.value = true
-    mxikData.value = null
-    try {
-      const { mxik } = await apiFetch<{ mxik: MxikEntry }>(`${pathPrefix}/lookup?code=${encodeURIComponent(code)}`)
-      mxikData.value = mxik
-    } finally {
-      mxikLookupLoading.value = false
-    }
-  }
+  const { data: lookupData, isFetching: mxikLookupLoading, isError: mxikLookupError } = useQuery({
+    queryKey: computed(() => ['mxik', pathPrefix, 'lookup', selectedCode.value]),
+    queryFn: () => get<{ mxik: MxikEntry }>(`${API}${pathPrefix}/lookup?code=${encodeURIComponent(selectedCode.value)}`),
+    enabled: computed(() => selectedCode.value.length === 17),
+    staleTime: 60 * 60 * 1000,
+    retry: false,
+  })
+
+  const mxikSuggestions = computed(() => searchData.value?.results ?? [])
+  const mxikData = computed(() => lookupData.value?.mxik ?? null)
 
   function onMxikInput(val: string) {
-    clearTimeout(mxikSearchTimer)
+    clearTimeout(debounceTimer)
+    selectedCode.value = ''
     if (val.length === 17) {
-      mxikSuggestions.value = []
-      triggerLookup(val)
+      searchTerm.value = ''
+      selectedCode.value = val
     } else {
-      mxikSearchTimer = window.setTimeout(() => searchMxikSuggestions(val), 300)
+      debounceTimer = window.setTimeout(() => { searchTerm.value = val }, 300)
     }
   }
 
   function selectMxikSuggestion(item: MxikEntry) {
-    mxikSuggestions.value = []
-    triggerLookup(item.mxikCode)
+    searchTerm.value = ''
+    selectedCode.value = item.mxikCode
   }
 
   function resetMxik() {
-    mxikData.value = null
-    mxikSuggestions.value = []
+    searchTerm.value = ''
+    selectedCode.value = ''
+  }
+
+  function clearSearch() {
+    searchTerm.value = ''
   }
 
   return {
@@ -72,9 +70,11 @@ export function useMxik(pathPrefix: string) {
     mxikSearchLoading,
     mxikLookupLoading,
     mxikData,
+    mxikLookupError,
+    selectedCode,
     onMxikInput,
     selectMxikSuggestion,
     resetMxik,
-    triggerLookup,
+    clearSearch,
   }
 }
