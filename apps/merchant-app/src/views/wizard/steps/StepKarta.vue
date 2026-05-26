@@ -48,7 +48,7 @@ function addCard() {
   const card: Card = {
     id: `card_${cards.value.length + 1}`,
     maskedPan: masked,
-    holderName: wizard.sessionData.client?.fullName.toUpperCase() ?? 'CLIENT',
+    holderName: (`${wizard.sessionData.client?.firstName ?? ''} ${wizard.sessionData.client?.lastName ?? ''}`.trim() || 'CLIENT').toUpperCase(),
     expiry: newExpiry.value || '01/28',
     bank: 'Uzcard',
   }

@@ -18,7 +18,9 @@
     "som": "so'm",
     "currency": "so'm",
     "months": "oy",
-    "monthsLong": "oy"
+    "monthsLong": "oy",
+    "optional": "ixtiyoriy",
+    "error": "Xatolik"
   },
   "topbar": {
     "scoring": "Skoring",
@@ -70,7 +72,8 @@
     "scoringHistory": "Skoring tarixi",
     "payments": "To'lovlar",
     "buyout": "Sotib olish",
-    "scoringDetail": "Skoring tafsiloti"
+    "scoringDetail": "Skoring tafsiloti",
+    "branches": "Filiallar"
   },
   "breadcrumb": {
     "dashboard": "Bosh sahifa",
@@ -86,7 +89,8 @@
     "collectionBoard": "Inkasso",
     "scoringHistory": "Skoring tarixi",
     "payments": "To'lovlar",
-    "buyout": "Sotib olish"
+    "buyout": "Sotib olish",
+    "branches": "Filiallar"
   },
   "nav": {
     "dashboard": "Bosh sahifa",
@@ -102,7 +106,8 @@
     "admin": "ADMIN",
     "notifications": "Bildirishnomalar",
     "logout": "Chiqish",
-    "toggleSidebar": "Yon panelni almashtirish"
+    "toggleSidebar": "Yon panelni almashtirish",
+    "branches": "Filiallar"
   },
   "role": {
     "merchantAdmin": "Savdogar Admin",
@@ -173,21 +178,21 @@
   "products": {
     "addProduct": "Mahsulot qo'shish",
     "name": "Nomi",
-    "sku": "SKU",
     "category": "Kategoriya",
     "price": "Narxi",
     "editProduct": "Mahsulotni tahrirlash",
     "addProductTitle": "Mahsulot qo'shish",
     "productName": "Mahsulot nomi",
-    "priceSom": "Narxi (so'm)",
     "selectCategory": "Kategoriyani tanlang",
-    "missingFields": "Maydonlar to'ldirilmagan",
-    "fillAllFields": "Barcha maydonlarni to'ldiring",
+    "missingFields": "Maydonlarni to'ldiring",
+    "fillAllFields": "Barcha majburiy maydonlar to'ldirilishi kerak",
     "updated": "Yangilandi",
     "added": "Qo'shildi",
     "deleted": "O'chirildi",
     "confirmDelete": "O'chirishni tasdiqlang",
-    "deleteConfirm": "\"{name}\" o'chirilsinmi?"
+    "deleteConfirm": "\"{name}\" o'chirilsinmi?",
+    "tanNarxi": "Narx (tan narhiy)",
+    "mxikCode": "MXIK kodi"
   },
   "categories": {
     "addCategory": "Kategoriya qo'shish",
@@ -227,8 +232,23 @@
     "phone": "Telefon",
     "roles": "Rollar",
     "active": "Faol",
-    "merchantAdmin": "Savdogar Admin",
-    "agent": "Agent"
+    "merchantAdmin": "Administrator",
+    "agent": "Agent",
+    "addEmployee": "Xodim qo'shish",
+    "addEmployeeTitle": "Yangi xodim",
+    "editEmployee": "Xodimni tahrirlash",
+    "fullName": "To'liq ismi",
+    "fullNamePlaceholder": "Aziz Karimov",
+    "email": "Email",
+    "password": "Parol",
+    "passwordPlaceholder": "Kamida 8 ta belgi",
+    "branch": "Filial",
+    "selectBranch": "Filial tanlang",
+    "selectRoles": "Rollarni tanlang",
+    "branchAdmin": "Filial admini",
+    "added": "Xodim qo'shildi",
+    "updated": "Xodim yangilandi",
+    "missingFields": "Barcha majburiy maydonlarni to'ldiring"
   },
   "collectionBoard": {
     "refresh": "Yangilash",
@@ -662,5 +682,19 @@
   },
   "lang": {
     "switch": "Tilni almashtirish"
+  },
+  "branches": {
+    "addBranch": "Filial qo'shish",
+    "addBranchTitle": "Yangi filial",
+    "editBranch": "Filialni tahrirlash",
+    "name": "Nomi",
+    "namePlaceholder": "Bosh ofis",
+    "address": "Manzil",
+    "addressPlaceholder": "Toshkent, Amir Temur ko'chasi 1",
+    "phone": "Telefon",
+    "active": "Faol",
+    "added": "Filial qo'shildi",
+    "updated": "Filial yangilandi",
+    "missingFields": "Barcha maydonlarni to'ldiring"
   }
 }

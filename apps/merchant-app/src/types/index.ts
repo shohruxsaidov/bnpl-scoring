@@ -13,10 +13,23 @@ export interface Employee {
   id: string
   fullName: string
   email: string
-  phone: string
+  phone?: string
+  merchantId: string
+  branchId: string
   roles: EmployeeRole[]
+  mustChangePassword: boolean
   active: boolean
-  tenantId: string
+  createdAt: string
+}
+
+export interface Branch {
+  id: string
+  merchantId: string
+  name: string
+  address: string
+  phone: string
+  active: boolean
+  createdAt: string
 }
 
 export type DealStatus =
@@ -65,16 +78,22 @@ export interface Tariff {
 
 export interface Category {
   id: string
+  merchantId: string
   name: string
+  active: boolean
+  createdAt: string
 }
 
 export interface Product {
   id: string
-  name: string
-  sku: string
-  /** Stored in tiyin (1/100 som) */
-  price: number
+  merchantId: string
   categoryId: string
+  name: string
+  /** Decimal string e.g. "1500000.00" — UZS */
+  tanNarxi: string
+  mxikCode: string | null
+  active: boolean
+  createdAt: string
 }
 
 export interface BasketItem {

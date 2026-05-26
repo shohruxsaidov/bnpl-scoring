@@ -18,7 +18,9 @@
     "som": "сум",
     "currency": "сум",
     "months": "мес",
-    "monthsLong": "месяцев"
+    "monthsLong": "месяцев",
+    "optional": "необязательно",
+    "error": "Ошибка"
   },
   "topbar": {
     "scoring": "Скоринг",
@@ -70,7 +72,8 @@
     "scoringHistory": "История скоринга",
     "payments": "Платежи",
     "buyout": "Выкуп",
-    "scoringDetail": "Детали скоринга"
+    "scoringDetail": "Детали скоринга",
+    "branches": "Филиалы"
   },
   "breadcrumb": {
     "dashboard": "Главная",
@@ -86,7 +89,8 @@
     "collectionBoard": "Инкассо",
     "scoringHistory": "История скоринга",
     "payments": "Платежи",
-    "buyout": "Выкуп"
+    "buyout": "Выкуп",
+    "branches": "Филиалы"
   },
   "nav": {
     "dashboard": "Главная",
@@ -102,7 +106,8 @@
     "admin": "АДМИН",
     "notifications": "Уведомления",
     "logout": "Выйти",
-    "toggleSidebar": "Переключить панель"
+    "toggleSidebar": "Переключить панель",
+    "branches": "Филиалы"
   },
   "role": {
     "merchantAdmin": "Администратор торговца",
@@ -173,21 +178,21 @@
   "products": {
     "addProduct": "Добавить товар",
     "name": "Название",
-    "sku": "SKU",
     "category": "Категория",
     "price": "Цена",
     "editProduct": "Редактировать товар",
     "addProductTitle": "Добавить товар",
     "productName": "Название товара",
-    "priceSom": "Цена (сум)",
     "selectCategory": "Выберите категорию",
-    "missingFields": "Не заполнены поля",
-    "fillAllFields": "Заполните все поля",
+    "missingFields": "Заполните поля",
+    "fillAllFields": "Все обязательные поля должны быть заполнены",
     "updated": "Обновлено",
     "added": "Добавлено",
     "deleted": "Удалено",
     "confirmDelete": "Подтвердите удаление",
-    "deleteConfirm": "Удалить \"{name}\"?"
+    "deleteConfirm": "Удалить \"{name}\"?",
+    "tanNarxi": "Цена (тан нархи)",
+    "mxikCode": "Код МХИК"
   },
   "categories": {
     "addCategory": "Добавить категорию",
@@ -227,8 +232,23 @@
     "phone": "Телефон",
     "roles": "Роли",
     "active": "Активен",
-    "merchantAdmin": "Администратор торговца",
-    "agent": "Агент"
+    "merchantAdmin": "Администратор",
+    "agent": "Агент",
+    "addEmployee": "Добавить сотрудника",
+    "addEmployeeTitle": "Новый сотрудник",
+    "editEmployee": "Редактировать сотрудника",
+    "fullName": "Полное имя",
+    "fullNamePlaceholder": "Иван Иванов",
+    "email": "Email",
+    "password": "Пароль",
+    "passwordPlaceholder": "Минимум 8 символов",
+    "branch": "Филиал",
+    "selectBranch": "Выберите филиал",
+    "selectRoles": "Выберите роли",
+    "branchAdmin": "Администратор филиала",
+    "added": "Сотрудник добавлен",
+    "updated": "Сотрудник обновлён",
+    "missingFields": "Заполните все обязательные поля"
   },
   "collectionBoard": {
     "refresh": "Обновить",
@@ -662,5 +682,19 @@
   },
   "lang": {
     "switch": "Сменить язык"
+  },
+  "branches": {
+    "addBranch": "Добавить филиал",
+    "addBranchTitle": "Новый филиал",
+    "editBranch": "Редактировать филиал",
+    "name": "Название",
+    "namePlaceholder": "Главный офис",
+    "address": "Адрес",
+    "addressPlaceholder": "г. Ташкент, ул. Амира Темура 1",
+    "phone": "Телефон",
+    "active": "Активен",
+    "added": "Филиал добавлен",
+    "updated": "Филиал обновлён",
+    "missingFields": "Заполните все поля"
   }
 }

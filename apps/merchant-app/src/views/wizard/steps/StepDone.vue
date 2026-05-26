@@ -22,7 +22,7 @@ function backToDashboard() {
 function downloadContract() {
   const blob = new Blob(
     [
-      `KONTRAKT\n=========\nDeal ID: ${dealId.value}\nClient: ${wizard.sessionData.client?.fullName}\nTariff: ${wizard.sessionData.tariff?.name}\nGenerated: ${new Date().toISOString()}\n\n(Mock contract document)`,
+      `KONTRAKT\n=========\nDeal ID: ${dealId.value}\nClient: ${`${wizard.sessionData.client?.firstName ?? ''} ${wizard.sessionData.client?.lastName ?? ''}`.trim()}\nTariff: ${wizard.sessionData.tariff?.name}\nGenerated: ${new Date().toISOString()}\n\n(Mock contract document)`,
     ],
     { type: 'text/plain' },
   )

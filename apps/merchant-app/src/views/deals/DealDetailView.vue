@@ -58,8 +58,8 @@ function paymentDayText(day: number): string {
   return t('dealDetail.autopayDesc', { day })
 }
 
-function basketTotal(item: { product: { price: number }; quantity: number }): number {
-  return item.product.price * item.quantity
+function basketTotal(item: { product: { tanNarxi: string }; quantity: number }): number {
+  return Math.round(parseFloat(item.product.tanNarxi) * 100) * item.quantity
 }
 
 // ── График рассрочки (schedule) ────────────────────────────────────────────
@@ -338,9 +338,9 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
             <tr v-for="(item, i) in deal.basket" :key="item.product.id">
               <td class="font-mono">{{ i + 1 }}</td>
               <td>{{ item.product.name }}</td>
-              <td class="font-mono muted">{{ item.product.sku }}</td>
+              <td class="font-mono muted">{{ item.product.mxikCode ?? '—' }}</td>
               <td class="font-mono">{{ item.quantity }}</td>
-              <td class="font-mono">{{ formatSomShort(item.product.price) }}</td>
+              <td class="font-mono">{{ formatSomShort(Math.round(parseFloat(item.product.tanNarxi) * 100)) }}</td>
               <td class="font-mono">{{ formatSomShort(basketTotal(item)) }}</td>
               <td class="muted">—</td>
             </tr>
@@ -464,9 +464,9 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
             <tr v-for="(item, i) in deal.basket" :key="item.product.id">
               <td class="font-mono">{{ i + 1 }}</td>
               <td>{{ item.product.name }}</td>
-              <td class="font-mono muted">{{ item.product.sku }}</td>
+              <td class="font-mono muted">{{ item.product.mxikCode ?? '—' }}</td>
               <td class="font-mono">{{ item.quantity }}</td>
-              <td class="font-mono">{{ formatSomShort(item.product.price) }}</td>
+              <td class="font-mono">{{ formatSomShort(Math.round(parseFloat(item.product.tanNarxi) * 100)) }}</td>
               <td class="font-mono">{{ formatSomShort(basketTotal(item)) }}</td>
             </tr>
           </tbody>

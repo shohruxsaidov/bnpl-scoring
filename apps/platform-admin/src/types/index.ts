@@ -131,3 +131,70 @@ export interface IntegrationEndpoint {
   value: string
   masked: boolean
 }
+
+// ---------------------------------------------------------------------------
+// Merchant domain (API-backed) — admin CRUD
+// ---------------------------------------------------------------------------
+
+export interface Merchant {
+  id: string
+  name: string
+  legalName: string
+  inn: string
+  phone: string
+  address: string
+  logoUrl: string | null
+  contractNumber: string | null
+  active: boolean
+  createdAt: string
+}
+
+export interface Branch {
+  id: string
+  merchantId: string
+  name: string
+  address: string
+  phone: string
+  active: boolean
+  createdAt: string
+}
+
+export interface MerchantEmployee {
+  id: string
+  email: string
+  fullName: string
+  merchantId: string
+  branchId: string
+  roles: string[]
+  mustChangePassword: boolean
+  active: boolean
+  createdAt: string
+}
+
+export interface Category {
+  id: string
+  merchantId: string
+  name: string
+  active: boolean
+  createdAt: string
+}
+
+export interface Product {
+  id: string
+  merchantId: string
+  categoryId: string
+  name: string
+  tanNarxi: string
+  mxikCode: string | null
+  active: boolean
+  createdAt: string
+}
+
+export interface MerchantDocument {
+  id: string
+  merchantId: string
+  fileUrl: string
+  documentType: string
+  uploadedByAdminId: string | null
+  uploadedAt: string
+}

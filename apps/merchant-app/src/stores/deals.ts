@@ -27,7 +27,7 @@ export const useDealsStore = defineStore('deals', {
         createdAt: '2026-04-12T10:24:00.000Z',
         paymentDay: 5,
         basket: [
-          { product: { id: 'prd_2', name: 'Samsung Galaxy S24 128GB', sku: '08471300000000001', price: 1099000000, categoryId: 'cat_1' }, quantity: 1 },
+          { product: { id: 'prd_2', name: 'Samsung Galaxy S24 128GB', tanNarxi: '10990000.00', mxikCode: '08471300000000001', categoryId: 'cat_1', merchantId: '', active: true, createdAt: '' }, quantity: 1 },
         ],
       },
       {
@@ -47,7 +47,7 @@ export const useDealsStore = defineStore('deals', {
         createdAt: '2026-03-28T14:02:00.000Z',
         paymentDay: 15,
         basket: [
-          { product: { id: 'prd_6', name: 'Kir yuvish mashinasi LG 8kg', sku: '08450000000000006', price: 580000000, categoryId: 'cat_3' }, quantity: 1 },
+          { product: { id: 'prd_6', name: 'Kir yuvish mashinasi LG 8kg', tanNarxi: '5800000.00', mxikCode: '08450000000000006', categoryId: 'cat_3', merchantId: '', active: true, createdAt: '' }, quantity: 1 },
         ],
       },
       {
@@ -67,7 +67,7 @@ export const useDealsStore = defineStore('deals', {
         createdAt: '2026-02-09T09:11:00.000Z',
         paymentDay: 1,
         basket: [
-          { product: { id: 'prd_5', name: "Oshxona stoli to'plami", sku: '09403000000000005', price: 420000000, categoryId: 'cat_2' }, quantity: 1 },
+          { product: { id: 'prd_5', name: "Oshxona stoli to'plami", tanNarxi: '4200000.00', mxikCode: '09403000000000005', categoryId: 'cat_2', merchantId: '', active: true, createdAt: '' }, quantity: 1 },
         ],
       },
       {
@@ -87,7 +87,7 @@ export const useDealsStore = defineStore('deals', {
         createdAt: '2026-05-15T16:45:00.000Z',
         paymentDay: 20,
         basket: [
-          { product: { id: 'prd_3', name: 'MacBook Air M3 8/256GB', sku: '08471300000000003', price: 1899000000, categoryId: 'cat_1' }, quantity: 1 },
+          { product: { id: 'prd_3', name: 'MacBook Air M3 8/256GB', tanNarxi: '18990000.00', mxikCode: '08471300000000003', categoryId: 'cat_1', merchantId: '', active: true, createdAt: '' }, quantity: 1 },
         ],
       },
       {
@@ -107,8 +107,8 @@ export const useDealsStore = defineStore('deals', {
         createdAt: '2026-05-10T11:30:00.000Z',
         paymentDay: 10,
         basket: [
-          { product: { id: 'prd_1', name: 'iPhone 15 Pro 256GB', sku: '08517000000000001', price: 1499000000, categoryId: 'cat_1' }, quantity: 1 },
-          { product: { id: 'prd_2', name: 'Samsung Galaxy S24 128GB', sku: '08471300000000001', price: 1501000000, categoryId: 'cat_1' }, quantity: 1 },
+          { product: { id: 'prd_1', name: 'iPhone 15 Pro 256GB', tanNarxi: '14990000.00', mxikCode: '08517000000000001', categoryId: 'cat_1', merchantId: '', active: true, createdAt: '' }, quantity: 1 },
+          { product: { id: 'prd_2', name: 'Samsung Galaxy S24 128GB', tanNarxi: '15010000.00', mxikCode: '08471300000000001', categoryId: 'cat_1', merchantId: '', active: true, createdAt: '' }, quantity: 1 },
         ],
       },
       {
@@ -128,7 +128,7 @@ export const useDealsStore = defineStore('deals', {
         createdAt: '2026-05-16T08:20:00.000Z',
         paymentDay: 25,
         basket: [
-          { product: { id: 'prd_7', name: 'Muzlatgich Samsung 380L', sku: '08418100000000007', price: 690000000, categoryId: 'cat_3' }, quantity: 1 },
+          { product: { id: 'prd_7', name: 'Muzlatgich Samsung 380L', tanNarxi: '6900000.00', mxikCode: '08418100000000007', categoryId: 'cat_3', merchantId: '', active: true, createdAt: '' }, quantity: 1 },
         ],
       },
     ],

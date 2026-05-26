@@ -119,7 +119,7 @@ async function signSubmit() {
         <span>{{ item.product.name }}</span>
         <span class="font-mono qty">×{{ item.quantity }}</span>
         <MonoAmount
-          :value="item.product.price * item.quantity"
+          :value="Math.round(parseFloat(item.product.tanNarxi) * 100) * item.quantity"
           size="sm"
           :gradient="false"
         />

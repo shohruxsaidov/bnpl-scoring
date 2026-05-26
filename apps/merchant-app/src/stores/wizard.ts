@@ -93,7 +93,7 @@ export const useWizardStore = defineStore('wizard', {
 
     basketTotal: (s): number =>
       s.sessionData.basket.reduce(
-        (sum, i) => sum + i.product.price * i.quantity,
+        (sum, i) => sum + Math.round(parseFloat(i.product.tanNarxi) * 100) * i.quantity,
         0,
       ),
 

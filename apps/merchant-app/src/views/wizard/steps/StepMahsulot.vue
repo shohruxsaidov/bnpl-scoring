@@ -72,11 +72,11 @@ function next() {
         <div v-for="p in filteredProducts" :key="p.id" class="product">
           <div class="p-info">
             <span class="p-name">{{ p.name }}</span>
-            <span class="p-sku font-mono">{{ p.sku }}</span>
+            <span class="p-sku font-mono">{{ p.mxikCode ?? '' }}</span>
             <span class="p-cat">{{ catalog.categoryName(p.categoryId) }}</span>
           </div>
           <div class="p-bottom">
-            <MonoAmount :value="p.price" size="sm" />
+            <MonoAmount :value="Math.round(parseFloat(p.tanNarxi) * 100)" size="sm" />
             <button class="add-btn" @click="wizard.addToBasket(p)">
               <i class="pi pi-plus" /> {{ $t('stepMahsulot.add') }}
             </button>
@@ -122,7 +122,7 @@ function next() {
               </button>
             </div>
             <MonoAmount
-              :value="item.product.price * item.quantity"
+              :value="Math.round(parseFloat(item.product.tanNarxi) * 100) * item.quantity"
               size="sm"
               :gradient="false"
             />

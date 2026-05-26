@@ -49,6 +49,12 @@ const routes: RouteRecordRaw[] = [
         meta: { titleKey: 'routeTitle.tariffs', breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.tariffs'], adminOnly: true },
       },
       {
+        path: 'admin/branches',
+        name: 'admin-branches',
+        component: () => import('@/views/admin/BranchesView.vue'),
+        meta: { titleKey: 'routeTitle.branches', breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.branches'], adminOnly: true },
+      },
+      {
         path: 'admin/employees',
         name: 'admin-employees',
         component: () => import('@/views/admin/EmployeesView.vue'),

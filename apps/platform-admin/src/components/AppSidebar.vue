@@ -20,7 +20,7 @@ interface NavItem {
 
 const nav = computed<NavItem[]>(() => [
   { label: t('nav.overview'), icon: 'pi pi-th-large', to: '/' },
-  { label: t('nav.tenants'), icon: 'pi pi-building', to: '/tenants' },
+  { label: t('nav.merchants'), icon: 'pi pi-building', to: '/merchants' },
   { label: t('nav.allDeals'), icon: 'pi pi-credit-card', to: '/deals' },
   { label: t('nav.employees'), icon: 'pi pi-users', to: '/employees' },
   { label: t('nav.settings'), icon: 'pi pi-cog', to: '/settings' },

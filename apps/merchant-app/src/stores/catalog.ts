@@ -1,115 +1,172 @@
 import { defineStore } from 'pinia'
-import type { Category, Employee, Product, Tariff } from '@/types'
+import type { Branch, Category, Employee, Product, Tariff } from '@/types'
 
-let pid = 100
-let cid = 100
-let tid = 100
+const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+
+async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${API}${path}`, {
+    ...init,
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...init?.headers },
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.code ?? `http_${res.status}`)
+  }
+  return res.json()
+}
+
+const MOCK_TARIFFS: Tariff[] = [
+  { id: 'trf_1', name: '3 oy · 5%', termMonths: 3, markupPercent: 5, creditMin: 50000000, creditMax: 800000000, active: true },
+  { id: 'trf_2', name: '6 oy · 8%', termMonths: 6, markupPercent: 8, creditMin: 100000000, creditMax: 1500000000, active: true },
+  { id: 'trf_3', name: '12 oy · 12%', termMonths: 12, markupPercent: 12, creditMin: 300000000, creditMax: 3000000000, active: true },
+  { id: 'trf_4', name: '24 oy · 18%', termMonths: 24, markupPercent: 18, creditMin: 800000000, creditMax: 6000000000, active: false },
+]
 
 interface CatalogState {
   categories: Category[]
   products: Product[]
-  tariffs: Tariff[]
+  branches: Branch[]
   employees: Employee[]
+  tariffs: Tariff[]
+  loading: boolean
 }
 
 export const useCatalogStore = defineStore('catalog', {
   state: (): CatalogState => ({
-    categories: [
-      { id: 'cat_1', name: 'Elektronika' },
-      { id: 'cat_2', name: 'Mebel' },
-      { id: 'cat_3', name: 'Maishiy texnika' },
-      { id: 'cat_4', name: 'Kiyim' },
-      { id: 'cat_5', name: 'Sport' },
-    ],
-    products: [
-      { id: 'prd_1', name: 'iPhone 15 Pro 256GB', sku: 'APL-IP15P-256', price: 1499000000, categoryId: 'cat_1' },
-      { id: 'prd_2', name: 'Samsung Galaxy S24', sku: 'SMS-GS24-128', price: 1099000000, categoryId: 'cat_1' },
-      { id: 'prd_3', name: 'MacBook Air M3', sku: 'APL-MBA-M3', price: 1899000000, categoryId: 'cat_1' },
-      { id: 'prd_4', name: 'Yumshoq divan "Comfort"', sku: 'MBL-SOFA-CMF', price: 750000000, categoryId: 'cat_2' },
-      { id: 'prd_5', name: 'Oshxona stoli to\'plami', sku: 'MBL-TBL-SET', price: 420000000, categoryId: 'cat_2' },
-      { id: 'prd_6', name: 'Kir yuvish mashinasi LG 8kg', sku: 'LG-WM-8KG', price: 580000000, categoryId: 'cat_3' },
-      { id: 'prd_7', name: 'Muzlatgich Samsung 380L', sku: 'SMS-FRG-380', price: 690000000, categoryId: 'cat_3' },
-      { id: 'prd_8', name: 'Qishki kurtka (erkaklar)', sku: 'CLO-JKT-M', price: 89000000, categoryId: 'cat_4' },
-      { id: 'prd_9', name: 'Sport krossovkalari Nike', sku: 'NIK-SHO-42', price: 145000000, categoryId: 'cat_5' },
-      { id: 'prd_10', name: 'Velosiped Trek Marlin 5', sku: 'TRK-BIK-M5', price: 620000000, categoryId: 'cat_5' },
-    ],
-    tariffs: [
-      { id: 'trf_1', name: '3 oy · 5%', termMonths: 3, markupPercent: 5, creditMin: 50000000, creditMax: 800000000, active: true },
-      { id: 'trf_2', name: '6 oy · 8%', termMonths: 6, markupPercent: 8, creditMin: 100000000, creditMax: 1500000000, active: true },
-      { id: 'trf_3', name: '12 oy · 12%', termMonths: 12, markupPercent: 12, creditMin: 300000000, creditMax: 3000000000, active: true },
-      { id: 'trf_4', name: '24 oy · 18%', termMonths: 24, markupPercent: 18, creditMin: 800000000, creditMax: 6000000000, active: false },
-    ],
-    employees: [
-      {
-        id: 'emp_001',
-        fullName: 'Aziz Karimov',
-        email: 'admin@demo.com',
-        phone: '+998 90 123 45 67',
-        roles: ['merchant_admin', 'agent'],
-        active: true,
-        tenantId: 'tnt_001',
-      },
-      {
-        id: 'emp_002',
-        fullName: 'Dilnoza Yusupova',
-        email: 'agent@demo.com',
-        phone: '+998 93 765 43 21',
-        roles: ['agent'],
-        active: true,
-        tenantId: 'tnt_001',
-      },
-      {
-        id: 'emp_003',
-        fullName: 'Sardor To\'xtayev',
-        email: 'sardor@demo.com',
-        phone: '+998 97 222 11 00',
-        roles: ['agent'],
-        active: false,
-        tenantId: 'tnt_001',
-      },
-    ],
+    categories: [],
+    products: [],
+    branches: [],
+    employees: [],
+    tariffs: MOCK_TARIFFS,
+    loading: false,
   }),
 
   getters: {
+    categoryName: (s) => (id: string): string => s.categories.find((c) => c.id === id)?.name ?? '—',
+    branchName: (s) => (id: string): string => s.branches.find((b) => b.id === id)?.name ?? '—',
+    productsByCategory: (s) => (id: string | null): Product[] =>
+      id ? s.products.filter((p) => p.categoryId === id) : s.products,
+    activeBranches: (s): Branch[] => s.branches.filter((b) => b.active),
     activeTariffs: (s): Tariff[] => s.tariffs.filter((t) => t.active),
-    categoryName:
-      (s) =>
-      (id: string): string =>
-        s.categories.find((c) => c.id === id)?.name ?? '—',
-    productsByCategory:
-      (s) =>
-      (id: string | null): Product[] =>
-        id ? s.products.filter((p) => p.categoryId === id) : s.products,
   },
 
+  // -- Tariff helpers (kept as mock until tariffs API is wired) --
+
   actions: {
-    // -- Products --
-    addProduct(input: Omit<Product, 'id'>) {
-      this.products.push({ ...input, id: `prd_${++pid}` })
-    },
-    updateProduct(id: string, patch: Partial<Omit<Product, 'id'>>) {
-      const p = this.products.find((x) => x.id === id)
-      if (p) Object.assign(p, patch)
-    },
-    deleteProduct(id: string) {
-      this.products = this.products.filter((p) => p.id !== id)
+    async fetchAll() {
+      this.loading = true
+      try {
+        const [catRes, prodRes, branchRes, empRes] = await Promise.all([
+          api<{ categories: Category[] }>('/merchant/catalog/categories'),
+          api<{ products: Product[] }>('/merchant/catalog/products'),
+          api<{ branches: Branch[] }>('/merchant/branches'),
+          api<{ employees: Employee[] }>('/merchant/employees'),
+        ])
+        this.categories = catRes.categories
+        this.products = prodRes.products
+        this.branches = branchRes.branches
+        this.employees = empRes.employees
+      } finally {
+        this.loading = false
+      }
     },
 
     // -- Categories --
-    addCategory(name: string) {
-      this.categories.push({ id: `cat_${++cid}`, name })
+    async addCategory(name: string) {
+      const body = await api<{ category: Category }>('/merchant/catalog/categories', {
+        method: 'POST',
+        body: JSON.stringify({ name }),
+      })
+      this.categories.push(body.category)
     },
-    updateCategory(id: string, name: string) {
-      const c = this.categories.find((x) => x.id === id)
-      if (c) c.name = name
+
+    async updateCategory(id: string, name: string) {
+      const body = await api<{ category: Category }>(`/merchant/catalog/categories/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ name }),
+      })
+      const idx = this.categories.findIndex((c) => c.id === id)
+      if (idx >= 0) this.categories[idx] = body.category
     },
-    deleteCategory(id: string) {
+
+    async deleteCategory(id: string) {
+      await api(`/merchant/catalog/categories/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ active: false }),
+      })
       this.categories = this.categories.filter((c) => c.id !== id)
     },
 
-    // -- Tariffs --
+    // -- Products --
+    async addProduct(input: { name: string; categoryId: string; tanNarxi: string; mxikCode?: string }) {
+      const body = await api<{ product: Product }>('/merchant/catalog/products', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      })
+      this.products.push(body.product)
+    },
+
+    async updateProduct(id: string, patch: Partial<{ name: string; categoryId: string; tanNarxi: string; mxikCode: string; active: boolean }>) {
+      const body = await api<{ product: Product }>(`/merchant/catalog/products/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(patch),
+      })
+      const idx = this.products.findIndex((p) => p.id === id)
+      if (idx >= 0) this.products[idx] = body.product
+    },
+
+    async deleteProduct(id: string) {
+      await api(`/merchant/catalog/products/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ active: false }),
+      })
+      this.products = this.products.filter((p) => p.id !== id)
+    },
+
+    // -- Branches --
+    async addBranch(input: { name: string; address: string; phone: string }) {
+      const body = await api<{ branch: Branch }>('/merchant/branches', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      })
+      this.branches.push(body.branch)
+    },
+
+    async updateBranch(id: string, patch: Partial<{ name: string; address: string; phone: string; active: boolean }>) {
+      const body = await api<{ branch: Branch }>(`/merchant/branches/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(patch),
+      })
+      const idx = this.branches.findIndex((b) => b.id === id)
+      if (idx >= 0) this.branches[idx] = body.branch
+    },
+
+    // -- Employees --
+    async addEmployee(input: { email: string; password: string; fullName: string; branchId: string; roles: string[] }) {
+      const body = await api<{ employee: Employee }>('/merchant/employees', {
+        method: 'POST',
+        body: JSON.stringify(input),
+      })
+      this.employees.push(body.employee)
+    },
+
+    async updateEmployee(id: string, patch: Partial<{ fullName: string; branchId: string; roles: string[]; active: boolean }>) {
+      const body = await api<{ employee: Employee }>(`/merchant/employees/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(patch),
+      })
+      const idx = this.employees.findIndex((e) => e.id === id)
+      if (idx >= 0) this.employees[idx] = body.employee
+    },
+
+    async toggleEmployeeActive(id: string) {
+      const emp = this.employees.find((e) => e.id === id)
+      if (emp) await this.updateEmployee(id, { active: !emp.active })
+    },
+
     addTariff(input: Omit<Tariff, 'id'>) {
-      this.tariffs.push({ ...input, id: `trf_${++tid}` })
+      this.tariffs.push({ ...input, id: `trf_${Date.now()}` })
     },
     updateTariff(id: string, patch: Partial<Omit<Tariff, 'id'>>) {
       const t = this.tariffs.find((x) => x.id === id)
@@ -121,12 +178,6 @@ export const useCatalogStore = defineStore('catalog', {
     toggleTariffActive(id: string) {
       const t = this.tariffs.find((x) => x.id === id)
       if (t) t.active = !t.active
-    },
-
-    // -- Employees --
-    toggleEmployeeActive(id: string) {
-      const e = this.employees.find((x) => x.id === id)
-      if (e) e.active = !e.active
     },
   },
 })

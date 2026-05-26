@@ -29,8 +29,9 @@ const mainNav = computed<NavItem[]>(() => [
 const adminNav = computed<NavItem[]>(() => [
   { label: t('nav.products'), icon: 'pi pi-box', to: '/admin/products', show: true },
   { label: t('nav.categories'), icon: 'pi pi-tags', to: '/admin/categories', show: true },
-  { label: t('nav.tariffs'), icon: 'pi pi-percentage', to: '/admin/tariffs', show: true },
+  { label: t('nav.branches'), icon: 'pi pi-map-marker', to: '/admin/branches', show: true },
   { label: t('nav.employees'), icon: 'pi pi-users', to: '/admin/employees', show: true },
+  { label: t('nav.tariffs'), icon: 'pi pi-percentage', to: '/admin/tariffs', show: true },
   { label: t('nav.collectionBoard'), icon: 'pi pi-table', to: '/admin/collection-board', show: true },
   { label: t('nav.scoringHistory'), icon: 'pi pi-chart-line', to: '/admin/scoring-history', show: true },
   { label: t('nav.buyout'), icon: 'pi pi-shopping-bag', to: '/admin/buyout', show: true },
