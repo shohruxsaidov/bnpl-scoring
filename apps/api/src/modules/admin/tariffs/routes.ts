@@ -1,0 +1,79 @@
+import { Type } from '@sinclair/typebox'
+import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
+import type { FastifyInstance } from 'fastify'
+import { createTariff, getTariff, listTariffs, updateTariff } from './service.js'
+
+function serialize(t: NonNullable<Awaited<ReturnType<typeof getTariff>>>) {
+  return {
+    id: t.id.toString(),
+    name: t.name,
+    termMonths: t.termMonths,
+    markupPercent: parseFloat(t.markupPercent),
+    creditMin: Number(t.creditMin),
+    creditMax: Number(t.creditMax),
+    active: t.active,
+    createdAt: t.createdAt.toISOString(),
+  }
+}
+
+export default async function adminTariffRoutes(app: FastifyInstance) {
+  const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
+  const db = app.db
+  const preHandler = app.verifyAdminJwt
+
+  const IdParams = Type.Object({ id: Type.String() })
+
+  const CreateBody = Type.Object({
+    name: Type.String({ minLength: 1 }),
+    termMonths: Type.Integer({ minimum: 1, maximum: 120 }),
+    markupPercent: Type.Number({ minimum: 0, maximum: 100 }),
+    creditMin: Type.Integer({ minimum: 0 }),
+    creditMax: Type.Integer({ minimum: 0 }),
+  })
+
+  const UpdateBody = Type.Partial(
+    Type.Object({
+      name: Type.String({ minLength: 1 }),
+      termMonths: Type.Integer({ minimum: 1, maximum: 120 }),
+      markupPercent: Type.Number({ minimum: 0, maximum: 100 }),
+      creditMin: Type.Integer({ minimum: 0 }),
+      creditMax: Type.Integer({ minimum: 0 }),
+      active: Type.Boolean(),
+    }),
+  )
+
+  fastify.get('/', { preHandler }, async () => {
+    const rows = await listTariffs(db)
+    return { tariffs: rows.map(serialize) }
+  })
+
+  fastify.post('/', { schema: { body: CreateBody }, preHandler }, async (request, reply) => {
+    const { creditMin, creditMax, markupPercent, ...rest } = request.body
+    const tariff = await createTariff(db, {
+      ...rest,
+      markupPercent: markupPercent.toFixed(2),
+      creditMin: BigInt(creditMin),
+      creditMax: BigInt(creditMax),
+    })
+    return reply.code(201).send({ tariff: serialize(tariff) })
+  })
+
+  fastify.patch('/:id', { schema: { params: IdParams, body: UpdateBody }, preHandler }, async (request, reply) => {
+    const { creditMin, creditMax, markupPercent, ...rest } = request.body
+    const input = {
+      ...rest,
+      ...(markupPercent !== undefined && { markupPercent: markupPercent.toFixed(2) }),
+      ...(creditMin !== undefined && { creditMin: BigInt(creditMin) }),
+      ...(creditMax !== undefined && { creditMax: BigInt(creditMax) }),
+    }
+    const tariff = await updateTariff(db, BigInt(request.params.id), input)
+    if (!tariff) return reply.code(404).send({ code: 'not_found' })
+    return { tariff: serialize(tariff) }
+  })
+
+  fastify.delete('/:id', { schema: { params: IdParams }, preHandler }, async (request, reply) => {
+    const tariff = await updateTariff(db, BigInt(request.params.id), { active: false })
+    if (!tariff) return reply.code(404).send({ code: 'not_found' })
+    return { tariff: serialize(tariff) }
+  })
+}

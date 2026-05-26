@@ -186,6 +186,8 @@ export interface Product {
   name: string
   tanNarxi: string
   mxikCode: string | null
+  packageCode: number | null
+  packageName: string | null
   active: boolean
   createdAt: string
 }
@@ -197,4 +199,16 @@ export interface MerchantDocument {
   documentType: string
   uploadedByAdminId: string | null
   uploadedAt: string
+}
+
+export type BlacklistEntryType = 'pinfl' | 'inn'
+
+export interface BlacklistEntry {
+  id: string
+  type: BlacklistEntryType
+  value: string
+  reason: string | null
+  addedByAdminId: string
+  addedByName: string
+  createdAt: string
 }

@@ -19,6 +19,8 @@ export default async function adminProductRoutes(app: FastifyInstance) {
       name: Type.String({ minLength: 1 }),
       tanNarxi: Type.String({ pattern: "^\\d+(\\.\\d{1,2})?$" }),
       mxikCode: Type.String(),
+      packageCode: Type.Integer(),
+      packageName: Type.String(),
       active: Type.Boolean(),
     }),
   )

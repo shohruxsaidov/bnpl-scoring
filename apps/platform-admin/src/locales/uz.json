@@ -20,7 +20,8 @@
     "settings": "Sozlamalar",
     "blacklist": "Qora ro'yxat",
     "merchants": "Savdogarlar",
-    "merchant": "Savdogar"
+    "merchant": "Savdogar",
+    "tariffs": "Tariflar"
   },
   "breadcrumb": {
     "overview": "Umumiy ko'rinish",
@@ -30,7 +31,8 @@
     "deals": "Shartnomalar",
     "employees": "Xodimlar",
     "settings": "Sozlamalar",
-    "blacklist": "Qora ro'yxat"
+    "blacklist": "Qora ro'yxat",
+    "tariffs": "Tariflar"
   },
   "topbar": {
     "scoring": "Skoring",
@@ -42,12 +44,38 @@
     "tenants": "Ijarachilar",
     "merchants": "Savdogarlar",
     "allDeals": "Barcha shartnomalar",
+    "tariffs": "Tariflar",
     "employees": "Xodimlar",
     "settings": "Sozlamalar",
     "blacklist": "Qora ro'yxat",
     "platformAdmin": "Platforma admin",
     "logout": "Chiqish",
     "toggleSidebar": "Yon panelni almashtirish"
+  },
+  "tariffs": {
+    "title": "Tariflar",
+    "summary": "{count} ta tarif",
+    "addTariff": "Tarif qo'shish",
+    "editTariff": "Tarifni tahrirlash",
+    "name": "Nomi",
+    "namePlaceholder": "12 oy · 12%",
+    "term": "Muddat",
+    "markup": "Ustama",
+    "creditRange": "Kredit oralig'i",
+    "active": "Faol",
+    "termMonths": "Muddat (oy)",
+    "markupPercent": "Ustama %",
+    "creditMin": "Kredit min (so'm)",
+    "creditMax": "Kredit maks (so'm)",
+    "mo": "oy",
+    "nameRequired": "Nom kiritilishi shart",
+    "created": "Tarif yaratildi",
+    "updated": "Tarif yangilandi",
+    "deleted": "Tarif deaktivatsiya qilindi",
+    "deleteConfirm": "\"{name}\" tarifi deaktivatsiya qilinsinmi? Barcha savdogarlardan yashiriladi.",
+    "loadFailed": "Tariflarni yuklab bo'lmadi",
+    "createFailed": "Tarif yaratib bo'lmadi",
+    "updateFailed": "Tarifni yangilab bo'lmadi"
   },
   "blacklist": {
     "listTitle": "Bloklangan identifikatorlar",
@@ -69,7 +97,10 @@
     "removed": "Qora ro'yxatdan o'chirildi",
     "addedBy": "Qo'shdi: {who}",
     "removeConfirmTitle": "Qora ro'yxatdan o'chirish?",
-    "removeConfirmMsg": "{value} blokdan chiqariladi va yana skoring o'tkazishi mumkin."
+    "removeConfirmMsg": "{value} blokdan chiqariladi va yana skoring o'tkazishi mumkin.",
+    "loadFailed": "Qora ro'yxatni yuklab bo'lmadi",
+    "addFailed": "Yozuvni qo'shib bo'lmadi",
+    "removeFailed": "Yozuvni o'chirib bo'lmadi"
   },
   "login": {
     "platformAdmin": "Platforma admin",
@@ -277,6 +308,12 @@
     "selectCategory": "Kategoriyani tanlang",
     "tanNarxi": "Tan narxi",
     "mxikCode": "MXIK kodi",
+    "mxikPlaceholder": "Kod yoki nomini kiriting...",
+    "mxikHint": "Yangi kod uchun to'liq 17 ta raqam kiriting va 🔍 bosing",
+    "mxikNotFound": "MXIK kodi topilmadi",
+    "mxikLabeled": "Belgili",
+    "packageCode": "Qadoqlash turi",
+    "selectPackage": "Qadoqlash turini tanlang",
     "optional": "ixtiyoriy",
     "documentType": "Turi",
     "file": "Fayl",

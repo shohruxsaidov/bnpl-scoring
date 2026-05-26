@@ -272,9 +272,9 @@ function goToLogin() {
           </div>
         </div>
         <div class="gc-progress-row">
-          <span class="gc-sub">3 / 12 {{ $t('login.heroPaid') }}</span>
+          <span class="gc-sub">3 / 6 {{ $t('login.heroPaid') }}</span>
           <div class="gc-pill-row">
-            <span v-for="i in 12" :key="i" class="gc-pill" :class="{ filled: i <= 3 }" />
+            <span v-for="i in 6" :key="i" class="gc-pill" :class="{ filled: i <= 3 }" />
           </div>
         </div>
       </div>
@@ -463,7 +463,7 @@ function goToLogin() {
               <div v-if="verifiedUser?.passportSerial" class="vf">
                 <span class="vf-label">{{ $t('register.verifiedPassport') }}</span>
                 <span class="vf-value font-mono">{{ verifiedUser.passportSerial }} {{ verifiedUser.passportNumber
-                }}</span>
+                  }}</span>
               </div>
             </div>
 

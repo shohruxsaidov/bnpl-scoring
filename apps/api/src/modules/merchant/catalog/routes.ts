@@ -39,12 +39,16 @@ export default async function merchantCatalogRoutes(app: FastifyInstance) {
     name: Type.String({ minLength: 1 }),
     tanNarxi: Type.String({ pattern: "^\\d+(\\.\\d{1,2})?$" }),
     mxikCode: Type.Optional(Type.String()),
+    packageCode: Type.Optional(Type.Integer()),
+    packageName: Type.Optional(Type.String()),
   })
   const UpdateProductBody = Type.Partial(Type.Object({
     categoryId: Type.String(),
     name: Type.String({ minLength: 1 }),
     tanNarxi: Type.String({ pattern: "^\\d+(\\.\\d{1,2})?$" }),
     mxikCode: Type.String(),
+    packageCode: Type.Integer(),
+    packageName: Type.String(),
     active: Type.Boolean(),
   }))
 
@@ -83,6 +87,8 @@ export default async function merchantCatalogRoutes(app: FastifyInstance) {
       name: request.body.name,
       tanNarxi: request.body.tanNarxi,
       mxikCode: request.body.mxikCode,
+      packageCode: request.body.packageCode,
+      packageName: request.body.packageName,
     })
     return reply.code(201).send({ product: serializeProduct(product) })
   })

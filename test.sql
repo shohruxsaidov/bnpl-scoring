@@ -7,3 +7,6 @@ select * from otp_verifications ORDER BY created_at DESC limit 10;
 delete from users;
 
 select * from merchant_users;
+
+
+select * FROM integration_logs ORDER BY created_at desc;

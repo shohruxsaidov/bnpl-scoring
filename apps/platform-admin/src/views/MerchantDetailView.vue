@@ -219,11 +219,15 @@ const productForm = ref<{
   name: string
   tanNarxi: number | null
   mxikCode: string
-}>({ categoryId: null, name: '', tanNarxi: null, mxikCode: '' })
+  packageCode: number | null
+  packageName: string
+}>({ categoryId: null, name: '', tanNarxi: null, mxikCode: '', packageCode: null, packageName: '' })
 const productSaving = ref(false)
 
 function openProduct() {
-  productForm.value = { categoryId: null, name: '', tanNarxi: null, mxikCode: '' }
+  productForm.value = { categoryId: null, name: '', tanNarxi: null, mxikCode: '', packageCode: null, packageName: '' }
+  mxikData.value = null
+  mxikSuggestions.value = []
   showProduct.value = true
 }
 
@@ -237,6 +241,8 @@ async function submitProduct() {
       name: f.name,
       tanNarxi: String(f.tanNarxi),
       mxikCode: f.mxikCode || undefined,
+      packageCode: f.packageCode ?? undefined,
+      packageName: f.packageName || undefined,
     })
     toast.add({ severity: 'success', summary: t('merchantDetail.productCreated'), life: 2000 })
     showProduct.value = false
@@ -245,6 +251,90 @@ async function submitProduct() {
   } finally {
     productSaving.value = false
   }
+}
+
+// --- MXIK combobox -----------------------------------------------------------
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+
+interface MxikPackage { code: number; name: string }
+interface MxikEntry {
+  mxikCode: string
+  mxikName: string | null
+  label: number
+  packages: MxikPackage[] | null
+}
+
+const mxikSuggestions = ref<MxikEntry[]>([])
+const mxikSearchLoading = ref(false)
+const mxikLookupLoading = ref(false)
+const mxikData = ref<MxikEntry | null>(null)
+let mxikSearchTimer = 0
+
+async function apiFetchMxik<T>(path: string): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, { credentials: 'include' })
+  if (!res.ok) throw new Error(`http_${res.status}`)
+  return res.json()
+}
+
+async function searchMxikSuggestions(q: string) {
+  mxikSuggestions.value = []
+  if (!q || q.length < 2) return
+  mxikSearchLoading.value = true
+  try {
+    const { results } = await apiFetchMxik<{ results: MxikEntry[] }>(`/admin/mxik/search?q=${encodeURIComponent(q)}`)
+    mxikSuggestions.value = results
+  } catch { /* silent */ } finally {
+    mxikSearchLoading.value = false
+  }
+}
+
+async function triggerMxikLookup() {
+  const code = productForm.value.mxikCode.trim()
+  if (code.length !== 17) return
+  mxikLookupLoading.value = true
+  mxikData.value = null
+  productForm.value.packageCode = null
+  productForm.value.packageName = ''
+  try {
+    const { mxik } = await apiFetchMxik<{ mxik: MxikEntry }>(`/admin/mxik/lookup?code=${encodeURIComponent(code)}`)
+    mxikData.value = mxik
+  } catch {
+    toast.add({ severity: 'warn', summary: t('merchantDetail.mxikNotFound'), life: 2500 })
+  } finally {
+    mxikLookupLoading.value = false
+  }
+}
+
+function onMxikInputAdmin(e: Event) {
+  const val = (e.target as HTMLInputElement).value
+  clearTimeout(mxikSearchTimer)
+  if (val.length === 17) {
+    mxikSuggestions.value = []
+    triggerMxikLookup()
+  } else {
+    mxikSearchTimer = window.setTimeout(() => searchMxikSuggestions(val), 300)
+  }
+}
+
+function selectMxikSuggestionAdmin(item: MxikEntry) {
+  productForm.value.mxikCode = item.mxikCode
+  mxikSuggestions.value = []
+  triggerMxikLookup()
+}
+
+function onPackageSelectAdmin(code: number) {
+  const pkg = mxikData.value?.packages?.find((p) => p.code === code)
+  if (pkg) {
+    productForm.value.packageCode = pkg.code
+    productForm.value.packageName = pkg.name
+  }
+}
+
+function resetMxikAdmin() {
+  mxikData.value = null
+  mxikSuggestions.value = []
+  productForm.value.packageCode = null
+  productForm.value.packageName = ''
 }
 
 async function toggleProduct(product: Product) {
@@ -659,7 +749,66 @@ function truncate(value: string, max = 48): string {
         <label class="field-label">
           {{ $t('merchantDetail.mxikCode') }} <span class="muted">({{ $t('merchantDetail.optional') }})</span>
         </label>
-        <InputText v-model="productForm.mxikCode" />
+        <div class="mxik-wrap">
+          <div class="mxik-input-row">
+            <InputText
+              v-model="productForm.mxikCode"
+              class="font-mono mxik-input"
+              :placeholder="$t('merchantDetail.mxikPlaceholder')"
+              @input="onMxikInputAdmin"
+              @blur="() => setTimeout(() => { mxikSuggestions = [] }, 200)"
+              @keydown.enter.prevent="triggerMxikLookup"
+            />
+            <button
+              v-if="productForm.mxikCode && !mxikLookupLoading"
+              class="mxik-search-btn"
+              type="button"
+              @click="triggerMxikLookup"
+            >
+              <i class="pi pi-search" />
+            </button>
+            <span v-if="mxikLookupLoading || mxikSearchLoading" class="mxik-spinner">
+              <i class="pi pi-spin pi-spinner" />
+            </span>
+          </div>
+
+          <ul v-if="mxikSuggestions.length" class="mxik-suggestions">
+            <li
+              v-for="s in mxikSuggestions"
+              :key="s.mxikCode"
+              class="mxik-suggestion-item"
+              @mousedown.prevent="selectMxikSuggestionAdmin(s)"
+            >
+              <span class="sug-code">{{ s.mxikCode }}</span>
+              <span class="sug-name">{{ s.mxikName }}</span>
+            </li>
+          </ul>
+
+          <div v-if="mxikData" class="mxik-result">
+            <div class="mxik-result-header">
+              <span class="mxik-result-name">{{ mxikData.mxikName }}</span>
+              <span v-if="mxikData.label" class="mxik-label-badge">{{ $t('merchantDetail.mxikLabeled') }}</span>
+              <button class="mxik-clear-btn" type="button" @click="resetMxikAdmin">
+                <i class="pi pi-times" />
+              </button>
+            </div>
+            <div v-if="mxikData.packages?.length" class="field" style="margin-top: 0.75rem; margin-bottom: 0">
+              <label class="field-label">{{ $t('merchantDetail.packageCode') }}</label>
+              <Select
+                :model-value="productForm.packageCode"
+                :options="mxikData.packages"
+                option-label="name"
+                option-value="code"
+                :placeholder="$t('merchantDetail.selectPackage')"
+                @update:model-value="onPackageSelectAdmin"
+              />
+            </div>
+          </div>
+
+          <p v-if="!mxikData && productForm.mxikCode && productForm.mxikCode.length < 17" class="mxik-hint">
+            {{ $t('merchantDetail.mxikHint') }}
+          </p>
+        </div>
       </div>
       <template #footer>
         <button class="btn-ghost" @click="showProduct = false">{{ $t('common.cancel') }}</button>
@@ -862,4 +1011,45 @@ function truncate(value: string, max = 48): string {
   font-size: 2rem;
   color: var(--danger);
 }
+
+/* MXIK combobox */
+.mxik-wrap { position: relative; display: flex; flex-direction: column; gap: 0; }
+.mxik-input-row { display: flex; align-items: center; gap: 0.5rem; }
+.mxik-input { flex: 1; }
+.mxik-search-btn {
+  flex-shrink: 0; width: 36px; height: 36px; border-radius: 8px;
+  border: 1px solid var(--border-subtle); background: var(--bg-surface);
+  color: var(--text-secondary); cursor: pointer; display: grid; place-items: center;
+  transition: all 0.15s ease;
+}
+.mxik-search-btn:hover { color: var(--accent-2); border-color: var(--accent-2); }
+.mxik-spinner { color: var(--text-secondary); font-size: 1rem; }
+.mxik-suggestions {
+  position: absolute; top: 38px; left: 0; right: 0;
+  background: var(--bg-card, #fff); border: 1px solid var(--border-subtle);
+  border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  z-index: 100; max-height: 220px; overflow-y: auto;
+  list-style: none; margin: 4px 0 0; padding: 4px 0;
+}
+.mxik-suggestion-item { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; cursor: pointer; }
+.mxik-suggestion-item:hover { background: var(--bg-surface); }
+.sug-code { font-family: monospace; font-size: 11px; color: var(--text-secondary); }
+.sug-name { font-size: 13px; color: var(--text-primary); }
+.mxik-result {
+  margin-top: 0.5rem; padding: 0.75rem;
+  border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--bg-surface);
+}
+.mxik-result-header { display: flex; align-items: center; gap: 0.5rem; }
+.mxik-result-name { font-size: 0.85rem; font-weight: 600; flex: 1; }
+.mxik-label-badge {
+  font-size: 0.7rem; font-weight: 700; padding: 2px 8px;
+  border-radius: 20px; background: var(--accent-2); color: #fff;
+}
+.mxik-clear-btn {
+  width: 24px; height: 24px; border-radius: 4px; border: none;
+  background: transparent; color: var(--text-secondary);
+  cursor: pointer; display: grid; place-items: center; font-size: 0.75rem;
+}
+.mxik-clear-btn:hover { color: var(--danger); }
+.mxik-hint { font-size: 0.75rem; color: var(--text-secondary); margin: 4px 0 0; }
 </style>

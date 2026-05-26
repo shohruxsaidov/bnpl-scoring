@@ -19,6 +19,8 @@ export async function createProduct(
     name: string
     tanNarxi: string
     mxikCode?: string
+    packageCode?: number
+    packageName?: string
   },
 ) {
   const [row] = await db.insert(products).values(input).returning()
@@ -33,6 +35,8 @@ export async function updateProduct(
     name: string
     tanNarxi: string
     mxikCode: string
+    packageCode: number
+    packageName: string
     active: boolean
   }>,
 ) {

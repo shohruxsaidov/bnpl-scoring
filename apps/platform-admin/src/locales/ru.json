@@ -20,7 +20,8 @@
     "settings": "Настройки",
     "blacklist": "Чёрный список",
     "merchants": "Продавцы",
-    "merchant": "Продавец"
+    "merchant": "Продавец",
+    "tariffs": "Тарифы"
   },
   "breadcrumb": {
     "overview": "Обзор",
@@ -30,7 +31,8 @@
     "deals": "Сделки",
     "employees": "Сотрудники",
     "settings": "Настройки",
-    "blacklist": "Чёрный список"
+    "blacklist": "Чёрный список",
+    "tariffs": "Тарифы"
   },
   "topbar": {
     "scoring": "Скоринг",
@@ -42,12 +44,38 @@
     "tenants": "Арендаторы",
     "merchants": "Продавцы",
     "allDeals": "Все сделки",
+    "tariffs": "Тарифы",
     "employees": "Сотрудники",
     "settings": "Настройки",
     "blacklist": "Чёрный список",
     "platformAdmin": "Админ платформы",
     "logout": "Выйти",
     "toggleSidebar": "Переключить панель"
+  },
+  "tariffs": {
+    "title": "Тарифы",
+    "summary": "{count} тарифов",
+    "addTariff": "Добавить тариф",
+    "editTariff": "Редактировать тариф",
+    "name": "Название",
+    "namePlaceholder": "12 мес · 12%",
+    "term": "Срок",
+    "markup": "Наценка",
+    "creditRange": "Диапазон кредита",
+    "active": "Активен",
+    "termMonths": "Срок (мес)",
+    "markupPercent": "Наценка %",
+    "creditMin": "Кредит мин (сум)",
+    "creditMax": "Кредит макс (сум)",
+    "mo": "мес",
+    "nameRequired": "Название обязательно",
+    "created": "Тариф создан",
+    "updated": "Тариф обновлён",
+    "deleted": "Тариф деактивирован",
+    "deleteConfirm": "Деактивировать тариф \"{name}\"? Он будет скрыт у всех продавцов.",
+    "loadFailed": "Не удалось загрузить тарифы",
+    "createFailed": "Не удалось создать тариф",
+    "updateFailed": "Не удалось обновить тариф"
   },
   "blacklist": {
     "listTitle": "Заблокированные идентификаторы",
@@ -69,7 +97,10 @@
     "removed": "Удалено из чёрного списка",
     "addedBy": "Добавил: {who}",
     "removeConfirmTitle": "Удалить из чёрного списка?",
-    "removeConfirmMsg": "{value} будет разблокирован и сможет снова проходить скоринг."
+    "removeConfirmMsg": "{value} будет разблокирован и сможет снова проходить скоринг.",
+    "loadFailed": "Не удалось загрузить чёрный список",
+    "addFailed": "Не удалось добавить запись",
+    "removeFailed": "Не удалось удалить запись"
   },
   "login": {
     "platformAdmin": "Админ платформы",
@@ -277,6 +308,12 @@
     "selectCategory": "Выберите категорию",
     "tanNarxi": "Себестоимость",
     "mxikCode": "Код МХИК",
+    "mxikPlaceholder": "Введите код или название...",
+    "mxikHint": "Для нового кода введите все 17 цифр и нажмите 🔍",
+    "mxikNotFound": "Код МХИК не найден",
+    "mxikLabeled": "Маркируемый",
+    "packageCode": "Тип упаковки",
+    "selectPackage": "Выберите тип упаковки",
     "optional": "необязательно",
     "documentType": "Тип",
     "file": "Файл",

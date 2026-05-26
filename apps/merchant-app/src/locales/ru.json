@@ -124,7 +124,6 @@
     "emailRequired": "Email обязателен",
     "emailInvalid": "Неверный email",
     "passwordRequired": "Пароль обязателен",
-    "demoAccounts": "Демо аккаунты",
     "demoBothRoles": "обе роли",
     "demoAgentOnly": "только агент",
     "chooseRole": "Выберите роль",
@@ -192,7 +191,13 @@
     "confirmDelete": "Подтвердите удаление",
     "deleteConfirm": "Удалить \"{name}\"?",
     "tanNarxi": "Цена (тан нархи)",
-    "mxikCode": "Код МХИК"
+    "mxikCode": "Код МХИК",
+    "mxikPlaceholder": "Введите код или название...",
+    "mxikHint": "Для нового кода введите все 17 цифр и нажмите 🔍",
+    "mxikNotFound": "Код МХИК не найден",
+    "mxikLabeled": "Маркируемый",
+    "packageCode": "Тип упаковки",
+    "selectPackage": "Выберите тип упаковки"
   },
   "categories": {
     "addCategory": "Добавить категорию",
@@ -207,25 +212,15 @@
     "deleteConfirm": "Удалить категорию \"{name}\"?"
   },
   "tariffs": {
-    "addTariff": "Добавить тариф",
     "name": "Название",
     "term": "Срок",
     "markup": "Наценка",
     "creditRange": "Кредитный диапазон",
-    "active": "Активен",
-    "editTariff": "Редактировать тариф",
-    "addTariffTitle": "Добавить тариф",
-    "termMonths": "Срок (мес)",
-    "markupPercent": "Наценка %",
-    "creditMin": "Кредит мин (сум)",
-    "creditMax": "Кредит макс (сум)",
-    "nameRequired": "Название обязательно",
-    "updated": "Обновлено",
-    "added": "Добавлено",
-    "deleted": "Удалено",
-    "confirmDelete": "Подтвердите удаление",
-    "deleteConfirm": "Удалить тариф \"{name}\"?",
-    "mo": "мес"
+    "selected": "Подключён",
+    "mo": "мес",
+    "noTariffs": "Нет доступных тарифов",
+    "hint": "Включите тарифы, которые вы хотите предлагать своим клиентам. Тарифы управляются платформой.",
+    "toggleFailed": "Не удалось изменить статус тарифа"
   },
   "employees": {
     "name": "Имя",

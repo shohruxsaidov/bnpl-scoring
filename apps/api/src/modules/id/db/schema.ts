@@ -1,4 +1,4 @@
-import { bigint, bigserial, boolean, date, numeric, pgTable, text, timestamp, unique, uuid, varchar } from 'drizzle-orm/pg-core'
+import { bigint, bigserial, boolean, date, integer, jsonb, numeric, pgTable, primaryKey, text, timestamp, unique, uuid, varchar } from 'drizzle-orm/pg-core'
 
 export const users = pgTable('users', {
   id: bigserial('id', { mode: 'bigint' }).primaryKey(),
@@ -113,9 +113,40 @@ export const products = pgTable('products', {
   name: varchar('name', { length: 200 }).notNull(),
   tanNarxi: numeric('tan_narxi', { precision: 15, scale: 2 }).notNull(),
   mxikCode: varchar('mxik_code', { length: 50 }),
+  packageCode: integer('package_code'),
+  packageName: varchar('package_name', { length: 200 }),
   active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
+
+export const mxikCache = pgTable('mxik_cache', {
+  mxikCode: varchar('mxik_code', { length: 50 }).primaryKey(),
+  mxikName: text('mxik_name'),
+  label: integer('label'),
+  brandName: varchar('brand_name', { length: 200 }),
+  groupName: text('group_name'),
+  className: text('class_name'),
+  packages: jsonb('packages'),
+  rawResponse: jsonb('raw_response'),
+  cachedAt: timestamp('cached_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+export const tariffs = pgTable('tariffs', {
+  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+  name: varchar('name', { length: 200 }).notNull(),
+  termMonths: integer('term_months').notNull(),
+  markupPercent: numeric('markup_percent', { precision: 5, scale: 2 }).notNull(),
+  creditMin: bigint('credit_min', { mode: 'bigint' }).notNull(),
+  creditMax: bigint('credit_max', { mode: 'bigint' }).notNull(),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+export const merchantTariffs = pgTable('merchant_tariffs', {
+  merchantId: bigint('merchant_id', { mode: 'bigint' }).notNull().references(() => merchants.id, { onDelete: 'cascade' }),
+  tariffId: bigint('tariff_id', { mode: 'bigint' }).notNull().references(() => tariffs.id, { onDelete: 'cascade' }),
+  addedAt: timestamp('added_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [primaryKey({ columns: [t.merchantId, t.tariffId] })])
 
 export const merchantDocuments = pgTable('merchant_documents', {
   id: bigserial('id', { mode: 'bigint' }).primaryKey(),
@@ -138,6 +169,15 @@ export const merchantUsers = pgTable('merchant_users', {
   active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
+
+export const blacklist = pgTable('blacklist', {
+  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+  type: varchar('type', { length: 10 }).notNull(), // 'pinfl' | 'inn'
+  value: varchar('value', { length: 20 }).notNull(),
+  reason: text('reason'),
+  addedByAdminId: bigint('added_by_admin_id', { mode: 'bigint' }).notNull().references(() => adminUsers.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => [unique().on(t.type, t.value)])
 
 export const merchantSessions = pgTable('merchant_sessions', {
   id: uuid('id').primaryKey().defaultRandom(),

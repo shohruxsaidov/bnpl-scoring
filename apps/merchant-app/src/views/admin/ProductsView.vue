@@ -18,6 +18,18 @@ const confirm = useConfirm()
 const toast = useToast()
 const { t } = useI18n()
 
+const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${API}${path}`, {
+    ...init,
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...init?.headers },
+  })
+  if (!res.ok) throw new Error(`http_${res.status}`)
+  return res.json()
+}
+
 onMounted(() => catalog.fetchAll())
 
 const dialogVisible = ref(false)
@@ -28,7 +40,85 @@ const form = reactive({
   mxikCode: '',
   tanNarxiNum: 0,
   categoryId: '',
+  packageCode: null as number | null,
+  packageName: '',
 })
+
+// ── MXIK combobox state ────────────────────────────────────────────────────
+
+interface MxikPackage { code: number; name: string }
+interface MxikEntry {
+  mxikCode: string
+  mxikName: string | null
+  label: number
+  packages: MxikPackage[] | null
+}
+
+const mxikSuggestions = ref<MxikEntry[]>([])
+const mxikSearchLoading = ref(false)
+const mxikLookupLoading = ref(false)
+const mxikData = ref<MxikEntry | null>(null)
+let mxikSearchTimer = 0
+
+async function searchMxikSuggestions(q: string) {
+  mxikSuggestions.value = []
+  if (!q || q.length < 2) return
+  mxikSearchLoading.value = true
+  try {
+    const { results } = await apiFetch<{ results: MxikEntry[] }>(`/merchant/mxik/search?q=${encodeURIComponent(q)}`)
+    mxikSuggestions.value = results
+  } catch { /* silent */ } finally {
+    mxikSearchLoading.value = false
+  }
+}
+
+async function triggerLookup() {
+  const code = form.mxikCode.trim()
+  if (code.length !== 17) return
+  mxikLookupLoading.value = true
+  mxikData.value = null
+  form.packageCode = null
+  form.packageName = ''
+  try {
+    const { mxik } = await apiFetch<{ mxik: MxikEntry }>(`/merchant/mxik/lookup?code=${encodeURIComponent(code)}`)
+    mxikData.value = mxik
+  } catch {
+    toast.add({ severity: 'warn', summary: t('products.mxikNotFound'), life: 2500 })
+  } finally {
+    mxikLookupLoading.value = false
+  }
+}
+
+function onMxikInput(e: Event) {
+  const val = (e.target as HTMLInputElement).value
+  clearTimeout(mxikSearchTimer)
+  if (val.length === 17) {
+    mxikSuggestions.value = []
+    triggerLookup()
+  } else {
+    mxikSearchTimer = window.setTimeout(() => searchMxikSuggestions(val), 300)
+  }
+}
+
+function selectMxikSuggestion(item: MxikEntry) {
+  form.mxikCode = item.mxik_code ?? item.mxikCode
+  mxikSuggestions.value = []
+  triggerLookup()
+}
+
+function onPackageSelect(pkg: MxikPackage) {
+  form.packageCode = pkg.code
+  form.packageName = pkg.name
+}
+
+function resetMxik() {
+  mxikData.value = null
+  mxikSuggestions.value = []
+  form.packageCode = null
+  form.packageName = ''
+}
+
+// ── Form open/close ────────────────────────────────────────────────────────
 
 function openNew() {
   editingId.value = null
@@ -36,6 +126,10 @@ function openNew() {
   form.mxikCode = ''
   form.tanNarxiNum = 0
   form.categoryId = catalog.categories[0]?.id ?? ''
+  form.packageCode = null
+  form.packageName = ''
+  mxikData.value = null
+  mxikSuggestions.value = []
   dialogVisible.value = true
 }
 
@@ -45,6 +139,10 @@ function openEdit(p: Product) {
   form.mxikCode = p.mxikCode ?? ''
   form.tanNarxiNum = parseFloat(p.tanNarxi)
   form.categoryId = p.categoryId
+  form.packageCode = p.packageCode ?? null
+  form.packageName = p.packageName ?? ''
+  mxikData.value = null
+  mxikSuggestions.value = []
   dialogVisible.value = true
 }
 
@@ -56,10 +154,24 @@ async function save() {
   const tanNarxi = form.tanNarxiNum.toFixed(2)
   try {
     if (editingId.value) {
-      await catalog.updateProduct(editingId.value, { name: form.name, categoryId: form.categoryId, tanNarxi, mxikCode: form.mxikCode || undefined })
+      await catalog.updateProduct(editingId.value, {
+        name: form.name,
+        categoryId: form.categoryId,
+        tanNarxi,
+        mxikCode: form.mxikCode || undefined,
+        packageCode: form.packageCode ?? undefined,
+        packageName: form.packageName || undefined,
+      })
       toast.add({ severity: 'success', summary: t('products.updated'), detail: form.name, life: 2000 })
     } else {
-      await catalog.addProduct({ name: form.name, categoryId: form.categoryId, tanNarxi, mxikCode: form.mxikCode || undefined })
+      await catalog.addProduct({
+        name: form.name,
+        categoryId: form.categoryId,
+        tanNarxi,
+        mxikCode: form.mxikCode || undefined,
+        packageCode: form.packageCode ?? undefined,
+        packageName: form.packageName || undefined,
+      })
       toast.add({ severity: 'success', summary: t('products.added'), detail: form.name, life: 2000 })
     }
     dialogVisible.value = false
@@ -135,7 +247,7 @@ function formatPrice(v: string) {
         v-model:visible="dialogVisible"
         modal
         :header="editingId ? $t('products.editProduct') : $t('products.addProductTitle')"
-        :style="{ width: '460px' }"
+        :style="{ width: '480px' }"
       >
         <div class="form">
           <div class="field">
@@ -156,11 +268,78 @@ function formatPrice(v: string) {
             <label class="field-label">{{ $t('products.tanNarxi') }}</label>
             <InputNumber v-model="form.tanNarxiNum" :min="0" mode="decimal" :min-fraction-digits="0" :max-fraction-digits="2" fluid />
           </div>
+
+          <!-- MXIK combobox -->
           <div class="field">
-            <label class="field-label">{{ $t('products.mxikCode') }} <span class="optional">({{ $t('common.optional') }})</span></label>
-            <InputText v-model="form.mxikCode" placeholder="1234567890" class="font-mono" />
+            <label class="field-label">
+              {{ $t('products.mxikCode') }} <span class="optional">({{ $t('common.optional') }})</span>
+            </label>
+            <div class="mxik-wrap">
+              <div class="mxik-input-row">
+                <InputText
+                  v-model="form.mxikCode"
+                  class="font-mono mxik-input"
+                  :placeholder="$t('products.mxikPlaceholder')"
+                  @input="onMxikInput"
+                  @blur="() => { setTimeout(() => { mxikSuggestions = [] }, 200) }"
+                  @keydown.enter.prevent="triggerLookup"
+                />
+                <button
+                  v-if="form.mxikCode && !mxikLookupLoading"
+                  class="mxik-search-btn"
+                  type="button"
+                  @click="triggerLookup"
+                >
+                  <i class="pi pi-search" />
+                </button>
+                <span v-if="mxikLookupLoading || mxikSearchLoading" class="mxik-spinner">
+                  <i class="pi pi-spin pi-spinner" />
+                </span>
+              </div>
+
+              <!-- Suggestions dropdown -->
+              <ul v-if="mxikSuggestions.length" class="mxik-suggestions">
+                <li
+                  v-for="s in mxikSuggestions"
+                  :key="s.mxikCode"
+                  class="mxik-suggestion-item"
+                  @mousedown.prevent="selectMxikSuggestion(s)"
+                >
+                  <span class="sug-code">{{ s.mxikCode }}</span>
+                  <span class="sug-name">{{ s.mxikName }}</span>
+                </li>
+              </ul>
+
+              <!-- Result card -->
+              <div v-if="mxikData" class="mxik-result">
+                <div class="mxik-result-header">
+                  <span class="mxik-result-name">{{ mxikData.mxikName }}</span>
+                  <span v-if="mxikData.label" class="mxik-label-badge">{{ $t('products.mxikLabeled') }}</span>
+                  <button class="mxik-clear-btn" type="button" @click="resetMxik">
+                    <i class="pi pi-times" />
+                  </button>
+                </div>
+                <div v-if="mxikData.packages?.length" class="field" style="margin-top: 0.75rem; margin-bottom: 0">
+                  <label class="field-label">{{ $t('products.packageCode') }}</label>
+                  <Select
+                    :model-value="form.packageCode"
+                    :options="mxikData.packages"
+                    option-label="name"
+                    option-value="code"
+                    :placeholder="$t('products.selectPackage')"
+                    @update:model-value="(code) => { const pkg = mxikData!.packages!.find((p: MxikPackage) => p.code === code); if (pkg) onPackageSelect(pkg as MxikPackage) }"
+                  />
+                </div>
+              </div>
+
+              <!-- Hint for new codes -->
+              <p v-if="!mxikData && form.mxikCode && form.mxikCode.length < 17" class="mxik-hint">
+                {{ $t('products.mxikHint') }}
+              </p>
+            </div>
           </div>
         </div>
+
         <template #footer>
           <button class="btn-ghost" @click="dialogVisible = false">{{ $t('common.cancel') }}</button>
           <button class="btn-gradient" @click="save">{{ $t('common.save') }}</button>
@@ -195,4 +374,63 @@ function formatPrice(v: string) {
 .form { display: flex; flex-direction: column; gap: 1rem; padding-top: 0.4rem; }
 .form :deep(.p-inputnumber), .form :deep(.p-select) { width: 100%; }
 .optional { font-size: 0.78rem; color: var(--text-secondary); font-weight: 400; }
+
+/* MXIK combobox */
+.mxik-wrap { position: relative; display: flex; flex-direction: column; gap: 0; }
+.mxik-input-row { display: flex; align-items: center; gap: 0.5rem; }
+.mxik-input { flex: 1; }
+.mxik-search-btn {
+  flex-shrink: 0; width: 36px; height: 36px; border-radius: 8px;
+  border: 1px solid var(--border-subtle); background: var(--bg-surface);
+  color: var(--text-secondary); cursor: pointer; display: grid; place-items: center;
+  transition: all 0.15s ease;
+}
+.mxik-search-btn:hover { color: var(--accent-2); border-color: var(--accent-2); }
+.mxik-spinner { color: var(--text-secondary); font-size: 1rem; }
+
+.mxik-suggestions {
+  position: absolute;
+  top: 38px;
+  left: 0;
+  right: 0;
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  z-index: 100;
+  max-height: 220px;
+  overflow-y: auto;
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 4px 0;
+}
+.mxik-suggestion-item {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 8px 12px; cursor: pointer;
+}
+.mxik-suggestion-item:hover { background: var(--bg-surface); }
+.sug-code { font-family: monospace; font-size: 11px; color: var(--text-secondary); }
+.sug-name { font-size: 13px; color: var(--text-primary); }
+
+.mxik-result {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-surface);
+}
+.mxik-result-header { display: flex; align-items: center; gap: 0.5rem; }
+.mxik-result-name { font-size: 0.85rem; font-weight: 600; flex: 1; }
+.mxik-label-badge {
+  font-size: 0.7rem; font-weight: 700; padding: 2px 8px;
+  border-radius: 20px; background: var(--accent-2); color: #fff;
+}
+.mxik-clear-btn {
+  width: 24px; height: 24px; border-radius: 4px; border: none;
+  background: transparent; color: var(--text-secondary);
+  cursor: pointer; display: grid; place-items: center;
+  font-size: 0.75rem;
+}
+.mxik-clear-btn:hover { color: var(--danger); }
+.mxik-hint { font-size: 0.75rem; color: var(--text-secondary); margin: 4px 0 0; }
 </style>

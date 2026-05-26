@@ -83,6 +83,8 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     name: Type.String({ minLength: 1 }),
     tanNarxi: Type.String({ pattern: "^\\d+(\\.\\d{1,2})?$" }),
     mxikCode: Type.Optional(Type.String()),
+    packageCode: Type.Optional(Type.Integer()),
+    packageName: Type.Optional(Type.String()),
   })
 
   const RecordDocumentBody = Type.Object({
@@ -195,6 +197,8 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
         name: request.body.name,
         tanNarxi: request.body.tanNarxi,
         mxikCode: request.body.mxikCode,
+        packageCode: request.body.packageCode,
+        packageName: request.body.packageName,
       })
       return reply.code(201).send({ product: serializeProduct(product) })
     },

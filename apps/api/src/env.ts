@@ -18,6 +18,7 @@ const schema = z.object({
   MINIO_ACCESS_KEY: z.string().default("minioadmin"),
   MINIO_SECRET_KEY: z.string().default("minioadmin"),
   MINIO_BUCKET: z.string().default("scoring-documents"),
+  MXIK_API_URL: z.string().url().default("https://utilities.thebetacompany.uz"),
 });
 
 export const env = schema.parse(process.env);

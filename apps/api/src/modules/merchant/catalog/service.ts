@@ -34,7 +34,7 @@ export async function listProducts(db: Db, merchantId: bigint) {
 
 export async function createProduct(
   db: Db,
-  input: { merchantId: bigint; categoryId: bigint; name: string; tanNarxi: string; mxikCode?: string },
+  input: { merchantId: bigint; categoryId: bigint; name: string; tanNarxi: string; mxikCode?: string; packageCode?: number; packageName?: string },
 ) {
   const [row] = await db.insert(products).values(input).returning()
   return row!
@@ -44,7 +44,7 @@ export async function updateProduct(
   db: Db,
   id: bigint,
   merchantId: bigint,
-  input: Partial<{ categoryId: bigint; name: string; tanNarxi: string; mxikCode: string; active: boolean }>,
+  input: Partial<{ categoryId: bigint; name: string; tanNarxi: string; mxikCode: string; packageCode: number; packageName: string; active: boolean }>,
 ) {
   const [row] = await db
     .update(products)

@@ -16,12 +16,6 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json()
 }
 
-const MOCK_TARIFFS: Tariff[] = [
-  { id: 'trf_1', name: '3 oy · 5%', termMonths: 3, markupPercent: 5, creditMin: 50000000, creditMax: 800000000, active: true },
-  { id: 'trf_2', name: '6 oy · 8%', termMonths: 6, markupPercent: 8, creditMin: 100000000, creditMax: 1500000000, active: true },
-  { id: 'trf_3', name: '12 oy · 12%', termMonths: 12, markupPercent: 12, creditMin: 300000000, creditMax: 3000000000, active: true },
-  { id: 'trf_4', name: '24 oy · 18%', termMonths: 24, markupPercent: 18, creditMin: 800000000, creditMax: 6000000000, active: false },
-]
 
 interface CatalogState {
   categories: Category[]
@@ -38,7 +32,7 @@ export const useCatalogStore = defineStore('catalog', {
     products: [],
     branches: [],
     employees: [],
-    tariffs: MOCK_TARIFFS,
+    tariffs: [],
     loading: false,
   }),
 
@@ -57,16 +51,18 @@ export const useCatalogStore = defineStore('catalog', {
     async fetchAll() {
       this.loading = true
       try {
-        const [catRes, prodRes, branchRes, empRes] = await Promise.all([
+        const [catRes, prodRes, branchRes, empRes, tariffRes] = await Promise.all([
           api<{ categories: Category[] }>('/merchant/catalog/categories'),
           api<{ products: Product[] }>('/merchant/catalog/products'),
           api<{ branches: Branch[] }>('/merchant/branches'),
           api<{ employees: Employee[] }>('/merchant/employees'),
+          api<{ tariffs: Tariff[] }>('/merchant/tariffs'),
         ])
         this.categories = catRes.categories
         this.products = prodRes.products
         this.branches = branchRes.branches
         this.employees = empRes.employees
+        this.tariffs = tariffRes.tariffs
       } finally {
         this.loading = false
       }
@@ -99,7 +95,7 @@ export const useCatalogStore = defineStore('catalog', {
     },
 
     // -- Products --
-    async addProduct(input: { name: string; categoryId: string; tanNarxi: string; mxikCode?: string }) {
+    async addProduct(input: { name: string; categoryId: string; tanNarxi: string; mxikCode?: string; packageCode?: number; packageName?: string }) {
       const body = await api<{ product: Product }>('/merchant/catalog/products', {
         method: 'POST',
         body: JSON.stringify(input),
@@ -107,7 +103,7 @@ export const useCatalogStore = defineStore('catalog', {
       this.products.push(body.product)
     },
 
-    async updateProduct(id: string, patch: Partial<{ name: string; categoryId: string; tanNarxi: string; mxikCode: string; active: boolean }>) {
+    async updateProduct(id: string, patch: Partial<{ name: string; categoryId: string; tanNarxi: string; mxikCode: string; packageCode: number; packageName: string; active: boolean }>) {
       const body = await api<{ product: Product }>(`/merchant/catalog/products/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(patch),
@@ -165,19 +161,21 @@ export const useCatalogStore = defineStore('catalog', {
       if (emp) await this.updateEmployee(id, { active: !emp.active })
     },
 
-    addTariff(input: Omit<Tariff, 'id'>) {
-      this.tariffs.push({ ...input, id: `trf_${Date.now()}` })
+    async fetchTariffs() {
+      const body = await api<{ tariffs: Tariff[] }>('/merchant/tariffs')
+      this.tariffs = body.tariffs
     },
-    updateTariff(id: string, patch: Partial<Omit<Tariff, 'id'>>) {
+
+    async selectTariff(id: string) {
+      await api(`/merchant/tariffs/${id}`, { method: 'POST' })
       const t = this.tariffs.find((x) => x.id === id)
-      if (t) Object.assign(t, patch)
+      if (t) t.selected = true
     },
-    deleteTariff(id: string) {
-      this.tariffs = this.tariffs.filter((t) => t.id !== id)
-    },
-    toggleTariffActive(id: string) {
+
+    async deselectTariff(id: string) {
+      await api(`/merchant/tariffs/${id}`, { method: 'DELETE' })
       const t = this.tariffs.find((x) => x.id === id)
-      if (t) t.active = !t.active
+      if (t) t.selected = false
     },
   },
 })

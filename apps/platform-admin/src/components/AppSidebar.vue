@@ -22,6 +22,7 @@ const nav = computed<NavItem[]>(() => [
   { label: t('nav.overview'), icon: 'pi pi-th-large', to: '/' },
   { label: t('nav.merchants'), icon: 'pi pi-building', to: '/merchants' },
   { label: t('nav.allDeals'), icon: 'pi pi-credit-card', to: '/deals' },
+  { label: t('nav.tariffs'), icon: 'pi pi-percentage', to: '/tariffs' },
   { label: t('nav.employees'), icon: 'pi pi-users', to: '/employees' },
   { label: t('nav.settings'), icon: 'pi pi-cog', to: '/settings' },
   { label: t('nav.blacklist'), icon: 'pi pi-ban', to: '/blacklist' },

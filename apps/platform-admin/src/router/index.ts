@@ -49,6 +49,12 @@ const routes: RouteRecordRaw[] = [
         meta: { titleKey: 'routeTitle.settings', breadcrumbKeys: ['breadcrumb.settings'] },
       },
       {
+        path: 'tariffs',
+        name: 'tariffs',
+        component: () => import('@/views/TariffsView.vue'),
+        meta: { titleKey: 'routeTitle.tariffs', breadcrumbKeys: ['breadcrumb.tariffs'] },
+      },
+      {
         path: 'blacklist',
         name: 'blacklist',
         component: () => import('@/views/BlacklistView.vue'),

@@ -124,7 +124,6 @@
     "emailRequired": "Email kiritilishi shart",
     "emailInvalid": "Email noto'g'ri",
     "passwordRequired": "Parol kiritilishi shart",
-    "demoAccounts": "Demo hisoblar",
     "demoBothRoles": "har ikki rol",
     "demoAgentOnly": "faqat agent",
     "chooseRole": "Rol tanlang",
@@ -192,7 +191,13 @@
     "confirmDelete": "O'chirishni tasdiqlang",
     "deleteConfirm": "\"{name}\" o'chirilsinmi?",
     "tanNarxi": "Narx (tan narhiy)",
-    "mxikCode": "MXIK kodi"
+    "mxikCode": "MXIK kodi",
+    "mxikPlaceholder": "Kod yoki nomini kiriting...",
+    "mxikHint": "Yangi kod uchun to'liq 17 ta raqam kiriting va 🔍 bosing",
+    "mxikNotFound": "MXIK kodi topilmadi",
+    "mxikLabeled": "Belgili",
+    "packageCode": "Qadoqlash turi",
+    "selectPackage": "Qadoqlash turini tanlang"
   },
   "categories": {
     "addCategory": "Kategoriya qo'shish",
@@ -207,25 +212,15 @@
     "deleteConfirm": "\"{name}\" kategoriyasi o'chirilsinmi?"
   },
   "tariffs": {
-    "addTariff": "Tarif qo'shish",
     "name": "Nomi",
     "term": "Muddat",
     "markup": "Ustama",
     "creditRange": "Kredit oralig'i",
-    "active": "Faol",
-    "editTariff": "Tarifni tahrirlash",
-    "addTariffTitle": "Tarif qo'shish",
-    "termMonths": "Muddat (oy)",
-    "markupPercent": "Ustama %",
-    "creditMin": "Kredit min (so'm)",
-    "creditMax": "Kredit maks (so'm)",
-    "nameRequired": "Nom kiritilishi shart",
-    "updated": "Yangilandi",
-    "added": "Qo'shildi",
-    "deleted": "O'chirildi",
-    "confirmDelete": "O'chirishni tasdiqlang",
-    "deleteConfirm": "\"{name}\" tarifi o'chirilsinmi?",
-    "mo": "oy"
+    "selected": "Ulangan",
+    "mo": "oy",
+    "noTariffs": "Mavjud tariflar yo'q",
+    "hint": "Mijozlaringizga taklif qilmoqchi bo'lgan tariflarni yoqing. Tariflar platforma tomonidan boshqariladi.",
+    "toggleFailed": "Tarif holatini o'zgartirib bo'lmadi"
   },
   "employees": {
     "name": "Ismi",

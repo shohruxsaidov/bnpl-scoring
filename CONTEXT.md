@@ -54,8 +54,16 @@ _Avoid_: Cart, order, product list
 ### Products & pricing
 
 **Product**:
-An individual item the Merchant sells on credit — has a name, tan narxi (base cost price), MXIK code, and belongs to one Category. Created by the Platform Admin or a Merchant Admin on behalf of the Merchant; both actors can edit products within their scope. Shown to the Sales Agent in the Mahsulot step of the Wizard.
+An individual item the Merchant sells on credit — has a name, tan narxi (base cost price), MXIK code, package code, and belongs to one Category. Created by the Platform Admin or a Merchant Admin on behalf of the Merchant; both actors can edit products within their scope. Shown to the Sales Agent in the Mahsulot step of the Wizard.
 _Avoid_: Catalog Item, SKU (use only as synonym), item
+
+**MXIK Code**:
+The 17-digit national product classification code assigned by the Uzbekistan State Committee of Statistics. Required on every fiscal receipt in Uzbekistan. Looked up via the external MXIK registry (`utilities.thebetacompany.uz`). Results are cached in `mxik_cache` after first lookup; search by name is only possible over previously-cached codes.
+_Avoid_: Product code, SKU code, barcode
+
+**Package Code**:
+The integer identifier of the unit-of-measure packaging option selected for a Product, chosen from the list returned by the MXIK registry lookup. Stored alongside a denormalized `package_name` string on the Product record. Required for correct fiscal receipt generation.
+_Avoid_: Unit code, packaging type, container code
 
 **Tan Narxi**:
 The Merchant's cost price for a Product — the amount Finsum Nasiya pays the Merchant per item upon Kontrakt signing.
@@ -196,6 +204,7 @@ Key decisions live in `docs/adr/` as thematic files:
 | `0010-scoring-trigger-timing.md` | Scoring starts in background at Karta completion (not Tarif render); Step 3 blocks on SSE `scoring.completed`; 30 s timeout triggers retry |
 | `0011-file-storage-minio.md` | MinIO (self-hosted S3) for Merchant document uploads; presigned PUT URLs; `merchant_documents` table stores URL only |
 | `0012-three-party-platform-model.md` | Finsum as capital owner; Merchant + Branch hierarchy; global Tariffs and Scoring Model; persistent platform-wide Client credit limit; Merchant paid at tan narxi on signing |
+| `0013-mxik-integration.md` | Backend proxy for MXIK registry; `mxik_cache` table; cache-first lookup; search is cache-only; `package_code` + `package_name` stored on Product; integration logging per ADR-0005 |
 
 ## Example dialogue
 

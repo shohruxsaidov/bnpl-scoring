@@ -81,18 +81,18 @@ async function pickRole(role: EmployeeRole) {
           <span class="gc-tag">{{ $t('login.dealApproved') }}</span>
           <span class="gc-id font-mono">#DEAL-1041</span>
         </div>
-        <div class="gc-amount font-mono">14,990,000 <span class="gc-currency">{{ $t('login.som') }}</span></div>
+        <div class="gc-amount font-mono">14,990,000 </div>
         <div class="gc-meta">
           <span class="gc-avatar">JR</span>
           <div>
             <div class="gc-name">Jasur Rahimov</div>
-            <div class="gc-sub">12 {{ $t('login.months') }} · {{ $t('login.markup') }} 12%</div>
+            <div class="gc-sub">6 {{ $t('login.months') }} · {{ $t('login.markup') }} 12%</div>
           </div>
         </div>
         <div class="gc-progress-row">
-          <span class="gc-sub">3 / 12 {{ $t('login.paid') }}</span>
+          <span class="gc-sub">3 / 6 {{ $t('login.paid') }}</span>
           <div class="gc-pill-row">
-            <span v-for="i in 12" :key="i" class="gc-pill" :class="{ filled: i <= 3 }" />
+            <span v-for="i in 6" :key="i" class="gc-pill" :class="{ filled: i <= 3 }" />
           </div>
         </div>
       </div>
@@ -112,7 +112,7 @@ async function pickRole(role: EmployeeRole) {
         </div>
         <div class="score-labels">
           <span class="score-badge approved">{{ $t('login.approved') }}</span>
-          <span class="gc-sub">KATM · MyID</span>
+
         </div>
       </div>
 
@@ -181,30 +181,14 @@ async function pickRole(role: EmployeeRole) {
 
         <div class="field">
           <label class="field-label" for="email">{{ $t('login.email') }}</label>
-          <InputText
-            id="email"
-            v-model="email"
-            v-bind="emailAttrs"
-            placeholder="admin@demo.com"
-            :invalid="!!errors.email"
-            autocomplete="username"
-          />
+          <InputText id="email" v-model="email" v-bind="emailAttrs" :invalid="!!errors.email" autocomplete="username" />
           <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
         </div>
 
         <div class="field">
           <label class="field-label" for="password">{{ $t('login.password') }}</label>
-          <Password
-            id="password"
-            v-model="password"
-            v-bind="passwordAttrs"
-            :feedback="false"
-            toggle-mask
-            placeholder="password"
-            :invalid="!!errors.password"
-            input-class="w-full"
-            fluid
-          />
+          <Password id="password" v-model="password" v-bind="passwordAttrs" :feedback="false" toggle-mask
+            :invalid="!!errors.password" input-class="w-full" fluid />
           <span v-if="errors.password" class="field-error">{{ errors.password }}</span>
         </div>
 
@@ -216,30 +200,16 @@ async function pickRole(role: EmployeeRole) {
           {{ loading ? $t('login.signingIn') : $t('login.signIn') }}
         </button>
 
-        <div class="hint">
-          <strong>{{ $t('login.demoAccounts') }}</strong>
-          <span><code>admin@demo.com</code> / <code>password</code> — {{ $t('login.demoBothRoles') }}</span>
-          <span><code>agent@demo.com</code> / <code>password</code> — {{ $t('login.demoAgentOnly') }}</span>
-        </div>
+
       </form>
     </div>
 
     <!-- role picker dialog -->
-    <Dialog
-      :visible="auth.requiresRolePicker"
-      modal
-      :header="$t('login.chooseRole')"
-      :style="{ width: '420px' }"
-      :closable="false"
-    >
+    <Dialog :visible="auth.requiresRolePicker" modal :header="$t('login.chooseRole')" :style="{ width: '420px' }"
+      :closable="false">
       <p class="role-intro">{{ $t('login.roleIntro') }}</p>
       <div class="role-grid">
-        <button
-          v-for="role in (auth.rolePicker?.roles ?? [])"
-          :key="role"
-          class="role-card"
-          @click="pickRole(role)"
-        >
+        <button v-for="role in (auth.rolePicker?.roles ?? [])" :key="role" class="role-card" @click="pickRole(role)">
           <i :class="roleConfig[role]?.icon" />
           <strong>{{ roleConfig[role]?.label }}</strong>
           <small>{{ roleConfig[role]?.desc }}</small>
@@ -275,6 +245,7 @@ async function pickRole(role: EmployeeRole) {
   filter: blur(70px);
   pointer-events: none;
 }
+
 .orb-1 {
   width: 420px;
   height: 420px;
@@ -282,6 +253,7 @@ async function pickRole(role: EmployeeRole) {
   top: -80px;
   right: -100px;
 }
+
 .orb-2 {
   width: 300px;
   height: 300px;
@@ -289,6 +261,7 @@ async function pickRole(role: EmployeeRole) {
   bottom: 80px;
   left: -80px;
 }
+
 .orb-3 {
   width: 200px;
   height: 200px;
@@ -301,7 +274,7 @@ async function pickRole(role: EmployeeRole) {
 .dot-grid {
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(rgba(255,255,255,0.18) 1px, transparent 1px);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px);
   background-size: 28px 28px;
   pointer-events: none;
 }
@@ -365,13 +338,18 @@ async function pickRole(role: EmployeeRole) {
   gap: 0.45rem;
   margin-bottom: 0.6rem;
 }
+
 .gc-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
 }
-.dot-green { background: #00d4aa; box-shadow: 0 0 6px #00d4aa; }
+
+.dot-green {
+  background: #00d4aa;
+  box-shadow: 0 0 6px #00d4aa;
+}
 
 .gc-tag {
   font-size: 0.72rem;
@@ -381,6 +359,7 @@ async function pickRole(role: EmployeeRole) {
   letter-spacing: 0.05em;
   flex: 1;
 }
+
 .gc-id {
   font-size: 0.68rem;
   opacity: 0.55;
@@ -392,6 +371,7 @@ async function pickRole(role: EmployeeRole) {
   line-height: 1;
   margin-bottom: 0.65rem;
 }
+
 .gc-currency {
   font-size: 0.7em;
   font-weight: 600;
@@ -404,19 +384,28 @@ async function pickRole(role: EmployeeRole) {
   gap: 0.55rem;
   margin-bottom: 0.65rem;
 }
+
 .gc-avatar {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.25);
+  background: rgba(255, 255, 255, 0.25);
   font-size: 0.7rem;
   font-weight: 800;
   display: grid;
   place-items: center;
   flex-shrink: 0;
 }
-.gc-name { font-size: 0.82rem; font-weight: 700; }
-.gc-sub { font-size: 0.7rem; opacity: 0.6; }
+
+.gc-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.gc-sub {
+  font-size: 0.7rem;
+  opacity: 0.6;
+}
 
 .gc-progress-row {
   display: flex;
@@ -424,15 +413,23 @@ async function pickRole(role: EmployeeRole) {
   justify-content: space-between;
   gap: 0.5rem;
 }
-.gc-pill-row { display: flex; gap: 2px; }
+
+.gc-pill-row {
+  display: flex;
+  gap: 2px;
+}
+
 .gc-pill {
   width: 12px;
   height: 4px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.25);
+  background: rgba(255, 255, 255, 0.25);
   transition: background 0.2s;
 }
-.gc-pill.filled { background: #00d4aa; }
+
+.gc-pill.filled {
+  background: #00d4aa;
+}
 
 /* score card */
 .score-display {
@@ -441,32 +438,38 @@ async function pickRole(role: EmployeeRole) {
   gap: 0;
   margin-bottom: 0.5rem;
 }
+
 .score-num {
   font-size: 2.2rem;
   font-weight: 800;
   line-height: 1;
 }
+
 .score-max {
   font-size: 0.8rem;
   opacity: 0.55;
 }
+
 .score-track {
   height: 5px;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 999px;
   margin-bottom: 0.55rem;
   overflow: hidden;
 }
+
 .score-fill {
   height: 100%;
   background: linear-gradient(90deg, #00d4aa, #7b68ee);
   border-radius: 999px;
 }
+
 .score-labels {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
+
 .score-badge {
   font-size: 0.68rem;
   font-weight: 800;
@@ -475,29 +478,82 @@ async function pickRole(role: EmployeeRole) {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-.score-badge.approved { background: rgba(0,212,170,0.25); color: #00d4aa; }
+
+.score-badge.approved {
+  background: rgba(0, 212, 170, 0.25);
+  color: #00d4aa;
+}
 
 /* schedule card */
-.sch-list { display: flex; flex-direction: column; gap: 0.42rem; }
+.sch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.42rem;
+}
+
 .sch-row {
   display: flex;
   align-items: center;
   gap: 0.45rem;
   font-size: 0.75rem;
 }
-.sch-row.done { opacity: 0.6; }
-.sch-row.done i { color: #00d4aa; }
-.sch-row.upcoming { font-weight: 700; }
-.sch-row.upcoming i { color: #ffb02e; }
-.sch-row.future { opacity: 0.4; font-size: 0.7rem; }
-.sch-amt { margin-left: auto; font-size: 0.72rem; }
-.sch-dots { letter-spacing: 0.15em; }
+
+.sch-row.done {
+  opacity: 0.6;
+}
+
+.sch-row.done i {
+  color: #00d4aa;
+}
+
+.sch-row.upcoming {
+  font-weight: 700;
+}
+
+.sch-row.upcoming i {
+  color: #ffb02e;
+}
+
+.sch-row.future {
+  opacity: 0.4;
+  font-size: 0.7rem;
+}
+
+.sch-amt {
+  margin-left: auto;
+  font-size: 0.72rem;
+}
+
+.sch-dots {
+  letter-spacing: 0.15em;
+}
 
 /* stats strip */
-.stat-item { display: flex; flex-direction: column; align-items: center; gap: 0.15rem; }
-.stat-num { font-size: 1.1rem; font-weight: 800; }
-.stat-lbl { font-size: 0.65rem; opacity: 0.65; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
-.stat-sep { width: 1px; height: 28px; background: rgba(255,255,255,0.25); }
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.stat-num {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.stat-lbl {
+  font-size: 0.65rem;
+  opacity: 0.65;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.stat-sep {
+  width: 1px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.25);
+}
 
 /* ── Bottom brand ───────────────────────────────────────────────────────── */
 .hero-brand {
@@ -507,12 +563,13 @@ async function pickRole(role: EmployeeRole) {
   align-items: center;
   gap: 1rem;
 }
+
 .logo-mark {
   width: 48px;
   height: 48px;
   border-radius: 14px;
   background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255,255,255,0.3);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   display: grid;
   place-items: center;
   font-size: 1.4rem;
@@ -520,6 +577,7 @@ async function pickRole(role: EmployeeRole) {
   color: #fff;
   flex-shrink: 0;
 }
+
 .brand-title {
   margin: 0;
   font-size: 1.6rem;
@@ -527,28 +585,60 @@ async function pickRole(role: EmployeeRole) {
   color: #fff;
   line-height: 1;
 }
+
 .brand-sub {
   margin: 0.2rem 0 0;
   font-size: 0.82rem;
-  color: rgba(255,255,255,0.7);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 /* ── Float animations ───────────────────────────────────────────────────── */
 @keyframes float1 {
-  0%, 100% { transform: translateX(-45%) rotate(-2deg) translateY(0); }
-  50%       { transform: translateX(-45%) rotate(-2deg) translateY(-10px); }
+
+  0%,
+  100% {
+    transform: translateX(-45%) rotate(-2deg) translateY(0);
+  }
+
+  50% {
+    transform: translateX(-45%) rotate(-2deg) translateY(-10px);
+  }
 }
+
 @keyframes float2 {
-  0%, 100% { transform: rotate(2deg) translateY(0); }
-  50%       { transform: rotate(2deg) translateY(-12px); }
+
+  0%,
+  100% {
+    transform: rotate(2deg) translateY(0);
+  }
+
+  50% {
+    transform: rotate(2deg) translateY(-12px);
+  }
 }
+
 @keyframes float3 {
-  0%, 100% { transform: rotate(-2.5deg) translateY(0); }
-  50%       { transform: rotate(-2.5deg) translateY(-9px); }
+
+  0%,
+  100% {
+    transform: rotate(-2.5deg) translateY(0);
+  }
+
+  50% {
+    transform: rotate(-2.5deg) translateY(-9px);
+  }
 }
+
 @keyframes float4 {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  50%       { transform: translateX(-50%) translateY(-7px); }
+
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0);
+  }
+
+  50% {
+    transform: translateX(-50%) translateY(-7px);
+  }
 }
 
 /* ── Right side ─────────────────────────────────────────────────────────── */
@@ -558,24 +648,38 @@ async function pickRole(role: EmployeeRole) {
   padding: 2rem;
   background: var(--bg-base);
 }
+
 .auth-card {
   width: 100%;
   max-width: 400px;
   padding: 2.2rem;
 }
+
 .auth-card h2 {
   margin: 0 0 0.3rem;
   font-size: 1.5rem;
   font-weight: 800;
 }
+
 .sub {
   margin: 0 0 1.8rem;
   color: var(--text-secondary);
   font-size: 0.9rem;
 }
-.field { margin-bottom: 1.1rem; }
-.field :deep(.p-password) { width: 100%; }
-.submit { width: 100%; margin-top: 0.4rem; }
+
+.field {
+  margin-bottom: 1.1rem;
+}
+
+.field :deep(.p-password) {
+  width: 100%;
+}
+
+.submit {
+  width: 100%;
+  margin-top: 0.4rem;
+}
+
 .login-error {
   color: var(--danger);
   font-size: 0.82rem;
@@ -585,6 +689,7 @@ async function pickRole(role: EmployeeRole) {
   gap: 0.4rem;
   margin: 0 0 0.8rem;
 }
+
 .hint {
   margin-top: 1.6rem;
   padding-top: 1.2rem;
@@ -595,6 +700,7 @@ async function pickRole(role: EmployeeRole) {
   font-size: 0.78rem;
   color: var(--text-secondary);
 }
+
 .hint code {
   font-family: 'JetBrains Mono', monospace;
   color: var(--accent-2);
@@ -606,11 +712,13 @@ async function pickRole(role: EmployeeRole) {
   font-size: 0.88rem;
   margin: 0 0 1.2rem;
 }
+
 .role-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.9rem;
 }
+
 .role-card {
   display: flex;
   flex-direction: column;
@@ -624,26 +732,41 @@ async function pickRole(role: EmployeeRole) {
   text-align: left;
   transition: all 0.15s ease;
 }
+
 .role-card:hover {
   border-color: var(--accent-2);
   box-shadow: var(--accent-glow);
 }
-.role-card i { font-size: 1.4rem; color: var(--accent-2); }
-.role-card strong { font-size: 0.95rem; }
-.role-card small { color: var(--text-secondary); font-size: 0.74rem; }
+
+.role-card i {
+  font-size: 1.4rem;
+  color: var(--accent-2);
+}
+
+.role-card strong {
+  font-size: 0.95rem;
+}
+
+.role-card small {
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+}
 
 @media (max-width: 767px) {
   .auth-page {
     grid-template-columns: 1fr;
   }
+
   .auth-hero {
     display: none;
   }
+
   .auth-form-wrap {
     padding: 1.5rem 1rem;
     align-items: flex-start;
     padding-top: 3rem;
   }
+
   .auth-card {
     max-width: 100%;
     padding: 1.6rem 1.2rem;

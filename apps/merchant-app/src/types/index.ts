@@ -74,6 +74,8 @@ export interface Tariff {
   creditMin: number
   creditMax: number
   active: boolean
+  /** Whether this merchant has selected this tariff */
+  selected: boolean
 }
 
 export interface Category {
@@ -92,6 +94,8 @@ export interface Product {
   /** Decimal string e.g. "1500000.00" — UZS */
   tanNarxi: string
   mxikCode: string | null
+  packageCode: number | null
+  packageName: string | null
   active: boolean
   createdAt: string
 }

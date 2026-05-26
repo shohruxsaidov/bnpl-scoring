@@ -1,36 +1,26 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import Skeleton from 'primevue/skeleton'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
-import { usePageLoad } from '@/composables/usePageLoad'
+import { useBlacklistStore } from '@/stores/blacklist'
+import type { BlacklistEntry, BlacklistEntryType } from '@/types'
 
 const { t } = useI18n()
 const toast = useToast()
 const confirm = useConfirm()
-const { loading } = usePageLoad()
+const store = useBlacklistStore()
 
-type EntryType = 'pinfl' | 'inn'
-
-interface BlacklistEntry {
-  id: string
-  type: EntryType
-  value: string
-  reason: string
-  addedBy: string
-  addedAt: string
-}
-
-let seq = 1
-function uid() { return `bl_${Date.now()}_${seq++}` }
-
-const entries = ref<BlacklistEntry[]>([])
+onMounted(() => {
+  store.fetchAll().catch(() => toast.add({ severity: 'error', summary: t('blacklist.loadFailed'), life: 3000 }))
+})
 
 // ── Add dialog ──────────────────────────────────────────────────────────────
 const dialogOpen = ref(false)
-const form = ref<{ type: EntryType; value: string; reason: string }>({
+const saving = ref(false)
+const form = ref<{ type: BlacklistEntryType; value: string; reason: string }>({
   type: 'pinfl',
   value: '',
   reason: '',
@@ -45,29 +35,33 @@ function openAdd() {
 
 function closeDialog() { dialogOpen.value = false }
 
-function validateValue(type: EntryType, val: string): string | null {
+function validateValue(type: BlacklistEntryType, val: string): string | null {
   const v = val.trim()
   if (!v) return t('blacklist.valueRequired')
   if (type === 'pinfl' && !/^\d{14}$/.test(v)) return t('blacklist.pinflFormat')
   if (type === 'inn' && !/^\d{9}$/.test(v)) return t('blacklist.innFormat')
-  if (entries.value.some((e) => e.type === type && e.value === v)) return t('blacklist.duplicate')
+  if (store.entries.some((e) => e.type === type && e.value === v)) return t('blacklist.duplicate')
   return null
 }
 
-function save() {
+async function save() {
   const err = validateValue(form.value.type, form.value.value)
   if (err) { formError.value = err; return }
 
-  entries.value.unshift({
-    id: uid(),
-    type: form.value.type,
-    value: form.value.value.trim(),
-    reason: form.value.reason.trim(),
-    addedBy: 'Platform Admin',
-    addedAt: new Date().toISOString(),
-  })
-  toast.add({ severity: 'success', summary: t('blacklist.added'), life: 2500 })
-  dialogOpen.value = false
+  saving.value = true
+  try {
+    await store.add({
+      type: form.value.type,
+      value: form.value.value.trim(),
+      reason: form.value.reason.trim(),
+    })
+    toast.add({ severity: 'success', summary: t('blacklist.added'), life: 2500 })
+    dialogOpen.value = false
+  } catch {
+    toast.add({ severity: 'error', summary: t('blacklist.addFailed'), life: 3000 })
+  } finally {
+    saving.value = false
+  }
 }
 
 // ── Remove ──────────────────────────────────────────────────────────────────
@@ -78,9 +72,13 @@ function remove(entry: BlacklistEntry) {
     icon: 'pi pi-trash',
     rejectProps: { label: t('common.cancel'), severity: 'secondary', outlined: true },
     acceptProps: { label: t('common.delete'), severity: 'danger' },
-    accept: () => {
-      entries.value = entries.value.filter((e) => e.id !== entry.id)
-      toast.add({ severity: 'info', summary: t('blacklist.removed'), life: 2000 })
+    accept: async () => {
+      try {
+        await store.remove(entry.id)
+        toast.add({ severity: 'info', summary: t('blacklist.removed'), life: 2000 })
+      } catch {
+        toast.add({ severity: 'error', summary: t('blacklist.removeFailed'), life: 3000 })
+      }
     },
   })
 }
@@ -89,9 +87,9 @@ function remove(entry: BlacklistEntry) {
 const search = ref('')
 const filtered = computed(() => {
   const q = search.value.trim().toLowerCase()
-  if (!q) return entries.value
-  return entries.value.filter(
-    (e) => e.value.includes(q) || e.reason.toLowerCase().includes(q),
+  if (!q) return store.entries
+  return store.entries.filter(
+    (e) => e.value.includes(q) || (e.reason ?? '').toLowerCase().includes(q),
   )
 })
 
@@ -107,7 +105,7 @@ function formatDate(iso: string) {
   <div class="bl-page">
 
     <!-- ── Skeleton ────────────────────────────────────────────────────────── -->
-    <template v-if="loading">
+    <template v-if="store.loading">
       <div class="page-actions sk-actions">
         <Skeleton width="10rem" height="2rem" border-radius="10px" />
         <Skeleton width="7rem" height="2rem" border-radius="10px" />
@@ -150,13 +148,13 @@ function formatDate(iso: string) {
       <div class="surface-card panel">
         <div class="panel-head">
           <h3 class="section-title">{{ t('blacklist.listTitle') }}</h3>
-          <span class="count-badge">{{ entries.length }}</span>
+          <span class="count-badge">{{ store.entries.length }}</span>
         </div>
 
         <!-- empty -->
         <div v-if="filtered.length === 0" class="empty">
           <i class="pi pi-ban empty-icon" />
-          <span>{{ entries.length === 0 ? t('blacklist.empty') : t('blacklist.noResults') }}</span>
+          <span>{{ store.entries.length === 0 ? t('blacklist.empty') : t('blacklist.noResults') }}</span>
         </div>
 
         <!-- rows -->
@@ -175,7 +173,7 @@ function formatDate(iso: string) {
 
             <div class="entry-meta">
               <span v-if="entry.reason" class="entry-reason">{{ entry.reason }}</span>
-              <span class="entry-date">{{ t('blacklist.addedBy', { who: entry.addedBy }) }} · {{ formatDate(entry.addedAt) }}</span>
+              <span class="entry-date">{{ t('blacklist.addedBy', { who: entry.addedByName }) }} · {{ formatDate(entry.createdAt) }}</span>
             </div>
 
             <button class="remove-btn" :title="t('common.delete')" @click="remove(entry)">
@@ -246,8 +244,8 @@ function formatDate(iso: string) {
 
           <div class="dialog-footer">
             <button class="btn-ghost" @click="closeDialog">{{ t('common.cancel') }}</button>
-            <button class="btn-danger-solid" @click="save">
-              <i class="pi pi-ban" />
+            <button class="btn-danger-solid" :disabled="saving" @click="save">
+              <i :class="saving ? 'pi pi-spin pi-spinner' : 'pi pi-ban'" />
               {{ t('blacklist.block') }}
             </button>
           </div>
