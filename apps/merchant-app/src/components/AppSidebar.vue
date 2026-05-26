@@ -45,7 +45,8 @@ function logout() {
 </script>
 
 <template>
-  <aside class="sidebar" :class="{ collapsed: props.collapsed, 'mobile-open': props.mobileOpen, 'is-mobile': props.isMobile }">
+  <aside class="sidebar"
+    :class="{ collapsed: props.collapsed, 'mobile-open': props.mobileOpen, 'is-mobile': props.isMobile }">
     <div class="brand">
       <div class="logo-mark">S</div>
       <div v-if="!props.collapsed" class="brand-text">
@@ -59,20 +60,11 @@ function logout() {
 
     <nav class="nav">
       <template v-for="item in mainNav" :key="item.to">
-        <RouterLink
-          v-if="item.show"
-          :to="item.to"
-          class="nav-link"
-          exact-active-class="active"
-          :title="item.label"
-        >
+        <RouterLink v-if="item.show" :to="item.to" class="nav-link" exact-active-class="active" :title="item.label">
           <i :class="item.icon" />
           <span v-if="!props.collapsed">{{ item.label }}</span>
-          <span
-            v-if="item.to === '/notifications' && notificationsStore.unreadCount > 0"
-            class="nav-badge"
-            :class="{ solo: props.collapsed }"
-          >
+          <span v-if="item.to === '/notifications' && notificationsStore.unreadCount > 0" class="nav-badge"
+            :class="{ solo: props.collapsed }">
             {{ notificationsStore.unreadCount > 9 ? '9+' : notificationsStore.unreadCount }}
           </span>
         </RouterLink>
@@ -84,14 +76,8 @@ function logout() {
       </div>
 
       <template v-if="auth.isAdmin">
-        <RouterLink
-          v-for="item in adminNav"
-          :key="item.to"
-          :to="item.to"
-          class="nav-link"
-          exact-active-class="active"
-          :title="item.label"
-        >
+        <RouterLink v-for="item in adminNav" :key="item.to" :to="item.to" class="nav-link" exact-active-class="active"
+          :title="item.label">
           <i :class="item.icon" />
           <span v-if="!props.collapsed">{{ item.label }}</span>
         </RouterLink>
@@ -129,9 +115,11 @@ function logout() {
   position: sticky;
   top: 0;
 }
+
 .sidebar.collapsed {
   width: 64px;
 }
+
 .sidebar.is-mobile {
   position: fixed;
   left: 0;
@@ -143,6 +131,7 @@ function logout() {
   transition: transform 0.25s ease;
   width: 240px;
 }
+
 .sidebar.is-mobile.mobile-open {
   transform: translateX(0);
   box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
@@ -155,6 +144,7 @@ function logout() {
   padding: 1.1rem 0.9rem;
   position: relative;
 }
+
 .logo-mark {
   width: 34px;
   height: 34px;
@@ -166,20 +156,24 @@ function logout() {
   place-items: center;
   flex-shrink: 0;
 }
+
 .brand-text {
   display: flex;
   flex-direction: column;
   line-height: 1.1;
 }
+
 .brand-name {
   font-weight: 800;
   font-size: 1.05rem;
 }
+
 .tenant {
   font-size: 0.7rem;
   color: var(--text-secondary);
   font-weight: 600;
 }
+
 .collapse-btn {
   margin-left: auto;
   width: 26px;
@@ -192,6 +186,7 @@ function logout() {
   display: grid;
   place-items: center;
 }
+
 .collapsed .collapse-btn {
   position: absolute;
   right: -13px;
@@ -208,6 +203,7 @@ function logout() {
   gap: 0.2rem;
   overflow-y: auto;
 }
+
 .nav-link {
   display: flex;
   align-items: center;
@@ -221,22 +217,27 @@ function logout() {
   white-space: nowrap;
   position: relative;
 }
+
 .collapsed .nav-link {
   justify-content: center;
   padding: 0.65rem;
 }
+
 .nav-link i {
   font-size: 1.05rem;
 }
+
 .nav-link:hover {
   background: var(--bg-base);
   color: var(--text-primary);
 }
+
 .nav-link.active {
   background: var(--gradient-accent);
   color: #fff;
   box-shadow: var(--accent-glow);
 }
+
 .nav-badge {
   margin-left: auto;
   background: var(--danger);
@@ -250,12 +251,14 @@ function logout() {
   place-items: center;
   padding: 0 4px;
 }
+
 .nav-badge.solo {
   position: absolute;
   top: 4px;
   right: 4px;
   margin: 0;
 }
+
 .divider {
   font-size: 0.65rem;
   font-weight: 800;
@@ -264,6 +267,7 @@ function logout() {
   padding: 0.9rem 0.8rem 0.4rem;
   opacity: 0.6;
 }
+
 .dot-divider {
   display: block;
   height: 1px;
@@ -278,11 +282,13 @@ function logout() {
   flex-direction: column;
   gap: 0.7rem;
 }
+
 .user-block {
   display: flex;
   align-items: center;
   gap: 0.6rem;
 }
+
 .avatar {
   width: 34px;
   height: 34px;
@@ -294,15 +300,18 @@ function logout() {
   place-items: center;
   flex-shrink: 0;
 }
+
 .avatar.solo {
   margin: 0 auto;
 }
+
 .user-meta {
   display: flex;
   flex-direction: column;
   line-height: 1.2;
   overflow: hidden;
 }
+
 .user-name {
   font-size: 0.85rem;
   font-weight: 700;
@@ -310,11 +319,13 @@ function logout() {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .role-chip {
   font-size: 0.68rem;
   font-weight: 700;
   color: var(--accent-2);
 }
+
 .logout-btn {
   display: flex;
   align-items: center;
@@ -330,6 +341,7 @@ function logout() {
   cursor: pointer;
   transition: all 0.15s ease;
 }
+
 .logout-btn:hover {
   color: var(--danger);
   border-color: var(--danger);
