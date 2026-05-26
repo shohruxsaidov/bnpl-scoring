@@ -8,7 +8,7 @@ import type {
   Product,
 } from '@/types'
 
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+import { apiFetch as api } from '@/utils/apiFetch'
 
 interface MerchantsState {
   merchants: Merchant[]
@@ -19,19 +19,6 @@ interface MerchantsState {
   documents: Record<string, MerchantDocument[]>
   loading: boolean
   error: string | null
-}
-
-async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API}${path}`, {
-    credentials: 'include',
-    headers: init.body ? { 'Content-Type': 'application/json' } : undefined,
-    ...init,
-  })
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    throw new Error(body.code ?? body.message ?? `request_failed_${res.status}`)
-  }
-  return res.json() as Promise<T>
 }
 
 export const useMerchantsStore = defineStore('merchants', {

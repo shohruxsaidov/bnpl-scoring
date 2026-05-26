@@ -1,20 +1,6 @@
 import { defineStore } from 'pinia'
+import { apiFetch as api } from '@/utils/apiFetch'
 import type { Tariff } from '@/types'
-
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
-
-async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API}${path}`, {
-    credentials: 'include',
-    headers: init.body ? { 'Content-Type': 'application/json' } : undefined,
-    ...init,
-  })
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}))
-    throw new Error(body.code ?? body.message ?? `request_failed_${res.status}`)
-  }
-  return res.json() as Promise<T>
-}
 
 interface TariffsState {
   tariffs: Tariff[]

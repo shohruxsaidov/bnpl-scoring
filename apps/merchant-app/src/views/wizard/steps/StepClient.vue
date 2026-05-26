@@ -238,18 +238,19 @@ async function startMyId() {
 
 function handleMyidMessage(e: MessageEvent) {
   if (e.data?.source !== 'MyIDWebSDK') return
-  const { status, auth_code, result_note } = e.data as {
+  const { status, result_note, data } = e.data as {
     source: string
     status: number
-    auth_code?: string
+    data?: {
+      auth_code?: string
+    }
     result_note?: string
   }
 
-  debugger
 
   switch (status) {
     case MyIDStatus.LIVENESS_PASSED:
-      completeMyid(auth_code)
+      completeMyid(data!.auth_code)
       break
     case MyIDStatus.LIVENESS_FAILED:
       clearMyidTimer()

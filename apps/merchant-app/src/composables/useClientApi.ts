@@ -1,18 +1,6 @@
 import { useMutation } from '@tanstack/vue-query'
+import { apiFetch } from '@/utils/apiFetch'
 import type { Client } from '@/types'
-
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
-
-async function apiFetch<T = any>(path: string, opts: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API}${path}`, {
-    ...opts,
-    credentials: 'include',
-    headers: { 'Content-Type': 'application/json', ...(opts.headers ?? {}) },
-  })
-  const data = await res.json().catch(() => ({}))
-  if (!res.ok) throw new Error(data.code ?? 'error')
-  return data
-}
 
 export function useClientApi() {
   const searchClientsMutation = useMutation({
