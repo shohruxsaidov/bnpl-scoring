@@ -186,7 +186,15 @@
     "tenantActivated": "Арендатор активирован",
     "deleteTenant": "Удалить арендатора",
     "deleteConfirm": "Безвозвратно удалить \"{name}\"? Это нельзя отменить.",
-    "tenantDeleted": "Арендатор удалён"
+    "tenantDeleted": "Арендатор удалён",
+    "search": "Поиск арендаторов…",
+    "filterByName": "Фильтр по названию",
+    "allStatuses": "Все статусы",
+    "statusActive": "Активен",
+    "statusSuspended": "Приостановлен",
+    "selected": "выбрано",
+    "bulkToggleStatus": "Переключить статус",
+    "bulkDelete": "Удалить"
   },
   "tenantDetail": {
     "backToTenants": "Назад к арендаторам",
@@ -293,7 +301,6 @@
     "address": "Адрес",
     "phone": "Телефон",
     "employeesCount": "Сотрудники",
-    "active": "Активен",
     "fullName": "Полное имя",
     "email": "Email",
     "password": "Пароль",

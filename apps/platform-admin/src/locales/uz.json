@@ -186,7 +186,15 @@
     "tenantActivated": "Ijarachi faollashtirildi",
     "deleteTenant": "Ijarachini o'chirish",
     "deleteConfirm": "\"{name}\" butunlay o'chirilsinmi? Buni qaytarib bo'lmaydi.",
-    "tenantDeleted": "Ijarachi o'chirildi"
+    "tenantDeleted": "Ijarachi o'chirildi",
+    "search": "Ijarachilarni qidirish…",
+    "filterByName": "Nom bo'yicha filtrlash",
+    "allStatuses": "Barcha holatlar",
+    "statusActive": "Faol",
+    "statusSuspended": "To'xtatilgan",
+    "selected": "ta tanlangan",
+    "bulkToggleStatus": "Holatni o'zgartirish",
+    "bulkDelete": "O'chirish"
   },
   "tenantDetail": {
     "backToTenants": "Ijarachilarga qaytish",

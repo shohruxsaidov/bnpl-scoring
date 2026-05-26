@@ -163,7 +163,8 @@
     "amount": "Сумма",
     "date": "Дата",
     "open": "Открыть",
-    "noDeals": "Сделки не найдены."
+    "noDeals": "Сделки не найдены.",
+    "searchDeals": "Поиск сделок…"
   },
   "status": {
     "draft": "Черновик",
@@ -197,7 +198,9 @@
     "mxikNotFound": "Код МХИК не найден",
     "mxikLabeled": "Маркируемый",
     "packageCode": "Тип упаковки",
-    "selectPackage": "Выберите тип упаковки"
+    "selectPackage": "Выберите тип упаковки",
+    "searchPlaceholder": "Поиск товаров…",
+    "productsCount": "товаров"
   },
   "categories": {
     "addCategory": "Добавить категорию",
@@ -243,7 +246,9 @@
     "branchAdmin": "Администратор филиала",
     "added": "Сотрудник добавлен",
     "updated": "Сотрудник обновлён",
-    "missingFields": "Заполните все обязательные поля"
+    "missingFields": "Заполните все обязательные поля",
+    "searchPlaceholder": "Поиск сотрудников…",
+    "employeesCount": "сотрудников"
   },
   "collectionBoard": {
     "refresh": "Обновить",

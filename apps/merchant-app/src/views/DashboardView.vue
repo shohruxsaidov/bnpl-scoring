@@ -22,6 +22,7 @@ const deals = useDealsStore()
 const router = useRouter()
 const { t } = useI18n()
 
+const search = ref('')
 const statusFilter = ref<DealStatus | null>(null)
 const statusOptions = computed<{ label: string; value: DealStatus | null }[]>(() => [
   { label: t('dashboard.allStatuses'), value: null },
@@ -38,9 +39,14 @@ const visibleDeals = computed<Deal[]>(() => {
   const base = auth.isAdmin
     ? deals.deals
     : deals.forAgent(auth.employee?.id ?? '')
-  return statusFilter.value
-    ? base.filter((d) => d.status === statusFilter.value)
-    : base
+  return base.filter((d) => {
+    if (statusFilter.value && d.status !== statusFilter.value) return false
+    if (search.value.trim()) {
+      const q = search.value.toLowerCase()
+      return d.clientName.toLowerCase().includes(q) || d.id.toLowerCase().includes(q)
+    }
+    return true
+  })
 })
 
 const stats = computed(() => {
@@ -76,32 +82,48 @@ function openDeal(id: string) {
       </button>
     </div>
 
-    <div class="stats">
-      <div class="stat-card surface-card">
-        <span class="stat-label">{{ $t('dashboard.totalDeals') }}</span>
-        <span class="stat-value font-mono">{{ stats.total }}</span>
-        <i class="pi pi-briefcase stat-icon" />
+    <div class="kpi-strip">
+      <div class="kpi-card surface-card">
+        <div class="kpi-row">
+          <div class="kpi-icon-wrap" style="background: var(--gradient-hero)"><i class="pi pi-briefcase" /></div>
+          <div class="kpi-delta neutral"><i class="pi pi-minus" /> all time</div>
+        </div>
+        <span class="kpi-label">{{ $t('dashboard.totalDeals') }}</span>
+        <span class="kpi-value font-mono">{{ stats.total }}</span>
       </div>
-      <div class="stat-card surface-card">
-        <span class="stat-label">{{ $t('dashboard.activeDeals') }}</span>
-        <span class="stat-value font-mono" style="color: var(--success)">{{ stats.active }}</span>
-        <i class="pi pi-bolt stat-icon" />
+      <div class="kpi-card surface-card">
+        <div class="kpi-row">
+          <div class="kpi-icon-wrap" style="background: linear-gradient(135deg,#00c49a,#00d4aa)"><i class="pi pi-bolt" /></div>
+          <div class="kpi-delta up"><i class="pi pi-arrow-up" /> live</div>
+        </div>
+        <span class="kpi-label">{{ $t('dashboard.activeDeals') }}</span>
+        <span class="kpi-value font-mono" style="background: linear-gradient(135deg,#00c49a,#00d4aa); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;">{{ stats.active }}</span>
       </div>
-      <div class="stat-card surface-card">
-        <span class="stat-label">{{ $t('dashboard.disbursed') }}</span>
+      <div class="kpi-card surface-card">
+        <div class="kpi-row">
+          <div class="kpi-icon-wrap" style="background: linear-gradient(135deg,#7b68ee,#9d4edd)"><i class="pi pi-wallet" /></div>
+          <div class="kpi-delta up"><i class="pi pi-arrow-up" /></div>
+        </div>
+        <span class="kpi-label">{{ $t('dashboard.disbursed') }}</span>
         <MonoAmount :value="stats.disbursed" size="lg" />
-        <i class="pi pi-wallet stat-icon" />
       </div>
-      <div class="stat-card surface-card">
-        <span class="stat-label">{{ $t('dashboard.overdue') }}</span>
-        <span class="stat-value font-mono" style="color: var(--danger)">{{ stats.overdue }}</span>
-        <i class="pi pi-exclamation-triangle stat-icon" />
+      <div class="kpi-card surface-card">
+        <div class="kpi-row">
+          <div class="kpi-icon-wrap" style="background: linear-gradient(135deg,#ff5c5c,#ff8c42)"><i class="pi pi-exclamation-triangle" /></div>
+          <div v-if="stats.overdue > 0" class="kpi-delta down"><i class="pi pi-arrow-up" /> needs attention</div>
+          <div v-else class="kpi-delta neutral"><i class="pi pi-check" /> clear</div>
+        </div>
+        <span class="kpi-label">{{ $t('dashboard.overdue') }}</span>
+        <span class="kpi-value font-mono" :style="{ background: stats.overdue > 0 ? 'linear-gradient(135deg,#ff5c5c,#ff8c42)' : 'var(--gradient-hero)', '-webkit-background-clip': 'text', 'background-clip': 'text', color: 'transparent', '-webkit-text-fill-color': 'transparent' }">{{ stats.overdue }}</span>
       </div>
     </div>
 
     <div class="table-card surface-card">
-      <div class="table-head">
-        <h3>{{ $t('dashboard.deals') }}</h3>
+      <div class="table-toolbar">
+        <div class="tt-search">
+          <i class="pi pi-search tt-icon" />
+          <input v-model="search" class="tt-input" :placeholder="$t('dashboard.searchDeals')" type="text" />
+        </div>
         <Select
           v-model="statusFilter"
           :options="statusOptions"
@@ -110,6 +132,7 @@ function openDeal(id: string) {
           :placeholder="$t('dashboard.filterStatus')"
           class="filter-select"
         />
+        <span class="tt-count">{{ visibleDeals.length }} {{ $t('dashboard.deals') }}</span>
       </div>
 
       <DataTable
@@ -146,12 +169,12 @@ function openDeal(id: string) {
             <span class="tariff-pill">{{ data.tariffName }}</span>
           </template>
         </Column>
-        <Column :header="$t('dashboard.amount')">
+        <Column field="amount" :header="$t('dashboard.amount')" sortable>
           <template #body="{ data }">
             <MonoAmount :value="data.amount" size="sm" />
           </template>
         </Column>
-        <Column :header="$t('dashboard.date')">
+        <Column field="createdAt" :header="$t('dashboard.date')" sortable>
           <template #body="{ data }">
             <span class="font-mono date-cell">{{ formatDate(data.createdAt) }}</span>
           </template>
@@ -185,82 +208,76 @@ function openDeal(id: string) {
   align-items: center;
   gap: 0.5rem;
 }
-.stats {
+.kpi-strip {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 1.1rem;
 }
-
-@media (max-width: 900px) {
-  .stats {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 480px) {
-  .stats {
-    grid-template-columns: 1fr 1fr;
-    gap: 0.75rem;
-  }
-  .stat-card {
-    padding: 1rem;
-  }
-  .stat-value {
-    font-size: 1.4rem;
-  }
-  .table-card {
-    padding: 1rem 0.75rem;
-  }
-  .table-head {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-  .filter-select {
-    min-width: unset;
-    width: 100%;
-  }
-}
-.stat-card {
-  padding: 1.3rem;
-  position: relative;
-  overflow: hidden;
+.kpi-card {
+  padding: 1.1rem 1.2rem;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.45rem;
 }
-.stat-label {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.stat-value {
-  font-size: 1.8rem;
-  font-weight: 800;
-}
-.stat-icon {
-  position: absolute;
-  right: 1rem;
-  top: 1rem;
-  font-size: 1.4rem;
-  color: var(--accent-2);
-  opacity: 0.25;
-}
-.table-card {
-  padding: 1.4rem;
-}
-.table-head {
+.kpi-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.1rem;
+  margin-bottom: 0.15rem;
 }
-.table-head h3 {
-  margin: 0;
-  font-size: 1.1rem;
+.kpi-icon-wrap {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+.kpi-delta {
+  font-size: 0.72rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+.kpi-delta.up { color: var(--success); }
+.kpi-delta.down { color: var(--danger); }
+.kpi-delta.neutral { color: var(--text-secondary); }
+.kpi-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+.kpi-value {
+  font-size: 1.75rem;
   font-weight: 800;
+  line-height: 1.1;
+  background: var(--gradient-hero);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+@media (max-width: 900px) {
+  .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .kpi-strip { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .table-toolbar { flex-wrap: wrap; }
+  .filter-select { min-width: unset; width: 100%; }
+}
+
+.table-card {
+  padding: 0;
+  overflow: hidden;
+}
+.table-toolbar {
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0.75rem 1rem;
 }
 .filter-select {
   min-width: 200px;

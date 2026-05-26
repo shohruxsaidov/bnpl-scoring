@@ -108,17 +108,17 @@ function closePanel() {
         <Column :header="$t('deals.client')">
           <template #body="{ data }">{{ data.clientName }}</template>
         </Column>
-        <Column :header="$t('deals.amount')">
+        <Column :header="$t('deals.amount')" sortable field="amount">
           <template #body="{ data }">
             <MonoAmount :value="data.amount" size="sm" />
           </template>
         </Column>
-        <Column :header="$t('deals.status')">
+        <Column :header="$t('deals.status')" sortable field="status">
           <template #body="{ data }">
             <StatusBadge :status="data.status" />
           </template>
         </Column>
-        <Column :header="$t('deals.score')">
+        <Column :header="$t('deals.score')" sortable field="score">
           <template #body="{ data }">
             <span class="font-mono">{{ data.score || '—' }}</span>
           </template>
@@ -131,7 +131,7 @@ function closePanel() {
         <Column :header="$t('deals.agent')">
           <template #body="{ data }">{{ data.agentName }}</template>
         </Column>
-        <Column :header="$t('deals.date')">
+        <Column :header="$t('deals.date')" sortable field="createdAt">
           <template #body="{ data }">
             <span class="font-mono muted">{{ formatDate(data.createdAt) }}</span>
           </template>

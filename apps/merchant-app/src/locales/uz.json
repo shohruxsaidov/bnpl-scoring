@@ -163,7 +163,8 @@
     "amount": "Summa",
     "date": "Sana",
     "open": "Ochish",
-    "noDeals": "Hech qanday shartnoma topilmadi."
+    "noDeals": "Hech qanday shartnoma topilmadi.",
+    "searchDeals": "Shartnomalarni qidirish…"
   },
   "status": {
     "draft": "Qoralama",
@@ -197,7 +198,9 @@
     "mxikNotFound": "MXIK kodi topilmadi",
     "mxikLabeled": "Belgili",
     "packageCode": "Qadoqlash turi",
-    "selectPackage": "Qadoqlash turini tanlang"
+    "selectPackage": "Qadoqlash turini tanlang",
+    "searchPlaceholder": "Mahsulotlarni qidirish…",
+    "productsCount": "ta mahsulot"
   },
   "categories": {
     "addCategory": "Kategoriya qo'shish",
@@ -243,7 +246,9 @@
     "branchAdmin": "Filial admini",
     "added": "Xodim qo'shildi",
     "updated": "Xodim yangilandi",
-    "missingFields": "Barcha majburiy maydonlarni to'ldiring"
+    "missingFields": "Barcha majburiy maydonlarni to'ldiring",
+    "searchPlaceholder": "Xodimlarni qidirish…",
+    "employeesCount": "ta xodim"
   },
   "collectionBoard": {
     "refresh": "Yangilash",

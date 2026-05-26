@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SkeletonTable from '@/components/SkeletonTable.vue'
 import DataTable from 'primevue/datatable'
@@ -18,6 +18,15 @@ const catalog = useCatalogStore()
 const confirm = useConfirm()
 const toast = useToast()
 const { t } = useI18n()
+
+const search = ref('')
+const filteredProducts = computed(() => {
+  if (!search.value.trim()) return catalog.products
+  const q = search.value.toLowerCase()
+  return catalog.products.filter(
+    (p) => p.name.toLowerCase().includes(q) || (p.mxikCode ?? '').includes(q),
+  )
+})
 
 onMounted(() => catalog.fetchAll())
 
@@ -167,21 +176,26 @@ function formatPrice(v: string) {
     <SkeletonTable v-if="catalog.loading" :rows="8" :cols="4" :has-actions="true" :has-header="true" />
 
     <template v-else>
-      <div class="page-actions">
-        <button class="btn-gradient" @click="openNew">
+      <div class="surface-card table-toolbar">
+        <div class="tt-search">
+          <i class="pi pi-search tt-icon" />
+          <input v-model="search" class="tt-input" :placeholder="$t('products.searchPlaceholder')" type="text" />
+        </div>
+        <span class="tt-count">{{ filteredProducts.length }} {{ $t('products.productsCount') }}</span>
+        <button class="btn-gradient" style="margin-left: auto" @click="openNew">
           <i class="pi pi-plus" /> {{ $t('products.addProduct') }}
         </button>
       </div>
 
       <div class="surface-card table-wrap">
-        <DataTable :value="catalog.products" paginator :rows="10" data-key="id">
+        <DataTable :value="filteredProducts" paginator :rows="10" data-key="id">
           <Column field="name" :header="$t('products.name')" sortable :style="{ minWidth: '200px' }" />
           <Column :header="$t('products.category')" :style="{ width: '160px' }">
             <template #body="{ data }">
               <span class="cat-chip">{{ catalog.categoryName(data.categoryId) }}</span>
             </template>
           </Column>
-          <Column :header="$t('products.tanNarxi')" :style="{ width: '180px' }">
+          <Column field="tanNarxi" :header="$t('products.tanNarxi')" sortable :style="{ width: '180px' }">
             <template #body="{ data }">
               <span class="font-mono">{{ formatPrice(data.tanNarxi) }} {{ $t('common.som') }}</span>
             </template>

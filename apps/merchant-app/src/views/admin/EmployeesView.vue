@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SkeletonTable from '@/components/SkeletonTable.vue'
 import DataTable from 'primevue/datatable'
@@ -16,6 +16,15 @@ import type { Employee, EmployeeRole } from '@/types'
 const catalog = useCatalogStore()
 const toast = useToast()
 const { t } = useI18n()
+
+const search = ref('')
+const filteredEmployees = computed(() => {
+  if (!search.value.trim()) return catalog.employees
+  const q = search.value.toLowerCase()
+  return catalog.employees.filter(
+    (e) => e.fullName.toLowerCase().includes(q) || e.email.toLowerCase().includes(q),
+  )
+})
 
 onMounted(() => catalog.fetchAll())
 
@@ -97,14 +106,19 @@ function roleLabel(r: EmployeeRole): string {
     <SkeletonTable v-if="catalog.loading" :rows="6" :cols="4" :has-actions="true" :has-header="true" />
 
     <template v-else>
-      <div class="page-actions">
-        <button class="btn-gradient" @click="openNew">
+      <div class="surface-card table-toolbar">
+        <div class="tt-search">
+          <i class="pi pi-search tt-icon" />
+          <input v-model="search" class="tt-input" :placeholder="$t('employees.searchPlaceholder')" type="text" />
+        </div>
+        <span class="tt-count">{{ filteredEmployees.length }} {{ $t('employees.employeesCount') }}</span>
+        <button class="btn-gradient" style="margin-left: auto" @click="openNew">
           <i class="pi pi-plus" /> {{ $t('employees.addEmployee') }}
         </button>
       </div>
 
       <div class="surface-card table-wrap">
-        <DataTable :value="catalog.employees" data-key="id" paginator :rows="10">
+        <DataTable :value="filteredEmployees" data-key="id" paginator :rows="10">
           <Column :header="$t('employees.name')" sortable field="fullName">
             <template #body="{ data }">
               <div class="emp-cell">

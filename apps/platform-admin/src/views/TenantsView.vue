@@ -7,6 +7,7 @@ import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import ToggleSwitch from 'primevue/toggleswitch'
+import Select from 'primevue/select'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { useForm } from 'vee-validate'
@@ -24,6 +25,17 @@ const toast = useToast()
 const { t } = useI18n()
 
 const showAdd = ref(false)
+
+const selectedRows = ref<Tenant[]>([])
+const filters = ref({
+  global: { value: null as string | null, matchMode: 'contains' },
+  name: { value: null as string | null, matchMode: 'contains' },
+  status: { value: null as string | null, matchMode: 'equals' },
+})
+const statusFilterOptions = [
+  { label: t('tenants.statusActive'), value: 'active' },
+  { label: t('tenants.statusSuspended'), value: 'suspended' },
+]
 
 const schema = toTypedSchema(
   z.object({
@@ -95,8 +107,17 @@ function confirmDelete(tenant: Tenant) {
 
 <template>
   <div class="tenants">
-    <div class="head">
-      <p class="muted count">{{ $t('tenants.summary', { total: tenants.total, active: tenants.activeCount }) }}</p>
+    <div class="table-toolbar surface-card">
+      <div class="tt-search">
+        <i class="pi pi-search tt-icon" />
+        <input
+          v-model="filters.global.value"
+          class="tt-input"
+          :placeholder="$t('tenants.search')"
+          type="text"
+        />
+      </div>
+      <span class="tt-count muted">{{ $t('tenants.summary', { total: tenants.total, active: tenants.activeCount }) }}</span>
       <button class="btn-gradient" @click="openAdd">
         <i class="pi pi-plus" /> {{ $t('tenants.addTenant') }}
       </button>
@@ -105,14 +126,23 @@ function confirmDelete(tenant: Tenant) {
     <div class="surface-card table-wrap">
       <DataTable
         :value="tenants.tenants"
+        v-model:filters="filters"
+        v-model:selection="selectedRows"
         data-key="id"
         paginator
         :rows="10"
         size="small"
+        filter-display="menu"
+        selection-mode="multiple"
+        :global-filter-fields="['name', 'slug', 'contactEmail']"
       >
-        <Column :header="$t('tenants.name')" sortable field="name">
+        <Column selection-mode="multiple" style="width: 2.5rem" />
+        <Column :header="$t('tenants.name')" sortable field="name" filter-field="name" :show-filter-match-modes="false">
           <template #body="{ data }">
             <span class="t-name">{{ data.name }}</span>
+          </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <InputText v-model="filterModel.value" @input="filterCallback()" :placeholder="$t('tenants.filterByName')" />
           </template>
         </Column>
         <Column :header="$t('tenants.slug')">
@@ -120,11 +150,21 @@ function confirmDelete(tenant: Tenant) {
             <span class="font-mono muted">{{ data.slug }}</span>
           </template>
         </Column>
-        <Column :header="$t('tenants.active')">
+        <Column :header="$t('tenants.active')" filter-field="status" :show-filter-match-modes="false">
           <template #body="{ data }">
             <ToggleSwitch
               :model-value="data.status === 'active'"
               @update:model-value="toggleStatus(data)"
+            />
+          </template>
+          <template #filter="{ filterModel, filterCallback }">
+            <Select
+              v-model="filterModel.value"
+              :options="statusFilterOptions"
+              option-label="label"
+              option-value="value"
+              :placeholder="$t('tenants.allStatuses')"
+              @change="filterCallback()"
             />
           </template>
         </Column>
@@ -143,7 +183,7 @@ function confirmDelete(tenant: Tenant) {
             <MonoAmount :value="data.volume" size="sm" />
           </template>
         </Column>
-        <Column :header="$t('tenants.created')">
+        <Column :header="$t('tenants.created')" sortable field="createdAt">
           <template #body="{ data }">
             <span class="font-mono muted">{{ formatDate(data.createdAt) }}</span>
           </template>
@@ -172,6 +212,19 @@ function confirmDelete(tenant: Tenant) {
           </template>
         </Column>
       </DataTable>
+    </div>
+
+    <div class="bulk-bar" :class="{ 'is-active': selectedRows.length > 0 }">
+      <span class="bb-count">{{ selectedRows.length }} {{ $t('tenants.selected') }}</span>
+      <div class="bb-actions">
+        <button class="bb-btn" @click="selectedRows.forEach(t => tenants.toggleStatus(t.id))">
+          <i class="pi pi-refresh" /> {{ $t('tenants.bulkToggleStatus') }}
+        </button>
+        <button class="bb-btn danger" @click="selectedRows.forEach(t => tenants.remove(t.id)); selectedRows = []">
+          <i class="pi pi-trash" /> {{ $t('tenants.bulkDelete') }}
+        </button>
+      </div>
+      <button class="bb-dismiss" @click="selectedRows = []"><i class="pi pi-times" /></button>
     </div>
 
     <Dialog
@@ -231,15 +284,46 @@ function confirmDelete(tenant: Tenant) {
   flex-direction: column;
   gap: 0.9rem;
 }
-.head {
+.table-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.65rem 1rem;
 }
-.count {
-  margin: 0;
+.tt-search {
+  position: relative;
+  flex: 1;
+  max-width: 280px;
+}
+.tt-icon {
+  position: absolute;
+  left: 0.65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+.tt-input {
+  width: 100%;
+  padding: 0.38rem 0.75rem 0.38rem 2rem;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-input, var(--bg-surface));
+  color: var(--text-primary);
   font-size: 0.84rem;
+  outline: none;
+  transition: border-color var(--t-fast) ease;
+}
+.tt-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: var(--sh-focus);
+}
+.tt-count {
+  margin-left: auto;
+  font-size: 0.82rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 .table-wrap {
   padding: 0;
@@ -276,5 +360,75 @@ function confirmDelete(tenant: Tenant) {
 }
 .field {
   margin-bottom: 1rem;
+}
+.bulk-bar {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(120%);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 1rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-strong, var(--border-subtle));
+  border-radius: var(--r-full, 999px);
+  box-shadow: var(--sh-lg, 0 8px 32px rgba(0,0,0,0.25));
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.25s ease;
+  z-index: 50;
+  pointer-events: none;
+}
+.bulk-bar.is-active {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+.bb-count {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent-2);
+  white-space: nowrap;
+}
+.bb-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+.bb-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--r-md, 8px);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.bb-btn:hover {
+  border-color: var(--accent-2);
+  color: var(--accent-2);
+}
+.bb-btn.danger:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+.bb-dismiss {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+}
+.bb-dismiss:hover {
+  color: var(--text-primary);
 }
 </style>

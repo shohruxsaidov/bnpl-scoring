@@ -1,14 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
 import { useTenantsStore } from '@/stores/tenants'
 import { useDealsStore } from '@/stores/deals'
 import StatusBadge from '@/components/StatusBadge.vue'
-import MonoAmount from '@/components/MonoAmount.vue'
-import { formatDate, formatSomCompact, maskPinfl } from '@/utils/money'
+import { formatSomCompact, formatSomShort, formatDate } from '@/utils/money'
 import type { IntegrationStatus } from '@/types'
 
 const tenants = useTenantsStore()
@@ -16,73 +13,347 @@ const deals = useDealsStore()
 const router = useRouter()
 const { t } = useI18n()
 
-const recentDeals = computed(() => deals.recent(10))
-
-const stats = computed(() => [
-  { label: t('overview.totalTenants'), value: String(tenants.total), icon: 'pi pi-building', tone: '' },
+// ---- KPI strip ----
+const kpis = computed(() => [
   {
-    label: t('overview.activeTenants'),
-    value: String(tenants.activeCount),
-    icon: 'pi pi-check-circle',
-    tone: 'var(--success)',
-  },
-  { label: t('overview.totalDeals'), value: '847', icon: 'pi pi-credit-card', tone: '' },
-  {
-    label: t('overview.overdueDeals'),
-    value: '23',
-    icon: 'pi pi-exclamation-triangle',
-    tone: 'var(--danger)',
+    key: 'tenants',
+    label: t('overview.totalTenants'),
+    value: String(tenants.total),
+    delta: `${tenants.activeCount} ${t('overview.activeTenants').toLowerCase()}`,
+    tone: 'neutral' as const,
+    sparkPath: 'M0,28 L25,24 L50,20 L75,22 L100,16 L125,14 L150,10 L175,8 L200,6',
+    sparkColor: '#7b68ee',
+    icon: 'pi pi-building',
   },
   {
+    key: 'deals',
+    label: t('overview.totalDeals'),
+    value: String(deals.deals.length),
+    delta: `${overdueCount.value} ${t('overview.overdueDeals').toLowerCase()}`,
+    tone: overdueCount.value > 0 ? ('down' as const) : ('up' as const),
+    sparkPath: 'M0,30 L25,26 L50,22 L75,20 L100,16 L125,14 L150,12 L175,8 L200,6',
+    sparkColor: '#00d4aa',
+    icon: 'pi pi-credit-card',
+  },
+  {
+    key: 'volume',
     label: t('overview.platformVolume'),
     value: formatSomCompact(8_420_000_000_00),
+    delta: '↑ 12.4% vs last 30d',
+    tone: 'up' as const,
+    sparkPath: 'M0,32 L25,28 L50,24 L75,20 L100,14 L125,12 L150,8 L175,6 L200,4',
+    sparkColor: '#c77dff',
     icon: 'pi pi-chart-line',
-    tone: '',
-    suffix: t('common.som'),
+  },
+  {
+    key: 'overdue',
+    label: t('overview.overdueDeals'),
+    value: String(overdueCount.value),
+    delta: overdueCount.value === 0 ? 'All clear' : `↓ 2 vs yesterday`,
+    tone: overdueCount.value === 0 ? ('up' as const) : ('down' as const),
+    sparkPath: 'M0,10 L25,14 L50,12 L75,18 L100,16 L125,22 L150,18 L175,26 L200,24',
+    sparkColor: '#ff5c5c',
+    icon: 'pi pi-exclamation-triangle',
   },
 ])
 
-const tenantHealth = computed(() =>
-  [...tenants.tenants].sort((a, b) => b.dealCount - a.dealCount).slice(0, 12),
+const overdueCount = computed(() => deals.deals.filter((d) => d.status === 'overdue').length)
+
+// ---- Deals over time chart ----
+const chartRange = ref<'30' | '90' | 'YTD'>('30')
+
+const dealsChartData = computed(() => {
+  const now = Date.now()
+  const MS_DAY = 86_400_000
+  const days = chartRange.value === '30' ? 30 : chartRange.value === '90' ? 90 : 180
+  const N = 24
+  const step = Math.max(1, Math.ceil(days / N))
+  const buckets = Array.from({ length: N }, () => 0)
+
+  deals.deals.forEach((d) => {
+    const ageInDays = Math.floor((now - new Date(d.createdAt).getTime()) / MS_DAY)
+    const bucket = Math.floor(ageInDays / step)
+    if (bucket >= 0 && bucket < N) {
+      buckets[N - 1 - bucket]++
+    }
+  })
+
+  const max = Math.max(...buckets, 1)
+  const W = 540
+  const H = 130
+  const padX = 10
+  const padY = 10
+
+  const pts = buckets.map((v, i) => {
+    const x = +(padX + (i / (N - 1)) * (W - padX * 2)).toFixed(1)
+    const y = +(padY + (1 - v / max) * (H - padY * 2)).toFixed(1)
+    return [x, y]
+  })
+
+  const line = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p[0]},${p[1]}`).join(' ')
+  const fill = `${line} L${W - padX},${H} L${padX},${H} Z`
+
+  return { line, fill }
+})
+
+// ---- Status donut ----
+const CIRC = 301.6 // 2 * π * 48
+
+const statusSegments = computed(() => {
+  const counts: Record<string, number> = { active: 0, scoring: 0, closed: 0, overdue: 0, declined: 0 }
+  deals.deals.forEach((d) => {
+    if (d.status in counts) counts[d.status]++
+  })
+  const total = Math.max(deals.deals.length, 1)
+
+  const config = [
+    { key: 'active',   color: '#00d4aa', label: t('status.active') },
+    { key: 'scoring',  color: '#ffb02e', label: t('status.scoring') },
+    { key: 'closed',   color: '#7b68ee', label: t('status.closed') },
+    { key: 'overdue',  color: '#ff5c5c', label: t('status.overdue') },
+    { key: 'declined', color: '#9898bb', label: t('status.declined') },
+  ]
+
+  let offset = 0
+  return config.map((s) => {
+    const count = counts[s.key] ?? 0
+    const pct = count / total
+    const dash = pct * CIRC
+    const seg = { ...s, count, pct: Math.round(pct * 100), dash, offset }
+    offset += dash
+    return seg
+  })
+})
+
+const dominantSegment = computed(() =>
+  [...statusSegments.value].sort((a, b) => b.count - a.count)[0],
 )
 
+// ---- Activity feed ----
+const activityItems = computed(() =>
+  deals.recent(6).map((d, i) => ({
+    id: d.id,
+    initials: d.clientName?.slice(0, 2).toUpperCase() ?? '??',
+    avClass: `av-${(i % 6) + 1}`,
+    name: d.clientName,
+    tenant: tenants.byId(d.tenantId)?.name ?? '—',
+    status: d.status,
+    amount: formatSomShort(d.amount),
+    time: formatDate(d.createdAt),
+  })),
+)
+
+// ---- Tenant health ----
+const tenantHealth = computed(() =>
+  [...tenants.tenants].sort((a, b) => b.dealCount - a.dealCount).slice(0, 8),
+)
+
+// ---- Integrations ----
 const integrations = computed<IntegrationStatus[]>(() => [
-  { key: 'katm', label: 'KATM', health: 'operational', detail: t('overview.katmDetail') },
-  { key: 'myid', label: 'MyID', health: 'operational', detail: t('overview.myidDetail') },
-  {
-    key: 'plumgate',
-    label: 'PlumGate',
-    health: 'degraded',
-    detail: t('overview.plumgateDetail'),
-  },
-  { key: 'payme', label: 'Payme', health: 'operational', detail: t('overview.paymeDetail') },
-  { key: 'click', label: 'Click', health: 'operational', detail: t('overview.clickDetail') },
+  { key: 'katm',     label: 'KATM',     health: 'operational', detail: t('overview.katmDetail') },
+  { key: 'myid',     label: 'MyID',     health: 'operational', detail: t('overview.myidDetail') },
+  { key: 'plumgate', label: 'PlumGate', health: 'degraded',    detail: t('overview.plumgateDetail') },
+  { key: 'payme',    label: 'Payme',    health: 'operational', detail: t('overview.paymeDetail') },
+  { key: 'click',    label: 'Click',    health: 'operational', detail: t('overview.clickDetail') },
 ])
 
-function tenantName(id: string): string {
-  return tenants.byId(id)?.name ?? '—'
-}
-
-function openTenant(id: string) {
-  router.push(`/tenants/${id}`)
+function healthColor(h: string) {
+  return h === 'operational' ? 'var(--success)' : h === 'degraded' ? 'var(--warning)' : 'var(--danger)'
 }
 </script>
 
 <template>
   <div class="overview">
-    <div class="stat-row">
-      <div v-for="s in stats" :key="s.label" class="stat-card surface-card">
-        <div class="stat-top">
-          <span class="stat-label">{{ s.label }}</span>
-          <i :class="s.icon" class="stat-icon" />
+
+    <!-- ── KPI strip ── -->
+    <div class="kpi-strip">
+      <div v-for="k in kpis" :key="k.key" class="kpi-card">
+        <div class="kpi-label">
+          <i :class="k.icon" />
+          {{ k.label }}
         </div>
-        <span class="stat-value font-mono" :style="{ color: s.tone || 'var(--text-primary)' }">
-          {{ s.value }}<span v-if="s.suffix" class="stat-suffix"> {{ s.suffix }}</span>
-        </span>
+        <div class="kpi-value">{{ k.value }}</div>
+        <div class="kpi-delta" :class="k.tone">{{ k.delta }}</div>
+        <svg
+          class="kpi-spark"
+          viewBox="0 0 200 44"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <defs>
+            <linearGradient :id="`sg-${k.key}`" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" :stop-color="k.sparkColor" stop-opacity="0.30" />
+              <stop offset="1" :stop-color="k.sparkColor" stop-opacity="0" />
+            </linearGradient>
+          </defs>
+          <path :d="k.sparkPath + ' L200,44 L0,44 Z'" :fill="`url(#sg-${k.key})`" />
+          <path
+            :d="k.sparkPath"
+            :stroke="k.sparkColor"
+            stroke-width="2"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
       </div>
     </div>
 
-    <div class="grid">
+    <!-- ── Charts row ── -->
+    <div class="charts-row">
+
+      <!-- Deals over time — line chart -->
+      <div class="chart-card">
+        <div class="chart-head">
+          <div>
+            <h3>Deals over time</h3>
+            <p class="chart-sub">Active & closed by period</p>
+          </div>
+          <div class="tabs">
+            <div
+              v-for="r in (['30', '90', 'YTD'] as const)"
+              :key="r"
+              class="tab"
+              :class="{ 'is-active': chartRange === r }"
+              @click="chartRange = r"
+            >
+              {{ r === '30' ? '30 d' : r === '90' ? '90 d' : 'YTD' }}
+            </div>
+          </div>
+        </div>
+        <div class="chart-body">
+          <svg viewBox="0 0 540 130" width="100%" height="130" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="g-dl" x1="0" x2="1">
+                <stop offset="0" stop-color="#7b68ee" />
+                <stop offset="1" stop-color="#c77dff" />
+              </linearGradient>
+              <linearGradient id="g-df" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#7b68ee" stop-opacity=".28" />
+                <stop offset="1" stop-color="#7b68ee" stop-opacity="0" />
+              </linearGradient>
+            </defs>
+            <g stroke="var(--border-subtle)" stroke-width="1">
+              <line x1="0" y1="32"  x2="540" y2="32" />
+              <line x1="0" y1="65"  x2="540" y2="65" />
+              <line x1="0" y1="98"  x2="540" y2="98" />
+            </g>
+            <path :d="dealsChartData.fill" fill="url(#g-df)" />
+            <path
+              :d="dealsChartData.line"
+              stroke="url(#g-dl)"
+              stroke-width="2.5"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <div class="chart-legend">
+            <div class="legend-item">
+              <span class="legend-swatch" style="background: linear-gradient(90deg,#7b68ee,#c77dff)" />
+              {{ $t('overview.totalDeals') }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status distribution — donut -->
+      <div class="chart-card">
+        <div class="chart-head">
+          <div>
+            <h3>Status distribution</h3>
+            <p class="chart-sub">{{ deals.deals.length }} total deals</p>
+          </div>
+        </div>
+        <div class="chart-body donut-wrap">
+          <svg viewBox="0 0 120 120" width="150" height="150" style="flex-shrink:0" aria-hidden="true">
+            <circle
+              cx="60" cy="60" r="48"
+              fill="none"
+              stroke="var(--border-subtle)"
+              stroke-width="16"
+            />
+            <circle
+              v-for="seg in statusSegments"
+              :key="seg.key"
+              cx="60" cy="60" r="48"
+              fill="none"
+              :stroke="seg.color"
+              stroke-width="16"
+              :stroke-dasharray="`${seg.dash} 301.6`"
+              :stroke-dashoffset="`${-seg.offset}`"
+              transform="rotate(-90 60 60)"
+            />
+            <text
+              x="60" y="56"
+              text-anchor="middle"
+              font-family="Plus Jakarta Sans"
+              font-weight="800"
+              font-size="17"
+              fill="var(--text-primary)"
+            >
+              {{ dominantSegment.pct }}%
+            </text>
+            <text
+              x="60" y="71"
+              text-anchor="middle"
+              font-family="JetBrains Mono"
+              font-size="8"
+              fill="var(--text-secondary)"
+            >
+              {{ dominantSegment.label }}
+            </text>
+          </svg>
+          <div class="donut-legend">
+            <div v-for="seg in statusSegments" :key="seg.key" class="donut-row">
+              <span class="dl-dot" :style="{ background: seg.color, boxShadow: `0 0 5px ${seg.color}` }" />
+              <span class="dl-label">{{ seg.label }}</span>
+              <span class="dl-val font-mono">{{ seg.count }} · {{ seg.pct }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── Data row ── -->
+    <div class="data-row">
+
+      <!-- Tenant health list -->
+      <section class="surface-card panel">
+        <header class="panel-head">
+          <h3 class="section-title">{{ $t('overview.tenantHealth') }}</h3>
+          <button class="btn-ghost sm" @click="router.push('/tenants')">
+            {{ $t('overview.viewAll') }} <i class="pi pi-arrow-right" />
+          </button>
+        </header>
+        <ul class="health-list">
+          <li
+            v-for="(tenant, idx) in tenantHealth"
+            :key="tenant.id"
+            class="health-row"
+            @click="router.push(`/tenants/${tenant.id}`)"
+          >
+            <div class="h-av" :class="`av-${(idx % 6) + 1}`">
+              {{ tenant.name.slice(0, 2).toUpperCase() }}
+            </div>
+            <span
+              class="status-dot"
+              :style="{
+                background: tenant.status === 'active' ? 'var(--success)' : 'var(--danger)',
+                boxShadow: `0 0 6px ${tenant.status === 'active' ? 'var(--success)' : 'var(--danger)'}`,
+              }"
+            />
+            <span class="health-name">{{ tenant.name }}</span>
+            <span class="health-meta font-mono">{{ tenant.dealCount }} {{ $t('overview.deals') }}</span>
+            <span class="health-overdue font-mono" :class="{ zero: tenant.overdueCount === 0 }">
+              {{ tenant.overdueCount }} {{ $t('overview.overdue') }}
+            </span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Activity feed -->
       <section class="surface-card panel">
         <header class="panel-head">
           <h3 class="section-title">{{ $t('overview.recentDeals') }}</h3>
@@ -90,68 +361,30 @@ function openTenant(id: string) {
             {{ $t('overview.viewAll') }} <i class="pi pi-arrow-right" />
           </button>
         </header>
-        <DataTable :value="recentDeals" data-key="id" :rows="10" size="small">
-          <Column :header="$t('overview.dealId')">
-            <template #body="{ data }">
-              <span class="font-mono accent">{{ data.id }}</span>
-            </template>
-          </Column>
-          <Column :header="$t('overview.tenant')">
-            <template #body="{ data }">{{ tenantName(data.tenantId) }}</template>
-          </Column>
-          <Column :header="$t('overview.clientPinfl')">
-            <template #body="{ data }">
-              <span class="font-mono muted">{{ maskPinfl(data.clientPinfl) }}</span>
-            </template>
-          </Column>
-          <Column :header="$t('overview.amount')">
-            <template #body="{ data }">
-              <MonoAmount :value="data.amount" size="sm" />
-            </template>
-          </Column>
-          <Column :header="$t('overview.status')">
-            <template #body="{ data }">
-              <StatusBadge :status="data.status" />
-            </template>
-          </Column>
-          <Column :header="$t('overview.date')">
-            <template #body="{ data }">
-              <span class="font-mono muted">{{ formatDate(data.createdAt) }}</span>
-            </template>
-          </Column>
-        </DataTable>
+        <div class="activity-feed" style="padding: 0 0.9rem;">
+          <div v-for="item in activityItems" :key="item.id" class="act-item">
+            <div class="act-av" :class="item.avClass">{{ item.initials }}</div>
+            <div class="act-txt">
+              <strong>{{ item.name }}</strong>
+              &nbsp;<span style="opacity:.6">via</span>&nbsp;
+              <strong>{{ item.tenant }}</strong>
+              &nbsp;·&nbsp;<span class="act-txn">{{ item.id }}</span>
+              &nbsp;<span class="act-amt">{{ item.amount }}</span>
+            </div>
+            <StatusBadge :status="item.status" style="flex-shrink:0" />
+            <div class="act-time">{{ item.time }}</div>
+          </div>
+          <div v-if="activityItems.length === 0" class="empty-state" style="padding:24px">
+            <div class="es-glyph"><i class="pi pi-inbox" /></div>
+            <h4>No deals yet</h4>
+            <p>Deals will appear here once they're created.</p>
+          </div>
+        </div>
       </section>
 
-      <section class="surface-card panel">
-        <header class="panel-head">
-          <h3 class="section-title">{{ $t('overview.tenantHealth') }}</h3>
-        </header>
-        <ul class="health-list">
-          <li
-            v-for="t in tenantHealth"
-            :key="t.id"
-            class="health-row"
-            @click="openTenant(t.id)"
-          >
-            <span
-              class="status-dot"
-              :style="{
-                background: t.status === 'active' ? 'var(--success)' : 'var(--danger)',
-              }"
-            />
-            <span class="health-name">{{ t.name }}</span>
-            <span class="health-meta font-mono">{{ t.dealCount }} {{ $t('overview.deals') }}</span>
-            <span
-              class="health-overdue font-mono"
-              :class="{ zero: t.overdueCount === 0 }"
-            >
-              {{ t.overdueCount }} {{ $t('overview.overdue') }}
-            </span>
-          </li>
-        </ul>
-      </section>
     </div>
 
+    <!-- ── Integration status ── -->
     <section class="surface-card integ">
       <header class="panel-head">
         <h3 class="section-title">{{ $t('overview.integrationStatus') }}</h3>
@@ -161,8 +394,8 @@ function openTenant(id: string) {
           <span
             class="status-dot"
             :style="{
-              background:
-                i.health === 'operational' ? 'var(--success)' : 'var(--warning)',
+              background: healthColor(i.health),
+              boxShadow: `0 0 8px ${healthColor(i.health)}`,
             }"
           />
           <div class="integ-text">
@@ -175,6 +408,7 @@ function openTenant(id: string) {
         </div>
       </div>
     </section>
+
   </div>
 </template>
 
@@ -184,51 +418,22 @@ function openTenant(id: string) {
   flex-direction: column;
   gap: 1rem;
 }
-.stat-row {
+
+/* Charts row */
+.charts-row {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 0.85rem;
-}
-.stat-card {
-  padding: 0.95rem 1.05rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-}
-.stat-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.stat-label {
-  font-size: 0.74rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-secondary);
-}
-.stat-icon {
-  font-size: 0.95rem;
-  color: var(--accent-2);
-  opacity: 0.7;
-}
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 800;
-  line-height: 1;
-}
-.stat-suffix {
-  font-size: 0.6em;
-  font-weight: 600;
-  opacity: 0.65;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 1rem;
 }
 
-.grid {
+/* Data row */
+.data-row {
   display: grid;
-  grid-template-columns: 60fr 40fr;
+  grid-template-columns: 1fr 1fr;
   gap: 1rem;
   align-items: start;
 }
+
 .panel {
   padding: 0;
   overflow: hidden;
@@ -237,30 +442,27 @@ function openTenant(id: string) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.9rem 1.1rem;
+  padding: 0.85rem 1rem;
   border-bottom: 1px solid var(--border-subtle);
 }
 .btn-ghost.sm {
-  padding: 0.35rem 0.65rem;
-  font-size: 0.76rem;
-}
-.accent {
-  color: var(--accent-2);
-  font-weight: 700;
+  padding: 0.3rem 0.65rem;
+  font-size: 0.74rem;
 }
 
+/* Tenant health */
 .health-list {
   list-style: none;
   margin: 0;
-  padding: 0.4rem;
+  padding: 0.35rem;
   display: flex;
   flex-direction: column;
 }
 .health-row {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.55rem 0.7rem;
+  gap: 0.55rem;
+  padding: 0.55rem 0.65rem;
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.12s ease;
@@ -268,48 +470,59 @@ function openTenant(id: string) {
 .health-row:hover {
   background: color-mix(in srgb, var(--accent-1) 6%, transparent);
 }
+.h-av {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
 .status-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
 }
 .health-name {
   flex: 1;
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .health-meta {
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   color: var(--text-secondary);
 }
 .health-overdue {
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   font-weight: 700;
   color: var(--danger);
-  min-width: 84px;
+  min-width: 80px;
   text-align: right;
 }
 .health-overdue.zero {
   color: var(--text-secondary);
 }
 
+/* Integration */
 .integ {
   padding: 0;
 }
 .integ-row {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 0;
 }
 .integ-item {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 1rem 1.1rem;
+  padding: 0.9rem 1rem;
   border-right: 1px solid var(--border-subtle);
 }
 .integ-item:last-child {
@@ -321,17 +534,17 @@ function openTenant(id: string) {
   line-height: 1.2;
 }
 .integ-label {
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   font-weight: 700;
 }
 .integ-state {
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   color: var(--text-secondary);
   font-weight: 600;
 }
 .integ-detail {
   margin-left: auto;
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   color: var(--text-secondary);
   text-align: right;
 }

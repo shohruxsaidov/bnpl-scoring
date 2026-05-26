@@ -32,15 +32,17 @@ const cfg = computed(() => ({
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.2rem 0.55rem;
+  padding: 0.18rem 0.55rem;
   border-radius: 999px;
   font-size: 0.72rem;
   font-weight: 700;
   white-space: nowrap;
+  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
 }
 .dot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
+  box-shadow: 0 0 6px currentColor;
 }
 </style>
