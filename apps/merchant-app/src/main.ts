@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import piniaPersistedstate from 'pinia-plugin-persistedstate'
 import { VueQueryPlugin } from '@tanstack/vue-query'
 import PrimeVue from 'primevue/config'
 import Aura from '@primeuix/themes/aura'
@@ -26,7 +27,9 @@ const i18n = createI18n({
 
 const app = createApp(App)
 
-app.use(createPinia())
+const pinia = createPinia()
+pinia.use(piniaPersistedstate)
+app.use(pinia)
 app.use(VueQueryPlugin)
 app.use(i18n)
 app.use(PrimeVue, {
@@ -47,9 +50,10 @@ app.use(ToastService)
 app.use(ConfirmationService)
 app.directive('tooltip', Tooltip)
 
-await useAuthStore().restoreSession()
-
-// Router is installed after session restore so the initial navigation
-// fires with the correct auth state already set.
-app.use(router)
-app.mount('#app')
+;(async () => {
+  await useAuthStore().restoreSession()
+  // Router is installed after session restore so the initial navigation
+  // fires with the correct auth state already set.
+  app.use(router)
+  app.mount('#app')
+})()

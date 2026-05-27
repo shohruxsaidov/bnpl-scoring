@@ -71,6 +71,9 @@ interface WizardState {
 }
 
 export const useWizardStore = defineStore('wizard', {
+  persist: {
+    pick: ['currentStep', 'completed', 'sessionData'],
+  },
   state: (): WizardState => ({
     currentStep: 'client',
     completed: {

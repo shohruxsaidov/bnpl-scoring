@@ -26,7 +26,7 @@ export function useClientApi() {
 
   const myidSessionMutation = useMutation({
     mutationFn: ({ regToken, pinfl, retry = false }: { regToken: string; pinfl: string; retry?: boolean }) =>
-      apiFetch<{ regToken: string; iframeUrl?: string; mock?: boolean }>('/merchant/client/myid-session', {
+      apiFetch<{ regToken: string; redirectUrl?: string; mock?: boolean }>('/merchant/client/myid-session', {
         method: 'POST',
         body: JSON.stringify({ regToken, pinfl, ...(retry ? { retry: true } : {}) }),
       }),

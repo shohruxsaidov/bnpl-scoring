@@ -15,6 +15,13 @@
       "when": 1779280154701,
       "tag": "0001_aberrant_mathemanic",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779831104785,
+      "tag": "0002_harsh_stellaris",
+      "breakpoints": true
     }
   ]
 }

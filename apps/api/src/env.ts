@@ -10,6 +10,7 @@ const schema = z.object({
   SESSION_EXPIRES_DAYS: z.coerce.number().default(30),
   MYID_WEB_BASE_URL: z.string().url().optional(),
   MYID_WEB_IFRAME_URL: z.string().url().optional(),
+  MYID_WEB_REDIRECT_URI: z.string().url().optional(),
   MYID_WEB_CLIENT_ID: z.string().optional(),
   MYID_WEB_CLIENT_SECRET: z.string().optional(),
   MINIO_ENDPOINT: z.string().default("localhost"),
@@ -19,6 +20,7 @@ const schema = z.object({
   MINIO_SECRET_KEY: z.string().default("minioadmin"),
   MINIO_BUCKET: z.string().default("scoring-documents"),
   MXIK_API_URL: z.string().url().default("https://utilities.thebetacompany.uz"),
+  REDIS_URL: z.string().default("redis://localhost:6379"),
 });
 
 export const env = schema.parse(process.env);

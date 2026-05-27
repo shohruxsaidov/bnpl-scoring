@@ -52,6 +52,7 @@ interface RegTokenPhase2 {
 export default async function merchantClientRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
   const db = app.db;
+  const redis = app.redis;
 
   const SearchQuery = Type.Object({
     q: Type.String({ minLength: 1, maxLength: 100 }),
@@ -149,7 +150,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
       );
       if (existing) return reply.code(409).send({ code: "client_already_registered" });
 
-      const myidResult = await createMyidSession(db, pinfl, request.ip);
+      const myidResult = await createMyidSession(db, redis, pinfl, request.ip);
 
       const regToken = app.jwt.sign(
         {
@@ -163,7 +164,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
         { expiresIn: "15m" },
       );
 
-      return { regToken, iframeUrl: myidResult.iframeUrl, mock: myidResult.mock };
+      return { regToken, redirectUrl: myidResult.redirectUrl, mock: myidResult.mock };
     },
   );
 
@@ -183,7 +184,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
         return reply.code(400).send({ code: "invalid_step" });
       }
 
-      const myidUser = await exchangeMyidCode(db, request.body.myidCode);
+      const myidUser = await exchangeMyidCode(db, redis, request.body.myidCode);
       if (myidUser.pinfl !== phase2.pinfl) {
         return reply.code(400).send({ code: "pinfl_mismatch" });
       }

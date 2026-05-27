@@ -27,10 +27,27 @@ Every outbound call to an external service is recorded in the `integration_logs`
 
 MyID uses a two-step server-to-server flow:
 
-1. `POST /api/v1/oauth2/access-token` — client credentials grant (form-encoded body with `client_id`, `client_secret`, `grant_type=client_credentials`). Returns a short-lived Bearer token.
+1. `POST /api/v1/oauth2/access-token` — client credentials grant (form-encoded body with `client_id`, `client_secret`, `grant_type=client_credentials`). Returns a short-lived Bearer token cached in Redis (`myid:client_token`, TTL = `expires_in - 60`).
 2. All subsequent MyID calls use `Authorization: Bearer <token>` from step 1.
 
 Basic auth (previously used) was rejected — the MyID dev environment returns `401 Not authenticated` for Basic auth on the session endpoint; the `WWW-Authenticate: Bearer` header confirms Bearer is required.
+
+## MyID verification mode: redirect (not iframe)
+
+Client identity verification uses a **full-page redirect** to the MyID WebSDK, not an embedded iframe.
+
+**Flow (Merchant App):**
+1. Agent enters PINFL → `POST /merchant/client/myid-session` → backend creates a MyID session and returns `redirectUrl`.
+2. Frontend saves `regToken` to `sessionStorage`, then sets `window.location.href = redirectUrl`.
+3. MyID redirects back to `/myid/callback?code=xxx` after verification.
+4. `MyidCallbackView` reads `code` from URL and `regToken` from `sessionStorage`, calls `POST /merchant/client/myid-complete`, stores the confirmed Client in the persisted Wizard store, then redirects to `/wizard`.
+
+**Why redirect over iframe:**
+- iframe postMessage requires the MyID WebSDK to be loaded in a same-origin or permissive CSP context; this was fragile in production.
+- Redirect is the standard OAuth2 pattern — simpler, no timeout logic, no screen-size postMessage, no event listener lifecycle management.
+- The Wizard store is persisted via `pinia-plugin-persistedstate` so Wizard state survives the navigation away and back.
+
+**`redirect_uri`** is configured via `MYID_WEB_REDIRECT_URI` on the API and appended as a query param to the MyID session URL. The callback route `/myid/callback` is public (no auth guard) but does not expose sensitive data — `regToken` is a short-lived signed JWT and `code` is single-use.
 
 ## Named operations (method_name values)
 

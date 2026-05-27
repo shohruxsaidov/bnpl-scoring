@@ -1,13 +1,16 @@
 import { randomUUID } from "node:crypto";
-import type { Db } from "../../../db/index.js";
+import type Redis from "ioredis";
+import type { Db } from "../../../db/index";
 import { env } from "../../../env";
 import {
   createIntegrationClient,
   handleHttpError,
   IntegrationError,
 } from "../../../lib/integrations";
-import { logIntegration } from "../../integrations/log.js";
+import { logIntegration } from "../../integrations/log";
 import { parsePinflBirthDate, parsePinflGender } from "./pinfl";
+
+const MYID_TOKEN_KEY = "myid:client_token";
 
 export interface MyidUserData {
   pinfl: string;
@@ -23,7 +26,7 @@ export interface MyidUserData {
 
 export interface MyidSessionResult {
   sessionId: string;
-  iframeUrl: string | null;
+  redirectUrl: string | null;
   mock: boolean;
 }
 
@@ -33,8 +36,11 @@ function myidClient() {
   return createIntegrationClient(env.MYID_WEB_BASE_URL, "myid");
 }
 
-/** Obtain a short-lived server-to-server access token via client_credentials. */
-async function getClientToken(db: Db): Promise<string> {
+/** Obtain a server-to-server access token via client_credentials, cached in Redis. */
+async function getClientToken(db: Db, redis: Redis): Promise<string> {
+  const cached = await redis.get(MYID_TOKEN_KEY).catch(() => null);
+  if (cached) return cached;
+
   const reqBody = {
     client_id: env.MYID_WEB_CLIENT_ID!,
     client_secret: env.MYID_WEB_CLIENT_SECRET!,
@@ -46,7 +52,11 @@ async function getClientToken(db: Db): Promise<string> {
       .post("api/v1/oauth2/access-token", {
         body: new URLSearchParams(reqBody),
       })
-      .json<{ access_token: string }>();
+      .json<{ access_token: string; expires_in: number }>();
+
+    redis
+      .set(MYID_TOKEN_KEY, data.access_token, "EX", data.expires_in - 60)
+      .catch(() => null);
 
     logIntegration(db, {
       integration: "myid",
@@ -76,11 +86,12 @@ async function getClientToken(db: Db): Promise<string> {
 /** Create a MyID WebSDK session for the given PINFL. */
 export async function createMyidSession(
   db: Db,
+  redis: Redis,
   pinfl: string,
   ipAddress: string,
 ): Promise<MyidSessionResult> {
   const birthDate = parsePinflBirthDate(pinfl);
-  const token = await getClientToken(db);
+  const token = await getClientToken(db, redis);
 
   const reqBody = {
     client_id: env.MYID_WEB_CLIENT_ID,
@@ -109,9 +120,13 @@ export async function createMyidSession(
       errorMessage: null,
     });
 
+    const redirectUrl = env.MYID_WEB_REDIRECT_URI
+      ? `${env.MYID_WEB_IFRAME_URL}?session_id=${data.session_id}&pinfl=${pinfl}&birth_date=${birthDate}&theme=dark&redirect_uri=${encodeURIComponent(env.MYID_WEB_REDIRECT_URI)}`
+      : null;
+
     return {
       sessionId: data.session_id,
-      iframeUrl: `${env.MYID_WEB_IFRAME_URL}?session_id=${data.session_id}&pinfl=${pinfl}&birth_date=${birthDate}&theme=dark&iframe=true`,
+      redirectUrl,
       mock: false,
     };
   } catch (err) {
@@ -131,21 +146,23 @@ export async function createMyidSession(
 /** Exchange an OAuth2 code for MyID user data. */
 export async function exchangeMyidCode(
   db: Db,
+  redis: Redis,
   code: string,
 ): Promise<MyidUserData> {
-  const token = await getClientToken(db);
+  const token = await getClientToken(db, redis);
   const client = myidClient();
 
   const tokenReqBody = {
     grant_type: "authorization_code",
     code,
     client_id: env.MYID_WEB_CLIENT_ID!,
+    client_secret: env.MYID_WEB_CLIENT_SECRET!,
   };
 
   let access_token: string;
   try {
     const tokenData = await client
-      .post("api/v1/oauth2/token", {
+      .post("api/v1/oauth2//access-token", {
         headers: { Authorization: `Bearer ${token}` },
         body: new URLSearchParams(tokenReqBody),
       })
@@ -181,15 +198,21 @@ export async function exchangeMyidCode(
         headers: { Authorization: `Bearer ${access_token}` },
       })
       .json<{
-        pinfl: string;
-        first_name: string;
-        last_name: string;
-        birth_date: string;
-        gender: string;
-        nationality: string;
-        doc_serial: string | null;
-        doc_number: string | null;
-        photo: string | null;
+        profile: {
+          common_data: {
+            pinfl: string;
+            first_name: string;
+            last_name: string;
+            middle_name: string | null;
+            birth_date: string;
+            gender: string;
+            nationality: string | null;
+            nationality_id: string | null;
+          };
+          doc_data: {
+            pass_data: string | null;
+          };
+        };
       }>();
 
     logIntegration(db, {
@@ -202,16 +225,25 @@ export async function exchangeMyidCode(
       errorMessage: null,
     });
 
+    const { common_data, doc_data } = me.profile;
+    const passData = doc_data.pass_data ?? "";
+    const passportSerial = passData.slice(0, 2) || null;
+    const passportNumber = passData.slice(2) || null;
+
+    // MyID returns DD.MM.YYYY — convert to ISO YYYY-MM-DD for Postgres
+    const [day, month, year] = common_data.birth_date.split(".");
+    const birthDate = `${year}-${month}-${day}`;
+
     return {
-      pinfl: me.pinfl,
-      firstName: me.first_name,
-      lastName: me.last_name,
-      birthDate: me.birth_date,
-      gender: me.gender === "female" ? "female" : "male",
-      nationality: me.nationality ?? "UZB",
-      passportSerial: me.doc_serial,
-      passportNumber: me.doc_number,
-      photoUrl: me.photo,
+      pinfl: common_data.pinfl,
+      firstName: common_data.first_name,
+      lastName: common_data.last_name,
+      birthDate,
+      gender: common_data.gender === "2" ? "female" : "male",
+      nationality: common_data.nationality ?? "UZB",
+      passportSerial,
+      passportNumber,
+      photoUrl: null,
     };
   } catch (err) {
     logIntegration(db, {

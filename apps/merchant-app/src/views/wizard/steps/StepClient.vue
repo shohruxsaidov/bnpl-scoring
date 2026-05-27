@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import Checkbox from 'primevue/checkbox'
@@ -31,7 +31,6 @@ type Phase =
   | 'otp_send'
   | 'otp_verify'
   | 'pinfl_entry'
-  | 'myid_pending'
   | 'myid_done'
   | 'katm'
 
@@ -61,75 +60,7 @@ const confirmedClient = ref<Client | null>(wizard.sessionData.client)
 const isNewClient = ref(wizard.sessionData.isNewClient)
 
 // MyID
-const myidIframeUrl = ref<string | null>(null)
-
 const myidError = ref('')
-const iframeRef = ref<HTMLIFrameElement | null>(null)
-
-const MyIDStatus = {
-  EXCEPTION: -1,
-  IN_PROGRESS: 0,
-  LIVENESS_PASSED: 1,
-  LIVENESS_FAILED: 2,
-  RETRY: 3,
-  EXITED: 4,
-  LOADING: 100,
-  LOADED: 101,
-} as const
-const myidTimedOut = ref(false)
-let myidTimeoutId: ReturnType<typeof setTimeout> | null = null
-
-const MYID_TIMEOUT_MS = 30_000
-
-function startMyidTimer() {
-  clearMyidTimer()
-  myidTimedOut.value = false
-  myidTimeoutId = setTimeout(() => { myidTimedOut.value = true }, MYID_TIMEOUT_MS)
-}
-
-function clearMyidTimer() {
-  if (myidTimeoutId !== null) {
-    clearTimeout(myidTimeoutId)
-    myidTimeoutId = null
-  }
-}
-
-function postScreenToIframe() {
-  // iframeRef.value?.contentWindow?.postMessage(
-  //   { cmd: 'screen', screen: window.screen, height: window.innerHeight, width: window.innerWidth },
-  //   '*',
-  // )
-}
-
-function onIframeLoad() {
-  clearMyidTimer()
-  myidTimedOut.value = false
-  postScreenToIframe()
-}
-
-async function reloadMyidIframe() {
-  myidTimedOut.value = false
-  const url = myidIframeUrl.value
-  myidIframeUrl.value = null
-  await nextTick()
-  myidIframeUrl.value = url
-  startMyidTimer()
-}
-
-async function renewMyidSession() {
-  myidError.value = ''
-  try {
-    const data = await myidSessionMutation.mutateAsync({ regToken: regToken.value, pinfl: pinfl.value, retry: true })
-    regToken.value = data.regToken
-    myidIframeUrl.value = null
-    await nextTick()
-    myidIframeUrl.value = data.iframeUrl ?? null
-    myidTimedOut.value = false
-    if (!data.mock) startMyidTimer()
-  } catch {
-    myidError.value = t('stepClient.myidFailed')
-  }
-}
 
 // KATM
 const katmConsent = ref(wizard.sessionData.katmConsent)
@@ -223,9 +154,12 @@ async function startMyId() {
   try {
     const data = await myidSessionMutation.mutateAsync({ regToken: regToken.value, pinfl: pinfl.value })
     regToken.value = data.regToken
-    myidIframeUrl.value = data.iframeUrl ?? null
-    phase.value = 'myid_pending'
-    if (!data.mock) startMyidTimer()
+    if (data.mock) {
+      await completeMyid('mock')
+    } else {
+      sessionStorage.setItem('myid_reg_token', data.regToken)
+      window.location.href = data.redirectUrl!
+    }
   } catch (err) {
     const code = (err as Error).message
     if (code === 'client_already_registered') {
@@ -236,52 +170,7 @@ async function startMyId() {
   }
 }
 
-function handleMyidMessage(e: MessageEvent) {
-  if (e.data?.source !== 'MyIDWebSDK') return
-  const { status, result_note, data } = e.data as {
-    source: string
-    status: number
-    data?: {
-      auth_code?: string
-    }
-    result_note?: string
-  }
-
-
-  switch (status) {
-    case MyIDStatus.LIVENESS_PASSED:
-      completeMyid(data!.auth_code)
-      break
-    case MyIDStatus.LIVENESS_FAILED:
-      clearMyidTimer()
-      myidError.value = result_note ?? t('stepClient.myidFailed')
-      phase.value = 'pinfl_entry'
-      break
-    case MyIDStatus.EXCEPTION:
-      clearMyidTimer()
-      myidError.value = t('stepClient.myidFailed')
-      phase.value = 'pinfl_entry'
-      break
-    case MyIDStatus.EXITED:
-      clearMyidTimer()
-      phase.value = 'pinfl_entry'
-      break
-  }
-}
-
-onMounted(() => {
-  window.addEventListener('message', handleMyidMessage)
-  window.addEventListener('resize', postScreenToIframe)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('message', handleMyidMessage)
-  window.removeEventListener('resize', postScreenToIframe)
-  clearMyidTimer()
-})
-
 async function completeMyid(myidCode?: string) {
-  clearMyidTimer()
   myidError.value = ''
   try {
     const data = await completeMyidMutation.mutateAsync({ regToken: regToken.value, myidCode: myidCode ?? 'mock' })
@@ -323,11 +212,7 @@ function resetSearch() {
   pinflError.value = ''
   katmConsent.value = false
   katmDone.value = false
-  myidIframeUrl.value = null
-
   myidError.value = ''
-  myidTimedOut.value = false
-  clearMyidTimer()
 }
 
 function onNext() {
@@ -498,41 +383,11 @@ const clientFullName = computed(() =>
         <span v-if="pinflError" class="field-error">{{ pinflError }}</span>
       </div>
       <span v-if="myidError" class="field-error mt-1">{{ myidError }}</span>
-      <button class="btn-myid mt-1" :disabled="!pinfl.trim()" @click="startMyId">
-        <span class="myid-logo">MyID</span>
+      <button class="btn-myid mt-1" :disabled="!pinfl.trim() || renewingSession" @click="startMyId">
+        <i v-if="renewingSession" class="pi pi-spin pi-spinner" />
+        <span v-else class="myid-logo">MyID</span>
         {{ $t('stepClient.startVerification') }}
       </button>
-    </div>
-
-    <!-- ── PHASE: myid_pending ───────────────────────────────────────────── -->
-    <div v-else-if="phase === 'myid_pending'" class="myid-panel">
-      <div class="myid-header">
-        <span class="myid-logo-lg">MyID</span>
-        <span class="myid-title">{{ $t('stepClient.identityVerification') }}</span>
-      </div>
-
-      <span v-if="myidError" class="field-error mb-1">{{ myidError }}</span>
-
-      <!-- Real MyID iframe -->
-      <div v-if="myidIframeUrl" class="myid-frame-wrap">
-        <iframe ref="iframeRef" :src="myidIframeUrl" class="myid-frame" allow="camera;fullscreen" allowfullscreen
-          @load="onIframeLoad" />
-        <div v-if="myidTimedOut" class="myid-timeout-overlay">
-          <i class="pi pi-wifi" style="font-size:2rem;opacity:0.5" />
-          <p class="myid-timeout-msg">{{ $t('stepClient.myidTimeout') }}</p>
-          <div class="myid-timeout-actions">
-            <button class="btn-outline" @click="reloadMyidIframe">
-              <i class="pi pi-refresh" /> {{ $t('stepClient.myidReload') }}
-            </button>
-            <button class="btn-gradient" :disabled="renewingSession" @click="renewMyidSession">
-              <i v-if="renewingSession" class="pi pi-spin pi-spinner" />
-              <i v-else class="pi pi-plus-circle" />
-              {{ $t('stepClient.myidNewSession') }}
-            </button>
-          </div>
-        </div>
-      </div>
-
     </div>
 
     <!-- ── PHASE: myid_done ──────────────────────────────────────────────── -->

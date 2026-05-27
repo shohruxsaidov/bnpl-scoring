@@ -75,7 +75,7 @@ function triggerLookupFromForm() {
 }
 
 function selectMxikSuggestion(item: MxikEntry) {
-  form.mxikCode = item.mxik_code ?? item.mxikCode
+  form.mxikCode = item.mxikCode
   _selectMxikSuggestion(item)
 }
 
@@ -90,6 +90,10 @@ function resetMxik() {
   form.packageName = ''
 }
 
+function onMxikBlur() {
+  window.setTimeout(clearSearch, 200)
+}
+
 // ── Form open/close ────────────────────────────────────────────────────────
 
 function openNew() {
@@ -100,8 +104,7 @@ function openNew() {
   form.categoryId = catalog.categories[0]?.id ?? ''
   form.packageCode = null
   form.packageName = ''
-  mxikData.value = null
-  mxikSuggestions.value = []
+  _resetMxik()
   dialogVisible.value = true
 }
 
@@ -113,8 +116,7 @@ function openEdit(p: Product) {
   form.categoryId = p.categoryId
   form.packageCode = p.packageCode ?? null
   form.packageName = p.packageName ?? ''
-  mxikData.value = null
-  mxikSuggestions.value = []
+  _resetMxik()
   dialogVisible.value = true
 }
 
@@ -258,7 +260,7 @@ function formatPrice(v: string) {
                   class="font-mono mxik-input"
                   :placeholder="$t('products.mxikPlaceholder')"
                   @input="onMxikInput"
-                  @blur="() => { setTimeout(clearSearch, 200) }"
+                  @blur="onMxikBlur"
                   @keydown.enter.prevent="triggerLookupFromForm"
                 />
                 <button

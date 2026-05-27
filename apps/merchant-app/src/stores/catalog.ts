@@ -28,7 +28,7 @@ export const useCatalogStore = defineStore('catalog', {
     productsByCategory: (s) => (id: string | null): Product[] =>
       id ? s.products.filter((p) => p.categoryId === id) : s.products,
     activeBranches: (s): Branch[] => s.branches.filter((b) => b.active),
-    activeTariffs: (s): Tariff[] => s.tariffs.filter((t) => t.active),
+    activeTariffs: (s): Tariff[] => s.tariffs.filter((t) => t.active && t.selected),
   },
 
   // -- Tariff helpers (kept as mock until tariffs API is wired) --

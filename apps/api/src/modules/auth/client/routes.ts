@@ -92,6 +92,7 @@ function toUserDto(u: typeof users.$inferSelect) {
 export default async function clientAuthRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
   const db = app.db;
+  const redis = app.redis;
 
   const PhoneBody = Type.Object({
     phone: Type.String({ minLength: 1 }),
@@ -171,7 +172,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       const existing = await findUserByPinfl(db, pinfl);
       if (existing) return reply.code(409).send({ code: "pinfl_taken" });
 
-      const myidResult = await createMyidSession(db, pinfl, request.ip).catch((err) => {
+      const myidResult = await createMyidSession(db, redis, pinfl, request.ip).catch((err) => {
         request.log.error(
           { err },
           "MyID session creation failed, falling back to mock",
@@ -193,7 +194,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
         { expiresIn: "15m" },
       );
 
-      return { regToken, mock: false, iframeUrl: myidResult.iframeUrl };
+      return { regToken, mock: false, redirectUrl: myidResult.redirectUrl };
     },
   );
 
@@ -211,7 +212,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
         return reply.code(400).send({ code: "invalid_step" });
       }
 
-      const myidUser = await exchangeMyidCode(db, request.body.myidCode);
+      const myidUser = await exchangeMyidCode(db, redis, request.body.myidCode);
 
       if (myidUser.pinfl !== payload.pinfl) {
         return reply.code(400).send({ code: "pinfl_mismatch" });

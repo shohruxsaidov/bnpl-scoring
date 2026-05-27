@@ -2,6 +2,7 @@
 import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useWizardStore } from '@/stores/wizard'
+import { useCatalogStore } from '@/stores/catalog'
 import StepClient from './steps/StepClient.vue'
 import StepKarta from './steps/StepKarta.vue'
 import StepTarif from './steps/StepTarif.vue'
@@ -11,6 +12,7 @@ import StepVerification from './steps/StepVerification.vue'
 import StepDone from './steps/StepDone.vue'
 
 const wizard = useWizardStore()
+const catalog = useCatalogStore()
 const { t } = useI18n()
 
 const STEP_LABEL_KEYS: Record<string, string> = {
@@ -28,8 +30,14 @@ function stepLabel(key: string): string {
 }
 
 onMounted(() => {
-  // Fresh wizard session on entry.
-  wizard.reset()
+  // Skip reset when returning from MyID callback (client already set in store).
+  const resuming = sessionStorage.getItem('myid_callback_complete')
+  if (resuming) {
+    sessionStorage.removeItem('myid_callback_complete')
+  } else {
+    wizard.reset()
+  }
+  catalog.fetchAll()
 })
 
 function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {

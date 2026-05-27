@@ -9,6 +9,12 @@ const routes: RouteRecordRaw[] = [
     meta: { public: true, titleKey: 'routeTitle.login' },
   },
   {
+    path: '/myid/callback',
+    name: 'myid-callback',
+    component: () => import('@/views/MyidCallbackView.vue'),
+    meta: { public: true },
+  },
+  {
     path: '/',
     component: () => import('@/components/AppShell.vue'),
     children: [

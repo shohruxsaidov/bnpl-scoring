@@ -11,4 +11,8 @@ select * from merchant_users;
 
 select * FROM integration_logs ORDER BY created_at desc;
 
-delete from integration_logs;
+select *  from integration_logs ORDER BY CREATED_AT DESC limit 10;
+
+select * from tariffs;
+
+delete from tariffs where id = 5;
