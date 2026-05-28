@@ -54,7 +54,7 @@ watch(selectedMerchantId, () => {
 
 const merchantsQuery = useQuery({
   queryKey: ['admin-merchants-list'],
-  queryFn: () => apiFetch<{ merchants: Merchant[] }>('/api/v1/admin/merchants'),
+  queryFn: () => apiFetch<{ merchants: Merchant[] }>('/admin/merchants'),
   staleTime: 60_000,
 })
 
@@ -64,7 +64,7 @@ const employeesQuery = useQuery({
   queryKey: computed(() => ['admin-employees', selectedMerchantId.value]),
   queryFn: () =>
     apiFetch<{ employees: Employee[] }>(
-      `/api/v1/admin/employees?merchantId=${selectedMerchantId.value}`,
+      `/admin/employees?merchantId=${selectedMerchantId.value}`,
     ),
   enabled: computed(() => !!selectedMerchantId.value && targetType.value === 'employee'),
   staleTime: 30_000,
@@ -76,7 +76,7 @@ const clientSearchQuery = useQuery({
   queryKey: computed(() => ['admin-client-search', clientSearch.value]),
   queryFn: () =>
     apiFetch<{ clients: ClientResult[] }>(
-      `/api/v1/admin/notifications/clients/search?q=${encodeURIComponent(clientSearch.value)}`,
+      `/admin/notifications/clients/search?q=${encodeURIComponent(clientSearch.value)}`,
     ),
   enabled: computed(() => clientSearch.value.length >= 2 && targetType.value === 'client'),
   staleTime: 15_000,
@@ -86,7 +86,7 @@ const clientResults = computed<ClientResult[]>(() => clientSearchQuery.data.valu
 
 const broadcastsQuery = useQuery({
   queryKey: ['admin-broadcasts'],
-  queryFn: () => apiFetch<{ broadcasts: Broadcast[] }>('/api/v1/admin/notifications/broadcasts'),
+  queryFn: () => apiFetch<{ broadcasts: Broadcast[] }>('/admin/notifications/broadcasts'),
   staleTime: 30_000,
 })
 
@@ -101,7 +101,7 @@ const sendMutation = useMutation({
     title: string
     body: string
   }) =>
-    apiFetch<{ ok: boolean; recipientCount: number }>('/api/v1/admin/notifications/broadcast', {
+    apiFetch<{ ok: boolean; recipientCount: number }>('/admin/notifications/broadcast', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),

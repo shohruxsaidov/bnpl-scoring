@@ -204,9 +204,9 @@ function drawTable(
   colWidths: number[],
   headers: string[],
   rows: string[][],
-  opts: { fontSize?: number; headerFontSize?: number; rowHeight?: number } = {},
+  opts: { fontSize?: number; headerFontSize?: number; rowHeight?: number; colAlignments?: Array<'left' | 'center' | 'right'> } = {},
 ): number {
-  const { fontSize = 8, headerFontSize = 7.5, rowHeight = 16 } = opts
+  const { fontSize = 8, headerFontSize = 7.5, rowHeight = 16, colAlignments } = opts
   const totalW = colWidths.reduce((a, b) => a + b, 0)
   const headerH = rowHeight + 1
 
@@ -240,9 +240,11 @@ function drawTable(
       const cw = colWidths[ci] ?? 0
       const cell = row[ci] ?? ''
       const align: 'left' | 'center' | 'right' =
-        ci === 0 ? 'center'
-        : ci === row.length - 1 ? 'right'
-        : 'left'
+        colAlignments?.[ci] ?? (
+          ci === 0 ? 'center'
+          : ci === row.length - 1 ? 'right'
+          : 'left'
+        )
       doc.fillColor('#1a1a1a').text(cell, cx2 + 3, curY + 4, {
         width: cw - 6,
         align,
@@ -493,7 +495,9 @@ export async function generateKontrakt(data: KontraktData, lang: 'ru' | 'uz'): P
   // ── Section 3 — Schedule ──────────────────────────────────────────────────
   y = sectionTitle(doc, t.section3, y)
 
-  const sColW = [28, 120, CONTENT_W / 2 - 28, CONTENT_W / 2 - 120 + 28]
+  const sColFixed = 28 + 120
+  const sColMoney = (CONTENT_W - sColFixed) / 2
+  const sColW = [28, 120, sColMoney, sColMoney]
   const sHeaders = [t.thPayNum, t.thDueDate, t.thPayAmount, t.thRemaining]
 
   let remaining = data.totalPayable
@@ -510,7 +514,11 @@ export async function generateKontrakt(data: KontraktData, lang: 'ru' | 'uz'): P
   // Opening balance row
   const initRow = ['', '', `0 ${t.currency}`, `${fmt(data.totalPayable)} ${t.currency}`]
 
-  y = drawTable(doc, y, sColW, sHeaders, [initRow, ...scheduleRows], { fontSize: 8.5, rowHeight: 14 })
+  y = drawTable(doc, y, sColW, sHeaders, [initRow, ...scheduleRows], {
+    fontSize: 8.5,
+    rowHeight: 14,
+    colAlignments: ['center', 'left', 'right', 'right'],
+  })
   y = drawMergedTotalRow(doc, y - 8, [
     { text: t.scheduleTotal, width: (sColW[0] ?? 0) + (sColW[1] ?? 0), align: 'right' },
     { text: `${fmt(data.totalPayable)} ${t.currency}`, width: sColW[2] ?? 0, align: 'right' },

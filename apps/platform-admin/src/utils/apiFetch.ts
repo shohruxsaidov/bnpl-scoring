@@ -21,7 +21,7 @@ export async function apiFetch<T = any>(path: string, opts: RequestInit = {}): P
     fetch(`${API}${path}`, {
       ...opts,
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json', ...(opts.headers ?? {}) },
+      headers: { ...(opts.body != null ? { 'Content-Type': 'application/json' } : {}), ...(opts.headers ?? {}) },
     })
 
   let res = await makeRequest()

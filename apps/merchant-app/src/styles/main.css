@@ -470,6 +470,76 @@ a {
 }
 
 /* ---------------------------------------------------------------------------
+   PrimeVue MultiSelect — mirrors Select overrides
+--------------------------------------------------------------------------- */
+
+.p-multiselect {
+  background: var(--bg-base) !important;
+  border-color: var(--border-subtle) !important;
+  border-radius: 10px !important;
+  color: var(--text-primary) !important;
+}
+
+.p-multiselect:not(.p-disabled):hover {
+  border-color: var(--accent-1) !important;
+}
+
+.p-multiselect:not(.p-disabled).p-focus {
+  border-color: var(--accent-1) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-1) 20%, transparent) !important;
+}
+
+.p-multiselect-label {
+  color: var(--text-primary) !important;
+}
+
+.p-multiselect-label.p-placeholder {
+  color: var(--text-muted) !important;
+}
+
+.p-multiselect-overlay {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+}
+
+.p-multiselect-header {
+  background: var(--bg-surface) !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+  padding: 0.5rem 0.75rem !important;
+}
+
+.p-multiselect-option {
+  color: var(--text-primary) !important;
+}
+
+.p-multiselect-option:hover,
+.p-multiselect-option.p-focus {
+  background: color-mix(in srgb, var(--accent-1) 12%, transparent) !important;
+  color: var(--text-primary) !important;
+}
+
+.p-multiselect-option.p-highlight {
+  background: color-mix(in srgb, var(--accent-1) 15%, transparent) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Checkbox inside MultiSelect */
+.p-multiselect-option .p-checkbox .p-checkbox-box,
+.p-multiselect-header .p-checkbox .p-checkbox-box {
+  background: var(--bg-base) !important;
+  border-color: var(--border-default) !important;
+  border-radius: 5px !important;
+}
+
+.p-multiselect-option .p-checkbox.p-highlight .p-checkbox-box,
+.p-multiselect-header .p-checkbox.p-highlight .p-checkbox-box {
+  background: var(--accent-1) !important;
+  border-color: var(--accent-1) !important;
+}
+
+/* ---------------------------------------------------------------------------
    Avatar color variants (av-1…av-6)
 --------------------------------------------------------------------------- */
 .av-1 { background: linear-gradient(135deg, #7b68ee, #9d4edd); }

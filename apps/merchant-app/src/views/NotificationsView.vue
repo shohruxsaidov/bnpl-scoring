@@ -6,7 +6,7 @@ import Skeleton from 'primevue/skeleton'
 import { useNotificationsStore, type AppNotification, type NotificationType } from '@/stores/notifications'
 import { usePageLoad } from '@/composables/usePageLoad'
 
-const { loading } = usePageLoad(600)
+const { loading } = usePageLoad(0)
 
 const store = useNotificationsStore()
 const router = useRouter()
@@ -106,97 +106,88 @@ function open(n: AppNotification) {
 
     <!-- real content -->
     <template v-else>
-    <!-- header row -->
-    <div class="page-top">
-      <div class="tabs">
-        <button
-          class="tab-btn"
-          :class="{ active: tab === 'all' }"
-          @click="tab = 'all'"
-        >
-          {{ t('notifications.tabAll') }}
-          <span class="tab-count">{{ store.items.length }}</span>
-        </button>
-        <button
-          class="tab-btn"
-          :class="{ active: tab === 'unread' }"
-          @click="tab = 'unread'"
-        >
-          {{ t('notifications.tabUnread') }}
-          <span v-if="store.unreadCount > 0" class="tab-count unread-count">
-            {{ store.unreadCount }}
-          </span>
-        </button>
-      </div>
+      <!-- header row -->
+      <div class="page-top">
+        <div class="tabs">
+          <button class="tab-btn" :class="{ active: tab === 'all' }" @click="tab = 'all'">
+            {{ t('notifications.tabAll') }}
+            <span class="tab-count">{{ store.items.length }}</span>
+          </button>
+          <button class="tab-btn" :class="{ active: tab === 'unread' }" @click="tab = 'unread'">
+            {{ t('notifications.tabUnread') }}
+            <span v-if="store.unreadCount > 0" class="tab-count unread-count">
+              {{ store.unreadCount }}
+            </span>
+          </button>
+        </div>
 
-      <div class="top-actions">
-        <button
-          v-if="store.unreadCount > 0"
-          class="action-btn"
-          @click="store.markAllRead()"
-        >
-          <i class="pi pi-check-square" />
-          {{ t('notifications.markAllRead') }}
-        </button>
-        <button
-          v-if="store.items.some((n) => n.read)"
-          class="action-btn danger"
-          @click="store.clearRead()"
-        >
-          <i class="pi pi-trash" />
-          {{ t('notifications.clearRead') }}
-        </button>
-      </div>
-    </div>
-
-    <!-- empty state -->
-    <div v-if="filtered.length === 0" class="empty surface-card">
-      <i class="pi pi-bell-slash empty-icon" />
-      <p class="empty-text">{{ t('notifications.empty') }}</p>
-    </div>
-
-    <!-- grouped list -->
-    <template v-else>
-      <div v-for="group in groups" :key="group.key" class="group">
-        <div class="group-label">{{ dayLabel(group.key) }}</div>
-        <div class="group-list surface-card">
-          <div
-            v-for="(n, idx) in group.items"
-            :key="n.id"
-            class="item"
-            :class="{ unread: !n.read, last: idx === group.items.length - 1 }"
-            @click="open(n)"
-          >
-            <div class="icon-wrap" :style="{ color: colorMap[n.type] }">
-              <i :class="iconMap[n.type]" />
-            </div>
-
-            <div class="content">
-              <div class="row-top">
-                <span class="item-title">{{ t(n.titleKey) }}</span>
-                <span class="item-time">{{ timeStr(n.createdAt) }}</span>
-              </div>
-              <div class="item-body">{{ t(n.bodyKey, n.params) }}</div>
-              <div v-if="n.dealId" class="deal-tag">
-                <i class="pi pi-file" />
-                {{ n.dealId }}
-              </div>
-            </div>
-
-            <span v-if="!n.read" class="dot" />
-          </div>
+        <div class="top-actions">
+          <button v-if="store.unreadCount > 0" class="action-btn" @click="store.markAllRead()">
+            <i class="pi pi-check-square" />
+            {{ t('notifications.markAllRead') }}
+          </button>
+          <button v-if="store.items.some((n) => n.read)" class="action-btn danger" @click="store.clearRead()">
+            <i class="pi pi-trash" />
+            {{ t('notifications.clearRead') }}
+          </button>
         </div>
       </div>
-    </template>
+
+      <!-- empty state -->
+      <div v-if="filtered.length === 0" class="empty surface-card">
+        <i class="pi pi-bell-slash empty-icon" />
+        <p class="empty-text">{{ t('notifications.empty') }}</p>
+      </div>
+
+      <!-- grouped list -->
+      <template v-else>
+        <div v-for="group in groups" :key="group.key" class="group">
+          <div class="group-label">{{ dayLabel(group.key) }}</div>
+          <div class="group-list surface-card">
+            <div v-for="(n, idx) in group.items" :key="n.id" class="item"
+              :class="{ unread: !n.read, last: idx === group.items.length - 1 }" @click="open(n)">
+              <div class="icon-wrap" :style="{ color: colorMap[n.type] }">
+                <i :class="iconMap[n.type]" />
+              </div>
+
+              <div class="content">
+                <div class="row-top">
+                  <span class="item-title">{{ t(n.titleKey) }}</span>
+                  <span class="item-time">{{ timeStr(n.createdAt) }}</span>
+                </div>
+                <div class="item-body">{{ t(n.bodyKey, n.params) }}</div>
+                <div v-if="n.dealId" class="deal-tag">
+                  <i class="pi pi-file" />
+                  {{ n.dealId }}
+                </div>
+              </div>
+
+              <span v-if="!n.read" class="dot" />
+            </div>
+          </div>
+        </div>
+      </template>
     </template>
   </div>
 </template>
 
 <style scoped>
 /* skeleton */
-.sk-group { display: flex; flex-direction: column; gap: 0.5rem; }
-.sk-day-label { margin-left: 0.2rem; }
-.sk-list { border-radius: 14px; overflow: hidden; }
+.sk-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sk-day-label {
+  margin-left: 0.2rem;
+}
+
+.sk-list {
+  border-radius: 14px;
+  overflow: hidden;
+}
+
 .sk-notif-row {
   display: flex;
   align-items: center;
@@ -204,10 +195,27 @@ function open(n: AppNotification) {
   padding: 1rem 1.2rem;
   border-bottom: 1px solid var(--border-subtle);
 }
-.sk-notif-row.last-row { border-bottom: none; }
-.sk-body { flex: 1; display: flex; flex-direction: column; gap: 0.5rem; }
-.sk-body-top { display: flex; justify-content: space-between; align-items: center; }
-.sk-body-line2 { margin-top: 0.1rem; }
+
+.sk-notif-row.last-row {
+  border-bottom: none;
+}
+
+.sk-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sk-body-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sk-body-line2 {
+  margin-top: 0.1rem;
+}
 
 .notifications-page {
   display: flex;
@@ -232,6 +240,7 @@ function open(n: AppNotification) {
   border-radius: 12px;
   padding: 0.25rem;
 }
+
 .tab-btn {
   display: flex;
   align-items: center;
@@ -246,11 +255,13 @@ function open(n: AppNotification) {
   cursor: pointer;
   transition: all 0.15s;
 }
+
 .tab-btn.active {
   background: var(--gradient-accent);
   color: #fff;
   box-shadow: var(--accent-glow);
 }
+
 .tab-count {
   font-size: 0.72rem;
   font-weight: 800;
@@ -260,10 +271,12 @@ function open(n: AppNotification) {
   padding: 0.1rem 0.45rem;
   line-height: 1.4;
 }
+
 .tab-btn.active .tab-count {
   background: rgba(255, 255, 255, 0.25);
   color: #fff;
 }
+
 .unread-count {
   background: var(--danger) !important;
   color: #fff !important;
@@ -273,6 +286,7 @@ function open(n: AppNotification) {
   display: flex;
   gap: 0.5rem;
 }
+
 .action-btn {
   display: flex;
   align-items: center;
@@ -287,10 +301,12 @@ function open(n: AppNotification) {
   cursor: pointer;
   transition: all 0.15s;
 }
+
 .action-btn:hover {
   color: var(--accent-2);
   border-color: var(--accent-2);
 }
+
 .action-btn.danger:hover {
   color: var(--danger);
   border-color: var(--danger);
@@ -303,11 +319,13 @@ function open(n: AppNotification) {
   gap: 0.75rem;
   padding: 3rem 2rem;
 }
+
 .empty-icon {
   font-size: 2.5rem;
   color: var(--text-secondary);
   opacity: 0.3;
 }
+
 .empty-text {
   color: var(--text-secondary);
   font-size: 0.9rem;
@@ -319,6 +337,7 @@ function open(n: AppNotification) {
   flex-direction: column;
   gap: 0.5rem;
 }
+
 .group-label {
   font-size: 0.72rem;
   font-weight: 800;
@@ -328,6 +347,7 @@ function open(n: AppNotification) {
   opacity: 0.65;
   padding: 0 0.2rem;
 }
+
 .group-list {
   border-radius: 14px;
   overflow: hidden;
@@ -343,15 +363,19 @@ function open(n: AppNotification) {
   border-bottom: 1px solid var(--border-subtle);
   transition: background 0.13s;
 }
+
 .item.last {
   border-bottom: none;
 }
+
 .item:hover {
   background: var(--bg-surface);
 }
+
 .item.unread {
   background: color-mix(in srgb, var(--accent-2) 5%, transparent);
 }
+
 .item.unread:hover {
   background: color-mix(in srgb, var(--accent-2) 9%, transparent);
 }
@@ -367,6 +391,7 @@ function open(n: AppNotification) {
   flex-shrink: 0;
   font-size: 1.1rem;
 }
+
 .item.unread .icon-wrap {
   background: color-mix(in srgb, currentColor 12%, var(--bg-surface));
 }
@@ -375,6 +400,7 @@ function open(n: AppNotification) {
   flex: 1;
   min-width: 0;
 }
+
 .row-top {
   display: flex;
   align-items: center;
@@ -382,10 +408,12 @@ function open(n: AppNotification) {
   gap: 0.5rem;
   margin-bottom: 0.2rem;
 }
+
 .item-title {
   font-size: 0.88rem;
   font-weight: 700;
 }
+
 .item-time {
   font-size: 0.72rem;
   color: var(--text-secondary);
@@ -393,12 +421,14 @@ function open(n: AppNotification) {
   font-weight: 600;
   white-space: nowrap;
 }
+
 .item-body {
   font-size: 0.82rem;
   color: var(--text-secondary);
   line-height: 1.45;
   margin-bottom: 0.35rem;
 }
+
 .deal-tag {
   display: inline-flex;
   align-items: center;
@@ -410,6 +440,7 @@ function open(n: AppNotification) {
   border-radius: 6px;
   padding: 0.15rem 0.5rem;
 }
+
 .deal-tag i {
   font-size: 0.65rem;
 }
@@ -431,9 +462,11 @@ function open(n: AppNotification) {
     flex-direction: column;
     align-items: flex-start;
   }
+
   .item {
     padding: 0.85rem 0.9rem;
   }
+
   .row-top {
     flex-direction: column;
     align-items: flex-start;

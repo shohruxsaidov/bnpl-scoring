@@ -73,7 +73,7 @@ export const useNotificationsStore = defineStore('notifications', {
   actions: {
     async fetchAll() {
       try {
-        const data = await apiFetch<{ notifications: ApiNotification[] }>('/api/v1/notifications')
+        const data = await apiFetch<{ notifications: ApiNotification[] }>('/notifications')
         this.items = data.notifications.map(toAppNotification)
       } catch {
         // non-fatal: leave existing items
@@ -82,7 +82,7 @@ export const useNotificationsStore = defineStore('notifications', {
 
     connectSSE() {
       if (this._source) return
-      const source = new EventSource(`${API}/api/v1/notifications/stream`, {
+      const source = new EventSource(`${API}/notifications/stream`, {
         withCredentials: true,
       })
       source.addEventListener('notification', (e) => {
@@ -106,7 +106,7 @@ export const useNotificationsStore = defineStore('notifications', {
       const n = this.items.find((i) => i.id === id)
       if (!n || n.read) return
       n.read = true
-      apiFetch(`/api/v1/notifications/${id}/read`, { method: 'PATCH' }).catch(() => {
+      apiFetch(`/notifications/${id}/read`, { method: 'PATCH' }).catch(() => {
         n.read = false
       })
     },
@@ -114,7 +114,7 @@ export const useNotificationsStore = defineStore('notifications', {
     async markAllRead() {
       const unread = this.items.filter((n) => !n.read)
       unread.forEach((n) => (n.read = true))
-      apiFetch('/api/v1/notifications/read-all', { method: 'POST' }).catch(() => {
+      apiFetch('/notifications/read-all', { method: 'POST' }).catch(() => {
         unread.forEach((n) => (n.read = false))
       })
     },
@@ -122,7 +122,7 @@ export const useNotificationsStore = defineStore('notifications', {
     async clearRead() {
       const before = this.items
       this.items = this.items.filter((n) => !n.read)
-      apiFetch('/api/v1/notifications', { method: 'DELETE' }).catch(() => {
+      apiFetch('/notifications', { method: 'DELETE' }).catch(() => {
         this.items = before
       })
     },
