@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { formatDate, formatSomShort } from '@/utils/money'
-import { useDealQuery } from '@/composables/useDealsApi'
+import { useDealQuery, fetchContractPdfUrl } from '@/composables/useDealsApi'
 
 const route = useRoute()
 const router = useRouter()
@@ -17,6 +17,18 @@ const deal = computed(() => dealData.value ?? null)
 const agent = computed(() => deal.value ? { fullName: deal.value.agentName, phone: null } : null)
 
 const activeTab = ref('sdelki')
+const pdfLoading = ref(false)
+
+async function openContractPdf() {
+  if (pdfLoading.value) return
+  pdfLoading.value = true
+  try {
+    const url = await fetchContractPdfUrl(dealId.value)
+    window.open(url, '_blank')
+  } finally {
+    pdfLoading.value = false
+  }
+}
 const TABS = computed(() => [
   { key: 'sdelki', label: t('dealDetail.tabDeals') },
   { key: 'status', label: t('dealDetail.tabStatus') },
@@ -267,8 +279,9 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
         <span class="bc-current font-mono">{{ deal.id }}</span>
       </div>
       <div class="hdr-actions">
-        <button class="btn-ghost btn-sm">
-          <i class="pi pi-file-pdf" /> {{ $t('dealDetail.contractPdf') }}
+        <button class="btn-ghost btn-sm" :disabled="pdfLoading" @click="openContractPdf">
+          <i :class="pdfLoading ? 'pi pi-spin pi-spinner' : 'pi pi-file-pdf'" />
+          {{ $t('dealDetail.contractPdf') }}
         </button>
         <button class="btn-cancel btn-sm">
           <i class="pi pi-times-circle" /> {{ $t('dealDetail.cancel') }}

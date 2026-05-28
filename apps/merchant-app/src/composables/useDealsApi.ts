@@ -24,6 +24,7 @@ export interface DealListItem {
   tariffName: string | null
   scoreSum: number | null
   scoringDecision: string | null
+  lang: 'ru' | 'uz'
 }
 
 export interface DealBasketItem {
@@ -47,6 +48,9 @@ export interface DealScheduleRow {
 export interface DealDetail extends DealListItem {
   basket: DealBasketItem[]
   schedule: DealScheduleRow[]
+  branchName: string | null
+  merchantInn: string | null
+  pdfUrl: string | null
 }
 
 export interface CreateDealInput {
@@ -57,6 +61,7 @@ export interface CreateDealInput {
   signingToken: string
   scoreSum?: number | null
   scoringDecision?: string | null
+  lang?: 'ru' | 'uz'
 }
 
 // ---------------------------------------------------------------------------
@@ -87,6 +92,12 @@ export function useDealQuery(id: Ref<string>) {
       apiFetch<{ deal: DealDetail }>(`/merchant/deals/${id.value}`).then((r) => r.deal),
     enabled: () => !!id.value,
   })
+}
+
+/** Fetch a 24-hour presigned URL for the deal's Kontrakt PDF (generates on first call). */
+export async function fetchContractPdfUrl(dealId: string): Promise<string> {
+  const res = await apiFetch<{ url: string }>(`/merchant/deals/${dealId}/contract-pdf`)
+  return res.url
 }
 
 /** Create a new deal (agent only). Invalidates the deals list on success. */

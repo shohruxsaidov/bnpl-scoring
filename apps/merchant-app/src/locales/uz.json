@@ -680,7 +680,8 @@
     "myidVerifiedHint": "Mijoz shaxsi tasdiqlandi. Shartnomani yarating.",
     "createDeal": "Shartnoma yaratish",
     "creatingDeal": "Shartnoma yaratilmoqda…",
-    "signSubmit": "Imzolash va yuborish"
+    "signSubmit": "Imzolash va yuborish",
+    "contractLang": "Shartnoma tili:"
   },
   "stepDone": {
     "title": "Tayyor!",

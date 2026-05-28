@@ -5,6 +5,7 @@ import { clients } from '../../id/db/schema';
 import { createClient, findClientByPinflAndMerchant, searchClients } from './service';
 import { createOtp, verifyOtp } from '../../auth/client/service';
 import { createMyidSession, exchangeMyidCode } from '../../auth/client/myid';
+import { resolveAndCreateDeal } from '../deals/service';
 import { env } from '../../../env';
 
 function normalizePhone(input: string): string {
@@ -266,6 +267,18 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
   const MyidSignCompleteBody = Type.Object({
     signingSessionToken: Type.String({ minLength: 1 }),
     myidCode: Type.String({ minLength: 1 }),
+    // OTP consent proof + deal fields — everything needed to create the deal
+    // atomically after verification so the callback view makes one call total.
+    signingToken: Type.String({ minLength: 1 }),
+    clientId: Type.String({ minLength: 1 }),
+    tariffId: Type.String({ minLength: 1 }),
+    basket: Type.Array(
+      Type.Object({ productId: Type.String({ minLength: 1 }), quantity: Type.Integer({ minimum: 1 }) }),
+      { minItems: 1 },
+    ),
+    paymentDay: Type.Integer({ minimum: 1, maximum: 28 }),
+    scoreSum: Type.Optional(Type.Number()),
+    scoringDecision: Type.Optional(Type.String()),
   });
 
   /**
@@ -296,14 +309,33 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
 
   /**
    * POST /merchant/client/myid-sign-complete
-   * Exchange the MyID auth_code returned by the signing callback. Verifies that
-   * the face-scanned PINFL matches the PINFL stored in the signingSessionToken.
-   * Returns { verified: true } — no new client record is created.
+   * Single-call endpoint used by the MyID signing callback:
+   *  1. Verifies the OTP signingToken (client consent proof)
+   *  2. Verifies the signingSessionToken (MyID session correlation)
+   *  3. Exchanges the MyID auth_code and confirms PINFL match
+   *  4. Creates the deal atomically via resolveAndCreateDeal
+   * Returns { verified: true, dealId }.
    */
   fastify.post(
     '/myid-sign-complete',
     { schema: { body: MyidSignCompleteBody }, preHandler: app.verifyMerchantJwt },
     async (request, reply) => {
+      const jwtPayload = request.user as { sub: string; merchantId: string; branchId: string; role: string };
+
+      // ── 1. Verify OTP consent token ────────────────────────────────────────
+      let signingPayload: { phone: string; purpose: string };
+      try {
+        signingPayload = app.jwt.verify<{ phone: string; purpose: string }>(
+          request.body.signingToken,
+        );
+      } catch {
+        return reply.code(400).send({ code: 'invalid_signing_token' });
+      }
+      if (signingPayload.purpose !== 'deal_signing') {
+        return reply.code(400).send({ code: 'invalid_signing_purpose' });
+      }
+
+      // ── 2. Verify MyID session token ───────────────────────────────────────
       let session: { pinfl: string; purpose: string };
       try {
         session = app.jwt.verify<{ pinfl: string; purpose: string }>(
@@ -312,17 +344,40 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
       } catch {
         return reply.code(400).send({ code: 'invalid_signing_session' });
       }
-
       if (session.purpose !== 'deal_signing') {
         return reply.code(400).send({ code: 'invalid_purpose' });
       }
 
+      // ── 3. Exchange MyID code & confirm PINFL ──────────────────────────────
       const myidUser = await exchangeMyidCode(db, redis, request.body.myidCode);
       if (myidUser.pinfl !== session.pinfl) {
         return reply.code(400).send({ code: 'pinfl_mismatch' });
       }
 
-      return { verified: true };
+      // ── 4. Create deal atomically ──────────────────────────────────────────
+      const { basket, paymentDay, scoreSum, scoringDecision } = request.body;
+
+      let deal: Awaited<ReturnType<typeof resolveAndCreateDeal>>;
+      try {
+        deal = await resolveAndCreateDeal(db, {
+          merchantId: BigInt(jwtPayload.merchantId),
+          branchId: BigInt(jwtPayload.branchId),
+          agentId: BigInt(jwtPayload.sub),
+          clientId: BigInt(request.body.clientId),
+          tariffId: BigInt(request.body.tariffId),
+          basket,
+          paymentDay,
+          scoreSum: scoreSum ?? null,
+          scoringDecision: scoringDecision ?? null,
+          lang: 'ru',
+        });
+      } catch (err: any) {
+        if (err.code === 'tariff_not_found') return reply.code(400).send({ code: 'tariff_not_found' });
+        if (err.code === 'product_not_found') return reply.code(400).send({ code: 'product_not_found' });
+        throw err;
+      }
+
+      return reply.code(201).send({ verified: true, dealId: deal.id });
     },
   );
 }

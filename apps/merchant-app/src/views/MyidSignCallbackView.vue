@@ -2,13 +2,11 @@
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useClientApi } from '@/composables/useClientApi'
-import { useCreateDealMutation } from '@/composables/useDealsApi'
 import { useDealStore } from '@/stores/deal'
 import { useClientScoringStore } from '@/stores/clientScoring'
 
 const router = useRouter()
 const { myidSignCompleteMutation } = useClientApi()
-const createDealMutation = useCreateDealMutation()
 const deal = useDealStore()
 const scoring = useClientScoringStore()
 
@@ -18,48 +16,47 @@ onMounted(async () => {
   const signingSessionToken = sessionStorage.getItem('myid_sign_session_token')
   const signingToken = sessionStorage.getItem('signing_token')
 
-  if (!code || !signingSessionToken) {
+  // Can't proceed without all three tokens
+  if (!code || !signingSessionToken || !signingToken) {
+    router.replace({ name: 'deals-create' })
+    return
+  }
+
+  // Validate we still have the deal data in the persisted store
+  if (!deal.sessionData.client?.id || !deal.sessionData.tariff) {
     router.replace({ name: 'deals-create' })
     return
   }
 
   sessionStorage.removeItem('myid_sign_session_token')
 
-  // Step 1 — Verify the MyID face scan
+  const basket = (deal.sessionData.basket ?? []).map((item) => ({
+    productId: item.product.id,
+    quantity: item.quantity,
+  }))
+
+  // Single call: verify MyID face scan + create deal atomically
   try {
-    await myidSignCompleteMutation.mutateAsync({ signingSessionToken, myidCode: code })
+    const res = await myidSignCompleteMutation.mutateAsync({
+      signingSessionToken,
+      myidCode: code,
+      signingToken,
+      clientId: deal.sessionData.client.id,
+      tariffId: deal.sessionData.tariff.id,
+      basket,
+      paymentDay: deal.sessionData.paymentDay,
+      scoreSum: scoring.scoreSum,
+      scoringDecision: scoring.decision,
+    })
+
+    // Persist the deal ID so NewDealView can advance directly to StepDone
+    sessionStorage.setItem('myid_sign_deal_id', res.dealId)
+    sessionStorage.removeItem('signing_token')
   } catch (err) {
-    console.error('MyID signing verification failed', err)
+    console.error('myid-sign-complete failed', err)
     sessionStorage.setItem('myid_sign_failed', '1')
     router.replace({ name: 'deals-create' })
     return
-  }
-
-  // Step 2 — Create the deal immediately (no extra button click needed)
-  if (signingToken && deal.sessionData.client?.id && deal.sessionData.tariff) {
-    try {
-      const basket = (deal.sessionData.basket ?? []).map((item) => ({
-        productId: item.product.id,
-        quantity: item.quantity,
-      }))
-
-      const res = await createDealMutation.mutateAsync({
-        clientId: deal.sessionData.client.id,
-        tariffId: deal.sessionData.tariff.id,
-        basket,
-        paymentDay: deal.sessionData.paymentDay,
-        signingToken,
-        scoreSum: scoring.scoreSum,
-        scoringDecision: scoring.decision,
-      })
-
-      // Persist the deal ID so NewDealView can advance directly to StepDone
-      sessionStorage.setItem('myid_sign_deal_id', res.dealId)
-      sessionStorage.removeItem('signing_token')
-    } catch (err) {
-      console.error('Deal creation failed after MyID verification', err)
-      // Fall through — agent will see myid_verified phase and can retry
-    }
   }
 
   sessionStorage.setItem('myid_sign_complete', '1')

@@ -1,9 +1,8 @@
 import { Type } from '@sinclair/typebox'
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import type { FastifyInstance } from 'fastify'
-import { createDeal, listDeals, getDealById } from './service'
-import { products, tariffs } from '../../id/db/schema'
-import { eq } from 'drizzle-orm'
+import { resolveAndCreateDeal, listDeals, getDealById, getContractPdfUrl } from './service'
+import { notifyDealCreated } from '../../notifications/service'
 
 type JwtPayload = {
   sub: string
@@ -33,9 +32,9 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
     basket: Type.Array(BasketItemBody, { minItems: 1 }),
     paymentDay: Type.Integer({ minimum: 1, maximum: 28 }),
     signingToken: Type.String({ minLength: 1 }),
-    /** scoreSum and decision from the client_scorings row (filled by StepKarta) */
     scoreSum: Type.Optional(Type.Number()),
     scoringDecision: Type.Optional(Type.String()),
+    lang: Type.Optional(Type.Union([Type.Literal('ru'), Type.Literal('uz')])),
   })
 
   const IdParams = Type.Object({ id: Type.String() })
@@ -48,12 +47,10 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const p = payload(request)
 
-      // Only agents can create deals
       if (p.role !== 'agent') {
         return reply.code(403).send({ code: 'agent_only' })
       }
 
-      // Verify the signing token (OTP consent proof)
       let signingPayload: { phone: string; purpose: string }
       try {
         signingPayload = app.jwt.verify<{ phone: string; purpose: string }>(
@@ -67,60 +64,36 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
         return reply.code(400).send({ code: 'invalid_signing_purpose' })
       }
 
-      const { basket, paymentDay, scoreSum, scoringDecision } = request.body
-      const clientId = BigInt(request.body.clientId)
-      const tariffId = BigInt(request.body.tariffId)
-      const merchantId = BigInt(p.merchantId)
-      const branchId = BigInt(p.branchId)
-      const agentId = BigInt(p.sub)
+      const { basket, paymentDay, scoreSum, scoringDecision, lang } = request.body
 
-      // Resolve tariff to get markup and termMonths
-      const [tariff] = await db.select().from(tariffs).where(eq(tariffs.id, tariffId)).limit(1)
-      if (!tariff) return reply.code(400).send({ code: 'tariff_not_found' })
+      let deal: Awaited<ReturnType<typeof resolveAndCreateDeal>>
+      try {
+        deal = await resolveAndCreateDeal(db, {
+          merchantId: BigInt(p.merchantId),
+          branchId: BigInt(p.branchId),
+          agentId: BigInt(p.sub),
+          clientId: BigInt(request.body.clientId),
+          tariffId: BigInt(request.body.tariffId),
+          basket,
+          paymentDay,
+          scoreSum: scoreSum ?? null,
+          scoringDecision: scoringDecision ?? null,
+          lang: lang ?? 'ru',
+        })
+      } catch (err: any) {
+        if (err.code === 'tariff_not_found') return reply.code(400).send({ code: 'tariff_not_found' })
+        if (err.code === 'product_not_found') return reply.code(400).send({ code: 'product_not_found' })
+        throw err
+      }
 
-      // Resolve products for basket (snapshot names + prices)
-      const productIds = basket.map((i) => BigInt(i.productId))
-      const productRows = await Promise.all(
-        productIds.map((id) =>
-          db.select().from(products).where(eq(products.id, id)).limit(1),
-        ),
-      )
-
-      let amount = BigInt(0)
-      const resolvedBasket = basket.map((item, idx) => {
-        const p = productRows[idx]?.[0]
-        if (!p) throw new Error(`product_not_found:${item.productId}`)
-        const itemTotal = BigInt(Math.round(parseFloat(p.tanNarxi) * 100)) * BigInt(item.quantity)
-        amount += itemTotal
-        return {
-          productId: p.id,
-          productName: p.name,
-          tanNarxi: p.tanNarxi,
-          mxikCode: p.mxikCode ?? null,
-          packageCode: p.packageCode ?? null,
-          packageName: p.packageName ?? null,
-          quantity: item.quantity,
-        }
-      })
-
-      const markupPercent = parseFloat(tariff.markupPercent)
-      const totalPayable = BigInt(Math.round(Number(amount) * (1 + markupPercent / 100)))
-
-      const deal = await createDeal(db, {
-        merchantId,
-        branchId,
-        agentId,
-        clientId,
-        tariffId,
-        basket: resolvedBasket,
-        paymentDay,
-        amount,
-        totalPayable,
-        termMonths: tariff.termMonths,
-        markupPercent,
-        scoreSum: scoreSum ?? null,
-        scoringDecision: scoringDecision ?? null,
-      })
+      notifyDealCreated(db, {
+        dealId: deal.id,
+        agentId: BigInt(p.sub),
+        merchantId: BigInt(p.merchantId),
+        branchId: BigInt(p.branchId),
+        clientId: BigInt(request.body.clientId),
+        amountTiyin: deal.amount ?? BigInt(0),
+      }).catch((err) => app.log.warn({ err }, 'notifyDealCreated failed'))
 
       return reply.code(201).send({ dealId: deal.id })
     },
@@ -134,9 +107,7 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
     async (request) => {
       const p = payload(request)
       const merchantId = BigInt(p.merchantId)
-      // Agents see only their own deals; admins see all
       const agentId = p.role === 'agent' ? BigInt(p.sub) : undefined
-
       const list = await listDeals(db, merchantId, agentId)
       return { deals: list }
     },
@@ -153,6 +124,24 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
       const deal = await getDealById(db, request.params.id, merchantId)
       if (!deal) return reply.code(404).send({ code: 'deal_not_found' })
       return { deal }
+    },
+  )
+
+  /* ── GET /:id/contract-pdf — get or generate Kontrakt PDF ────────────── */
+
+  fastify.get(
+    '/:id/contract-pdf',
+    { schema: { params: IdParams }, preHandler: app.verifyMerchantJwt },
+    async (request, reply) => {
+      const p = payload(request)
+      const merchantId = BigInt(p.merchantId)
+      try {
+        const url = await getContractPdfUrl(app.db, app.minio, request.params.id, merchantId)
+        return { url }
+      } catch (err: any) {
+        if (err.statusCode === 404) return reply.code(404).send({ code: 'deal_not_found' })
+        throw err
+      }
     },
   )
 }

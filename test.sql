@@ -16,3 +16,5 @@ select *  from integration_logs ORDER BY CREATED_AT DESC limit 10;
 select * from tariffs;
 
 delete from tariffs where id = 5;
+
+delete from deals;

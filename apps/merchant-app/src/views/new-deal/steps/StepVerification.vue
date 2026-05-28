@@ -34,6 +34,7 @@ const devOtp = ref<string | null>(null)
 const myidError = ref('')
 const submitting = ref(false)
 const submitError = ref('')
+const lang = ref<'ru' | 'uz'>('ru')
 /** JWT proof of OTP consent — returned by /sign-otp/verify, sent with deal creation */
 const signingToken = ref<string | null>(null)
 
@@ -126,6 +127,7 @@ async function signSubmit() {
       signingToken: signingToken.value,
       scoreSum: scoring.scoreSum,
       scoringDecision: scoring.decision,
+      lang: lang.value,
     })
 
     sessionStorage.removeItem('signing_token')
@@ -218,6 +220,23 @@ async function signSubmit() {
         </div>
       </div>
     </section>
+
+    <!-- Contract language selector -->
+    <div class="lang-selector">
+      <span class="lang-label">{{ $t('stepVerification.contractLang') }}</span>
+      <div class="lang-btns">
+        <button
+          class="lang-btn"
+          :class="{ active: lang === 'ru' }"
+          @click="lang = 'ru'"
+        >RU</button>
+        <button
+          class="lang-btn"
+          :class="{ active: lang === 'uz' }"
+          @click="lang = 'uz'"
+        >UZ</button>
+      </div>
+    </div>
 
     <!-- Signing OTP gate -->
     <div class="sign-gate">
@@ -451,6 +470,39 @@ async function signSubmit() {
   color: var(--text-secondary);
   font-weight: 700;
 }
+.lang-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-bottom: 1.1rem;
+}
+.lang-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.lang-btns {
+  display: flex;
+  gap: 0.4rem;
+}
+.lang-btn {
+  padding: 0.35rem 0.85rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+.lang-btn.active {
+  border-color: var(--accent-2);
+  color: var(--accent-2);
+  background: color-mix(in srgb, var(--accent-2) 10%, transparent);
+}
+
 .sign-gate {
   border: 1px solid var(--border-subtle);
   border-radius: 16px;

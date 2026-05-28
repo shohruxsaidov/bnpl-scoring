@@ -7,6 +7,7 @@ import {
   jsonb,
   numeric,
   pgTable,
+  text,
   timestamp,
   uuid,
   varchar,
@@ -45,6 +46,10 @@ export const deals = pgTable('deals', {
   // Scoring result — copied from client_scorings at deal activation
   scoreSum: numeric('score_sum', { precision: 10, scale: 2 }),
   scoringDecision: varchar('scoring_decision', { length: 20 }),
+  // Kontrakt language selected at Wizard verification step
+  lang: varchar('lang', { length: 5 }).notNull().default('ru'),
+  // MinIO object key for the cached Kontrakt PDF; null until first generation
+  pdfUrl: text('pdf_url'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 

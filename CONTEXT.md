@@ -40,8 +40,12 @@ A single instalment credit issued to a Client for a Basket of goods. A Deal belo
 _Avoid_: Order, loan
 
 **Kontrakt**:
-The legal document generated from a Deal. In v1 the only type is Murabaha — a cost-plus-profit structure where Finsum Nasiya acquires goods from the Merchant at tan narxi (cost price) and resells to the Client at tan narxi + Ustama. One Deal produces one Kontrakt. Upon signing, Finsum records a payout obligation to the Merchant for the tan narxi amount.
+The legal document generated from a Deal. In v1 the only type is Murabaha — a cost-plus-profit structure where Finsum Nasiya acquires goods from the Merchant at tan narxi (cost price) and resells to the Client at tan narxi + Ustama. One Deal produces one Kontrakt. Upon signing, Finsum records a payout obligation to the Merchant for the tan narxi amount. The Kontrakt is generated as a PDF (stored in MinIO, key cached on the Deal row) in the language selected by the Agent at the Верификация step (`ru` or `uz`).
 _Avoid_: Contract (use Kontrakt to distinguish from the overarching Deal/Договор)
+
+**Kontrakt Language**:
+The language (`ru` or `uz`) in which the Kontrakt PDF is rendered. Selected by the Agent at the Верификация step of the Wizard before deal creation. Stored as `lang` on the Deal row. Determines which template variant is used by the PDF generator.
+_Avoid_: Document language, PDF language
 
 **Deal Signing OTP**:
 A one-time code sent to the Client's phone at the Верификация step, used as the Client's digital consent to the Kontrakt terms. Distinct from the Registration OTP (purpose `client_registration`) — uses purpose `deal_signing` so codes never collide. The Agent sends the OTP, the Client reads it aloud, the Agent enters it. A `signingToken` (short-lived JWT) is returned on success and carried with the deal-creation call as proof of consent.
@@ -153,6 +157,16 @@ _Avoid_: Payment to merchant, merchant transfer, disbursement
 The structured record of all Payout obligations per Merchant and per Branch, visible to the Finsum platform admin. Shows status (pending / paid), amount, date, and linked Deal.
 _Avoid_: Settlement log, payout history
 
+### Notifications
+
+**Notification**:
+A system-generated message delivered to exactly one actor (Employee, Client, or Platform Admin) when a notable platform event occurs. Carries a `type` and structured `params`; the frontend derives the human-readable text from these fields. Persisted for 90 days.
+_Avoid_: Alert, message, event
+
+**Notification Type**:
+The discriminator on a Notification that identifies which event occurred. Employee types: `deal_approved`, `deal_declined`, `payment_received`, `overdue`, `new_deal`. Client types: `deal_issued`, `payment_received`, `payment_due`. Platform Admin type: `payout_pending`.
+_Avoid_: Notification kind, notification category
+
 ## Relationships
 
 - A **Merchant** has one or more **Branches**
@@ -170,6 +184,7 @@ _Avoid_: Settlement log, payout history
 - A **Deal** carries one **Score** result (stored in `client_scorings`) — set during the Tarif step
 - A **Deal** carries one **DealPaymentSchedule** — set when the Deal is confirmed
 - A **Basket** is persisted as one or more **DealItems** on the Deal
+- A **Notification** belongs to exactly one actor; fan-out creates one **Notification** row per recipient at write time
 
 ## Auth identity tables
 
@@ -188,6 +203,7 @@ Three separate tables back the three auth flows:
 - "Договор", "Сделка", and "Контракт" all appeared in the UI — resolved: **Договор = Deal** (the financing record), **Сделка** is a synonym for Deal used in tab labels only, **Контракт = Kontrakt** (the generated legal document). Never use "Contract" for the Deal itself.
 - "Tenant" was used throughout the codebase — resolved: replaced by **Merchant** (business entity) and **Branch** (single location). `tenant_id` → `merchant_id`; `branch_id` added to Deals and Employees.
 - "Комиссия" (Commission) appeared as a Deal field — removed from scope for v1. Not a domain concept.
+- `kind` appeared in `client-portal/src/stores/notifications.ts` as the discriminator field on a Notification — resolved: canonical term is **`type`**, matching `merchant-app` and the backend schema. `kind` to be renamed.
 - "Wizard Session" was a separate backend concept (a lightweight record separate from the Deal) — resolved: **merged into Deal**. A Deal is created in `draft` status when the Wizard opens. Its UUID serves as `claim_id` for KATM. The `deals` table stores `infoscore_raw`, `demand_id`, `consent_id`, and `consent_date` directly. Abandoned Wizard runs are Deal rows in `draft` status, never surfaced to users.
 
 ## Architecture Decisions
@@ -209,6 +225,7 @@ Key decisions live in `docs/adr/` as thematic files:
 | `0011-file-storage-minio.md` | MinIO (self-hosted S3) for Merchant document uploads; presigned PUT URLs; `merchant_documents` table stores URL only |
 | `0012-three-party-platform-model.md` | Finsum as capital owner; Merchant + Branch hierarchy; global Tariffs and Scoring Model; persistent platform-wide Client credit limit; Merchant paid at tan narxi on signing |
 | `0013-mxik-integration.md` | Backend proxy for MXIK registry; `mxik_cache` table; cache-first lookup; search is cache-only; `package_code` + `package_name` stored on Product; integration logging per ADR-0005 |
+| `0014-notification-system.md` | One `notifications` table for all actor types; fan-out-at-write (one row per recipient); SSE delivery; `type`+`params` only stored (no rendered strings); 90-day TTL via pg-boss |
 
 ## Example dialogue
 

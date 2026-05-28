@@ -49,10 +49,20 @@ export function useClientApi() {
   })
 
   const myidSignCompleteMutation = useMutation({
-    mutationFn: ({ signingSessionToken, myidCode }: { signingSessionToken: string; myidCode: string }) =>
-      apiFetch<{ verified: boolean }>('/merchant/client/myid-sign-complete', {
+    mutationFn: (input: {
+      signingSessionToken: string
+      myidCode: string
+      signingToken: string
+      clientId: string
+      tariffId: string
+      basket: Array<{ productId: string; quantity: number }>
+      paymentDay: number
+      scoreSum?: number | null
+      scoringDecision?: string | null
+    }) =>
+      apiFetch<{ verified: boolean; dealId: string }>('/merchant/client/myid-sign-complete', {
         method: 'POST',
-        body: JSON.stringify({ signingSessionToken, myidCode }),
+        body: JSON.stringify(input),
       }),
   })
 
