@@ -22,6 +22,9 @@ const schema = z.object({
   MINIO_BUCKET: z.string().default("scoring-documents"),
   MXIK_API_URL: z.string().url().default("https://utilities.thebetacompany.uz"),
   REDIS_URL: z.string().default("redis://localhost:6379"),
+  LOKI_URL: z.string().url().optional(),
+  OTEL_TRACES_ENDPOINT: z.string().url().optional(),
+  OTEL_SERVICE_NAME: z.string().default("scoring-api"),
 });
 
 export const env = schema.parse(process.env);

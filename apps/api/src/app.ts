@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import sensible from "@fastify/sensible";
 import rateLimit from "@fastify/rate-limit";
+import { trace } from "@opentelemetry/api";
 import dbPlugin from "./plugins/db.js";
 import cookiePlugin from "./plugins/cookie.js";
 import jwtPlugin from "./plugins/jwt.js";
@@ -14,21 +15,45 @@ import { env } from "./env.js";
 
 const isDev = env.NODE_ENV !== "production";
 
+function buildTransport() {
+  if (isDev) {
+    return {
+      transport: {
+        target: "pino-pretty",
+        options: {
+          colorize: true,
+          translateTime: "HH:MM:ss.l",
+          ignore: "pid,hostname",
+          singleLine: false,
+        },
+      },
+    };
+  }
+  if (env.LOKI_URL) {
+    return {
+      transport: {
+        target: "pino-loki",
+        options: {
+          host: env.LOKI_URL,
+          labels: { app: env.OTEL_SERVICE_NAME, env: "production" },
+          batching: true,
+          interval: 5,
+        },
+      },
+    };
+  }
+  return {};
+}
+
 const logger = {
   level: isDev ? "debug" : "info",
-  ...(isDev
-    ? {
-        transport: {
-          target: "pino-pretty",
-          options: {
-            colorize: true,
-            translateTime: "HH:MM:ss.l",
-            ignore: "pid,hostname",
-            singleLine: false,
-          },
-        },
-      }
-    : {}),
+  mixin() {
+    const span = trace.getActiveSpan();
+    if (!span?.isRecording()) return {};
+    const { traceId, spanId } = span.spanContext();
+    return { traceId, spanId };
+  },
+  ...buildTransport(),
   redact: {
     paths: [
       "req.headers.authorization",
