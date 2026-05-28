@@ -24,6 +24,7 @@ const schema = z.object({
   REDIS_URL: z.string().default("redis://localhost:6379"),
   LOKI_URL: z.string().url().optional(),
   OTEL_TRACES_ENDPOINT: z.string().url().optional(),
+  OTEL_METRICS_ENDPOINT: z.string().url().optional(),
   OTEL_SERVICE_NAME: z.string().default("scoring-api"),
 });
 

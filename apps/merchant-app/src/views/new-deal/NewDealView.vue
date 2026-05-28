@@ -61,7 +61,6 @@ function stepLabel(key: string): string {
 }
 
 onMounted(() => {
-  // 1. Returning from MyID registration callback — client already set by MyidCallbackView.
   const fromReg = sessionStorage.getItem('myid_callback_complete')
   if (fromReg) {
     sessionStorage.removeItem('myid_callback_complete')
@@ -70,7 +69,7 @@ onMounted(() => {
 
   // 2. Returning from MyID signing callback.
   const fromSign =
-    sessionStorage.getItem('myid_sign_complete') ||
+    sessionStorage.getItem('myid_sign_deal_id') ||
     sessionStorage.getItem('myid_sign_failed')
   if (fromSign) {
     // If the callback already created the deal, advance straight to StepDone.
@@ -108,13 +107,8 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
 <template>
   <div class="new-deal">
     <!-- ── Resume dialog ──────────────────────────────────────────────────── -->
-    <Dialog
-      v-model:visible="showResumeDialog"
-      :header="t('deal.resumeTitle')"
-      modal
-      :closable="false"
-      :style="{ width: '26rem' }"
-    >
+    <Dialog v-model:visible="showResumeDialog" :header="t('deal.resumeTitle')" modal :closable="false"
+      :style="{ width: '26rem' }">
       <div class="resume-body">
         <i class="pi pi-history resume-icon" />
         <p class="resume-client">{{ t('deal.resumeClient', { name: resumeClientName }) }}</p>
@@ -134,17 +128,9 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
 
     <!-- ── Step indicator ────────────────────────────────────────────────── -->
     <div class="stepper surface-card">
-      <div
-        v-for="(step, idx) in deal.steps"
-        :key="step.key"
-        class="step"
-        :class="stepState(idx, step.key)"
-      >
+      <div v-for="(step, idx) in deal.steps" :key="step.key" class="step" :class="stepState(idx, step.key)">
         <div class="step-icon">
-          <i
-            v-if="stepState(idx, step.key) === 'done'"
-            class="pi pi-check"
-          />
+          <i v-if="stepState(idx, step.key) === 'done'" class="pi pi-check" />
           <i v-else :class="step.icon" />
         </div>
         <span class="step-label">{{ stepLabel(step.key) }}</span>
@@ -179,6 +165,7 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
   justify-content: space-between;
   padding: 1.5rem 1.8rem;
 }
+
 .step {
   display: flex;
   flex-direction: column;
@@ -187,6 +174,7 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
   position: relative;
   flex: 1;
 }
+
 .step-icon {
   width: 44px;
   height: 44px;
@@ -200,28 +188,34 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
   z-index: 2;
   transition: all 0.2s ease;
 }
+
 .step.current .step-icon {
   background: var(--gradient-hero);
   border-color: transparent;
   color: #fff;
   box-shadow: var(--accent-glow);
 }
+
 .step.done .step-icon {
   background: var(--success);
   border-color: transparent;
   color: #fff;
 }
+
 .step-label {
   font-size: 0.78rem;
   font-weight: 700;
   color: var(--text-secondary);
 }
+
 .step.current .step-label {
   color: var(--accent-2);
 }
+
 .step.done .step-label {
   color: var(--success);
 }
+
 .connector {
   position: absolute;
   top: 22px;
@@ -231,9 +225,11 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
   background: var(--border-subtle);
   z-index: 1;
 }
+
 .step.done .connector {
   background: var(--success);
 }
+
 .step-body {
   min-height: 400px;
 }
@@ -247,16 +243,19 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
   padding: 1rem 0 0.5rem;
   text-align: center;
 }
+
 .resume-icon {
   font-size: 2.5rem;
   color: var(--accent-2);
 }
+
 .resume-client {
   font-size: 1rem;
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
 }
+
 .resume-step {
   font-size: 0.85rem;
   color: var(--text-secondary);

@@ -13,6 +13,11 @@ The API ships logs directly to Loki using the `pino-loki` Pino transport (no age
 
 Labels attached to every log stream: `app` (= `OTEL_SERVICE_NAME`) and `env` (`production`). Logs are batched in 5-second intervals.
 
+### Metrics → Prometheus via OTLP HTTP
+The `PeriodicExportingMetricReader` pushes metrics every 15 seconds to `OTEL_METRICS_ENDPOINT` (expected: `http://83.222.7.142:19090/v1/metrics`) using OTLP HTTP. Enabled only when `OTEL_METRICS_ENDPOINT` is set. Prometheus must have the OTLP receiver enabled (`--enable-feature=otlp-write-receiver`). Metrics include HTTP request counts and durations captured automatically by `instrumentation-http`.
+
+Prometheus scraping was rejected: the API is not publicly reachable from the Prometheus host, so push is the only viable direction.
+
 ### Traces → Tempo via OTLP HTTP
 The OpenTelemetry Node.js SDK is initialized in `src/tracing.ts` before any application modules load. Enabled only when `OTEL_TRACES_ENDPOINT` is set. The exporter sends spans to `OTEL_TRACES_ENDPOINT` (expected: `http://83.222.7.142:32000/v1/traces`) using OTLP HTTP (JSON over HTTP/1.1).
 
@@ -34,6 +39,7 @@ A Pino `mixin` reads the active OTel span context on every log call and injects 
 |---|---|---|
 | `LOKI_URL` | Loki base URL (no path) | unset → disabled |
 | `OTEL_TRACES_ENDPOINT` | OTLP HTTP endpoint for traces | unset → disabled |
-| `OTEL_SERVICE_NAME` | Service name tag on logs and traces | `scoring-api` |
+| `OTEL_METRICS_ENDPOINT` | OTLP HTTP endpoint for metrics | unset → disabled |
+| `OTEL_SERVICE_NAME` | Service name tag on logs, traces, and metrics | `scoring-api` |
 
 Both observability features are opt-in via env vars so the API runs normally in development without any external dependencies.

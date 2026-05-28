@@ -11,6 +11,7 @@ const deal = useDealStore()
 const scoring = useClientScoringStore()
 
 onMounted(async () => {
+  debugger
   const params = new URLSearchParams(window.location.search)
   const code = params.get('auth_code')
   const signingSessionToken = sessionStorage.getItem('myid_sign_session_token')
@@ -50,6 +51,7 @@ onMounted(async () => {
     })
 
     // Persist the deal ID so NewDealView can advance directly to StepDone
+    sessionStorage.setItem('myid_sign_complete', '1')
     sessionStorage.setItem('myid_sign_deal_id', res.dealId)
     sessionStorage.removeItem('signing_token')
   } catch (err) {
@@ -59,7 +61,6 @@ onMounted(async () => {
     return
   }
 
-  sessionStorage.setItem('myid_sign_complete', '1')
   router.replace({ name: 'deals-create' })
 })
 </script>
