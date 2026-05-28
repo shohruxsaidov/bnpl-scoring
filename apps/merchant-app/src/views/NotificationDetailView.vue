@@ -28,6 +28,7 @@ const iconMap: Record<NotificationType, string> = {
   overdue: 'pi pi-exclamation-triangle',
   scoring_complete: 'pi pi-chart-line',
   new_deal: 'pi pi-plus-circle',
+  admin_message: 'pi pi-megaphone',
 }
 const colorMap: Record<NotificationType, string> = {
   deal_approved: 'var(--success)',
@@ -36,6 +37,7 @@ const colorMap: Record<NotificationType, string> = {
   overdue: '#f59e0b',
   scoring_complete: 'var(--accent-2)',
   new_deal: 'var(--success)',
+  admin_message: 'var(--accent-2)',
 }
 
 type ParamMeta = { labelKey: string; icon: string; value: string }

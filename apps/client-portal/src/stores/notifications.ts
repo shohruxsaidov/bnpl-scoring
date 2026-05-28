@@ -1,64 +1,115 @@
 import { defineStore } from 'pinia'
-import type { AppNotification } from '@/types'
+import type { AppNotification, NotificationKind } from '@/types'
 
-const NOTIFICATIONS: AppNotification[] = [
-  {
-    id: 'ntf_001',
-    kind: 'overdue',
-    title: 'Overdue payment',
-    body: '1,350,000 so‘m was due Jun 15 for FurniturePlus. Please pay to avoid penalties.',
-    createdAt: '2026-06-15T09:05:00',
-    read: false,
-  },
-  {
-    id: 'ntf_002',
-    kind: 'payment',
-    title: 'Payment confirmed',
-    body: '1,399,167 so‘m received on Jun 15 for TechShop Tashkent. Thank you!',
-    createdAt: '2026-06-15T14:22:00',
-    read: true,
-  },
-  {
-    id: 'ntf_003',
-    kind: 'payment',
-    title: 'Payment confirmed',
-    body: '1,399,167 so‘m received on May 15 for TechShop Tashkent.',
-    createdAt: '2026-05-15T13:40:00',
-    read: true,
-  },
-  {
-    id: 'ntf_004',
-    kind: 'deal',
-    title: 'New deal issued',
-    body: 'A new instalment deal was issued at TechShop Tashkent for 14,990,000 so‘m.',
-    createdAt: '2026-04-02T11:15:00',
-    read: true,
-  },
-]
+const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+
+interface ApiNotification {
+  id: string
+  type: string
+  params: Record<string, string>
+  read: boolean
+  createdAt: string
+}
+
+const KIND_MAP: Record<string, NotificationKind> = {
+  overdue: 'overdue',
+  payment_received: 'payment',
+  deal_approved: 'deal',
+  deal_declined: 'deal',
+  new_deal: 'deal',
+  admin_message: 'message',
+}
+
+function toAppNotification(raw: ApiNotification): AppNotification {
+  // admin_message carries free-text title + body in params
+  if (raw.type === 'admin_message') {
+    return {
+      id: raw.id,
+      kind: 'message',
+      title: raw.params.title ?? '',
+      body: raw.params.body ?? '',
+      createdAt: raw.createdAt,
+      read: raw.read,
+    }
+  }
+  return {
+    id: raw.id,
+    kind: KIND_MAP[raw.type] ?? 'deal',
+    title: raw.params.title ?? raw.type,
+    body: raw.params.body ?? '',
+    createdAt: raw.createdAt,
+    read: raw.read,
+  }
+}
 
 export const useNotificationsStore = defineStore('notifications', {
   state: () => ({
-    items: NOTIFICATIONS as AppNotification[],
+    items: [] as AppNotification[],
+    _source: null as EventSource | null,
   }),
 
   getters: {
     unreadCount: (s): number => s.items.filter((n) => !n.read).length,
     sorted: (s): AppNotification[] =>
       [...s.items].sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       ),
   },
 
   actions: {
+    async fetchAll() {
+      try {
+        const res = await fetch(`${API}/api/v1/notifications`, { credentials: 'include' })
+        if (!res.ok) return
+        const data: { notifications: ApiNotification[] } = await res.json()
+        this.items = data.notifications.map(toAppNotification)
+      } catch {
+        // non-fatal
+      }
+    },
+
+    connectSSE() {
+      if (this._source) return
+      const source = new EventSource(`${API}/api/v1/notifications/stream`, {
+        withCredentials: true,
+      })
+      source.addEventListener('notification', (e) => {
+        const raw = JSON.parse((e as MessageEvent).data) as ApiNotification
+        this.items = [toAppNotification(raw), ...this.items]
+      })
+      source.onerror = () => {
+        source.close()
+        this._source = null
+      }
+      this._source = source
+    },
+
+    disconnectSSE() {
+      this._source?.close()
+      this._source = null
+    },
+
     markAllRead() {
-      this.items.forEach((n) => {
-        n.read = true
+      const unread = this.items.filter((n) => !n.read)
+      unread.forEach((n) => (n.read = true))
+      fetch(`${API}/api/v1/notifications/read-all`, {
+        method: 'POST',
+        credentials: 'include',
+      }).catch(() => {
+        unread.forEach((n) => (n.read = false))
       })
     },
+
     markRead(id: string) {
       const n = this.items.find((x) => x.id === id)
-      if (n) n.read = true
+      if (!n || n.read) return
+      n.read = true
+      fetch(`${API}/api/v1/notifications/${id}/read`, {
+        method: 'PATCH',
+        credentials: 'include',
+      }).catch(() => {
+        n.read = false
+      })
     },
   },
 })

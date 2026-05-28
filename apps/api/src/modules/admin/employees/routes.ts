@@ -1,7 +1,7 @@
 import { Type } from "@sinclair/typebox"
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
 import type { FastifyInstance } from "fastify"
-import { getEmployee, updateEmployee } from "./service"
+import { getEmployee, listEmployeesByMerchant, updateEmployee } from "./service"
 
 function serializeEmployee(e: NonNullable<Awaited<ReturnType<typeof getEmployee>>>) {
   return { ...e, id: e.id.toString(), merchantId: e.merchantId.toString(), branchId: e.branchId.toString() }
@@ -12,6 +12,19 @@ export default async function adminEmployeeRoutes(app: FastifyInstance) {
   const db = app.db
 
   const IdParams = Type.Object({ id: Type.String() })
+  const MerchantQuery = Type.Object({ merchantId: Type.String({ minLength: 1 }) })
+
+  const preHandler = app.verifyAdminJwt
+
+  /* ── GET /?merchantId=X — list employees for a merchant ──────────────────── */
+  fastify.get(
+    "/",
+    { schema: { querystring: MerchantQuery }, preHandler },
+    async (request) => {
+      const rows = await listEmployeesByMerchant(db, BigInt(request.query.merchantId))
+      return { employees: rows.map((e) => ({ ...e, id: e.id.toString() })) }
+    },
+  )
 
   const UpdateEmployeeBody = Type.Partial(
     Type.Object({
@@ -27,8 +40,6 @@ export default async function adminEmployeeRoutes(app: FastifyInstance) {
       active: Type.Boolean(),
     }),
   )
-
-  const preHandler = app.verifyAdminJwt
 
   fastify.get(
     "/:id",

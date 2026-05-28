@@ -6,7 +6,9 @@ export type NotificationType =
   | 'deal_declined'
   | 'payment_received'
   | 'overdue'
+  | 'scoring_complete'
   | 'new_deal'
+  | 'admin_message'
 
 export interface AppNotification {
   id: string
@@ -28,6 +30,20 @@ interface ApiNotification {
 }
 
 function toAppNotification(raw: ApiNotification): AppNotification {
+  // admin_message uses free-text params.title / params.body directly as i18n "keys"
+  // vue-i18n passes unknown keys through as-is, so free text renders verbatim.
+  if (raw.type === 'admin_message') {
+    return {
+      id: raw.id,
+      type: 'admin_message',
+      titleKey: raw.params.title ?? '',
+      bodyKey: raw.params.body ?? '',
+      params: {},
+      read: raw.read,
+      createdAt: raw.createdAt,
+    }
+  }
+
   const camel = raw.type.replace(/_([a-z])/g, (_, c: string) => c.toUpperCase())
   return {
     id: raw.id,

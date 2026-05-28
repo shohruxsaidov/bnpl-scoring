@@ -60,6 +60,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/BlacklistView.vue'),
         meta: { titleKey: 'routeTitle.blacklist', breadcrumbKeys: ['breadcrumb.blacklist'] },
       },
+      {
+        path: 'notifications',
+        name: 'notifications',
+        component: () => import('@/views/SendNotificationView.vue'),
+        meta: { titleKey: 'routeTitle.sendNotification', breadcrumbKeys: ['breadcrumb.notifications'] },
+      },
     ],
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },

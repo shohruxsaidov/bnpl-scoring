@@ -84,7 +84,7 @@ export interface Deal {
   contract: Contract
 }
 
-export type NotificationKind = 'overdue' | 'payment' | 'deal'
+export type NotificationKind = 'overdue' | 'payment' | 'deal' | 'message'
 
 export interface AppNotification {
   id: string

@@ -21,7 +21,8 @@
     "blacklist": "Qora ro'yxat",
     "merchants": "Savdogarlar",
     "merchant": "Savdogar",
-    "tariffs": "Tariflar"
+    "tariffs": "Tariflar",
+    "sendNotification": "Bildirishnomalar"
   },
   "breadcrumb": {
     "overview": "Umumiy ko'rinish",
@@ -32,7 +33,8 @@
     "employees": "Xodimlar",
     "settings": "Sozlamalar",
     "blacklist": "Qora ro'yxat",
-    "tariffs": "Tariflar"
+    "tariffs": "Tariflar",
+    "notifications": "Bildirishnomalar"
   },
   "topbar": {
     "scoring": "Skoring",
@@ -48,9 +50,48 @@
     "employees": "Xodimlar",
     "settings": "Sozlamalar",
     "blacklist": "Qora ro'yxat",
+    "notifications": "Bildirishnomalar",
     "platformAdmin": "Platforma admin",
     "logout": "Chiqish",
     "toggleSidebar": "Yon panelni almashtirish"
+  },
+  "notifications": {
+    "pageTitle": "Bildirishnomalar",
+    "pageSubtitle": "Savdogar va mijozlarga bildirishnoma yuborish",
+    "composeTitle": "Bildirishnoma tuzish",
+    "targetLabel": "Qabul qiluvchi",
+    "targetEmployee": "Aniq xodim",
+    "targetMerchantEmployees": "Savdogarning barcha xodimlari",
+    "targetClient": "Aniq mijoz",
+    "targetAllClients": "Platformaning barcha mijozlari",
+    "merchantLabel": "Savdogar",
+    "merchantPlaceholder": "Savdogarni tanlang",
+    "employeeLabel": "Xodim",
+    "employeePlaceholder": "Xodimni tanlang",
+    "clientLabel": "Mijoz",
+    "clientSearchPlaceholder": "PINFL yoki ism bo'yicha qidirish…",
+    "titleLabel": "Sarlavha",
+    "titlePlaceholder": "Muhim bildirishnoma",
+    "bodyLabel": "Xabar",
+    "bodyPlaceholder": "Bildirishnoma matni…",
+    "send": "Yuborish",
+    "sending": "Yuborilmoqda…",
+    "sentSuccess": "{count} ta qabul qiluvchiga bildirishnoma yuborildi",
+    "sentError": "Yuborishda xatolik",
+    "historyTitle": "Yuborish tarixi",
+    "historyEmpty": "Hali bildirishnoma yuborilmagan",
+    "colTarget": "Qabul qiluvchi",
+    "colTitle": "Sarlavha",
+    "colCount": "Son",
+    "colDate": "Sana",
+    "targetEmployeeLabel": "Xodim #{id}",
+    "targetMerchantLabel": "Barcha xodimlar #{id}",
+    "targetClientLabel": "Mijoz #{id}",
+    "targetAllClientsLabel": "Barcha mijozlar",
+    "validationTarget": "Qabul qiluvchini tanlang",
+    "validationTitle": "Sarlavha kiriting",
+    "validationBody": "Xabar kiriting",
+    "noResults": "Hech narsa topilmadi"
   },
   "tariffs": {
     "title": "Tariflar",

@@ -13,6 +13,7 @@ const ICON: Record<NotificationKind, string> = {
   overdue: 'pi-exclamation-triangle',
   payment: 'pi-check-circle',
   deal: 'pi-file',
+  message: 'pi-megaphone',
 }
 
 function onClick(id: string) {
@@ -141,6 +142,10 @@ function onClick(id: string) {
 }
 .ntf-icon.deal {
   background: var(--bg-surface);
+  color: var(--accent-2);
+}
+.ntf-icon.message {
+  background: color-mix(in srgb, var(--accent-2) 12%, var(--bg-surface));
   color: var(--accent-2);
 }
 .ntf-body {

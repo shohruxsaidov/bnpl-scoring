@@ -21,7 +21,8 @@
     "blacklist": "Чёрный список",
     "merchants": "Продавцы",
     "merchant": "Продавец",
-    "tariffs": "Тарифы"
+    "tariffs": "Тарифы",
+    "sendNotification": "Уведомления"
   },
   "breadcrumb": {
     "overview": "Обзор",
@@ -32,7 +33,8 @@
     "employees": "Сотрудники",
     "settings": "Настройки",
     "blacklist": "Чёрный список",
-    "tariffs": "Тарифы"
+    "tariffs": "Тарифы",
+    "notifications": "Уведомления"
   },
   "topbar": {
     "scoring": "Скоринг",
@@ -48,9 +50,48 @@
     "employees": "Сотрудники",
     "settings": "Настройки",
     "blacklist": "Чёрный список",
+    "notifications": "Уведомления",
     "platformAdmin": "Админ платформы",
     "logout": "Выйти",
     "toggleSidebar": "Переключить панель"
+  },
+  "notifications": {
+    "pageTitle": "Уведомления",
+    "pageSubtitle": "Отправка уведомлений продавцам и клиентам",
+    "composeTitle": "Составить уведомление",
+    "targetLabel": "Получатель",
+    "targetEmployee": "Конкретный сотрудник",
+    "targetMerchantEmployees": "Все сотрудники продавца",
+    "targetClient": "Конкретный клиент",
+    "targetAllClients": "Все клиенты платформы",
+    "merchantLabel": "Продавец",
+    "merchantPlaceholder": "Выберите продавца",
+    "employeeLabel": "Сотрудник",
+    "employeePlaceholder": "Выберите сотрудника",
+    "clientLabel": "Клиент",
+    "clientSearchPlaceholder": "Поиск по ПИНФЛ или имени…",
+    "titleLabel": "Заголовок",
+    "titlePlaceholder": "Важное уведомление",
+    "bodyLabel": "Сообщение",
+    "bodyPlaceholder": "Текст уведомления…",
+    "send": "Отправить",
+    "sending": "Отправка…",
+    "sentSuccess": "Уведомление отправлено {count} получателям",
+    "sentError": "Ошибка отправки",
+    "historyTitle": "История отправок",
+    "historyEmpty": "Уведомлений ещё не отправлялось",
+    "colTarget": "Получатель",
+    "colTitle": "Заголовок",
+    "colCount": "Кол-во",
+    "colDate": "Дата",
+    "targetEmployeeLabel": "Сотрудник #{id}",
+    "targetMerchantLabel": "Все сотрудники #{id}",
+    "targetClientLabel": "Клиент #{id}",
+    "targetAllClientsLabel": "Все клиенты",
+    "validationTarget": "Выберите получателя",
+    "validationTitle": "Введите заголовок",
+    "validationBody": "Введите сообщение",
+    "noResults": "Ничего не найдено"
   },
   "tariffs": {
     "title": "Тарифы",

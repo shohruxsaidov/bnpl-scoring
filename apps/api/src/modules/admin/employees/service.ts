@@ -21,6 +21,20 @@ export async function listEmployees(db: Db, branchId: bigint) {
     .orderBy(merchantUsers.createdAt)
 }
 
+export async function listEmployeesByMerchant(db: Db, merchantId: bigint) {
+  return db
+    .select({
+      id: merchantUsers.id,
+      fullName: merchantUsers.fullName,
+      email: merchantUsers.email,
+      roles: merchantUsers.roles,
+      active: merchantUsers.active,
+    })
+    .from(merchantUsers)
+    .where(eq(merchantUsers.merchantId, merchantId))
+    .orderBy(merchantUsers.fullName)
+}
+
 export async function getEmployee(db: Db, id: bigint) {
   const [row] = await db
     .select({

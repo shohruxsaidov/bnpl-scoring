@@ -12,6 +12,7 @@ import 'primeicons/primeicons.css'
 import App from './App.vue'
 import router from './router'
 import { useAuthStore } from '@/stores/auth'
+import { useNotificationsStore } from '@/stores/notifications'
 import uz from './locales/uz.json'
 import ru from './locales/ru.json'
 import './styles/main.css'
@@ -29,7 +30,14 @@ app.use(createPinia())
 app.use(VueQueryPlugin)
 app.use(router)
 
-await useAuthStore().restoreSession()
+const auth = useAuthStore()
+await auth.restoreSession()
+
+if (auth.isAuthenticated) {
+  const notifications = useNotificationsStore()
+  await notifications.fetchAll()
+  notifications.connectSSE()
+}
 
 app.use(i18n)
 app.use(PrimeVue, {

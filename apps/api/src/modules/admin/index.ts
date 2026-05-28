@@ -6,6 +6,7 @@ import adminCategoryRoutes from "./categories/routes"
 import adminProductRoutes from "./products/routes"
 import adminTariffRoutes from "./tariffs/routes"
 import adminBlacklistRoutes from "./blacklist/routes"
+import adminNotificationRoutes from "./notifications/routes"
 import mxikRoutes from "../mxik/routes"
 
 export default async function adminModule(app: FastifyInstance) {
@@ -16,5 +17,6 @@ export default async function adminModule(app: FastifyInstance) {
   await app.register(adminProductRoutes, { prefix: "/admin/products" })
   await app.register(adminTariffRoutes, { prefix: "/admin/tariffs" })
   await app.register(adminBlacklistRoutes, { prefix: "/admin/blacklist" })
+  await app.register(adminNotificationRoutes, { prefix: "/admin/notifications" })
   await app.register(mxikRoutes, { prefix: "/admin/mxik", preHandler: app.verifyAdminJwt })
 }
