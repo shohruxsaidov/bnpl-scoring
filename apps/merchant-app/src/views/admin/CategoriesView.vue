@@ -78,50 +78,50 @@ function remove(c: Category) {
     </template>
 
     <template v-else>
-    <div class="page-actions">
-      <button class="btn-gradient" @click="openNew">
-        <i class="pi pi-plus" /> {{ $t('categories.addCategory') }}
-      </button>
-    </div>
+      <div class="page-actions">
+        <button class="btn-gradient" @click="openNew">
+          <i class="pi pi-plus" /> {{ $t('categories.addCategory') }}
+        </button>
+      </div>
 
-    <div class="surface-card list">
-      <div v-for="c in catalog.categories" :key="c.id" class="cat-row">
-        <div class="cat-left">
-          <span class="cat-icon"><i class="pi pi-tag" /></span>
-          <span class="cat-name">{{ c.name }}</span>
-        </div>
-        <div class="row-actions">
-          <button class="ra-btn" :title="$t('common.edit')" @click="openEdit(c)">
-            <i class="pi pi-pencil" />
-          </button>
-          <button class="ra-btn danger" :title="$t('common.delete')" @click="remove(c)">
-            <i class="pi pi-trash" />
-          </button>
+      <div class="surface-card list">
+        <div v-for="c in catalog.categories" :key="c.id" class="cat-row">
+          <div class="cat-left">
+            <span class="cat-icon"><i class="pi pi-tag" /></span>
+            <span class="cat-name">{{ c.name }}</span>
+          </div>
+          <div class="row-actions">
+            <button class="ra-btn" :title="$t('common.edit')" @click="openEdit(c)">
+              <i class="pi pi-pencil" />
+            </button>
+            <button class="ra-btn danger" :title="$t('common.delete')" @click="remove(c)">
+              <i class="pi pi-trash" />
+            </button>
+          </div>
         </div>
       </div>
-    </div>
 
-    <Dialog
-      v-model:visible="dialogVisible"
-      modal
-      :header="editingId ? $t('categories.editCategory') : $t('categories.addCategoryTitle')"
-      :style="{ width: '400px' }"
-    >
-      <div class="field">
-        <label class="field-label">{{ $t('categories.name') }}</label>
-        <InputText v-model="name" :placeholder="$t('categories.categoryName')" @keyup.enter="save" />
-      </div>
-      <template #footer>
-        <button class="btn-ghost" @click="dialogVisible = false">{{ $t('common.cancel') }}</button>
-        <button class="btn-gradient" @click="save">{{ $t('common.save') }}</button>
-      </template>
-    </Dialog>
+      <Dialog v-model:visible="dialogVisible" modal
+        :header="editingId ? $t('categories.editCategory') : $t('categories.addCategoryTitle')"
+        :style="{ width: '400px' }">
+        <div class="field">
+          <label class="field-label">{{ $t('categories.name') }}</label>
+          <InputText v-model="name" :placeholder="$t('categories.categoryName')" @keyup.enter="save" />
+        </div>
+        <template #footer>
+          <button class="btn-ghost" @click="dialogVisible = false">{{ $t('common.cancel') }}</button>
+          <button class="btn-gradient" @click="save">{{ $t('common.save') }}</button>
+        </template>
+      </Dialog>
     </template>
   </div>
 </template>
 
 <style scoped>
-.sk-list { padding: 0.8rem; }
+.sk-list {
+  padding: 0.8rem;
+}
+
 .sk-cat-row {
   display: flex;
   align-items: center;
@@ -129,26 +129,43 @@ function remove(c: Category) {
   padding: 0.75rem 0.5rem;
   border-bottom: 1px solid var(--border-subtle);
 }
-.sk-cat-row:last-child { border-bottom: none; }
-.sk-left { display: flex; align-items: center; gap: 0.6rem; }
-.sk-actions { display: flex; gap: 0.4rem; }
+
+.sk-cat-row:last-child {
+  border-bottom: none;
+}
+
+.sk-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.sk-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
 .admin-page {
   display: flex;
   flex-direction: column;
   gap: 1.3rem;
 }
+
 .page-actions {
   display: flex;
   justify-content: flex-end;
 }
+
 .btn-gradient {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
 }
+
 .list {
   padding: 0.8rem;
 }
+
 .cat-row {
   display: flex;
   align-items: center;
@@ -157,14 +174,17 @@ function remove(c: Category) {
   border-radius: 12px;
   transition: background 0.15s ease;
 }
+
 .cat-row:hover {
   background: var(--bg-surface);
 }
+
 .cat-left {
   display: flex;
   align-items: center;
   gap: 0.8rem;
 }
+
 .cat-icon {
   width: 36px;
   height: 36px;
@@ -174,14 +194,17 @@ function remove(c: Category) {
   display: grid;
   place-items: center;
 }
+
 .cat-name {
   font-weight: 700;
   font-size: 0.92rem;
 }
+
 .row-actions {
   display: flex;
   gap: 0.4rem;
 }
+
 .ra-btn {
   width: 32px;
   height: 32px;
@@ -194,14 +217,17 @@ function remove(c: Category) {
   place-items: center;
   transition: all 0.15s ease;
 }
+
 .ra-btn:hover {
   color: var(--accent-2);
   border-color: var(--accent-2);
 }
+
 .ra-btn.danger:hover {
   color: var(--danger);
   border-color: var(--danger);
 }
+
 .field {
   padding-top: 0.4rem;
 }

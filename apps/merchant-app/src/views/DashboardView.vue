@@ -6,21 +6,20 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
 import { useAuthStore } from '@/stores/auth'
-import { useDealsStore } from '@/stores/deals'
+import { useDealsQuery } from '@/composables/useDealsApi'
+import type { DealListItem } from '@/composables/useDealsApi'
 import StatusBadge from '@/components/StatusBadge.vue'
 import MonoAmount from '@/components/MonoAmount.vue'
 import { formatDate } from '@/utils/money'
 import SkeletonStatCards from '@/components/SkeletonStatCards.vue'
 import SkeletonTable from '@/components/SkeletonTable.vue'
-import { usePageLoad } from '@/composables/usePageLoad'
-
-const { loading } = usePageLoad()
-import type { Deal, DealStatus } from '@/types'
+import type { DealStatus } from '@/types'
 
 const auth = useAuthStore()
-const deals = useDealsStore()
 const router = useRouter()
 const { t } = useI18n()
+
+const { data: dealsData, isLoading, isError } = useDealsQuery()
 
 const search = ref('')
 const statusFilter = ref<DealStatus | null>(null)
@@ -35,24 +34,21 @@ const statusOptions = computed<{ label: string; value: DealStatus | null }[]>(()
   { label: t('status.overdue'), value: 'overdue' },
 ])
 
-const visibleDeals = computed<Deal[]>(() => {
-  const base = auth.isAdmin
-    ? deals.deals
-    : deals.forAgent(auth.employee?.id ?? '')
-  return base.filter((d) => {
+const allDeals = computed<DealListItem[]>(() => dealsData.value ?? [])
+
+const visibleDeals = computed<DealListItem[]>(() => {
+  return allDeals.value.filter((d) => {
     if (statusFilter.value && d.status !== statusFilter.value) return false
     if (search.value.trim()) {
       const q = search.value.toLowerCase()
-      return d.clientName.toLowerCase().includes(q) || d.id.toLowerCase().includes(q)
+      return (d.clientName ?? '').toLowerCase().includes(q) || d.id.toLowerCase().includes(q)
     }
     return true
   })
 })
 
 const stats = computed(() => {
-  const scope = auth.isAdmin
-    ? deals.deals
-    : deals.forAgent(auth.employee?.id ?? '')
+  const scope = allDeals.value
   return {
     total: scope.length,
     active: scope.filter((d) => d.status === 'active').length,
@@ -70,125 +66,132 @@ function openDeal(id: string) {
 
 <template>
   <div class="dash">
-    <template v-if="loading">
+    <template v-if="isLoading">
       <SkeletonStatCards :count="4" />
       <SkeletonTable :rows="8" :cols="5" :has-actions="false" :has-header="true" />
     </template>
 
+    <template v-else-if="isError">
+      <div class="error-state surface-card">
+        <i class="pi pi-exclamation-circle" />
+        <span>{{ $t('dashboard.loadError') }}</span>
+      </div>
+    </template>
+
     <template v-else>
-    <div v-if="auth.isAgent" class="page-actions">
-      <button class="btn-gradient" @click="router.push('/deals/create')">
-        <i class="pi pi-plus" /> {{ $t('dashboard.newDeal') }}
-      </button>
-    </div>
-
-    <div class="kpi-strip">
-      <div class="kpi-card surface-card">
-        <div class="kpi-row">
-          <div class="kpi-icon-wrap" style="background: var(--gradient-hero)"><i class="pi pi-briefcase" /></div>
-          <div class="kpi-delta neutral"><i class="pi pi-minus" /> all time</div>
-        </div>
-        <span class="kpi-label">{{ $t('dashboard.totalDeals') }}</span>
-        <span class="kpi-value font-mono">{{ stats.total }}</span>
-      </div>
-      <div class="kpi-card surface-card">
-        <div class="kpi-row">
-          <div class="kpi-icon-wrap" style="background: linear-gradient(135deg,#00c49a,#00d4aa)"><i class="pi pi-bolt" /></div>
-          <div class="kpi-delta up"><i class="pi pi-arrow-up" /> live</div>
-        </div>
-        <span class="kpi-label">{{ $t('dashboard.activeDeals') }}</span>
-        <span class="kpi-value font-mono" style="background: linear-gradient(135deg,#00c49a,#00d4aa); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;">{{ stats.active }}</span>
-      </div>
-      <div class="kpi-card surface-card">
-        <div class="kpi-row">
-          <div class="kpi-icon-wrap" style="background: linear-gradient(135deg,#7b68ee,#9d4edd)"><i class="pi pi-wallet" /></div>
-          <div class="kpi-delta up"><i class="pi pi-arrow-up" /></div>
-        </div>
-        <span class="kpi-label">{{ $t('dashboard.disbursed') }}</span>
-        <MonoAmount :value="stats.disbursed" size="lg" />
-      </div>
-      <div class="kpi-card surface-card">
-        <div class="kpi-row">
-          <div class="kpi-icon-wrap" style="background: linear-gradient(135deg,#ff5c5c,#ff8c42)"><i class="pi pi-exclamation-triangle" /></div>
-          <div v-if="stats.overdue > 0" class="kpi-delta down"><i class="pi pi-arrow-up" /> needs attention</div>
-          <div v-else class="kpi-delta neutral"><i class="pi pi-check" /> clear</div>
-        </div>
-        <span class="kpi-label">{{ $t('dashboard.overdue') }}</span>
-        <span class="kpi-value font-mono" :style="{ background: stats.overdue > 0 ? 'linear-gradient(135deg,#ff5c5c,#ff8c42)' : 'var(--gradient-hero)', '-webkit-background-clip': 'text', 'background-clip': 'text', color: 'transparent', '-webkit-text-fill-color': 'transparent' }">{{ stats.overdue }}</span>
-      </div>
-    </div>
-
-    <div class="table-card surface-card">
-      <div class="table-toolbar">
-        <div class="tt-search">
-          <i class="pi pi-search tt-icon" />
-          <input v-model="search" class="tt-input" :placeholder="$t('dashboard.searchDeals')" type="text" />
-        </div>
-        <Select
-          v-model="statusFilter"
-          :options="statusOptions"
-          option-label="label"
-          option-value="value"
-          :placeholder="$t('dashboard.filterStatus')"
-          class="filter-select"
-        />
-        <span class="tt-count">{{ visibleDeals.length }} {{ $t('dashboard.deals') }}</span>
+      <div v-if="auth.isAgent" class="page-actions">
+        <button class="btn-gradient" @click="router.push('/deals/create')">
+          <i class="pi pi-plus" /> {{ $t('dashboard.newDeal') }}
+        </button>
       </div>
 
-      <DataTable
-        :value="visibleDeals"
-        paginator
-        :rows="8"
-        data-key="id"
-        class="deals-table"
-        :pt="{ table: { style: 'min-width: 60rem' } }"
-      >
-        <Column field="clientName" :header="$t('dashboard.client')" sortable>
-          <template #body="{ data }">
-            <div class="client-cell">
-              <div class="client-avatar">{{ data.clientName.charAt(0) }}</div>
-              <div>
-                <div class="client-name">{{ data.clientName }}</div>
-                <div class="client-pinfl font-mono">{{ data.clientPinfl }}</div>
+      <div class="kpi-strip">
+        <div class="kpi-card surface-card">
+          <div class="kpi-row">
+            <div class="kpi-icon-wrap" style="background: var(--gradient-hero)"><i class="pi pi-briefcase" /></div>
+            <div class="kpi-delta neutral"><i class="pi pi-minus" /> all time</div>
+          </div>
+          <span class="kpi-label">{{ $t('dashboard.totalDeals') }}</span>
+          <span class="kpi-value font-mono">{{ stats.total }}</span>
+        </div>
+        <div class="kpi-card surface-card">
+          <div class="kpi-row">
+            <div class="kpi-icon-wrap" style="background: linear-gradient(135deg,#00c49a,#00d4aa)"><i class="pi pi-bolt" /></div>
+            <div class="kpi-delta up"><i class="pi pi-arrow-up" /> live</div>
+          </div>
+          <span class="kpi-label">{{ $t('dashboard.activeDeals') }}</span>
+          <span class="kpi-value font-mono" style="background: linear-gradient(135deg,#00c49a,#00d4aa); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;">{{ stats.active }}</span>
+        </div>
+        <div class="kpi-card surface-card">
+          <div class="kpi-row">
+            <div class="kpi-icon-wrap" style="background: linear-gradient(135deg,#7b68ee,#9d4edd)"><i class="pi pi-wallet" /></div>
+            <div class="kpi-delta up"><i class="pi pi-arrow-up" /></div>
+          </div>
+          <span class="kpi-label">{{ $t('dashboard.disbursed') }}</span>
+          <MonoAmount :value="stats.disbursed" size="lg" />
+        </div>
+        <div class="kpi-card surface-card">
+          <div class="kpi-row">
+            <div class="kpi-icon-wrap" style="background: linear-gradient(135deg,#ff5c5c,#ff8c42)"><i class="pi pi-exclamation-triangle" /></div>
+            <div v-if="stats.overdue > 0" class="kpi-delta down"><i class="pi pi-arrow-up" /> needs attention</div>
+            <div v-else class="kpi-delta neutral"><i class="pi pi-check" /> clear</div>
+          </div>
+          <span class="kpi-label">{{ $t('dashboard.overdue') }}</span>
+          <span class="kpi-value font-mono" :style="{ background: stats.overdue > 0 ? 'linear-gradient(135deg,#ff5c5c,#ff8c42)' : 'var(--gradient-hero)', '-webkit-background-clip': 'text', 'background-clip': 'text', color: 'transparent', '-webkit-text-fill-color': 'transparent' }">{{ stats.overdue }}</span>
+        </div>
+      </div>
+
+      <div class="table-card surface-card">
+        <div class="table-toolbar">
+          <div class="tt-search">
+            <i class="pi pi-search tt-icon" />
+            <input v-model="search" class="tt-input" :placeholder="$t('dashboard.searchDeals')" type="text" />
+          </div>
+          <Select
+            v-model="statusFilter"
+            :options="statusOptions"
+            option-label="label"
+            option-value="value"
+            :placeholder="$t('dashboard.filterStatus')"
+            class="filter-select"
+          />
+          <span class="tt-count">{{ visibleDeals.length }} {{ $t('dashboard.deals') }}</span>
+        </div>
+
+        <DataTable
+          :value="visibleDeals"
+          paginator
+          :rows="8"
+          data-key="id"
+          class="deals-table"
+          :pt="{ table: { style: 'min-width: 60rem' } }"
+        >
+          <Column field="clientName" :header="$t('dashboard.client')" sortable>
+            <template #body="{ data }">
+              <div class="client-cell">
+                <div class="client-avatar">{{ (data.clientName ?? '?').charAt(0) }}</div>
+                <div>
+                  <div class="client-name">{{ data.clientName ?? '—' }}</div>
+                  <div class="client-pinfl font-mono">{{ data.clientPinfl ?? '—' }}</div>
+                </div>
               </div>
-            </div>
+            </template>
+          </Column>
+          <Column :header="$t('dashboard.dealId')">
+            <template #body="{ data }">
+              <span class="font-mono deal-id">{{ data.id }}</span>
+            </template>
+          </Column>
+          <Column field="status" :header="$t('dashboard.status')" sortable>
+            <template #body="{ data }">
+              <StatusBadge :status="data.status" />
+            </template>
+          </Column>
+          <Column field="tariffName" :header="$t('dashboard.tariff')" sortable>
+            <template #body="{ data }">
+              <span class="tariff-pill">{{ data.tariffName ?? '—' }}</span>
+            </template>
+          </Column>
+          <Column field="amount" :header="$t('dashboard.amount')" sortable>
+            <template #body="{ data }">
+              <MonoAmount :value="data.amount" size="sm" />
+            </template>
+          </Column>
+          <Column field="createdAt" :header="$t('dashboard.date')" sortable>
+            <template #body="{ data }">
+              <span class="font-mono date-cell">{{ formatDate(data.createdAt) }}</span>
+            </template>
+          </Column>
+          <Column header="" :style="{ width: '6rem' }">
+            <template #body="{ data }">
+              <button class="open-btn" @click="openDeal(data.id)">{{ $t('dashboard.open') }}</button>
+            </template>
+          </Column>
+          <template #empty>
+            <div class="empty">{{ $t('dashboard.noDeals') }}</div>
           </template>
-        </Column>
-        <Column :header="$t('dashboard.dealId')">
-          <template #body="{ data }">
-            <span class="font-mono deal-id">{{ data.id }}</span>
-          </template>
-        </Column>
-        <Column field="status" :header="$t('dashboard.status')" sortable>
-          <template #body="{ data }">
-            <StatusBadge :status="data.status" />
-          </template>
-        </Column>
-        <Column field="tariffName" :header="$t('dashboard.tariff')" sortable>
-          <template #body="{ data }">
-            <span class="tariff-pill">{{ data.tariffName }}</span>
-          </template>
-        </Column>
-        <Column field="amount" :header="$t('dashboard.amount')" sortable>
-          <template #body="{ data }">
-            <MonoAmount :value="data.amount" size="sm" />
-          </template>
-        </Column>
-        <Column field="createdAt" :header="$t('dashboard.date')" sortable>
-          <template #body="{ data }">
-            <span class="font-mono date-cell">{{ formatDate(data.createdAt) }}</span>
-          </template>
-        </Column>
-        <Column header="" :style="{ width: '6rem' }">
-          <template #body="{ data }">
-            <button class="open-btn" @click="openDeal(data.id)">{{ $t('dashboard.open') }}</button>
-          </template>
-        </Column>
-        <template #empty>
-          <div class="empty">{{ $t('dashboard.noDeals') }}</div>
-        </template>
-      </DataTable>
-    </div>
+        </DataTable>
+      </div>
     </template>
   </div>
 </template>
@@ -342,5 +345,17 @@ function openDeal(id: string) {
   padding: 2rem;
   text-align: center;
   color: var(--text-secondary);
+}
+.error-state {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  color: var(--danger);
+  font-weight: 600;
+  border-radius: 12px;
+}
+.error-state i {
+  font-size: 1.25rem;
 }
 </style>

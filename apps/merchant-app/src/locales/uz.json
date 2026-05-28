@@ -166,7 +166,8 @@
     "date": "Sana",
     "open": "Ochish",
     "noDeals": "Hech qanday shartnoma topilmadi.",
-    "searchDeals": "Shartnomalarni qidirish…"
+    "searchDeals": "Shartnomalarni qidirish…",
+    "loadError": "Shartnomalarni yuklab bo'lmadi. Sahifani yangilang."
   },
   "dealsPage": {
     "title": "Shartnomalar",
