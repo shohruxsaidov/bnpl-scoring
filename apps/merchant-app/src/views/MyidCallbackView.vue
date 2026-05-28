@@ -1,22 +1,22 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useClientApi } from '@/composables/useClientApi'
-import { useWizardStore } from '@/stores/wizard'
+import { useDealStore } from '@/stores/deal'
 
 const router = useRouter()
-const wizard = useWizardStore()
+const route = useRoute()
+const deal = useDealStore()
 const { completeMyidMutation } = useClientApi()
 
 onMounted(async () => {
-  debugger
 
-  const params = new URLSearchParams(window.location.search)
-  const code = params.get('auth_code')
+  const code = route.query.auth_code as string
+
   const regToken = sessionStorage.getItem('myid_reg_token')
   debugger
   if (!code || !regToken) {
-    router.replace({ name: 'wizard' })
+    router.replace({ name: 'deals-create' })
     return
   }
 
@@ -24,14 +24,14 @@ onMounted(async () => {
 
   try {
     const data = await completeMyidMutation.mutateAsync({ regToken, myidCode: code })
-    wizard.setClient(data.client, { isNew: true, myidVerified: true })
+    deal.setClient(data.client, { isNew: true, myidVerified: true })
     sessionStorage.setItem('myid_callback_complete', '1')
   } catch (err) {
     console.error('MyID verification failed', err)
-    // on failure, wizard lands on client step with no client — Agent starts over
+    // on failure, deal flow lands on client step with no client — Agent starts over
   }
 
-  router.replace({ name: 'wizard' })
+  router.replace({ name: 'deals-create' })
 })
 </script>
 

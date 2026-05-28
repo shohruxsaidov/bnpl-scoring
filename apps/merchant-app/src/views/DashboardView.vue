@@ -77,7 +77,7 @@ function openDeal(id: string) {
 
     <template v-else>
     <div v-if="auth.isAgent" class="page-actions">
-      <button class="btn-gradient" @click="router.push('/wizard')">
+      <button class="btn-gradient" @click="router.push('/deals/create')">
         <i class="pi pi-plus" /> {{ $t('dashboard.newDeal') }}
       </button>
     </div>

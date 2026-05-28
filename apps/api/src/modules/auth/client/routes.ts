@@ -1,8 +1,9 @@
-import { Type } from "@sinclair/typebox";
-import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
-import type { FastifyInstance, FastifyReply } from "fastify";
-import { env } from "../../../env.js";
-import type { users } from "../../id/db/schema.js";
+import { env } from './../../../env';
+import { Type } from '@sinclair/typebox';
+import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
+import type { FastifyInstance, FastifyReply } from 'fastify';
+import { env } from '../../../env.js';
+import type { users } from '../../id/db/schema.js';
 import {
   createOtp,
   createSession,
@@ -13,39 +14,39 @@ import {
   revokeSession,
   verifyOtp,
   verifySession,
-} from "./service.js";
-import { createMyidSession, exchangeMyidCode } from "./myid";
+} from './service.js';
+import { createMyidSession, exchangeMyidCode } from './myid';
 
 /** Normalize a 9-digit national phone number to E.164 (+998XXXXXXXXX). */
 function normalizePhone(input: string): string {
-  const digits = input.replace(/\D/g, "");
+  const digits = input.replace(/\D/g, '');
   // Tolerate inputs that already include the country code.
-  const national = digits.startsWith("998") ? digits.slice(3) : digits;
+  const national = digits.startsWith('998') ? digits.slice(3) : digits;
   return `+998${national}`;
 }
 
 const ACCESS_MAX_AGE = 15 * 60; // seconds
 const SESSION_MAX_AGE = env.SESSION_EXPIRES_DAYS * 24 * 60 * 60; // seconds
 
-const isProd = env.NODE_ENV === "production";
+const isProd = env.NODE_ENV === 'production';
 
 const baseCookie = {
   httpOnly: true,
-  sameSite: "lax" as const,
+  sameSite: 'lax' as const,
   secure: isProd,
-  path: "/",
+  path: '/',
 };
 
 /** Reg-token shape carried between registration steps. */
 interface RegTokenPhase1 {
   phone: string;
-  step: "phone_verified";
+  step: 'phone_verified';
 }
 interface RegTokenPhase2 {
   phone: string;
   pinfl: string;
   myidSessionId: string;
-  step: "pinfl_verified";
+  step: 'pinfl_verified';
 }
 
 function setAuthCookies(
@@ -55,23 +56,23 @@ function setAuthCookies(
   sessionToken: string,
 ): void {
   const accessToken = app.jwt.sign(
-    { sub: userId.toString(), type: "client" },
+    { sub: userId.toString(), type: 'client' },
     { expiresIn: ACCESS_MAX_AGE },
   );
 
-  reply.setCookie("access_token", accessToken, {
+  reply.setCookie('access_token', accessToken, {
     ...baseCookie,
     maxAge: ACCESS_MAX_AGE,
   });
-  reply.setCookie("session_id", sessionToken, {
+  reply.setCookie('session_id', sessionToken, {
     ...baseCookie,
     maxAge: SESSION_MAX_AGE,
   });
 }
 
 function clearAuthCookies(reply: FastifyReply): void {
-  reply.clearCookie("access_token", { ...baseCookie });
-  reply.clearCookie("session_id", { ...baseCookie });
+  reply.clearCookie('access_token', { ...baseCookie });
+  reply.clearCookie('session_id', { ...baseCookie });
 }
 
 function toUserDto(u: typeof users.$inferSelect) {
@@ -116,196 +117,168 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
 
   /* ── Registration ───────────────────────────────────────────────────────── */
 
-  fastify.post(
-    "/register/phone",
-    { schema: { body: PhoneBody } },
-    async (request, reply) => {
-      const phone = normalizePhone(request.body.phone);
+  fastify.post('/register/phone', { schema: { body: PhoneBody } }, async (request, reply) => {
+    const phone = normalizePhone(request.body.phone);
 
-      const existing = await findUserByPhone(db, phone);
-      if (existing) return reply.code(409).send({ code: "phone_taken" });
+    const existing = await findUserByPhone(db, phone);
+    if (existing) return reply.code(409).send({ code: 'phone_taken' });
 
-      const code = await createOtp(db, phone, "register");
-      if (!isProd) request.log.info({ phone, code }, "register OTP issued");
+    const code = await createOtp(db, phone, 'register');
+    if (!isProd) request.log.info({ phone, code }, 'register OTP issued');
 
-      return { ok: true, ...(isProd ? {} : { devOtp: code }) };
-    },
-  );
+    return { ok: true, ...(isProd ? {} : { devOtp: code }) };
+  });
 
-  fastify.post(
-    "/register/otp",
-    { schema: { body: RegisterOtpBody } },
-    async (request, reply) => {
-      const phone = normalizePhone(request.body.phone);
+  fastify.post('/register/otp', { schema: { body: RegisterOtpBody } }, async (request, reply) => {
+    const phone = normalizePhone(request.body.phone);
 
-      const ok = await verifyOtp(db, phone, request.body.code, "register");
-      if (!ok) return reply.code(400).send({ code: "invalid_otp" });
+    const ok = await verifyOtp(db, phone, request.body.code, 'register');
+    if (!ok) return reply.code(400).send({ code: 'invalid_otp' });
 
-      const regToken = app.jwt.sign(
-        { phone, step: "phone_verified" } satisfies RegTokenPhase1,
-        { expiresIn: "15m" },
-      );
+    const regToken = app.jwt.sign({ phone, step: 'phone_verified' } satisfies RegTokenPhase1, {
+      expiresIn: '15m',
+    });
 
-      return { regToken };
-    },
-  );
+    return { regToken };
+  });
 
-  fastify.post(
-    "/register/pinfl",
-    { schema: { body: PinflBody } },
-    async (request, reply) => {
-      let payload: RegTokenPhase1;
-      try {
-        payload = app.jwt.verify<RegTokenPhase1>(request.body.regToken);
-      } catch {
-        return reply.code(400).send({ code: "invalid_reg_token" });
-      }
-      if (payload.step !== "phone_verified") {
-        return reply.code(400).send({ code: "invalid_step" });
-      }
+  fastify.post('/register/pinfl', { schema: { body: PinflBody } }, async (request, reply) => {
+    let payload: RegTokenPhase1;
+    try {
+      payload = app.jwt.verify<RegTokenPhase1>(request.body.regToken);
+    } catch {
+      return reply.code(400).send({ code: 'invalid_reg_token' });
+    }
+    if (payload.step !== 'phone_verified') {
+      return reply.code(400).send({ code: 'invalid_step' });
+    }
 
-      const pinfl = request.body.pinfl.trim();
-      if (pinfl.length !== 14 || !/^\d{14}$/.test(pinfl)) {
-        return reply.code(400).send({ code: "invalid_pinfl" });
-      }
+    const pinfl = request.body.pinfl.trim();
+    if (pinfl.length !== 14 || !/^\d{14}$/.test(pinfl)) {
+      return reply.code(400).send({ code: 'invalid_pinfl' });
+    }
 
-      const existing = await findUserByPinfl(db, pinfl);
-      if (existing) return reply.code(409).send({ code: "pinfl_taken" });
+    const existing = await findUserByPinfl(db, pinfl);
+    if (existing) return reply.code(409).send({ code: 'pinfl_taken' });
 
-      const myidResult = await createMyidSession(db, redis, pinfl, request.ip).catch((err) => {
-        request.log.error(
-          { err },
-          "MyID session creation failed, falling back to mock",
-        );
+    const redirectUrl = encodeURIComponent(env.MYID_WEB_REDIRECT_URI + '/signing_up');
+
+    const myidResult = await createMyidSession(db, redis, pinfl, request.ip, redirectUrl).catch(
+      (err) => {
+        request.log.error({ err }, 'MyID session creation failed, falling back to mock');
         return null;
-      });
-      if (myidResult === null) {
-        // In case of MyID integration failure throw an error in production, but allow fallback to mock data in non-production environments for testing purposes.
-        return reply.code(500).send({ code: "myid_integration_failed" });
-      }
+      },
+    );
+    if (myidResult === null) {
+      // In case of MyID integration failure throw an error in production, but allow fallback to mock data in non-production environments for testing purposes.
+      return reply.code(500).send({ code: 'myid_integration_failed' });
+    }
 
-      const regToken = app.jwt.sign(
-        {
-          phone: payload.phone,
-          pinfl,
-          myidSessionId: myidResult.sessionId,
-          step: "pinfl_verified",
-        } satisfies RegTokenPhase2,
-        { expiresIn: "15m" },
-      );
-
-      return { regToken, mock: false, redirectUrl: myidResult.redirectUrl };
-    },
-  );
-
-  fastify.post(
-    "/register/complete",
-    { schema: { body: CompleteBody } },
-    async (request, reply) => {
-      let payload: RegTokenPhase2;
-      try {
-        payload = app.jwt.verify<RegTokenPhase2>(request.body.regToken);
-      } catch {
-        return reply.code(400).send({ code: "invalid_reg_token" });
-      }
-      if (payload.step !== "pinfl_verified") {
-        return reply.code(400).send({ code: "invalid_step" });
-      }
-
-      const myidUser = await exchangeMyidCode(db, redis, request.body.myidCode);
-
-      if (myidUser.pinfl !== payload.pinfl) {
-        return reply.code(400).send({ code: "pinfl_mismatch" });
-      }
-
-      const existing = await findUserByPinfl(db, payload.pinfl);
-      if (existing) return reply.code(409).send({ code: "pinfl_taken" });
-
-      const user = await createUser(db, {
+    const regToken = app.jwt.sign(
+      {
         phone: payload.phone,
-        pinfl: myidUser.pinfl,
-        firstName: myidUser.firstName,
-        lastName: myidUser.lastName,
-        birthDate: myidUser.birthDate,
-        gender: myidUser.gender,
-        nationality: myidUser.nationality,
-        passportSerial: myidUser.passportSerial,
-        passportNumber: myidUser.passportNumber,
-        photoUrl: myidUser.photoUrl,
-      });
+        pinfl,
+        myidSessionId: myidResult.sessionId,
+        step: 'pinfl_verified',
+      } satisfies RegTokenPhase2,
+      { expiresIn: '15m' },
+    );
 
-      const { sessionToken } = await createSession(db, user.id);
-      setAuthCookies(app, reply, user.id, sessionToken);
+    return { regToken, mock: false, redirectUrl: myidResult.redirectUrl };
+  });
 
-      return { user: toUserDto(user) };
-    },
-  );
+  fastify.post('/register/complete', { schema: { body: CompleteBody } }, async (request, reply) => {
+    let payload: RegTokenPhase2;
+    try {
+      payload = app.jwt.verify<RegTokenPhase2>(request.body.regToken);
+    } catch {
+      return reply.code(400).send({ code: 'invalid_reg_token' });
+    }
+    if (payload.step !== 'pinfl_verified') {
+      return reply.code(400).send({ code: 'invalid_step' });
+    }
+
+    const myidUser = await exchangeMyidCode(db, redis, request.body.myidCode);
+
+    if (myidUser.pinfl !== payload.pinfl) {
+      return reply.code(400).send({ code: 'pinfl_mismatch' });
+    }
+
+    const existing = await findUserByPinfl(db, payload.pinfl);
+    if (existing) return reply.code(409).send({ code: 'pinfl_taken' });
+
+    const user = await createUser(db, {
+      phone: payload.phone,
+      pinfl: myidUser.pinfl,
+      firstName: myidUser.firstName,
+      lastName: myidUser.lastName,
+      birthDate: myidUser.birthDate,
+      gender: myidUser.gender,
+      nationality: myidUser.nationality,
+      passportSerial: myidUser.passportSerial,
+      passportNumber: myidUser.passportNumber,
+      photoUrl: myidUser.photoUrl,
+    });
+
+    const { sessionToken } = await createSession(db, user.id);
+    setAuthCookies(app, reply, user.id, sessionToken);
+
+    return { user: toUserDto(user) };
+  });
 
   /* ── Login ──────────────────────────────────────────────────────────────── */
 
-  fastify.post(
-    "/login/phone",
-    { schema: { body: PhoneBody } },
-    async (request, reply) => {
-      const phone = normalizePhone(request.body.phone);
+  fastify.post('/login/phone', { schema: { body: PhoneBody } }, async (request, reply) => {
+    const phone = normalizePhone(request.body.phone);
 
-      const user = await findUserByPhone(db, phone);
-      if (!user) return reply.code(404).send({ code: "no_account" });
+    const user = await findUserByPhone(db, phone);
+    if (!user) return reply.code(404).send({ code: 'no_account' });
 
-      const code = await createOtp(db, phone, "login");
-      if (!isProd) request.log.info({ phone, code }, "login OTP issued");
+    const code = await createOtp(db, phone, 'login');
+    if (!isProd) request.log.info({ phone, code }, 'login OTP issued');
 
-      return { ok: true, ...(isProd ? {} : { devOtp: code }) };
-    },
-  );
+    return { ok: true, ...(isProd ? {} : { devOtp: code }) };
+  });
 
-  fastify.post(
-    "/login/otp",
-    { schema: { body: OtpBody } },
-    async (request, reply) => {
-      const phone = normalizePhone(request.body.phone);
+  fastify.post('/login/otp', { schema: { body: OtpBody } }, async (request, reply) => {
+    const phone = normalizePhone(request.body.phone);
 
-      const ok = await verifyOtp(db, phone, request.body.code, "login");
-      if (!ok) return reply.code(400).send({ code: "invalid_otp" });
+    const ok = await verifyOtp(db, phone, request.body.code, 'login');
+    if (!ok) return reply.code(400).send({ code: 'invalid_otp' });
 
-      const user = await findUserByPhone(db, phone);
-      if (!user) return reply.code(404).send({ code: "no_account" });
+    const user = await findUserByPhone(db, phone);
+    if (!user) return reply.code(404).send({ code: 'no_account' });
 
-      const { sessionToken } = await createSession(db, user.id);
-      setAuthCookies(app, reply, user.id, sessionToken);
+    const { sessionToken } = await createSession(db, user.id);
+    setAuthCookies(app, reply, user.id, sessionToken);
 
-      return { user: toUserDto(user) };
-    },
-  );
+    return { user: toUserDto(user) };
+  });
 
   /* ── Session lifecycle ──────────────────────────────────────────────────── */
 
-  fastify.get(
-    "/me",
-    { preHandler: app.verifyClientJwt },
-    async (request, reply) => {
-      const payload = request.user as { sub: string; type: "client" };
-      const user = await findUserById(db, BigInt(payload.sub));
-      if (!user) return reply.code(401).send({ code: "unauthorized" });
-      return { user: toUserDto(user) };
-    },
-  );
+  fastify.get('/me', { preHandler: app.verifyClientJwt }, async (request, reply) => {
+    const payload = request.user as { sub: string; type: 'client' };
+    const user = await findUserById(db, BigInt(payload.sub));
+    if (!user) return reply.code(401).send({ code: 'unauthorized' });
+    return { user: toUserDto(user) };
+  });
 
-  fastify.post("/refresh", async (request, reply) => {
+  fastify.post('/refresh', async (request, reply) => {
     const sessionToken = request.cookies.session_id;
-    if (!sessionToken) return reply.code(401).send({ code: "unauthorized" });
+    if (!sessionToken) return reply.code(401).send({ code: 'unauthorized' });
 
     const result = await verifySession(db, sessionToken);
     if (!result) {
       clearAuthCookies(reply);
-      return reply.code(401).send({ code: "unauthorized" });
+      return reply.code(401).send({ code: 'unauthorized' });
     }
 
     const accessToken = app.jwt.sign(
-      { sub: result.user.id.toString(), type: "client" },
+      { sub: result.user.id.toString(), type: 'client' },
       { expiresIn: ACCESS_MAX_AGE },
     );
-    reply.setCookie("access_token", accessToken, {
+    reply.setCookie('access_token', accessToken, {
       ...baseCookie,
       maxAge: ACCESS_MAX_AGE,
     });
@@ -313,7 +286,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
     return { ok: true };
   });
 
-  fastify.post("/logout", async (request, reply) => {
+  fastify.post('/logout', async (request, reply) => {
     const sessionToken = request.cookies.session_id;
     if (sessionToken) await revokeSession(db, sessionToken);
 

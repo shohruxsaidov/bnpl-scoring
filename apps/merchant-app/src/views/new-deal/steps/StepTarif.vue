@@ -1,17 +1,21 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useWizardStore } from '@/stores/wizard'
+import { computed, onMounted, ref } from 'vue'
+import { useDealStore } from '@/stores/deal'
 import { useCatalogStore } from '@/stores/catalog'
+import { useClientScoringStore } from '@/stores/clientScoring'
 import MonoAmount from '@/components/MonoAmount.vue'
 import type { Tariff } from '@/types'
 
-const wizard = useWizardStore()
+const deal = useDealStore()
 const catalog = useCatalogStore()
+const scoring = useClientScoringStore()
 
-const score = computed(() => wizard.sessionData.cardScore?.score ?? 0)
-const limit = computed(() => wizard.sessionData.cardScore?.limit ?? 0)
+onMounted(() => catalog.fetchTariffs())
 
-const selectedId = ref<string | null>(wizard.sessionData.tariff?.id ?? null)
+const score = computed(() => scoring.scoreSum ?? 0)
+const limit = computed(() => scoring.platformCreditLimit ?? 0)
+
+const selectedId = ref<string | null>(deal.sessionData.tariff?.id ?? null)
 
 function isAffordable(t: Tariff): boolean {
   // The approved limit must fall within the tariff's credit range.
@@ -26,8 +30,8 @@ function select(t: Tariff) {
 function next() {
   const t = catalog.activeTariffs.find((x) => x.id === selectedId.value)
   if (t) {
-    wizard.setTariff(t)
-    wizard.complete('tarif')
+    deal.setTariff(t)
+    deal.complete('tarif')
   }
 }
 </script>
@@ -91,7 +95,7 @@ function next() {
     </div>
 
     <footer class="sc-foot">
-      <button class="btn-ghost" @click="wizard.back()">
+      <button class="btn-ghost" @click="deal.back()">
         <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
       </button>
       <button class="btn-gradient" :disabled="!selectedId" @click="next">

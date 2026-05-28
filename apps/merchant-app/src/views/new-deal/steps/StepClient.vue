@@ -3,11 +3,11 @@ import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import Checkbox from 'primevue/checkbox'
-import { useWizardStore } from '@/stores/wizard'
+import { useDealStore } from '@/stores/deal'
 import { useClientApi } from '@/composables/useClientApi'
 import type { Client } from '@/types'
 
-const wizard = useWizardStore()
+const deal = useDealStore()
 const { t } = useI18n()
 const {
   searchClientsMutation,
@@ -35,7 +35,7 @@ type Phase =
   | 'katm'
 
 function initialPhase(): Phase {
-  if (wizard.sessionData.client) return 'katm'
+  if (deal.sessionData.client) return 'katm'
   return 'search'
 }
 
@@ -56,16 +56,16 @@ const devOtp = ref<string | null>(null)
 const pinfl = ref('')
 const pinflError = ref('')
 
-const confirmedClient = ref<Client | null>(wizard.sessionData.client)
-const isNewClient = ref(wizard.sessionData.isNewClient)
+const confirmedClient = ref<Client | null>(deal.sessionData.client)
+const isNewClient = ref(deal.sessionData.isNewClient)
 
 // MyID
 const myidError = ref('')
 
 // KATM
-const katmConsent = ref(wizard.sessionData.katmConsent)
+const katmConsent = ref(deal.sessionData.katmConsent)
 const katmLoading = ref(false)
-const katmDone = ref(!!wizard.sessionData.katmConsent && !!wizard.sessionData.client)
+const katmDone = ref(!!deal.sessionData.katmConsent && !!deal.sessionData.client)
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function validatePinfl(): boolean {
@@ -217,12 +217,12 @@ function resetSearch() {
 
 function onNext() {
   if (!confirmedClient.value || !katmDone.value) return
-  wizard.setClient(confirmedClient.value, {
+  deal.setClient(confirmedClient.value, {
     isNew: isNewClient.value,
     myidVerified: isNewClient.value,
   })
-  wizard.setKatmConsent(katmConsent.value)
-  wizard.complete('client')
+  deal.setKatmConsent(katmConsent.value)
+  deal.complete('client')
 }
 
 const canContinue = computed(() => !!confirmedClient.value && katmDone.value)

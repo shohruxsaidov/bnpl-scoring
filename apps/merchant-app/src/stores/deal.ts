@@ -2,14 +2,13 @@ import { defineStore } from 'pinia'
 import type {
   BasketItem,
   Card,
-  CardScoreResult,
   Client,
+  DealPaymentSchedule,
   Product,
-  ScheduleRow,
   Tariff,
 } from '@/types'
 
-export type WizardStepKey =
+export type DealStepKey =
   | 'client'
   | 'karta'
   | 'tarif'
@@ -18,13 +17,13 @@ export type WizardStepKey =
   | 'verification'
   | 'done'
 
-export interface WizardStep {
-  key: WizardStepKey
+export interface DealStep {
+  key: DealStepKey
   label: string
   icon: string
 }
 
-export const WIZARD_STEPS: WizardStep[] = [
+export const DEAL_STEPS: DealStep[] = [
   { key: 'client', label: 'Клиент', icon: 'pi pi-user' },
   { key: 'karta', label: 'Karta', icon: 'pi pi-credit-card' },
   { key: 'tarif', label: 'Tarif', icon: 'pi pi-percentage' },
@@ -40,11 +39,11 @@ interface SessionData {
   myidVerified: boolean
   katmConsent: boolean
   selectedCard: Card | null
-  cardScore: CardScoreResult | null
   tariff: Tariff | null
   basket: BasketItem[]
   paymentDay: number
-  schedule: ScheduleRow[]
+  schedule: DealPaymentSchedule[]
+  /** UUID of the Deal created at the end of the deal flow */
   createdDealId: string | null
 }
 
@@ -55,7 +54,6 @@ function emptySession(): SessionData {
     myidVerified: false,
     katmConsent: false,
     selectedCard: null,
-    cardScore: null,
     tariff: null,
     basket: [],
     paymentDay: 5,
@@ -64,17 +62,17 @@ function emptySession(): SessionData {
   }
 }
 
-interface WizardState {
-  currentStep: WizardStepKey
-  completed: Record<WizardStepKey, boolean>
+interface DealState {
+  currentStep: DealStepKey
+  completed: Record<DealStepKey, boolean>
   sessionData: SessionData
 }
 
-export const useWizardStore = defineStore('wizard', {
+export const useDealStore = defineStore('deal', {
   persist: {
     pick: ['currentStep', 'completed', 'sessionData'],
   },
-  state: (): WizardState => ({
+  state: (): DealState => ({
     currentStep: 'client',
     completed: {
       client: false,
@@ -89,10 +87,10 @@ export const useWizardStore = defineStore('wizard', {
   }),
 
   getters: {
-    steps: (): WizardStep[] => WIZARD_STEPS,
+    steps: (): DealStep[] => DEAL_STEPS,
 
     currentIndex: (s): number =>
-      WIZARD_STEPS.findIndex((x) => x.key === s.currentStep),
+      DEAL_STEPS.findIndex((x) => x.key === s.currentStep),
 
     basketTotal: (s): number =>
       s.sessionData.basket.reduce(
@@ -119,20 +117,20 @@ export const useWizardStore = defineStore('wizard', {
       this.sessionData = emptySession()
     },
 
-    goTo(step: WizardStepKey) {
+    goTo(step: DealStepKey) {
       this.currentStep = step
     },
 
-    complete(step: WizardStepKey) {
+    complete(step: DealStepKey) {
       this.completed[step] = true
-      const idx = WIZARD_STEPS.findIndex((x) => x.key === step)
-      const next = WIZARD_STEPS[idx + 1]
+      const idx = DEAL_STEPS.findIndex((x) => x.key === step)
+      const next = DEAL_STEPS[idx + 1]
       if (next) this.currentStep = next.key
     },
 
     back() {
       const idx = this.currentIndex
-      if (idx > 0) this.currentStep = WIZARD_STEPS[idx - 1].key
+      if (idx > 0) this.currentStep = DEAL_STEPS[idx - 1].key
     },
 
     // -- Session mutations --
@@ -146,9 +144,6 @@ export const useWizardStore = defineStore('wizard', {
     },
     setCard(card: Card) {
       this.sessionData.selectedCard = card
-    },
-    setCardScore(result: CardScoreResult) {
-      this.sessionData.cardScore = result
     },
     setTariff(tariff: Tariff) {
       this.sessionData.tariff = tariff
@@ -177,7 +172,7 @@ export const useWizardStore = defineStore('wizard', {
     setPaymentDay(day: number) {
       this.sessionData.paymentDay = day
     },
-    setSchedule(rows: ScheduleRow[]) {
+    setSchedule(rows: DealPaymentSchedule[]) {
       this.sessionData.schedule = rows
     },
     setCreatedDealId(id: string) {

@@ -62,7 +62,8 @@
     "dashboard": "Bosh sahifa",
     "notifications": "Bildirishnomalar",
     "notificationDetail": "Bildirishnoma",
-    "wizard": "Yangi shartnoma",
+    "deals": "Shartnomalar",
+    "dealsCreate": "Yangi shartnoma",
     "deal": "Shartnoma",
     "products": "Mahsulotlar",
     "categories": "Kategoriyalar",
@@ -94,6 +95,7 @@
   },
   "nav": {
     "dashboard": "Bosh sahifa",
+    "deals": "Shartnomalar",
     "newDeal": "Yangi shartnoma",
     "products": "Mahsulotlar",
     "categories": "Kategoriyalar",
@@ -165,6 +167,12 @@
     "open": "Ochish",
     "noDeals": "Hech qanday shartnoma topilmadi.",
     "searchDeals": "Shartnomalarni qidirish…"
+  },
+  "dealsPage": {
+    "title": "Shartnomalar",
+    "subtitle": "{count} ta shartnoma",
+    "agent": "Agent",
+    "term": "Muddat"
   },
   "status": {
     "draft": "Qoralama",
@@ -494,14 +502,19 @@
     "som": "so'm",
     "month": "oy"
   },
-  "wizard": {
+  "deal": {
     "stepClient": "Mijoz",
     "stepKarta": "Karta",
     "stepTarif": "Tarif",
     "stepMahsulot": "Mahsulot",
     "stepPayment": "To'lov kuni",
     "stepVerification": "Tekshiruv",
-    "stepDone": "Tayyor"
+    "stepDone": "Tayyor",
+    "resumeTitle": "Tugallanmagan shartnoma",
+    "resumeClient": "Mijoz: {name}",
+    "resumeStep": "Joriy qadam: {step}",
+    "resumeContinue": "Davom ettirish",
+    "resumeStartFresh": "Yangidan boshlash"
   },
   "stepClient": {
     "title": "Mijoz",
@@ -602,7 +615,9 @@
     "add": "Qo'shish",
     "basket": "Savat",
     "noProducts": "Hali mahsulot yo'q",
-    "basketTotal": "Savat jami",
+    "searchPlaceholder": "Nomi yoki MXIK kodi bo'yicha qidirish",
+    "basketTotal": "Tannarx",
+    "withMarkup": "Ustama bilan ({pct}%)",
     "range": "Oraliq: {min} – {max}",
     "addMore": "Minimumga yetish uchun yana {amount} so'm qo'shing",
     "overMax": "Maksimumdan {amount} so'mga oshib ketdi",
@@ -649,6 +664,21 @@
     "basket": "Savat ({count} ta mahsulot)",
     "schedulePreview": "Jadval ko'rinishi",
     "back": "Orqaga",
+    "signTitle": "Mijoz imzosi",
+    "signHint": "Mijozning {phone} raqamiga tasdiqlash kodi yuboring",
+    "sendOtp": "Kod yuborish",
+    "otpSentTitle": "Kod yuborildi",
+    "otpSentHint": "Mijoz {phone} raqamiga SMS oladi. Kodni so'rang.",
+    "otpPlaceholder": "••••",
+    "confirmOtp": "Tasdiqlash",
+    "resendOtp": "Qayta yuborish",
+    "signedTitle": "Kod tasdiqlandi",
+    "signedHint": "OTP tasdiqlandi. MyID orqali mijoz shaxsini tasdiqlang.",
+    "myidHint": "Mijoz MyID orqali yuz tekshiruvidan o'tishi kerak.",
+    "verifyMyid": "MyID orqali tasdiqlash",
+    "myidVerifiedTitle": "MyID tasdiqlandi",
+    "myidVerifiedHint": "Mijoz shaxsi tasdiqlandi. Shartnomani yarating.",
+    "createDeal": "Shartnoma yaratish",
     "creatingDeal": "Shartnoma yaratilmoqda…",
     "signSubmit": "Imzolash va yuborish"
   },

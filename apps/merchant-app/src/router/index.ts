@@ -9,9 +9,15 @@ const routes: RouteRecordRaw[] = [
     meta: { public: true, titleKey: 'routeTitle.login' },
   },
   {
-    path: '/myid/callback',
+    path: '/myid/callback/registration',
     name: 'myid-callback',
     component: () => import('@/views/MyidCallbackView.vue'),
+    meta: { public: true },
+  },
+  {
+    path: '/myid/callback/signing_deal',
+    name: 'myid-sign-callback',
+    component: () => import('@/views/MyidSignCallbackView.vue'),
     meta: { public: true },
   },
   {
@@ -25,10 +31,16 @@ const routes: RouteRecordRaw[] = [
         meta: { titleKey: 'routeTitle.dashboard', breadcrumbKeys: ['breadcrumb.dashboard'] },
       },
       {
-        path: 'wizard',
-        name: 'wizard',
-        component: () => import('@/views/wizard/WizardView.vue'),
-        meta: { titleKey: 'routeTitle.wizard', breadcrumbKeys: ['breadcrumb.deals', 'breadcrumb.newDeal'], agentOnly: true },
+        path: 'deals',
+        name: 'deals',
+        component: () => import('@/views/deals/DealsView.vue'),
+        meta: { titleKey: 'routeTitle.deals', breadcrumbKeys: ['breadcrumb.deals'] },
+      },
+      {
+        path: 'deals/create',
+        name: 'deals-create',
+        component: () => import('@/views/new-deal/NewDealView.vue'),
+        meta: { titleKey: 'routeTitle.dealsCreate', breadcrumbKeys: ['breadcrumb.deals', 'breadcrumb.newDeal'], agentOnly: true },
       },
       {
         path: 'deals/:id',

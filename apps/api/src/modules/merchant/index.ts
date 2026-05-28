@@ -4,6 +4,8 @@ import merchantCatalogRoutes from "./catalog/routes"
 import merchantBranchRoutes from "./branches/routes"
 import merchantEmployeeRoutes from "./employees/routes"
 import merchantTariffRoutes from "./tariffs/routes"
+import merchantCardRoutes from "./cards/routes"
+import merchantDealRoutes from "./deals/routes"
 import mxikRoutes from "../mxik/routes"
 
 export default async function merchantModule(app: FastifyInstance) {
@@ -12,5 +14,7 @@ export default async function merchantModule(app: FastifyInstance) {
   await app.register(merchantBranchRoutes, { prefix: "/merchant/branches" })
   await app.register(merchantEmployeeRoutes, { prefix: "/merchant/employees" })
   await app.register(merchantTariffRoutes, { prefix: "/merchant/tariffs" })
+  await app.register(merchantCardRoutes, { prefix: "/merchant/cards" })
+  await app.register(merchantDealRoutes, { prefix: "/merchant/deals" })
   await app.register(mxikRoutes, { prefix: "/merchant/mxik", preHandler: app.verifyMerchantJwt })
 }

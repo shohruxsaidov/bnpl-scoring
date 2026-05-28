@@ -44,6 +44,7 @@ export type DealStatus =
 export type ScoreDecision = 'approved' | 'declined' | 'manual_review'
 
 export interface Client {
+  id: string
   pinfl: string
   firstName: string
   lastName: string
@@ -105,12 +106,15 @@ export interface BasketItem {
   quantity: number
 }
 
-export interface ScheduleRow {
+/** Matches deal_payment_schedules table. Renamed from ScheduleRow. */
+export interface DealPaymentSchedule {
   index: number
-  /** ISO date string */
-  date: string
+  /** ISO date string — matches deal_payment_schedules.due_date */
+  dueDate: string
   /** tiyin */
   amount: number
+  paid: boolean
+  paidAt: string | null
 }
 
 export interface Deal {
@@ -122,11 +126,13 @@ export interface Deal {
   tariffId: string
   tariffName: string
   termMonths: number
-  /** merchant base price in tiyin (Цена мерчанта) */
+  /** sum of tan_narxi × quantity across all DealItems, tiyin */
   amount: number
-  /** total payable incl. Ustama, tiyin (Стоимость сделки) */
+  /** amount + Ustama, tiyin */
   totalPayable: number
+  /** from joined client_scorings.score_sum — included in API response */
   score: number
+  /** from joined client_scorings.decision — included in API response */
   decision: ScoreDecision
   agentId: string
   createdAt: string
@@ -134,8 +140,19 @@ export interface Deal {
   basket: BasketItem[]
 }
 
+/** Raw Card Score result from PlumGate — used transiently in the deal creation flow. */
 export interface CardScoreResult {
   score: number
   decision: ScoreDecision
   limit: number
+}
+
+/** Full scoring result stored in client_scorings — exposed by the clientScoring store. */
+export interface ClientScoringResult {
+  scoringId: string
+  scoreSum: number
+  coefficient: number
+  decision: ScoreDecision
+  platformCreditLimit: number
+  criteriaScores: Record<string, unknown>
 }

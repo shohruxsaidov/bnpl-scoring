@@ -16,7 +16,7 @@ The `users` table is populated through a self-registration wizard:
 
 PINFL uniqueness is enforced at step 3 — a duplicate PINFL returns an error before MyID is reached.
 
-**Wizard is independent of portal registration.**
+**The Deal Wizard is independent of portal registration.**
 An Agent can run the Wizard for any Client by PINFL without that Client having a `users` row. The Client Portal is a separate concern. `users.pinfl` is the join key between a portal identity and Deals — a Client can accumulate Deals before ever registering on the portal.
 
 **Single-role JWT for merchant sessions with login picker.**

@@ -64,7 +64,9 @@ const sidebarVisible = computed(() => isMobile.value ? mobileOpen.value : true)
 .content {
   flex: 1;
   padding: 1.6rem;
-  overflow-x: auto;
+  /* clip instead of auto — prevents horizontal overflow without creating a scroll
+     container, so position:sticky in child views works against the page scroll */
+  overflow-x: clip;
 }
 .overlay {
   position: fixed;

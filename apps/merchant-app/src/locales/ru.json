@@ -62,7 +62,8 @@
     "dashboard": "Главная",
     "notifications": "Уведомления",
     "notificationDetail": "Уведомление",
-    "wizard": "Новая сделка",
+    "deals": "Сделки",
+    "dealsCreate": "Новая сделка",
     "deal": "Сделка",
     "products": "Товары",
     "categories": "Категории",
@@ -94,6 +95,7 @@
   },
   "nav": {
     "dashboard": "Главная",
+    "deals": "Сделки",
     "newDeal": "Новая сделка",
     "products": "Товары",
     "categories": "Категории",
@@ -165,6 +167,12 @@
     "open": "Открыть",
     "noDeals": "Сделки не найдены.",
     "searchDeals": "Поиск сделок…"
+  },
+  "dealsPage": {
+    "title": "Сделки",
+    "subtitle": "{count} сделок",
+    "agent": "Агент",
+    "term": "Срок"
   },
   "status": {
     "draft": "Черновик",
@@ -494,14 +502,19 @@
     "som": "сум",
     "month": "мес"
   },
-  "wizard": {
+  "deal": {
     "stepClient": "Клиент",
     "stepKarta": "Карта",
     "stepTarif": "Тариф",
     "stepMahsulot": "Товар",
     "stepPayment": "День оплаты",
     "stepVerification": "Верификация",
-    "stepDone": "Готово"
+    "stepDone": "Готово",
+    "resumeTitle": "Незавершённая сделка",
+    "resumeClient": "Клиент: {name}",
+    "resumeStep": "Текущий шаг: {step}",
+    "resumeContinue": "Продолжить",
+    "resumeStartFresh": "Начать заново"
   },
   "stepClient": {
     "title": "Клиент",
@@ -602,7 +615,9 @@
     "add": "Добавить",
     "basket": "Корзина",
     "noProducts": "Товаров пока нет",
-    "basketTotal": "Итого корзина",
+    "searchPlaceholder": "Поиск по названию или коду МХИК",
+    "basketTotal": "Себестоимость",
+    "withMarkup": "С наценкой ({pct}%)",
     "range": "Диапазон: {min} – {max}",
     "addMore": "Добавьте ещё {amount} сум до минимума",
     "overMax": "Превышен максимум на {amount} сум",
@@ -649,6 +664,21 @@
     "basket": "Корзина ({count} товаров)",
     "schedulePreview": "Предпросмотр графика",
     "back": "Назад",
+    "signTitle": "Подпись клиента",
+    "signHint": "Отправьте код подтверждения на номер клиента {phone}",
+    "sendOtp": "Отправить код",
+    "otpSentTitle": "Код отправлен",
+    "otpSentHint": "Клиент получит SMS на {phone}. Попросите назвать код.",
+    "otpPlaceholder": "••••",
+    "confirmOtp": "Подтвердить",
+    "resendOtp": "Отправить повторно",
+    "signedTitle": "Код подтверждён",
+    "signedHint": "OTP верифицирован. Подтвердите личность клиента через MyID.",
+    "myidHint": "Клиент должен пройти верификацию лица через MyID.",
+    "verifyMyid": "Верифицировать через MyID",
+    "myidVerifiedTitle": "MyID подтверждён",
+    "myidVerifiedHint": "Личность клиента подтверждена. Создайте сделку.",
+    "createDeal": "Создать сделку",
     "creatingDeal": "Создание сделки…",
     "signSubmit": "Подписать и отправить"
   },

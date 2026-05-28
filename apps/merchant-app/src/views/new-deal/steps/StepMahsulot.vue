@@ -1,22 +1,50 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useWizardStore } from '@/stores/wizard'
+import { useDealStore } from '@/stores/deal'
 import { useCatalogStore } from '@/stores/catalog'
 import MonoAmount from '@/components/MonoAmount.vue'
 
-const wizard = useWizardStore()
+const deal = useDealStore()
 const catalog = useCatalogStore()
 const { t: tr } = useI18n()
 
+onMounted(() => catalog.fetchCatalog())
+
 const activeCategory = ref<string | null>(null)
+const searchQuery = ref('')
 
-const filteredProducts = computed(() =>
-  catalog.productsByCategory(activeCategory.value),
-)
+const filteredProducts = computed(() => {
+  const base = catalog.productsByCategory(activeCategory.value)
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return base
+  return base.filter(
+    (p) =>
+      p.name.toLowerCase().includes(q) ||
+      (p.mxikCode ?? '').toLowerCase().includes(q),
+  )
+})
 
-const tariff = computed(() => wizard.sessionData.tariff)
-const total = computed(() => wizard.basketTotal)
+const tariff = computed(() => deal.sessionData.tariff)
+const total = computed(() => deal.basketTotal)
+
+/** Product base price in tiyin */
+function basePrice(tanNarxi: string): number {
+  return Math.round(parseFloat(tanNarxi) * 100)
+}
+
+/** Price with tariff markup applied */
+function finalPrice(tanNarxi: string): number {
+  const base = basePrice(tanNarxi)
+  const pct = tariff.value?.markupPercent ?? 0
+  return Math.round(base * (1 + pct / 100))
+}
+
+/** Basket total including markup */
+const totalWithMarkup = computed(() => {
+  const pct = tariff.value?.markupPercent ?? 0
+  return Math.round(total.value * (1 + pct / 100))
+})
 
 const withinRange = computed(() => {
   const t = tariff.value
@@ -35,7 +63,7 @@ const rangeMsg = computed(() => {
 })
 
 function next() {
-  if (withinRange.value) wizard.complete('mahsulot')
+  if (withinRange.value) deal.complete('mahsulot')
 }
 </script>
 
@@ -48,6 +76,19 @@ function next() {
           <p>{{ $t('stepMahsulot.subtitle') }}</p>
         </div>
       </header>
+
+      <div class="search-row">
+        <i class="pi pi-search search-icon" />
+        <input
+          v-model="searchQuery"
+          type="text"
+          class="search-input"
+          :placeholder="$t('stepMahsulot.searchPlaceholder')"
+        />
+        <button v-if="searchQuery" class="search-clear" @click="searchQuery = ''">
+          <i class="pi pi-times" />
+        </button>
+      </div>
 
       <div class="chips">
         <button
@@ -76,8 +117,11 @@ function next() {
             <span class="p-cat">{{ catalog.categoryName(p.categoryId) }}</span>
           </div>
           <div class="p-bottom">
-            <MonoAmount :value="Math.round(parseFloat(p.tanNarxi) * 100)" size="sm" />
-            <button class="add-btn" @click="wizard.addToBasket(p)">
+            <div class="p-prices">
+              <MonoAmount :value="finalPrice(p.tanNarxi)" size="sm" />
+              <span v-if="tariff" class="p-markup">+{{ tariff.markupPercent }}%</span>
+            </div>
+            <button class="add-btn" @click="deal.addToBasket(p)">
               <i class="pi pi-plus" /> {{ $t('stepMahsulot.add') }}
             </button>
           </div>
@@ -88,17 +132,17 @@ function next() {
     <aside class="step-card surface-card basket">
       <h3>
         <i class="pi pi-shopping-cart" /> {{ $t('stepMahsulot.basket') }}
-        <span class="count">{{ wizard.basketCount }}</span>
+        <span class="count">{{ deal.basketCount }}</span>
       </h3>
 
-      <div v-if="wizard.sessionData.basket.length === 0" class="empty-basket">
+      <div v-if="deal.sessionData.basket.length === 0" class="empty-basket">
         <i class="pi pi-inbox" />
         <span>{{ $t('stepMahsulot.noProducts') }}</span>
       </div>
 
       <div v-else class="basket-items">
         <div
-          v-for="item in wizard.sessionData.basket"
+          v-for="item in deal.sessionData.basket"
           :key="item.product.id"
           class="basket-item"
         >
@@ -106,23 +150,23 @@ function next() {
             <span class="bi-name">{{ item.product.name }}</span>
             <button
               class="bi-remove"
-              @click="wizard.removeFromBasket(item.product.id)"
+              @click="deal.removeFromBasket(item.product.id)"
             >
               <i class="pi pi-times" />
             </button>
           </div>
           <div class="bi-bottom">
             <div class="qty">
-              <button @click="wizard.decrementItem(item.product.id)">
+              <button @click="deal.decrementItem(item.product.id)">
                 <i class="pi pi-minus" />
               </button>
               <span class="font-mono">{{ item.quantity }}</span>
-              <button @click="wizard.incrementItem(item.product.id)">
+              <button @click="deal.incrementItem(item.product.id)">
                 <i class="pi pi-plus" />
               </button>
             </div>
             <MonoAmount
-              :value="Math.round(parseFloat(item.product.tanNarxi) * 100) * item.quantity"
+              :value="finalPrice(item.product.tanNarxi) * item.quantity"
               size="sm"
               :gradient="false"
             />
@@ -131,9 +175,13 @@ function next() {
       </div>
 
       <div class="basket-summary">
-        <div class="bs-row">
+        <div class="bs-row muted">
           <span>{{ $t('stepMahsulot.basketTotal') }}</span>
-          <MonoAmount :value="total" size="md" />
+          <span class="font-mono base-total">{{ (total / 100).toLocaleString('uz-UZ') }}</span>
+        </div>
+        <div v-if="tariff" class="bs-row markup-row">
+          <span>{{ $t('stepMahsulot.withMarkup', { pct: tariff.markupPercent }) }}</span>
+          <MonoAmount :value="totalWithMarkup" size="md" />
         </div>
         <div v-if="tariff" class="bs-range font-mono">
           {{ $t('stepMahsulot.range', {
@@ -151,7 +199,7 @@ function next() {
       </div>
 
       <div class="basket-foot">
-        <button class="btn-ghost" @click="wizard.back()">
+        <button class="btn-ghost" @click="deal.back()">
           <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
         </button>
         <button class="btn-gradient" :disabled="!withinRange" @click="next">
@@ -182,11 +230,54 @@ function next() {
   color: var(--text-secondary);
   font-size: 0.86rem;
 }
+.search-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin: 1.4rem 0 0.8rem;
+}
+.search-icon {
+  position: absolute;
+  left: 0.85rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+.search-input {
+  width: 100%;
+  height: 38px;
+  padding: 0 2.2rem 0 2.4rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+.search-input:focus {
+  border-color: var(--accent-2);
+}
+.search-clear {
+  position: absolute;
+  right: 0.6rem;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.75rem;
+  display: grid;
+  place-items: center;
+  padding: 0.2rem;
+}
+.search-clear:hover {
+  color: var(--text-primary);
+}
 .chips {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin: 1.4rem 0;
+  margin: 0.6rem 0 1rem;
 }
 .chip {
   padding: 0.4rem 0.9rem;
@@ -240,6 +331,20 @@ function next() {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.4rem;
+}
+.p-prices {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.p-markup {
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--success);
+  background: var(--success-bg);
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
 }
 .add-btn {
   background: var(--bg-base);
@@ -262,7 +367,9 @@ function next() {
 }
 .basket {
   position: sticky;
-  top: 84px;
+  top: 68px;
+  max-height: calc(100vh - 68px);
+  overflow-y: auto;
 }
 .basket h3 {
   margin: 0 0 1.2rem;
@@ -368,6 +475,17 @@ function next() {
   align-items: center;
   font-weight: 700;
   font-size: 0.86rem;
+}
+.bs-row.muted {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.base-total {
+  font-size: 0.78rem;
+}
+.markup-row {
+  padding-top: 0.4rem;
+  border-top: 1px solid var(--border-subtle);
 }
 .bs-range {
   font-size: 0.72rem;

@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useWizardStore } from '@/stores/wizard'
+import { useDealStore } from '@/stores/deal'
 import MonoAmount from '@/components/MonoAmount.vue'
-import type { ScheduleRow } from '@/types'
+import type { DealPaymentSchedule } from '@/types'
 
-const wizard = useWizardStore()
+const deal = useDealStore()
 
-const day = ref(wizard.sessionData.paymentDay)
+const day = ref(deal.sessionData.paymentDay)
 const days = Array.from({ length: 28 }, (_, i) => i + 1)
 
-const tariff = computed(() => wizard.sessionData.tariff)
-const principal = computed(() => wizard.basketTotal)
+const tariff = computed(() => deal.sessionData.tariff)
+const principal = computed(() => deal.basketTotal)
 
 const totalPayable = computed(() => {
   const t = tariff.value
@@ -18,12 +18,12 @@ const totalPayable = computed(() => {
   return Math.round(principal.value * (1 + t.markupPercent / 100))
 })
 
-const schedule = computed<ScheduleRow[]>(() => {
+const schedule = computed<DealPaymentSchedule[]>(() => {
   const t = tariff.value
   if (!t) return []
   const months = t.termMonths
   const perMonth = Math.round(totalPayable.value / months)
-  const rows: ScheduleRow[] = []
+  const rows: DealPaymentSchedule[] = []
   const start = new Date()
   for (let i = 0; i < months; i++) {
     const d = new Date(start.getFullYear(), start.getMonth() + i + 1, day.value)
@@ -31,15 +31,15 @@ const schedule = computed<ScheduleRow[]>(() => {
       i === months - 1
         ? totalPayable.value - perMonth * (months - 1)
         : perMonth
-    rows.push({ index: i + 1, date: d.toISOString(), amount })
+    rows.push({ index: i + 1, dueDate: d.toISOString(), amount, paid: false, paidAt: null })
   }
   return rows
 })
 
 function next() {
-  wizard.setPaymentDay(day.value)
-  wizard.setSchedule(schedule.value)
-  wizard.complete('payment')
+  deal.setPaymentDay(day.value)
+  deal.setSchedule(schedule.value)
+  deal.complete('payment')
 }
 
 function fmtDate(iso: string) {
@@ -94,7 +94,7 @@ function fmtDate(iso: string) {
         <div v-for="row in schedule" :key="row.index" class="sch-row">
           <span class="font-mono">{{ row.index }}</span>
           <span>{{ $t('stepPayment.monthN', { n: row.index }) }}</span>
-          <span class="font-mono">{{ fmtDate(row.date) }}</span>
+          <span class="font-mono">{{ fmtDate(row.dueDate) }}</span>
           <span class="ta-right">
             <MonoAmount :value="row.amount" size="sm" :gradient="false" />
           </span>
@@ -103,7 +103,7 @@ function fmtDate(iso: string) {
     </div>
 
     <footer class="sc-foot">
-      <button class="btn-ghost" @click="wizard.back()">
+      <button class="btn-ghost" @click="deal.back()">
         <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
       </button>
       <button class="btn-gradient" @click="next">

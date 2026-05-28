@@ -11,6 +11,7 @@ const schema = z.object({
   MYID_WEB_BASE_URL: z.string().url().optional(),
   MYID_WEB_IFRAME_URL: z.string().url().optional(),
   MYID_WEB_REDIRECT_URI: z.string().url().optional(),
+  MYID_WEB_SIGN_REDIRECT_URI: z.string().url().optional(),
   MYID_WEB_CLIENT_ID: z.string().optional(),
   MYID_WEB_CLIENT_SECRET: z.string().optional(),
   MINIO_ENDPOINT: z.string().default("localhost"),

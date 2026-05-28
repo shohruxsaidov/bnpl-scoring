@@ -1,20 +1,24 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useWizardStore } from '@/stores/wizard'
+import { useDealStore } from '@/stores/deal'
+import { useClientScoringStore } from '@/stores/clientScoring'
 
-const wizard = useWizardStore()
+const deal = useDealStore()
+const scoring = useClientScoringStore()
 const router = useRouter()
 
-const dealId = computed(() => wizard.sessionData.createdDealId ?? '—')
+const dealId = computed(() => deal.sessionData.createdDealId ?? '—')
 
 function newDeal() {
-  wizard.reset()
+  deal.reset()
+  scoring.reset()
 }
 
 function backToDashboard() {
-  const id = wizard.sessionData.createdDealId
-  wizard.reset()
+  const id = deal.sessionData.createdDealId
+  deal.reset()
+  scoring.reset()
   if (id) router.push(`/deals/${id}`)
   else router.push('/')
 }
@@ -22,7 +26,7 @@ function backToDashboard() {
 function downloadContract() {
   const blob = new Blob(
     [
-      `KONTRAKT\n=========\nDeal ID: ${dealId.value}\nClient: ${`${wizard.sessionData.client?.firstName ?? ''} ${wizard.sessionData.client?.lastName ?? ''}`.trim()}\nTariff: ${wizard.sessionData.tariff?.name}\nGenerated: ${new Date().toISOString()}\n\n(Mock contract document)`,
+      `KONTRAKT\n=========\nDeal ID: ${dealId.value}\nClient: ${`${deal.sessionData.client?.firstName ?? ''} ${deal.sessionData.client?.lastName ?? ''}`.trim()}\nTariff: ${deal.sessionData.tariff?.name}\nGenerated: ${new Date().toISOString()}\n\n(Mock contract document)`,
     ],
     { type: 'text/plain' },
   )

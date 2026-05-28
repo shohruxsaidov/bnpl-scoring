@@ -2,10 +2,13 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
-import { useWizardStore } from '@/stores/wizard'
+import { useDealStore } from '@/stores/deal'
+import { useClientScoringStore } from '@/stores/clientScoring'
+import { apiFetch } from '@/utils/apiFetch'
 import type { Card, CardScoreResult, ScoreDecision } from '@/types'
 
-const wizard = useWizardStore()
+const deal = useDealStore()
+const clientScoring = useClientScoringStore()
 const { t } = useI18n()
 
 const cards = ref<Card[]>([
@@ -25,14 +28,14 @@ const cards = ref<Card[]>([
   },
 ])
 
-const selectedId = ref<string | null>(wizard.sessionData.selectedCard?.id ?? null)
+const selectedId = ref<string | null>(deal.sessionData.selectedCard?.id ?? null)
 const adding = ref(false)
 const newPan = ref('')
 const newExpiry = ref('')
 
 const scoring = ref(false)
 const progress = ref(0)
-const result = ref<CardScoreResult | null>(wizard.sessionData.cardScore)
+const result = ref<CardScoreResult | null>(null)
 
 let timer: ReturnType<typeof setInterval> | null = null
 
@@ -48,7 +51,7 @@ function addCard() {
   const card: Card = {
     id: `card_${cards.value.length + 1}`,
     maskedPan: masked,
-    holderName: (`${wizard.sessionData.client?.firstName ?? ''} ${wizard.sessionData.client?.lastName ?? ''}`.trim() || 'CLIENT').toUpperCase(),
+    holderName: (`${deal.sessionData.client?.firstName ?? ''} ${deal.sessionData.client?.lastName ?? ''}`.trim() || 'CLIENT').toUpperCase(),
     expiry: newExpiry.value || '01/28',
     bank: 'Uzcard',
   }
@@ -59,27 +62,35 @@ function addCard() {
   newExpiry.value = ''
 }
 
-function verifyCard() {
+async function verifyCard() {
   if (!selectedId.value) return
   scoring.value = true
   progress.value = 0
   result.value = null
+
+  // Animate progress bar while the API call is in flight
   timer = setInterval(() => {
-    progress.value += 12 + Math.random() * 10
-    if (progress.value >= 100) {
-      progress.value = 100
-      if (timer) clearInterval(timer)
-      const score = 620 + Math.floor(Math.random() * 220)
-      const decision: ScoreDecision =
-        score >= 700 ? 'approved' : score >= 600 ? 'manual_review' : 'declined'
-      result.value = {
-        score,
-        decision,
-        limit: 3000000000,
-      }
-      scoring.value = false
-    }
+    if (progress.value < 85) progress.value += 8 + Math.random() * 7
   }, 220)
+
+  try {
+    const data = await apiFetch<{ score: number; limit: number; decision: string }>(
+      '/merchant/cards/score',
+      { method: 'POST', body: JSON.stringify({ cardId: selectedId.value }) },
+    )
+    if (timer) clearInterval(timer)
+    progress.value = 100
+    result.value = {
+      score: data.score,
+      decision: data.decision as ScoreDecision,
+      limit: data.limit,
+    }
+  } catch {
+    if (timer) clearInterval(timer)
+    progress.value = 0
+  } finally {
+    scoring.value = false
+  }
 }
 
 const selectedCard = computed(() =>
@@ -98,9 +109,18 @@ const decisionMeta = computed(() => {
 
 function next() {
   if (selectedCard.value && result.value) {
-    wizard.setCard(selectedCard.value)
-    wizard.setCardScore(result.value)
-    wizard.complete('karta')
+    deal.setCard(selectedCard.value)
+    // Persist the Card Score result in the dedicated scoring store (persisted,
+    // survives refresh between Karta and Tarif steps per ADR-0010).
+    clientScoring.setCompleted({
+      scoringId: `mock-${Date.now()}`,
+      scoreSum: result.value.score,
+      coefficient: result.value.score >= 700 ? 1.0 : result.value.score >= 600 ? 0.8 : 0,
+      decision: result.value.decision,
+      platformCreditLimit: result.value.limit,
+      criteriaScores: {},
+    })
+    deal.complete('karta')
   }
 }
 </script>
@@ -195,7 +215,7 @@ function next() {
     </transition>
 
     <footer class="sc-foot">
-      <button class="btn-ghost" @click="wizard.back()">
+      <button class="btn-ghost" @click="deal.back()">
         <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
       </button>
       <button class="btn-gradient" :disabled="!result" @click="next">

@@ -22,7 +22,8 @@ interface NavItem {
 
 const mainNav = computed<NavItem[]>(() => [
   { label: t('nav.dashboard'), icon: 'pi pi-th-large', to: '/', show: true },
-  { label: t('nav.newDeal'), icon: 'pi pi-plus-circle', to: '/wizard', show: auth.isAgent },
+  { label: t('nav.deals'), icon: 'pi pi-briefcase', to: '/deals', show: true },
+  { label: t('nav.newDeal'), icon: 'pi pi-plus-circle', to: '/deals/create', show: auth.isAgent },
   { label: t('nav.notifications'), icon: 'pi pi-bell', to: '/notifications', show: true },
 ])
 

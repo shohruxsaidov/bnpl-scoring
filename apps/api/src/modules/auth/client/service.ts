@@ -8,7 +8,7 @@ import {
 } from "../../id/db/schema.js";
 import { env } from "../../../env.js";
 
-export type OtpPurpose = "login" | "register" | "client_registration";
+export type OtpPurpose = "login" | "register" | "client_registration" | "deal_signing";
 
 /** Hash a raw token with SHA-256, hex-encoded. */
 function hashToken(token: string): string {

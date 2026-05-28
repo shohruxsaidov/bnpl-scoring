@@ -43,8 +43,12 @@ _Avoid_: Order, loan
 The legal document generated from a Deal. In v1 the only type is Murabaha — a cost-plus-profit structure where Finsum Nasiya acquires goods from the Merchant at tan narxi (cost price) and resells to the Client at tan narxi + Ustama. One Deal produces one Kontrakt. Upon signing, Finsum records a payout obligation to the Merchant for the tan narxi amount.
 _Avoid_: Contract (use Kontrakt to distinguish from the overarching Deal/Договор)
 
+**Deal Signing OTP**:
+A one-time code sent to the Client's phone at the Верификация step, used as the Client's digital consent to the Kontrakt terms. Distinct from the Registration OTP (purpose `client_registration`) — uses purpose `deal_signing` so codes never collide. The Agent sends the OTP, the Client reads it aloud, the Agent enters it. A `signingToken` (short-lived JWT) is returned on success and carried with the deal-creation call as proof of consent.
+_Avoid_: Signing password, PIN, authentication code
+
 **Wizard**:
-The 7-step Merchant App flow a Sales Agent follows to issue a Deal: Клиент → Karta → Tarif → Mahsulot → To'lov kuni → Верификация → Готово.
+The 7-step Merchant App flow a Sales Agent follows to issue a Deal: Клиент → Karta → Tarif → Mahsulot → To'lov kuni → Верификация → Готово. A Deal record (status `draft`) is created when the Agent opens the Wizard; its UUID is sent as `claim_id` on all KATM requests made during that run. Abandoned Wizard runs remain as Deal rows in `draft` status — they are never shown in reports or the UI.
 _Avoid_: Form, flow, checkout
 
 **Basket**:
@@ -121,12 +125,8 @@ _Avoid_: National ID, passport number, personal number
 The borrower's signed consent document authorising a credit bureau query, required by UZ law №301. One Consent is collected per Deal at the start of the Wizard. Stored as `consent_id` (document number) + `consent_date` on the Deal. Both fields are sent on every KATM request for that Deal.
 _Avoid_: Permission, agreement, authorisation
 
-**Wizard Session**:
-A lightweight backend record created when an Agent opens the Wizard. Its ID is sent as `claim_id` on all KATM requests made during that Wizard run. Stores the full raw InfoScore response (jsonb) and `demand_id` for audit. If the Wizard completes, the resulting Deal is linked to the session. If the Agent abandons, the session remains as an audit record of the KATM query. Not a domain concept — not shown in reports or the UI.
-_Avoid_: Draft Deal, application, lead
-
 **KATM Demand ID**:
-The 16-char system reference KATM assigns to each bureau query (`demand_id` in the response). Stored on the Wizard Session. Used when disputing a Score with KATM or responding to a regulatory audit.
+The 16-char system reference KATM assigns to each bureau query (`demand_id` in the response). Stored on the Deal. Used when disputing a Score with KATM or responding to a regulatory audit.
 _Avoid_: Request ID, query reference
 
 ### Collections
@@ -167,6 +167,9 @@ _Avoid_: Settlement log, payout history
 - A **Client** has one **Platform Credit Limit** and an **Available Balance** derived from it
 - A **Deal** produces exactly one **Kontrakt**
 - A **Kontrakt** produces exactly one **Payout** obligation toward the Merchant
+- A **Deal** carries one **Score** result (stored in `client_scorings`) — set during the Tarif step
+- A **Deal** carries one **DealPaymentSchedule** — set when the Deal is confirmed
+- A **Basket** is persisted as one or more **DealItems** on the Deal
 
 ## Auth identity tables
 
@@ -185,6 +188,7 @@ Three separate tables back the three auth flows:
 - "Договор", "Сделка", and "Контракт" all appeared in the UI — resolved: **Договор = Deal** (the financing record), **Сделка** is a synonym for Deal used in tab labels only, **Контракт = Kontrakt** (the generated legal document). Never use "Contract" for the Deal itself.
 - "Tenant" was used throughout the codebase — resolved: replaced by **Merchant** (business entity) and **Branch** (single location). `tenant_id` → `merchant_id`; `branch_id` added to Deals and Employees.
 - "Комиссия" (Commission) appeared as a Deal field — removed from scope for v1. Not a domain concept.
+- "Wizard Session" was a separate backend concept (a lightweight record separate from the Deal) — resolved: **merged into Deal**. A Deal is created in `draft` status when the Wizard opens. Its UUID serves as `claim_id` for KATM. The `deals` table stores `infoscore_raw`, `demand_id`, `consent_id`, and `consent_date` directly. Abandoned Wizard runs are Deal rows in `draft` status, never surfaced to users.
 
 ## Architecture Decisions
 
@@ -199,7 +203,7 @@ Key decisions live in `docs/adr/` as thematic files:
 | `0005-integrations-infrastructure.md` | ky HTTP client factory, integration_logs table, fire-and-forget logging, PINFL/token redaction, MyID Bearer auth flow |
 | `0006deployment-strategy.md` | Docker + nginx, blue-green zero-downtime backend, atomic symlink frontend, expand/contract migrations |
 | `0007-observability.md` | Loki (logs) + Tempo (traces) + Prometheus (metrics) + Grafana Alloy + OpenTelemetry SDK, all self-hosted |
-| `0008-katm-integration.md` | InfoScore 077 only, PINFL client ID, Wizard Session as claim_id, consent per Deal, hard block on failure, full raw jsonb storage |
+| `0008-katm-integration.md` | InfoScore 077 only, PINFL client ID, Deal UUID as claim_id, consent per Deal, hard block on failure, full raw jsonb stored on Deal |
 | `0009-plumgate-card-scoring.md` | PlumGate SCORING module, Uzcard + Humo, Karta Wizard step, OTP agent-mediated, soft skip, client_cards token reuse, plumgate_scoring_sessions table |
 | `0010-scoring-trigger-timing.md` | Scoring starts in background at Karta completion (not Tarif render); Step 3 blocks on SSE `scoring.completed`; 30 s timeout triggers retry |
 | `0011-file-storage-minio.md` | MinIO (self-hosted S3) for Merchant document uploads; presigned PUT URLs; `merchant_documents` table stores URL only |

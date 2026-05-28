@@ -2,21 +2,19 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useDealsStore } from '@/stores/deals'
-import { useCatalogStore } from '@/stores/catalog'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { formatDate, formatSomShort } from '@/utils/money'
+import { useDealQuery } from '@/composables/useDealsApi'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
-const deals = useDealsStore()
-const catalog = useCatalogStore()
 
-const deal = computed(() => deals.byId(route.params.id as string))
-const agent = computed(() =>
-  deal.value ? catalog.employees.find((e) => e.id === deal.value!.agentId) : null,
-)
+const dealId = computed(() => route.params.id as string)
+const { data: dealData, isLoading, isError } = useDealQuery(dealId)
+
+const deal = computed(() => dealData.value ?? null)
+const agent = computed(() => deal.value ? { fullName: deal.value.agentName, phone: null } : null)
 
 const activeTab = ref('sdelki')
 const TABS = computed(() => [
@@ -58,11 +56,11 @@ function paymentDayText(day: number): string {
   return t('dealDetail.autopayDesc', { day })
 }
 
-function basketTotal(item: { product: { tanNarxi: string }; quantity: number }): number {
-  return Math.round(parseFloat(item.product.tanNarxi) * 100) * item.quantity
+function basketTotal(item: { tanNarxi: string; quantity: number }): number {
+  return Math.round(parseFloat(item.tanNarxi) * 100) * item.quantity
 }
 
-// ── График рассрочки (schedule) ────────────────────────────────────────────
+// ── График рассрочки (schedule) — from API ─────────────────────────────────
 
 type RowStatus = 'paid' | 'pending' | 'overdue'
 
@@ -73,27 +71,38 @@ interface ScheduleEntry {
   status: RowStatus
 }
 
-const TODAY = new Date(2026, 4, 17) // May 17, 2026
+const TODAY = new Date()
 
 const schedule = computed((): ScheduleEntry[] => {
   if (!deal.value) return []
   const d = deal.value
-  const base = new Date(d.createdAt)
+
+  // Use real schedule from API if available
+  if (d.schedule?.length) {
+    return d.schedule.map((row) => {
+      const due = new Date(row.dueDate)
+      let status: RowStatus
+      if (row.paid) {
+        status = 'paid'
+      } else if (due < TODAY) {
+        status = d.status === 'overdue' ? 'overdue' : 'paid'
+      } else {
+        status = 'pending'
+      }
+      return { index: row.index, date: row.dueDate, amount: row.amount, status }
+    })
+  }
+
+  // Fallback: compute from totals
   const monthly = Math.round(d.totalPayable / d.termMonths)
-
+  const base = new Date(d.createdAt)
   return Array.from({ length: d.termMonths }, (_, i) => {
-    const payDate = new Date(base.getFullYear(), base.getMonth() + i + 1, d.paymentDay)
+    const payDate = new Date(base.getFullYear(), base.getMonth() + i + 1, d.paymentDay ?? 5)
     const isPast = payDate < TODAY
-
     let status: RowStatus
-    if (d.status === 'closed') {
-      status = 'paid'
-    } else if (isPast) {
-      status = d.status === 'overdue' ? 'overdue' : 'paid'
-    } else {
-      status = 'pending'
-    }
-
+    if (d.status === 'closed') status = 'paid'
+    else if (isPast) status = d.status === 'overdue' ? 'overdue' : 'paid'
+    else status = 'pending'
     return {
       index: i + 1,
       date: payDate.toISOString(),
@@ -147,7 +156,7 @@ const timeline = computed((): TimelineEvent[] => {
     {
       key: 'approved',
       label: t('dealDetail.tlApproved'),
-      description: t('dealDetail.tlApprovedDesc', { score: d.score }),
+      description: t('dealDetail.tlApprovedDesc', { score: d.scoreSum ?? 0 }),
       icon: 'pi-check-circle',
       time: add(6),
       forStatuses: ['approved', 'active', 'overdue', 'closed'],
@@ -155,7 +164,7 @@ const timeline = computed((): TimelineEvent[] => {
     {
       key: 'declined',
       label: t('dealDetail.tlDeclined'),
-      description: t('dealDetail.tlDeclinedDesc', { score: d.score }),
+      description: t('dealDetail.tlDeclinedDesc', { score: d.scoreSum ?? 0 }),
       icon: 'pi-times-circle',
       time: add(6),
       forStatuses: ['declined'],
@@ -237,11 +246,21 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
 </script>
 
 <template>
-  <div v-if="deal" class="page">
+  <div v-if="isLoading" class="not-found surface-card">
+    <i class="pi pi-spin pi-spinner" style="font-size:2rem" />
+  </div>
+
+  <div v-else-if="isError" class="not-found surface-card">
+    <i class="pi pi-exclamation-circle" />
+    <p>{{ $t('common.error') }}</p>
+    <button class="btn-gradient" @click="router.push('/deals')">{{ $t('dealDetail.contracts') }}</button>
+  </div>
+
+  <div v-else-if="deal" class="page">
     <!-- Page header -->
     <div class="page-hdr">
       <div class="breadcrumb">
-        <button class="bc-back" @click="router.push('/')">
+        <button class="bc-back" @click="router.push('/deals')">
           <i class="pi pi-arrow-left" /> {{ $t('dealDetail.contracts') }}
         </button>
         <span class="bc-sep">/</span>
@@ -284,7 +303,7 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
             <span class="fl">{{ $t('dealDetail.dealNumber') }}</span>
             <span class="fv font-mono">{{ deal.id }}</span>
             <span class="fl">{{ $t('dealDetail.status') }}</span>
-            <span class="fv"><StatusBadge :status="deal.status" /></span>
+            <span class="fv"><StatusBadge :status="(deal.status as any)" /></span>
           </div>
           <div class="field-row">
             <span class="fl">{{ $t('dealDetail.dealCost') }}</span>
@@ -296,7 +315,7 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
             <span class="fl">{{ $t('dealDetail.finProduct') }}</span>
             <span class="fv">{{ deal.termMonths }} {{ $t('dealDetail.month') }}</span>
             <span class="fl">{{ $t('dealDetail.paymentDay') }}</span>
-            <span class="fv">{{ paymentDayText(deal.paymentDay) }}</span>
+            <span class="fv">{{ paymentDayText(deal.paymentDay ?? 5) }}</span>
           </div>
           <div class="field-row">
             <span class="fl">{{ $t('dealDetail.prepayment') }}</span>
@@ -335,12 +354,12 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(item, i) in deal.basket" :key="item.product.id">
+            <tr v-for="(item, i) in deal.basket" :key="item.productId ?? i">
               <td class="font-mono">{{ i + 1 }}</td>
-              <td>{{ item.product.name }}</td>
-              <td class="font-mono muted">{{ item.product.mxikCode ?? '—' }}</td>
+              <td>{{ item.productName }}</td>
+              <td class="font-mono muted">{{ item.mxikCode ?? '—' }}</td>
               <td class="font-mono">{{ item.quantity }}</td>
-              <td class="font-mono">{{ formatSomShort(Math.round(parseFloat(item.product.tanNarxi) * 100)) }}</td>
+              <td class="font-mono">{{ formatSomShort(Math.round(parseFloat(item.tanNarxi) * 100)) }}</td>
               <td class="font-mono">{{ formatSomShort(basketTotal(item)) }}</td>
               <td class="muted">—</td>
             </tr>
@@ -449,7 +468,7 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
           <div class="k-term"><span class="fl">{{ $t('dealDetail.dealCostTerm') }}</span><span class="kv font-mono">{{ formatSomShort(deal.totalPayable) }} {{ $t('dealDetail.som') }}</span></div>
           <div class="k-term"><span class="fl">{{ $t('dealDetail.installmentTerm') }}</span><span class="kv">{{ $t('dealDetail.monthsValue', { count: deal.termMonths }) }}</span></div>
           <div class="k-term"><span class="fl">{{ $t('dealDetail.monthlyPayment') }}</span><span class="kv font-mono">{{ formatSomShort(Math.round(deal.totalPayable / deal.termMonths)) }} {{ $t('dealDetail.som') }}</span></div>
-          <div class="k-term"><span class="fl">{{ $t('dealDetail.paymentDayTerm') }}</span><span class="kv">{{ $t('dealDetail.paymentDayValue', { day: deal.paymentDay }) }}</span></div>
+          <div class="k-term"><span class="fl">{{ $t('dealDetail.paymentDayTerm') }}</span><span class="kv">{{ $t('dealDetail.paymentDayValue', { day: deal.paymentDay ?? 5 }) }}</span></div>
           <div class="k-term"><span class="fl">{{ $t('dealDetail.prepayment') }}</span><span class="kv font-mono">0 {{ $t('dealDetail.som') }}</span></div>
         </div>
       </div>
@@ -461,12 +480,12 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
             <tr><th>{{ $t('dealDetail.thNum') }}</th><th>{{ $t('dealDetail.thName') }}</th><th>{{ $t('dealDetail.thMxik') }}</th><th>{{ $t('dealDetail.thQty') }}</th><th>{{ $t('dealDetail.thPrice') }}</th><th>{{ $t('dealDetail.thTotal') }}</th></tr>
           </thead>
           <tbody>
-            <tr v-for="(item, i) in deal.basket" :key="item.product.id">
+            <tr v-for="(item, i) in deal.basket" :key="item.productId ?? i">
               <td class="font-mono">{{ i + 1 }}</td>
-              <td>{{ item.product.name }}</td>
-              <td class="font-mono muted">{{ item.product.mxikCode ?? '—' }}</td>
+              <td>{{ item.productName }}</td>
+              <td class="font-mono muted">{{ item.mxikCode ?? '—' }}</td>
               <td class="font-mono">{{ item.quantity }}</td>
-              <td class="font-mono">{{ formatSomShort(Math.round(parseFloat(item.product.tanNarxi) * 100)) }}</td>
+              <td class="font-mono">{{ formatSomShort(Math.round(parseFloat(item.tanNarxi) * 100)) }}</td>
               <td class="font-mono">{{ formatSomShort(basketTotal(item)) }}</td>
             </tr>
           </tbody>
@@ -621,7 +640,7 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
         <div class="auto-toggle-row">
           <div>
             <div class="at-title">{{ $t('dealDetail.autopay') }}</div>
-            <div class="muted at-desc">{{ $t('dealDetail.autopayDesc', { day: deal.paymentDay }) }}</div>
+            <div class="muted at-desc">{{ $t('dealDetail.autopayDesc', { day: deal.paymentDay ?? 5 }) }}</div>
           </div>
           <button
             class="toggle-btn"

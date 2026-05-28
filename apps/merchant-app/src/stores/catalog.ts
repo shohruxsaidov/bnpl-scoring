@@ -147,7 +147,20 @@ export const useCatalogStore = defineStore('catalog', {
       if (emp) await this.updateEmployee(id, { active: !emp.active })
     },
 
+    /** Fetch products + categories only — called lazily by StepMahsulot */
+    async fetchCatalog() {
+      if (this.products.length && this.categories.length) return
+      const [catRes, prodRes] = await Promise.all([
+        api<{ categories: Category[] }>('/merchant/catalog/categories'),
+        api<{ products: Product[] }>('/merchant/catalog/products'),
+      ])
+      this.categories = catRes.categories
+      this.products = prodRes.products
+    },
+
+    /** Fetch tariffs only — called lazily by StepTarif */
     async fetchTariffs() {
+      if (this.tariffs.length) return
       const body = await api<{ tariffs: Tariff[] }>('/merchant/tariffs')
       this.tariffs = body.tariffs
     },

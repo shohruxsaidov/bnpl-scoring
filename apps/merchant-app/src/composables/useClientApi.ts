@@ -40,11 +40,47 @@ export function useClientApi() {
       }),
   })
 
+  const myidSignSessionMutation = useMutation({
+    mutationFn: (pinfl: string) =>
+      apiFetch<{ signingSessionToken: string; redirectUrl: string | null; mock: boolean }>(
+        '/merchant/client/myid-sign-session',
+        { method: 'POST', body: JSON.stringify({ pinfl }) },
+      ),
+  })
+
+  const myidSignCompleteMutation = useMutation({
+    mutationFn: ({ signingSessionToken, myidCode }: { signingSessionToken: string; myidCode: string }) =>
+      apiFetch<{ verified: boolean }>('/merchant/client/myid-sign-complete', {
+        method: 'POST',
+        body: JSON.stringify({ signingSessionToken, myidCode }),
+      }),
+  })
+
+  const sendSigningOtpMutation = useMutation({
+    mutationFn: (phone: string) =>
+      apiFetch<{ ok: boolean; devOtp?: string }>('/merchant/client/sign-otp', {
+        method: 'POST',
+        body: JSON.stringify({ phone }),
+      }),
+  })
+
+  const verifySigningOtpMutation = useMutation({
+    mutationFn: ({ phone, code }: { phone: string; code: string }) =>
+      apiFetch<{ signingToken: string }>('/merchant/client/sign-otp/verify', {
+        method: 'POST',
+        body: JSON.stringify({ phone, code }),
+      }),
+  })
+
   return {
     searchClientsMutation,
     sendOtpMutation,
     verifyOtpMutation,
     myidSessionMutation,
     completeMyidMutation,
+    sendSigningOtpMutation,
+    verifySigningOtpMutation,
+    myidSignSessionMutation,
+    myidSignCompleteMutation,
   }
 }
