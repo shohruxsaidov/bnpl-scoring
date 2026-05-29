@@ -1,72 +1,45 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-
-interface OverdueCard {
-  dealId: string
-  clientName: string
-  clientPhone: string
-  principal: number
-  missedCount: number
-  daysOverdue: number
-}
-
-interface AgingBucket {
-  key: string
-  label: string
-  icon: string
-  color: string
-  cards: OverdueCard[]
-  collapsed: boolean
-}
+import { useCollectionBoardQuery, useRefreshCollectionBoard } from '@/composables/useCollectionBoardApi'
+import type { OverdueCard } from '@/composables/useCollectionBoardApi'
 
 const router = useRouter()
 const { t } = useI18n()
 
-const buckets = ref<AgingBucket[]>([
-  {
-    key: '1-30',
-    label: t('collectionBoard.bucket1to30'),
-    icon: 'pi pi-clock',
-    color: '#ffb02e',
-    collapsed: false,
-    cards: [
-      { dealId: 'd1', clientName: 'Алишер Каримов', clientPhone: '+998 90 123 45 67', principal: 450000_00, missedCount: 1, daysOverdue: 8 },
-      { dealId: 'd2', clientName: 'Нилуфар Юсупова', clientPhone: '+998 91 234 56 78', principal: 320000_00, missedCount: 1, daysOverdue: 22 },
-    ],
-  },
-  {
-    key: '31-60',
-    label: t('collectionBoard.bucket31to60'),
-    icon: 'pi pi-exclamation-triangle',
-    color: '#ff8c42',
-    collapsed: false,
-    cards: [
-      { dealId: 'd3', clientName: 'Бобур Рашидов', clientPhone: '+998 93 345 67 89', principal: 780000_00, missedCount: 2, daysOverdue: 45 },
-    ],
-  },
-  {
-    key: '61-90',
-    label: t('collectionBoard.bucket61to90'),
-    icon: 'pi pi-shield',
-    color: '#f05c42',
-    collapsed: false,
-    cards: [],
-  },
-  {
-    key: '90+',
-    label: t('collectionBoard.bucket90plus'),
-    icon: 'pi pi-ban',
-    color: '#ff5c5c',
-    collapsed: false,
-    cards: [],
-  },
-])
+// ── Data ──────────────────────────────────────────────────────────────────
 
-function refresh() {
-  // TODO: call GET /api/collection-board
+const { data: rawBuckets, isLoading, isError, error } = useCollectionBoardQuery()
+const refresh = useRefreshCollectionBoard()
+
+// ── Bucket metadata (static) ──────────────────────────────────────────────
+
+interface BucketMeta {
+  key: string
+  label: string
+  icon: string
+  color: string
+  collapsed: boolean
 }
+
+const meta: BucketMeta[] = [
+  { key: '1-30',  label: t('collectionBoard.bucket1to30'),  icon: 'pi pi-clock',                color: '#ffb02e', collapsed: false },
+  { key: '31-60', label: t('collectionBoard.bucket31to60'), icon: 'pi pi-exclamation-triangle',  color: '#ff8c42', collapsed: false },
+  { key: '61-90', label: t('collectionBoard.bucket61to90'), icon: 'pi pi-shield',                color: '#f05c42', collapsed: false },
+  { key: '90+',   label: t('collectionBoard.bucket90plus'), icon: 'pi pi-ban',                   color: '#ff5c5c', collapsed: false },
+]
+
+// ── Merged buckets (meta + real cards) ────────────────────────────────────
+
+const buckets = computed(() =>
+  meta.map((m) => ({
+    ...m,
+    cards: rawBuckets.value?.find((b) => b.key === m.key)?.cards ?? [],
+  }))
+)
+
+// ── Actions ───────────────────────────────────────────────────────────────
 
 function openDeal(dealId: string) {
   router.push({ name: 'deal-detail', params: { id: dealId } })
@@ -79,80 +52,94 @@ function fmt(tiyin: number) {
 
 <template>
   <div class="board-page">
-    <!-- Refresh -->
-    <div class="page-actions">
-      <button class="btn-refresh" @click="refresh">
+
+    <!-- ── Loading skeleton ─────────────────────────────────────────────── -->
+    <template v-if="isLoading">
+      <div class="page-actions skeleton-bar" />
+      <div class="kanban">
+        <div v-for="i in 4" :key="i" class="column skeleton-col" />
+      </div>
+    </template>
+
+    <!-- ── Error ────────────────────────────────────────────────────────── -->
+    <div v-else-if="isError" class="error-state surface-card">
+      <i class="pi pi-exclamation-circle" />
+      <p>{{ (error as Error)?.message || $t('common.error') }}</p>
+      <button class="btn-refresh" @click="refresh()">
         <i class="pi pi-refresh" />
         {{ $t('collectionBoard.refresh') }}
       </button>
     </div>
 
-    <!-- Summary pills -->
-    <div class="summary-pills">
-      <div
-        v-for="bucket in buckets"
-        :key="bucket.key"
-        class="pill"
-      >
-        <span class="pill-dot" :style="{ background: bucket.color }" />
-        <span class="pill-label">{{ bucket.label }}</span>
-        <span class="pill-count">{{ bucket.cards.length }}</span>
+    <template v-else>
+      <!-- ── Toolbar ──────────────────────────────────────────────────── -->
+      <div class="page-actions">
+        <button class="btn-refresh" @click="refresh()">
+          <i class="pi pi-refresh" />
+          {{ $t('collectionBoard.refresh') }}
+        </button>
       </div>
-    </div>
 
-    <!-- Kanban columns -->
-    <div class="kanban">
-      <div
-        v-for="bucket in buckets"
-        :key="bucket.key"
-        class="column"
-      >
-        <!-- Column header -->
-        <div class="col-header" :style="{ '--bucket-color': bucket.color }">
-          <div class="col-title">
-            <i :class="bucket.icon" :style="{ color: bucket.color }" />
-            <span>{{ bucket.label }}</span>
-          </div>
-          <button
-            class="col-toggle"
-            :title="bucket.collapsed ? $t('collectionBoard.show') : $t('collectionBoard.hide')"
-            @click="bucket.collapsed = !bucket.collapsed"
-          >
-            <i :class="bucket.collapsed ? 'pi pi-eye-slash' : 'pi pi-eye'" />
-          </button>
-        </div>
-
-        <!-- Cards -->
-        <div v-if="!bucket.collapsed" class="col-body">
-          <button
-            v-for="card in bucket.cards"
-            :key="card.dealId"
-            class="deal-card"
-            @click="openDeal(card.dealId)"
-          >
-            <div class="card-top">
-              <span class="client-name">{{ card.clientName }}</span>
-              <span class="days-badge" :style="{ background: bucket.color + '22', color: bucket.color }">
-                {{ card.daysOverdue }} {{ $t('collectionBoard.days') }}
-              </span>
-            </div>
-            <div class="client-phone">{{ card.clientPhone }}</div>
-            <div class="card-meta">
-              <span class="principal font-mono">{{ fmt(card.principal) }}</span>
-              <span class="missed">
-                <i class="pi pi-times-circle" />
-                {{ card.missedCount }} {{ $t('collectionBoard.payment') }}
-              </span>
-            </div>
-          </button>
-
-          <div v-if="bucket.cards.length === 0" class="empty-state">
-            <i class="pi pi-check-circle" />
-            <span>{{ $t('collectionBoard.empty') }}</span>
-          </div>
+      <!-- ── Summary pills ────────────────────────────────────────────── -->
+      <div class="summary-pills">
+        <div v-for="bucket in buckets" :key="bucket.key" class="pill">
+          <span class="pill-dot" :style="{ background: bucket.color }" />
+          <span class="pill-label">{{ bucket.label }}</span>
+          <span class="pill-count">{{ bucket.cards.length }}</span>
         </div>
       </div>
-    </div>
+
+      <!-- ── Kanban columns ────────────────────────────────────────────── -->
+      <div class="kanban">
+        <div v-for="bucket in buckets" :key="bucket.key" class="column">
+          <!-- Column header -->
+          <div class="col-header" :style="{ '--bucket-color': bucket.color }">
+            <div class="col-title">
+              <i :class="bucket.icon" :style="{ color: bucket.color }" />
+              <span>{{ bucket.label }}</span>
+              <span class="col-count">{{ bucket.cards.length }}</span>
+            </div>
+            <button
+              class="col-toggle"
+              :title="bucket.collapsed ? $t('collectionBoard.show') : $t('collectionBoard.hide')"
+              @click="bucket.collapsed = !bucket.collapsed"
+            >
+              <i :class="bucket.collapsed ? 'pi pi-eye-slash' : 'pi pi-eye'" />
+            </button>
+          </div>
+
+          <!-- Cards -->
+          <div v-if="!bucket.collapsed" class="col-body">
+            <button
+              v-for="card in bucket.cards"
+              :key="card.dealId"
+              class="deal-card"
+              @click="openDeal(card.dealId)"
+            >
+              <div class="card-top">
+                <span class="client-name">{{ card.clientName }}</span>
+                <span class="days-badge" :style="{ background: bucket.color + '22', color: bucket.color }">
+                  {{ card.daysOverdue }} {{ $t('collectionBoard.days') }}
+                </span>
+              </div>
+              <div class="client-phone">{{ card.clientPhone }}</div>
+              <div class="card-meta">
+                <span class="principal font-mono">{{ fmt(card.principal) }}</span>
+                <span class="missed">
+                  <i class="pi pi-times-circle" />
+                  {{ card.missedCount }} {{ $t('collectionBoard.payment') }}
+                </span>
+              </div>
+            </button>
+
+            <div v-if="bucket.cards.length === 0" class="empty-state">
+              <i class="pi pi-check-circle" />
+              <span>{{ $t('collectionBoard.empty') }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -164,7 +151,7 @@ function fmt(tiyin: number) {
   min-height: 100%;
 }
 
-/* Header */
+/* Toolbar */
 .page-actions {
   display: flex;
   justify-content: flex-end;
@@ -189,6 +176,37 @@ function fmt(tiyin: number) {
   border-color: var(--accent-2);
 }
 
+/* Skeleton */
+.skeleton-bar {
+  height: 38px;
+  border-radius: 10px;
+  background: var(--bg-base);
+  opacity: 0.5;
+  animation: pulse 1.4s ease-in-out infinite;
+  align-self: flex-end;
+  width: 140px;
+}
+.skeleton-col {
+  height: 280px;
+  border-radius: 14px;
+  background: var(--bg-base);
+  opacity: 0.5;
+  animation: pulse 1.4s ease-in-out infinite;
+}
+@keyframes pulse { 0%, 100% { opacity: .5 } 50% { opacity: .25 } }
+
+/* Error */
+.error-state {
+  padding: 2.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  text-align: center;
+}
+.error-state i { font-size: 2.2rem; color: var(--danger); }
+.error-state p { margin: 0; color: var(--text-secondary); font-weight: 600; }
+
 /* Summary pills */
 .summary-pills {
   display: flex;
@@ -212,12 +230,8 @@ function fmt(tiyin: number) {
   border-radius: 50%;
   flex-shrink: 0;
 }
-.pill-label {
-  color: var(--text-secondary);
-}
-.pill-count {
-  color: var(--text-primary);
-}
+.pill-label { color: var(--text-secondary); }
+.pill-count { color: var(--text-primary); }
 
 /* Kanban */
 .kanban {
@@ -248,8 +262,18 @@ function fmt(tiyin: number) {
   font-weight: 700;
   font-size: 0.9rem;
 }
-.col-title i {
-  font-size: 0.95rem;
+.col-title i { font-size: 0.95rem; }
+.col-count {
+  background: var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  font-weight: 800;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  padding: 0 5px;
 }
 .col-toggle {
   width: 28px;
@@ -338,9 +362,7 @@ function fmt(tiyin: number) {
   font-weight: 600;
   color: var(--danger);
 }
-.missed i {
-  font-size: 0.8rem;
-}
+.missed i { font-size: 0.8rem; }
 
 /* Empty state */
 .empty-state {
@@ -353,11 +375,13 @@ function fmt(tiyin: number) {
   color: var(--text-secondary);
   opacity: 0.5;
 }
-.empty-state i {
-  font-size: 1.4rem;
+.empty-state i { font-size: 1.4rem; }
+.empty-state span { font-size: 0.82rem; font-weight: 600; }
+
+@media (max-width: 900px) {
+  .kanban { grid-template-columns: repeat(2, 1fr); }
 }
-.empty-state span {
-  font-size: 0.82rem;
-  font-weight: 600;
+@media (max-width: 580px) {
+  .kanban { grid-template-columns: 1fr; }
 }
 </style>

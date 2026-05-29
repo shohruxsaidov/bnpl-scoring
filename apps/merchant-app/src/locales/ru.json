@@ -72,7 +72,6 @@
     "collectionBoard": "Инкассо",
     "scoringHistory": "История скоринга",
     "payments": "Платежи",
-    "buyout": "Выкуп",
     "scoringDetail": "Детали скоринга",
     "branches": "Филиалы"
   },
@@ -90,7 +89,6 @@
     "collectionBoard": "Инкассо",
     "scoringHistory": "История скоринга",
     "payments": "Платежи",
-    "buyout": "Выкуп",
     "branches": "Филиалы"
   },
   "nav": {
@@ -103,7 +101,6 @@
     "employees": "Сотрудники",
     "collectionBoard": "Инкассо",
     "scoringHistory": "История скоринга",
-    "buyout": "Выкуп",
     "payments": "Платежи",
     "admin": "АДМИН",
     "notifications": "Уведомления",
@@ -325,26 +322,6 @@
     "statusReview": "на рассмотрении",
     "statusApproved": "одобрен",
     "statusDeclined": "отклонён"
-  },
-  "buyout": {
-    "total": "Всего",
-    "pending": "К оплате",
-    "paid": "Оплачено",
-    "searchPlaceholder": "Мерчант, агент, товар...",
-    "allStatuses": "Все статусы",
-    "statusPending": "К оплате",
-    "statusPaid": "Оплачено",
-    "allMerchants": "Все мерчанты",
-    "id": "ID",
-    "agent": "АГЕНТ",
-    "branch": "ФИЛИАЛ",
-    "client": "КЛИЕНТ",
-    "prepayment": "ПРЕДОПЛАТА",
-    "amount": "СУММА",
-    "status": "СТАТУС",
-    "date": "ДАТА",
-    "som": "сум",
-    "noData": "Нет данных"
   },
   "payments": {
     "totalPayments": "Всего платежей",

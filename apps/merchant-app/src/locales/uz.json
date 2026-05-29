@@ -72,7 +72,6 @@
     "collectionBoard": "Inkasso",
     "scoringHistory": "Skoring tarixi",
     "payments": "To'lovlar",
-    "buyout": "Sotib olish",
     "scoringDetail": "Skoring tafsiloti",
     "branches": "Filiallar"
   },
@@ -90,7 +89,6 @@
     "collectionBoard": "Inkasso",
     "scoringHistory": "Skoring tarixi",
     "payments": "To'lovlar",
-    "buyout": "Sotib olish",
     "branches": "Filiallar"
   },
   "nav": {
@@ -103,7 +101,6 @@
     "employees": "Xodimlar",
     "collectionBoard": "Inkasso",
     "scoringHistory": "Skoring tarixi",
-    "buyout": "Sotib olish",
     "payments": "To'lovlar",
     "admin": "ADMIN",
     "notifications": "Bildirishnomalar",
@@ -325,26 +322,6 @@
     "statusReview": "ko'rib chiqilmoqda",
     "statusApproved": "tasdiqlangan",
     "statusDeclined": "rad etilgan"
-  },
-  "buyout": {
-    "total": "Jami",
-    "pending": "To'lov uchun",
-    "paid": "To'langan",
-    "searchPlaceholder": "Savdogar, agent, mahsulot...",
-    "allStatuses": "Barcha holatlar",
-    "statusPending": "To'lov uchun",
-    "statusPaid": "To'langan",
-    "allMerchants": "Barcha savdogarlar",
-    "id": "ID",
-    "agent": "AGENT",
-    "branch": "FILIAL",
-    "client": "MIJOZ",
-    "prepayment": "OLDINDAN TO'LOV",
-    "amount": "SUMMA",
-    "status": "HOLAT",
-    "date": "SANA",
-    "som": "so'm",
-    "noData": "Ma'lumot yo'q"
   },
   "payments": {
     "totalPayments": "Jami to'lovlar",

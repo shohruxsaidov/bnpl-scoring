@@ -24,7 +24,8 @@
     "merchants": "Продавцы",
     "merchant": "Продавец",
     "tariffs": "Тарифы",
-    "sendNotification": "Уведомления"
+    "sendNotification": "Уведомления",
+    "buyout": "Выкуп"
   },
   "breadcrumb": {
     "overview": "Обзор",
@@ -36,7 +37,8 @@
     "settings": "Настройки",
     "blacklist": "Чёрный список",
     "tariffs": "Тарифы",
-    "notifications": "Уведомления"
+    "notifications": "Уведомления",
+    "buyout": "Выкуп"
   },
   "topbar": {
     "scoring": "Скоринг",
@@ -53,6 +55,7 @@
     "settings": "Настройки",
     "blacklist": "Чёрный список",
     "notifications": "Уведомления",
+    "buyout": "Выкуп",
     "platformAdmin": "Админ платформы",
     "logout": "Выйти",
     "toggleSidebar": "Переключить панель"
@@ -559,5 +562,25 @@
     "toDeals": "Все сделки",
     "som": "сум",
     "month": "мес"
+  },
+  "buyout": {
+    "total": "Всего",
+    "pending": "К оплате",
+    "paid": "Оплачено",
+    "searchPlaceholder": "Мерчант, агент, товар...",
+    "allStatuses": "Все статусы",
+    "statusPending": "К оплате",
+    "statusPaid": "Оплачено",
+    "allMerchants": "Все мерчанты",
+    "id": "ID",
+    "agent": "АГЕНТ",
+    "branch": "ФИЛИАЛ",
+    "client": "КЛИЕНТ",
+    "prepayment": "ПРЕДОПЛАТА",
+    "amount": "СУММА",
+    "status": "СТАТУС",
+    "date": "ДАТА",
+    "som": "сум",
+    "noData": "Нет данных"
   }
 }

@@ -67,6 +67,12 @@ const routes: RouteRecordRaw[] = [
         meta: { titleKey: 'routeTitle.blacklist', breadcrumbKeys: ['breadcrumb.blacklist'] },
       },
       {
+        path: 'buyout',
+        name: 'buyout',
+        component: () => import('@/views/BuyoutView.vue'),
+        meta: { titleKey: 'routeTitle.buyout', breadcrumbKeys: ['breadcrumb.buyout'] },
+      },
+      {
         path: 'notifications',
         name: 'notifications',
         component: () => import('@/views/SendNotificationView.vue'),

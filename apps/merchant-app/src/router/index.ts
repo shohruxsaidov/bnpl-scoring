@@ -97,12 +97,6 @@ const routes: RouteRecordRaw[] = [
         meta: { titleKey: 'routeTitle.payments', breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.payments'], adminOnly: true },
       },
       {
-        path: 'admin/buyout',
-        name: 'admin-buyout',
-        component: () => import('@/views/admin/BuyoutView.vue'),
-        meta: { titleKey: 'routeTitle.buyout', breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.buyout'], adminOnly: true },
-      },
-      {
         path: 'admin/scoring-history/:id',
         name: 'admin-scoring-history-detail',
         component: () => import('@/views/admin/ScoringHistoryDetailView.vue'),

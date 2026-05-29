@@ -35,7 +35,6 @@ const adminNav = computed<NavItem[]>(() => [
   { label: t('nav.tariffs'), icon: 'pi pi-percentage', to: '/admin/tariffs', show: true },
   { label: t('nav.collectionBoard'), icon: 'pi pi-table', to: '/admin/collection-board', show: true },
   { label: t('nav.scoringHistory'), icon: 'pi pi-chart-line', to: '/admin/scoring-history', show: true },
-  { label: t('nav.buyout'), icon: 'pi pi-shopping-bag', to: '/admin/buyout', show: true },
   { label: t('nav.payments'), icon: 'pi pi-credit-card', to: '/admin/payments', show: true },
 ])
 
