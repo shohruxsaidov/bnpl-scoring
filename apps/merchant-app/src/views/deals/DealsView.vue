@@ -113,24 +113,28 @@ function formatSomM(tiyin: number): string {
         </div>
         <div class="kpi-card surface-card">
           <div class="kpi-row">
-            <div class="kpi-icon" style="background: linear-gradient(135deg,#00c49a,#00d4aa)"><i class="pi pi-bolt" /></div>
+            <div class="kpi-icon" style="background: linear-gradient(135deg,#00c49a,#00d4aa)"><i class="pi pi-bolt" />
+            </div>
           </div>
           <span class="kpi-label">{{ t('dashboard.activeDeals') }}</span>
           <span class="kpi-value font-mono" style="color: var(--success)">{{ stats.active }}</span>
         </div>
         <div class="kpi-card surface-card">
           <div class="kpi-row">
-            <div class="kpi-icon" style="background: linear-gradient(135deg,#6C63FF,#8B5CF6)"><i class="pi pi-wallet" /></div>
+            <div class="kpi-icon" style="background: linear-gradient(135deg,#6C63FF,#8B5CF6)"><i class="pi pi-wallet" />
+            </div>
           </div>
           <span class="kpi-label">{{ t('dashboard.disbursed') }}</span>
           <span class="kpi-value font-mono text-gradient">{{ formatSomM(stats.disbursed) }} {{ t('common.som') }}</span>
         </div>
         <div class="kpi-card surface-card">
           <div class="kpi-row">
-            <div class="kpi-icon" style="background: linear-gradient(135deg,#FF4C4C,#FF7070)"><i class="pi pi-exclamation-triangle" /></div>
+            <div class="kpi-icon" style="background: linear-gradient(135deg,#FF4C4C,#FF7070)"><i
+                class="pi pi-exclamation-triangle" /></div>
           </div>
           <span class="kpi-label">{{ t('dashboard.overdue') }}</span>
-          <span class="kpi-value font-mono" :style="stats.overdue > 0 ? 'color:var(--danger)' : ''">{{ stats.overdue }}</span>
+          <span class="kpi-value font-mono" :style="stats.overdue > 0 ? 'color:var(--danger)' : ''">{{ stats.overdue
+            }}</span>
         </div>
       </div>
 
@@ -138,43 +142,20 @@ function formatSomM(tiyin: number): string {
       <div class="surface-card filters-bar">
         <span class="p-input-icon-left search-wrap">
           <i class="pi pi-search" />
-          <input
-            v-model="search"
-            class="p-inputtext search-input"
-            :placeholder="t('dashboard.searchDeals')"
-          />
+          <input v-model="search" class="p-inputtext search-input" :placeholder="t('dashboard.searchDeals')" />
         </span>
 
-        <Select
-          v-model="statusFilter"
-          :options="statusOptions"
-          option-label="label"
-          option-value="value"
-          :placeholder="t('dashboard.filterStatus')"
-          class="status-select"
-        />
+        <Select v-model="statusFilter" :options="statusOptions" option-label="label" option-value="value"
+          :placeholder="t('dashboard.filterStatus')" class="status-select" />
       </div>
 
       <!-- ── Table ──────────────────────────────────────────────────────── -->
       <div class="surface-card table-card">
-        <DataTable
-          :value="visibleDeals"
-          row-hover
-          removable-sort
-          :rows="15"
-          paginator
+        <DataTable :value="visibleDeals" row-hover removable-sort :rows="15" paginator
           :rows-per-page-options="[10, 15, 25, 50]"
           paginator-template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
-          :empty-message="t('dashboard.noDeals')"
-          class="deals-table"
-          @row-click="openDeal($event.data)"
-        >
-          <Column
-            field="id"
-            :header="t('dashboard.dealId')"
-            sortable
-            style="width: 140px"
-          >
+          :empty-message="t('dashboard.noDeals')" class="deals-table" @row-click="openDeal($event.data)">
+          <Column field="id" :header="t('dashboard.dealId')" sortable style="width: 140px">
             <template #body="{ data }">
               <span class="font-mono deal-id">{{ data.id }}</span>
             </template>
@@ -189,12 +170,7 @@ function formatSomM(tiyin: number): string {
             </template>
           </Column>
 
-          <Column
-            v-if="auth.isAdmin"
-            field="agentName"
-            :header="t('dealsPage.agent')"
-            sortable
-          >
+          <Column v-if="auth.isAdmin" field="agentName" :header="t('dealsPage.agent')" sortable>
             <template #body="{ data }">
               <span class="muted">{{ data.agentName || '—' }}</span>
             </template>
@@ -214,7 +190,7 @@ function formatSomM(tiyin: number): string {
 
           <Column field="amount" :header="t('dashboard.amount')" sortable style="width: 160px">
             <template #body="{ data }">
-              <MonoAmount :value="data.amount" />
+              <MonoAmount :value="data.totalPayable" />
             </template>
           </Column>
 
@@ -257,11 +233,13 @@ function formatSomM(tiyin: number): string {
   justify-content: space-between;
   gap: 1rem;
 }
+
 .page-title {
   margin: 0 0 0.2rem;
   font-size: 1.55rem;
   font-weight: 800;
 }
+
 .page-sub {
   margin: 0;
   font-size: 0.85rem;
@@ -274,18 +252,21 @@ function formatSomM(tiyin: number): string {
   grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
 }
+
 .kpi-card {
   padding: 1.25rem 1.4rem;
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
 }
+
 .kpi-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 0.3rem;
 }
+
 .kpi-icon {
   width: 38px;
   height: 38px;
@@ -295,6 +276,7 @@ function formatSomM(tiyin: number): string {
   color: #fff;
   font-size: 1rem;
 }
+
 .kpi-label {
   font-size: 0.72rem;
   font-weight: 700;
@@ -302,6 +284,7 @@ function formatSomM(tiyin: number): string {
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
+
 .kpi-value {
   font-size: 1.6rem;
   font-weight: 800;
@@ -316,6 +299,7 @@ function formatSomM(tiyin: number): string {
   padding: 0.9rem 1.2rem;
   flex-wrap: wrap;
 }
+
 .search-wrap {
   display: flex;
   align-items: center;
@@ -323,6 +307,7 @@ function formatSomM(tiyin: number): string {
   flex: 1;
   min-width: 200px;
 }
+
 .search-wrap i {
   position: absolute;
   left: 0.75rem;
@@ -330,6 +315,7 @@ function formatSomM(tiyin: number): string {
   font-size: 0.9rem;
   pointer-events: none;
 }
+
 .search-input {
   width: 100%;
   padding: 0.5rem 0.75rem 0.5rem 2.2rem;
@@ -342,9 +328,11 @@ function formatSomM(tiyin: number): string {
   outline: none;
   transition: border-color 0.15s ease;
 }
+
 .search-input:focus {
   border-color: var(--accent-2);
 }
+
 .status-select {
   width: 180px;
   flex-shrink: 0;
@@ -355,9 +343,11 @@ function formatSomM(tiyin: number): string {
   padding: 0;
   overflow: hidden;
 }
+
 :deep(.deals-table) {
   font-size: 0.875rem;
 }
+
 :deep(.deals-table .p-datatable-thead > tr > th) {
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border-subtle);
@@ -368,18 +358,22 @@ function formatSomM(tiyin: number): string {
   letter-spacing: 0.05em;
   padding: 0.7rem 1rem;
 }
+
 :deep(.deals-table .p-datatable-tbody > tr) {
   cursor: pointer;
   transition: background 0.12s ease;
 }
+
 :deep(.deals-table .p-datatable-tbody > tr:hover) {
   background: var(--bg-surface) !important;
 }
+
 :deep(.deals-table .p-datatable-tbody > tr > td) {
   padding: 0.8rem 1rem;
   border-bottom: 1px solid var(--border-subtle);
   vertical-align: middle;
 }
+
 :deep(.deals-table .p-paginator) {
   padding: 0.8rem 1rem;
   border-top: 1px solid var(--border-subtle);
@@ -392,20 +386,25 @@ function formatSomM(tiyin: number): string {
   font-weight: 700;
   color: var(--accent-2);
 }
+
 .client-cell {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
 }
+
 .client-name {
   font-weight: 700;
 }
+
 .client-phone {
   font-size: 0.78rem;
 }
+
 .muted {
   color: var(--text-secondary);
 }
+
 .tariff-chip {
   display: inline-block;
   background: var(--bg-base);
@@ -416,6 +415,7 @@ function formatSomM(tiyin: number): string {
   font-weight: 600;
   white-space: nowrap;
 }
+
 .open-btn {
   width: 32px;
   height: 32px;
@@ -429,6 +429,7 @@ function formatSomM(tiyin: number): string {
   font-size: 0.8rem;
   transition: all 0.15s ease;
 }
+
 .open-btn:hover {
   background: var(--gradient-accent);
   border-color: transparent;
@@ -444,10 +445,12 @@ function formatSomM(tiyin: number): string {
   gap: 0.75rem;
   text-align: center;
 }
+
 .error-state i {
   font-size: 2.2rem;
   color: var(--danger);
 }
+
 .error-state p {
   margin: 0;
   font-weight: 600;
@@ -460,10 +463,12 @@ function formatSomM(tiyin: number): string {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
 @media (max-width: 600px) {
   .kpi-strip {
     grid-template-columns: 1fr 1fr;
   }
+
   .page-header {
     flex-direction: column;
     align-items: flex-start;

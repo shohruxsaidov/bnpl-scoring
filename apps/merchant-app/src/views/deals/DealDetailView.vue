@@ -68,8 +68,18 @@ function paymentDayText(day: number): string {
   return t('dealDetail.autopayDesc', { day })
 }
 
+function markupRatio(): number {
+  const d = deal.value
+  if (!d || !d.amount) return 1
+  return d.totalPayable / d.amount
+}
+
+function itemUnitPrice(tanNarxi: string): number {
+  return Math.round(Math.round(parseFloat(tanNarxi) * 100) * markupRatio())
+}
+
 function basketTotal(item: { tanNarxi: string; quantity: number }): number {
-  return Math.round(parseFloat(item.tanNarxi) * 100) * item.quantity
+  return itemUnitPrice(item.tanNarxi) * item.quantity
 }
 
 // ── График рассрочки (schedule) — from API ─────────────────────────────────
@@ -291,13 +301,8 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
 
     <!-- Tab bar -->
     <div class="tab-bar">
-      <button
-        v-for="tab in TABS"
-        :key="tab.key"
-        class="tab-btn"
-        :class="{ active: activeTab === tab.key }"
-        @click="activeTab = tab.key"
-      >
+      <button v-for="tab in TABS" :key="tab.key" class="tab-btn" :class="{ active: activeTab === tab.key }"
+        @click="activeTab = tab.key">
         {{ tab.label }}
       </button>
     </div>
@@ -316,13 +321,13 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
             <span class="fl">{{ $t('dealDetail.dealNumber') }}</span>
             <span class="fv font-mono">{{ deal.id }}</span>
             <span class="fl">{{ $t('dealDetail.status') }}</span>
-            <span class="fv"><StatusBadge :status="(deal.status as any)" /></span>
+            <span class="fv">
+              <StatusBadge :status="(deal.status as any)" />
+            </span>
           </div>
           <div class="field-row">
             <span class="fl">{{ $t('dealDetail.dealCost') }}</span>
             <span class="fv font-mono">{{ formatSomShort(deal.totalPayable) }} {{ $t('dealDetail.som') }}</span>
-            <span class="fl">{{ $t('dealDetail.merchantPrice') }}</span>
-            <span class="fv font-mono">{{ formatSomShort(deal.amount) }} {{ $t('dealDetail.som') }}</span>
           </div>
           <div class="field-row">
             <span class="fl">{{ $t('dealDetail.finProduct') }}</span>
@@ -336,12 +341,7 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
             <span class="fl">{{ $t('dealDetail.markup') }}</span>
             <span class="fv">{{ ustama }}</span>
           </div>
-          <div class="field-row last">
-            <span class="fl">{{ $t('dealDetail.commission') }}</span>
-            <span class="fv font-mono">0</span>
-            <span class="fl"></span>
-            <span class="fv"></span>
-          </div>
+
         </div>
         <div class="side-panels">
           <div class="side-panel">
@@ -362,8 +362,13 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
         <table class="data-table">
           <thead>
             <tr>
-              <th>{{ $t('dealDetail.thNum') }}</th><th>{{ $t('dealDetail.thName') }}</th><th>{{ $t('dealDetail.thMxik') }}</th>
-              <th>{{ $t('dealDetail.thQty') }}</th><th>{{ $t('dealDetail.thPrice') }}</th><th>{{ $t('dealDetail.thTotal') }}</th><th>{{ $t('dealDetail.thMarking') }}</th>
+              <th>{{ $t('dealDetail.thNum') }}</th>
+              <th>{{ $t('dealDetail.thName') }}</th>
+              <th>{{ $t('dealDetail.thMxik') }}</th>
+              <th>{{ $t('dealDetail.thQty') }}</th>
+              <th>{{ $t('dealDetail.thPrice') }}</th>
+              <th>{{ $t('dealDetail.thTotal') }}</th>
+              <th>{{ $t('dealDetail.thMarking') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -372,7 +377,7 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
               <td>{{ item.productName }}</td>
               <td class="font-mono muted">{{ item.mxikCode ?? '—' }}</td>
               <td class="font-mono">{{ item.quantity }}</td>
-              <td class="font-mono">{{ formatSomShort(Math.round(parseFloat(item.tanNarxi) * 100)) }}</td>
+              <td class="font-mono">{{ formatSomShort(itemUnitPrice(item.tanNarxi)) }}</td>
               <td class="font-mono">{{ formatSomShort(basketTotal(item)) }}</td>
               <td class="muted">—</td>
             </tr>
@@ -400,8 +405,11 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
         <table class="data-table">
           <thead>
             <tr>
-              <th>{{ $t('dealDetail.contractNumber') }}</th><th>{{ $t('dealDetail.type') }}</th>
-              <th>{{ $t('dealDetail.client') }}</th><th>{{ $t('dealDetail.term') }}</th><th>{{ $t('dealDetail.dateCol') }}</th>
+              <th>{{ $t('dealDetail.contractNumber') }}</th>
+              <th>{{ $t('dealDetail.type') }}</th>
+              <th>{{ $t('dealDetail.client') }}</th>
+              <th>{{ $t('dealDetail.term') }}</th>
+              <th>{{ $t('dealDetail.dateCol') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -422,12 +430,7 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
       <div class="section">
         <h4 class="section-title">{{ $t('dealDetail.statusHistory') }}</h4>
         <div class="timeline">
-          <div
-            v-for="(event, i) in timeline"
-            :key="event.key"
-            class="tl-item"
-            :class="event.variant"
-          >
+          <div v-for="(event, i) in timeline" :key="event.key" class="tl-item" :class="event.variant">
             <div class="tl-track">
               <div class="tl-dot">
                 <i :class="`pi ${event.icon}`" />
@@ -449,8 +452,12 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
       <div class="section">
         <div class="kontrakt-header">
           <div>
-            <h4 class="section-title" style="margin-bottom: 0.2rem">{{ $t('dealDetail.contractNo', { id: deal.id }) }}</h4>
-            <span class="muted" style="font-size: 0.82rem">{{ $t('dealDetail.typeDate', { date: formatDate(deal.createdAt) }) }}</span>
+            <h4 class="section-title" style="margin-bottom: 0.2rem">{{ $t('dealDetail.contractNo', { id: deal.id }) }}
+            </h4>
+            <span class="muted" style="font-size: 0.82rem">{{ $t('dealDetail.typeDate', {
+              date:
+                formatDate(deal.createdAt)
+            }) }}</span>
           </div>
           <span class="k-badge">{{ $t('dealDetail.activeContract') }}</span>
         </div>
@@ -476,13 +483,20 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
       <div class="section">
         <h4 class="section-title">{{ $t('dealDetail.financialTerms') }}</h4>
         <div class="k-terms">
-          <div class="k-term"><span class="fl">{{ $t('dealDetail.merchantPriceTerm') }}</span><span class="kv font-mono">{{ formatSomShort(deal.amount) }} {{ $t('dealDetail.som') }}</span></div>
-          <div class="k-term"><span class="fl">{{ $t('dealDetail.markupUstama') }}</span><span class="kv">{{ ustama }}</span></div>
-          <div class="k-term"><span class="fl">{{ $t('dealDetail.dealCostTerm') }}</span><span class="kv font-mono">{{ formatSomShort(deal.totalPayable) }} {{ $t('dealDetail.som') }}</span></div>
-          <div class="k-term"><span class="fl">{{ $t('dealDetail.installmentTerm') }}</span><span class="kv">{{ $t('dealDetail.monthsValue', { count: deal.termMonths }) }}</span></div>
-          <div class="k-term"><span class="fl">{{ $t('dealDetail.monthlyPayment') }}</span><span class="kv font-mono">{{ formatSomShort(Math.round(deal.totalPayable / deal.termMonths)) }} {{ $t('dealDetail.som') }}</span></div>
-          <div class="k-term"><span class="fl">{{ $t('dealDetail.paymentDayTerm') }}</span><span class="kv">{{ $t('dealDetail.paymentDayValue', { day: deal.paymentDay ?? 5 }) }}</span></div>
-          <div class="k-term"><span class="fl">{{ $t('dealDetail.prepayment') }}</span><span class="kv font-mono">0 {{ $t('dealDetail.som') }}</span></div>
+          <div class="k-term"><span class="fl">{{ $t('dealDetail.merchantPriceTerm') }}</span><span
+              class="kv font-mono">{{ formatSomShort(deal.amount) }} {{ $t('dealDetail.som') }}</span></div>
+          <div class="k-term"><span class="fl">{{ $t('dealDetail.markupUstama') }}</span><span class="kv">{{ ustama
+          }}</span></div>
+          <div class="k-term"><span class="fl">{{ $t('dealDetail.dealCostTerm') }}</span><span class="kv font-mono">{{
+            formatSomShort(deal.totalPayable) }} {{ $t('dealDetail.som') }}</span></div>
+          <div class="k-term"><span class="fl">{{ $t('dealDetail.installmentTerm') }}</span><span class="kv">{{
+            $t('dealDetail.monthsValue', { count: deal.termMonths }) }}</span></div>
+          <div class="k-term"><span class="fl">{{ $t('dealDetail.monthlyPayment') }}</span><span class="kv font-mono">{{
+            formatSomShort(Math.round(deal.totalPayable / deal.termMonths)) }} {{ $t('dealDetail.som') }}</span></div>
+          <div class="k-term"><span class="fl">{{ $t('dealDetail.paymentDayTerm') }}</span><span class="kv">{{
+            $t('dealDetail.paymentDayValue', { day: deal.paymentDay ?? 5 }) }}</span></div>
+          <div class="k-term"><span class="fl">{{ $t('dealDetail.prepayment') }}</span><span class="kv font-mono">0 {{
+            $t('dealDetail.som') }}</span></div>
         </div>
       </div>
 
@@ -490,7 +504,14 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
         <h4 class="section-title">{{ $t('dealDetail.contractProducts') }}</h4>
         <table class="data-table">
           <thead>
-            <tr><th>{{ $t('dealDetail.thNum') }}</th><th>{{ $t('dealDetail.thName') }}</th><th>{{ $t('dealDetail.thMxik') }}</th><th>{{ $t('dealDetail.thQty') }}</th><th>{{ $t('dealDetail.thPrice') }}</th><th>{{ $t('dealDetail.thTotal') }}</th></tr>
+            <tr>
+              <th>{{ $t('dealDetail.thNum') }}</th>
+              <th>{{ $t('dealDetail.thName') }}</th>
+              <th>{{ $t('dealDetail.thMxik') }}</th>
+              <th>{{ $t('dealDetail.thQty') }}</th>
+              <th>{{ $t('dealDetail.thPrice') }}</th>
+              <th>{{ $t('dealDetail.thTotal') }}</th>
+            </tr>
           </thead>
           <tbody>
             <tr v-for="(item, i) in deal.basket" :key="item.productId ?? i">
@@ -498,7 +519,7 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
               <td>{{ item.productName }}</td>
               <td class="font-mono muted">{{ item.mxikCode ?? '—' }}</td>
               <td class="font-mono">{{ item.quantity }}</td>
-              <td class="font-mono">{{ formatSomShort(Math.round(parseFloat(item.tanNarxi) * 100)) }}</td>
+              <td class="font-mono">{{ formatSomShort(itemUnitPrice(item.tanNarxi)) }}</td>
               <td class="font-mono">{{ formatSomShort(basketTotal(item)) }}</td>
             </tr>
           </tbody>
@@ -512,14 +533,20 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
             <i class="pi pi-check-circle" style="color: var(--success)" />
             <div>
               <div class="ks-name">{{ $t('dealDetail.agentSigned', { name: agent?.fullName ?? '—' }) }}</div>
-              <div class="muted" style="font-size: 0.8rem">{{ $t('dealDetail.signedAt', { date: formatDateTime(deal.createdAt) }) }}</div>
+              <div class="muted" style="font-size: 0.8rem">{{ $t('dealDetail.signedAt', {
+                date:
+                  formatDateTime(deal.createdAt)
+              }) }}</div>
             </div>
           </div>
           <div class="k-sig">
             <i class="pi pi-check-circle" style="color: var(--success)" />
             <div>
               <div class="ks-name">{{ $t('dealDetail.clientSigned', { name: deal.clientName }) }}</div>
-              <div class="muted" style="font-size: 0.8rem">{{ $t('dealDetail.otpConfirmed', { date: formatDateTime(deal.createdAt) }) }}</div>
+              <div class="muted" style="font-size: 0.8rem">{{ $t('dealDetail.otpConfirmed', {
+                date:
+                  formatDateTime(deal.createdAt)
+              }) }}</div>
             </div>
           </div>
         </div>
@@ -553,13 +580,19 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
         </div>
         <table v-else class="data-table">
           <thead>
-            <tr><th>{{ $t('dealDetail.dateCol') }}</th><th>{{ $t('dealDetail.operationType') }}</th><th>{{ $t('dealDetail.amountCol') }}</th><th>{{ $t('dealDetail.balanceCol') }}</th></tr>
+            <tr>
+              <th>{{ $t('dealDetail.dateCol') }}</th>
+              <th>{{ $t('dealDetail.operationType') }}</th>
+              <th>{{ $t('dealDetail.amountCol') }}</th>
+              <th>{{ $t('dealDetail.balanceCol') }}</th>
+            </tr>
           </thead>
           <tbody>
             <tr v-for="(entry, i) in ledger" :key="i">
               <td class="font-mono">{{ formatDateShort(entry.date) }}</td>
               <td>{{ entry.type }}</td>
-              <td class="font-mono" style="color: var(--success)">+ {{ formatSomShort(entry.amount) }} {{ $t('dealDetail.som') }}</td>
+              <td class="font-mono" style="color: var(--success)">+ {{ formatSomShort(entry.amount) }} {{
+                $t('dealDetail.som') }}</td>
               <td class="font-mono">{{ formatSomShort(entry.balance) }} {{ $t('dealDetail.som') }}</td>
             </tr>
           </tbody>
@@ -582,7 +615,13 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
           </div>
           <table class="data-table" style="margin-top: 1rem">
             <thead>
-              <tr><th>{{ $t('dealDetail.payment') }}</th><th>{{ $t('dealDetail.paymentDate') }}</th><th>{{ $t('dealDetail.amountCol') }}</th><th>{{ $t('dealDetail.daysOverdue') }}</th><th>{{ $t('dealDetail.status') }}</th></tr>
+              <tr>
+                <th>{{ $t('dealDetail.payment') }}</th>
+                <th>{{ $t('dealDetail.paymentDate') }}</th>
+                <th>{{ $t('dealDetail.amountCol') }}</th>
+                <th>{{ $t('dealDetail.daysOverdue') }}</th>
+                <th>{{ $t('dealDetail.status') }}</th>
+              </tr>
             </thead>
             <tbody>
               <tr v-for="row in overdueRows" :key="row.index">
@@ -615,7 +654,12 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
       <div class="section" style="padding-top: 0; border-top: none">
         <table class="data-table">
           <thead>
-            <tr><th>{{ $t('dealDetail.thNum') }}</th><th>{{ $t('dealDetail.paymentDate') }}</th><th>{{ $t('dealDetail.amountCol') }}</th><th>{{ $t('dealDetail.status') }}</th></tr>
+            <tr>
+              <th>{{ $t('dealDetail.thNum') }}</th>
+              <th>{{ $t('dealDetail.paymentDate') }}</th>
+              <th>{{ $t('dealDetail.amountCol') }}</th>
+              <th>{{ $t('dealDetail.status') }}</th>
+            </tr>
           </thead>
           <tbody>
             <tr v-for="row in schedule" :key="row.index">
@@ -624,7 +668,8 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
               <td class="font-mono">{{ formatSomShort(row.amount) }} {{ $t('dealDetail.som') }}</td>
               <td>
                 <span class="row-pill" :class="row.status">
-                  {{ row.status === 'paid' ? $t('dealDetail.pillPaid') : row.status === 'overdue' ? $t('dealDetail.pillOverdue') : $t('dealDetail.pillPending') }}
+                  {{ row.status === 'paid' ? $t('dealDetail.pillPaid') : row.status === 'overdue' ?
+                    $t('dealDetail.pillOverdue') : $t('dealDetail.pillPending') }}
                 </span>
               </td>
             </tr>
@@ -638,7 +683,8 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
         </div>
         <div class="gf-item">
           <span class="fl">{{ $t('dealDetail.paid') }}</span>
-          <span class="font-mono" style="color: var(--success)">{{ schedule.filter(r => r.status === 'paid').length }}</span>
+          <span class="font-mono" style="color: var(--success)">{{schedule.filter(r => r.status === 'paid').length
+          }}</span>
         </div>
         <div class="gf-item">
           <span class="fl">{{ $t('dealDetail.remaining') }}</span>
@@ -655,11 +701,7 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
             <div class="at-title">{{ $t('dealDetail.autopay') }}</div>
             <div class="muted at-desc">{{ $t('dealDetail.autopayDesc', { day: deal.paymentDay ?? 5 }) }}</div>
           </div>
-          <button
-            class="toggle-btn"
-            :class="{ on: autoEnabled }"
-            @click="autoEnabled = !autoEnabled"
-          >
+          <button class="toggle-btn" :class="{ on: autoEnabled }" @click="autoEnabled = !autoEnabled">
             <span class="toggle-knob" />
           </button>
         </div>
@@ -671,7 +713,10 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
           <div class="card-icon"><i class="pi pi-credit-card" /></div>
           <div class="card-info">
             <div class="card-num font-mono">Uzcard •••• •••• •••• 7824</div>
-            <div class="muted" style="font-size: 0.8rem">{{ $t('dealDetail.validUntil', { name: deal.clientName, date: '08/2028' }) }}</div>
+            <div class="muted" style="font-size: 0.8rem">{{ $t('dealDetail.validUntil', {
+              name: deal.clientName, date:
+                '08/2028'
+            }) }}</div>
           </div>
           <span class="card-active-badge">{{ $t('dealDetail.cardActive') }}</span>
         </div>
@@ -702,11 +747,17 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
       <div class="section">
         <h4 class="section-title">{{ $t('dealDetail.autopayHistory') }}</h4>
         <div v-if="ledger.length === 0" class="empty-state">
-          <i class="pi pi-inbox" /><p>{{ $t('dealDetail.noOperations') }}</p>
+          <i class="pi pi-inbox" />
+          <p>{{ $t('dealDetail.noOperations') }}</p>
         </div>
         <table v-else class="data-table">
           <thead>
-            <tr><th>{{ $t('dealDetail.dateCol') }}</th><th>{{ $t('dealDetail.amountCol') }}</th><th>{{ $t('dealDetail.cardLabel') }}</th><th>{{ $t('dealDetail.status') }}</th></tr>
+            <tr>
+              <th>{{ $t('dealDetail.dateCol') }}</th>
+              <th>{{ $t('dealDetail.amountCol') }}</th>
+              <th>{{ $t('dealDetail.cardLabel') }}</th>
+              <th>{{ $t('dealDetail.status') }}</th>
+            </tr>
           </thead>
           <tbody>
             <tr v-for="(e, i) in ledger" :key="i">
@@ -730,129 +781,322 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
 
 <style scoped>
 /* ── Page ─────────────────────────────────────────────────────────────────── */
-.page { display: flex; flex-direction: column; gap: 0; }
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
 
 .page-hdr {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 1.2rem;
 }
 
-.breadcrumb { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; }
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
 
 .bc-back {
-  display: inline-flex; align-items: center; gap: 0.35rem;
-  background: transparent; border: none; color: var(--text-secondary);
-  font-weight: 600; cursor: pointer; font-size: 0.9rem; font-family: inherit; padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-family: inherit;
+  padding: 0;
 }
-.bc-back:hover { color: var(--accent-2); }
-.bc-sep { color: var(--text-secondary); }
-.bc-current { font-weight: 700; color: var(--text-primary); }
 
-.hdr-actions { display: flex; gap: 0.6rem; }
+.bc-back:hover {
+  color: var(--accent-2);
+}
+
+.bc-sep {
+  color: var(--text-secondary);
+}
+
+.bc-current {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.hdr-actions {
+  display: flex;
+  gap: 0.6rem;
+}
 
 .btn-sm {
-  font-size: 0.82rem; padding: 0.45rem 0.9rem;
-  display: inline-flex; align-items: center; gap: 0.4rem;
-  font-family: inherit; font-weight: 600; cursor: pointer;
-  border-radius: 10px; transition: all 0.15s ease;
+  font-size: 0.82rem;
+  padding: 0.45rem 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: all 0.15s ease;
 }
+
 .btn-cancel {
-  background: transparent; border: 1.5px solid var(--danger); color: var(--danger);
+  background: transparent;
+  border: 1.5px solid var(--danger);
+  color: var(--danger);
 }
-.btn-cancel:hover { background: var(--danger-bg); }
+
+.btn-cancel:hover {
+  background: var(--danger-bg);
+}
 
 /* ── Tab bar ──────────────────────────────────────────────────────────────── */
 .tab-bar {
-  display: flex; border-bottom: 2px solid var(--border-subtle); margin-bottom: 1.2rem;
+  display: flex;
+  border-bottom: 2px solid var(--border-subtle);
+  margin-bottom: 1.2rem;
 }
+
 .tab-btn {
-  background: transparent; border: none; padding: 0.65rem 1.1rem;
-  font-size: 0.875rem; font-weight: 600; color: var(--text-secondary);
-  cursor: pointer; position: relative; font-family: inherit; white-space: nowrap;
+  background: transparent;
+  border: none;
+  padding: 0.65rem 1.1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  position: relative;
+  font-family: inherit;
+  white-space: nowrap;
   transition: color 0.15s ease;
 }
+
 .tab-btn::after {
-  content: ''; position: absolute; bottom: -2px; left: 0; right: 0;
-  height: 2px; background: var(--gradient-hero); opacity: 0; transition: opacity 0.15s ease;
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--gradient-hero);
+  opacity: 0;
+  transition: opacity 0.15s ease;
 }
-.tab-btn.active { color: var(--text-primary); }
-.tab-btn.active::after { opacity: 1; }
-.tab-btn:hover:not(.active) { color: var(--text-primary); }
+
+.tab-btn.active {
+  color: var(--text-primary);
+}
+
+.tab-btn.active::after {
+  opacity: 1;
+}
+
+.tab-btn:hover:not(.active) {
+  color: var(--text-primary);
+}
 
 /* ── Card shell ───────────────────────────────────────────────────────────── */
-.deal-card { padding: 0; overflow: hidden; }
+.deal-card {
+  padding: 0;
+  overflow: hidden;
+}
 
 /* ── Сделки: top section ──────────────────────────────────────────────────── */
-.top-section { display: flex; border-bottom: 1px solid var(--border-subtle); }
-
-.fields-grid { flex: 1; min-width: 0; }
-
-.field-row {
-  display: grid; grid-template-columns: 1fr 1fr 1fr 1fr;
+.top-section {
+  display: flex;
   border-bottom: 1px solid var(--border-subtle);
 }
-.field-row.last { border-bottom: none; }
+
+.fields-grid {
+  flex: 1;
+  min-width: 0;
+}
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.field-row.last {
+  border-bottom: none;
+}
 
 .fl {
-  padding: 0.7rem 1.4rem; font-size: 0.82rem; color: var(--text-secondary);
-  font-weight: 500; display: flex; align-items: center;
+  padding: 0.7rem 1.4rem;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
 }
+
 .fv {
-  padding: 0.7rem 0.8rem 0.7rem 0; font-size: 0.88rem; font-weight: 600;
-  display: flex; align-items: center;
+  padding: 0.7rem 0.8rem 0.7rem 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
 }
 
 .side-panels {
-  width: 220px; flex-shrink: 0;
-  border-left: 1px solid var(--border-subtle); display: flex; flex-direction: column;
+  width: 220px;
+  flex-shrink: 0;
+  border-left: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
 }
-.side-panel { flex: 1; padding: 1rem 1.2rem; display: flex; flex-direction: column; gap: 0.2rem; }
-.side-panel + .side-panel { border-top: 1px solid var(--border-subtle); }
-.panel-role { font-size: 0.72rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; }
-.panel-name { font-size: 1rem; font-weight: 800; margin-top: 0.15rem; }
-.panel-phone { font-size: 0.8rem; color: var(--text-secondary); }
+
+.side-panel {
+  flex: 1;
+  padding: 1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.side-panel+.side-panel {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.panel-role {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.panel-name {
+  font-size: 1rem;
+  font-weight: 800;
+  margin-top: 0.15rem;
+}
+
+.panel-phone {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
 
 /* ── Shared section ───────────────────────────────────────────────────────── */
-.section { padding: 1.2rem 1.4rem; border-top: 1px solid var(--border-subtle); }
-.section-title { margin: 0 0 0.9rem; font-size: 0.92rem; font-weight: 800; }
+.section {
+  padding: 1.2rem 1.4rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.section-title {
+  margin: 0 0 0.9rem;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
 
 /* ── Data table ───────────────────────────────────────────────────────────── */
-.data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
 .data-table th {
-  text-align: left; padding: 0.55rem 0.9rem; font-size: 0.72rem; font-weight: 700;
-  color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;
-  background: var(--bg-surface); border-bottom: 1px solid var(--border-subtle);
+  text-align: left;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
 }
+
 .data-table td {
-  padding: 0.75rem 0.9rem; border-bottom: 1px solid var(--border-subtle); color: var(--text-primary);
+  padding: 0.75rem 0.9rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
 }
-.data-table tbody tr:last-child td { border-bottom: none; }
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
 
 /* ── Fiscal receipt ───────────────────────────────────────────────────────── */
-.receipt-rows { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.8rem; }
-.receipt-row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.88rem; }
-.receipt-val { font-weight: 600; }
-.link-btn {
-  background: transparent; border: none; color: var(--success);
-  font-size: 0.875rem; font-weight: 600; cursor: pointer; padding: 0;
-  font-family: inherit; text-decoration: underline; text-underline-offset: 3px;
+.receipt-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.8rem;
 }
-.link-btn:hover { opacity: 0.8; }
+
+.receipt-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.88rem;
+}
+
+.receipt-val {
+  font-weight: 600;
+}
+
+.link-btn {
+  background: transparent;
+  border: none;
+  color: var(--success);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.link-btn:hover {
+  opacity: 0.8;
+}
 
 /* ── Utility ─────────────────────────────────────────────────────────────── */
-.muted { color: var(--text-secondary); }
-.danger { color: var(--danger); }
+.muted {
+  color: var(--text-secondary);
+}
+
+.danger {
+  color: var(--danger);
+}
 
 /* ── Status timeline ──────────────────────────────────────────────────────── */
-.timeline { display: flex; flex-direction: column; gap: 0; }
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
 
-.tl-item { display: flex; gap: 1rem; }
+.tl-item {
+  display: flex;
+  gap: 1rem;
+}
 
-.tl-track { display: flex; flex-direction: column; align-items: center; width: 36px; flex-shrink: 0; }
+.tl-track {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 36px;
+  flex-shrink: 0;
+}
 
 .tl-dot {
-  width: 36px; height: 36px; border-radius: 50%;
-  display: grid; place-items: center; font-size: 1rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 1rem;
   border: 2px solid var(--border-subtle);
   background: var(--bg-surface);
   color: var(--text-secondary);
@@ -865,6 +1109,7 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
   border-color: var(--success);
   color: var(--success);
 }
+
 .tl-item.current .tl-dot {
   background: var(--gradient-hero);
   border-color: transparent;
@@ -872,169 +1117,437 @@ const nextPayment = computed(() => schedule.value.find((r) => r.status === 'pend
   box-shadow: 0 0 12px color-mix(in srgb, var(--accent-1) 40%, transparent);
 }
 
-.tl-line { flex: 1; width: 2px; background: var(--border-subtle); margin: 4px 0; min-height: 2rem; }
-.tl-item.done .tl-line { background: color-mix(in srgb, var(--success) 40%, transparent); }
+.tl-line {
+  flex: 1;
+  width: 2px;
+  background: var(--border-subtle);
+  margin: 4px 0;
+  min-height: 2rem;
+}
 
-.tl-body { padding: 0.4rem 0 1.6rem; }
-.tl-label { font-size: 0.92rem; font-weight: 700; margin-bottom: 0.2rem; }
-.tl-desc { font-size: 0.82rem; margin-bottom: 0.3rem; }
-.tl-time { font-size: 0.78rem; }
+.tl-item.done .tl-line {
+  background: color-mix(in srgb, var(--success) 40%, transparent);
+}
+
+.tl-body {
+  padding: 0.4rem 0 1.6rem;
+}
+
+.tl-label {
+  font-size: 0.92rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+
+.tl-desc {
+  font-size: 0.82rem;
+  margin-bottom: 0.3rem;
+}
+
+.tl-time {
+  font-size: 0.78rem;
+}
 
 /* ── Kontrakty ────────────────────────────────────────────────────────────── */
 .kontrakt-header {
-  display: flex; align-items: flex-start; justify-content: space-between;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
 }
+
 .k-badge {
   background: color-mix(in srgb, var(--success) 15%, transparent);
-  color: var(--success); font-size: 0.75rem; font-weight: 700;
-  padding: 0.25rem 0.65rem; border-radius: 999px;
+  color: var(--success);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
 }
-.k-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
-.k-party {
-  background: var(--bg-surface); border: 1px solid var(--border-subtle);
-  border-radius: 12px; padding: 1rem 1.2rem;
-  display: flex; flex-direction: column; gap: 0.2rem;
-}
-.kp-role { font-size: 0.72rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
-.kp-name { font-size: 1rem; font-weight: 800; margin-top: 0.2rem; }
-.kp-sub { font-size: 0.8rem; }
 
-.k-terms { display: flex; flex-direction: column; }
+.k-parties {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+}
+
+.k-party {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.kp-role {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.kp-name {
+  font-size: 1rem;
+  font-weight: 800;
+  margin-top: 0.2rem;
+}
+
+.kp-sub {
+  font-size: 0.8rem;
+}
+
+.k-terms {
+  display: flex;
+  flex-direction: column;
+}
+
 .k-term {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 0.6rem 0; border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border-subtle);
   font-size: 0.88rem;
 }
-.k-term:last-child { border-bottom: none; }
-.kv { font-weight: 700; }
 
-.k-sigs { display: flex; flex-direction: column; gap: 1rem; }
-.k-sig { display: flex; align-items: flex-start; gap: 0.7rem; font-size: 0.88rem; }
-.k-sig i { font-size: 1.2rem; margin-top: 0.1rem; }
-.ks-name { font-weight: 700; }
+.k-term:last-child {
+  border-bottom: none;
+}
+
+.kv {
+  font-weight: 700;
+}
+
+.k-sigs {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.k-sig {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  font-size: 0.88rem;
+}
+
+.k-sig i {
+  font-size: 1.2rem;
+  margin-top: 0.1rem;
+}
+
+.ks-name {
+  font-weight: 700;
+}
 
 /* ── Uchet summary ────────────────────────────────────────────────────────── */
-.uchet-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
-.us-card {
-  background: var(--bg-surface); border: 1px solid var(--border-subtle);
-  border-radius: 12px; padding: 1rem 1.2rem;
-  display: flex; flex-direction: column; gap: 0.3rem;
+.uchet-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
 }
-.us-card.success { border-color: color-mix(in srgb, var(--success) 30%, transparent); }
-.us-card.warn { border-color: color-mix(in srgb, var(--warning) 30%, transparent); }
-.us-label { font-size: 0.72rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; }
-.us-val { font-size: 1rem; font-weight: 800; }
-.us-card.success .us-val { color: var(--success); }
-.us-card.warn .us-val { color: var(--warning); }
+
+.us-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.us-card.success {
+  border-color: color-mix(in srgb, var(--success) 30%, transparent);
+}
+
+.us-card.warn {
+  border-color: color-mix(in srgb, var(--warning) 30%, transparent);
+}
+
+.us-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.us-val {
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.us-card.success .us-val {
+  color: var(--success);
+}
+
+.us-card.warn .us-val {
+  color: var(--warning);
+}
 
 /* ── Overdue ──────────────────────────────────────────────────────────────── */
 .overdue-alert {
-  display: flex; align-items: center; gap: 0.6rem;
-  background: var(--danger-bg); border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
-  border-radius: 10px; padding: 0.75rem 1rem;
-  color: var(--danger); font-weight: 600; font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--danger-bg);
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  color: var(--danger);
+  font-weight: 600;
+  font-size: 0.88rem;
 }
+
 .days-badge {
-  background: var(--danger-bg); color: var(--danger);
-  font-size: 0.78rem; font-weight: 700;
-  padding: 0.2rem 0.5rem; border-radius: 6px;
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
 }
+
 .overdue-pill {
-  background: var(--danger-bg); color: var(--danger);
-  font-size: 0.75rem; font-weight: 700;
-  padding: 0.2rem 0.55rem; border-radius: 999px;
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
 }
 
 /* ── Grafik ───────────────────────────────────────────────────────────────── */
 .grafik-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 1.2rem 1.4rem; border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.2rem 1.4rem;
+  border-top: 1px solid var(--border-subtle);
 }
-.grafik-legend { display: flex; gap: 1rem; }
+
+.grafik-legend {
+  display: flex;
+  gap: 1rem;
+}
+
 .leg {
-  display: inline-flex; align-items: center; gap: 0.35rem;
-  font-size: 0.78rem; font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
 }
+
 .leg::before {
-  content: ''; width: 8px; height: 8px; border-radius: 2px;
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
 }
-.leg.paid::before { background: var(--success); }
-.leg.overdue::before { background: var(--danger); }
-.leg.pending::before { background: var(--warning); }
+
+.leg.paid::before {
+  background: var(--success);
+}
+
+.leg.overdue::before {
+  background: var(--danger);
+}
+
+.leg.pending::before {
+  background: var(--warning);
+}
 
 .row-pill {
-  display: inline-flex; padding: 0.2rem 0.6rem; border-radius: 999px;
-  font-size: 0.75rem; font-weight: 700;
+  display: inline-flex;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
 }
-.row-pill.paid { background: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success); }
-.row-pill.overdue { background: var(--danger-bg); color: var(--danger); }
-.row-pill.pending { background: var(--warning-bg); color: var(--warning); }
+
+.row-pill.paid {
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+  color: var(--success);
+}
+
+.row-pill.overdue {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.row-pill.pending {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
 
 .grafik-footer {
-  display: flex; gap: 2.5rem;
+  display: flex;
+  gap: 2.5rem;
   background: var(--bg-surface);
 }
-.gf-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.88rem; }
-.gf-item .fl { padding: 0; font-size: 0.82rem; }
+
+.gf-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+}
+
+.gf-item .fl {
+  padding: 0;
+  font-size: 0.82rem;
+}
 
 /* ── Autoplatezh ──────────────────────────────────────────────────────────── */
 .auto-toggle-row {
-  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
 }
-.at-title { font-size: 1rem; font-weight: 800; margin-bottom: 0.2rem; }
-.at-desc { font-size: 0.82rem; }
+
+.at-title {
+  font-size: 1rem;
+  font-weight: 800;
+  margin-bottom: 0.2rem;
+}
+
+.at-desc {
+  font-size: 0.82rem;
+}
 
 .toggle-btn {
-  width: 48px; height: 26px; border-radius: 999px; border: none; cursor: pointer;
-  background: var(--border-subtle); position: relative; transition: background 0.2s ease; flex-shrink: 0;
+  width: 48px;
+  height: 26px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background: var(--border-subtle);
+  position: relative;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
   padding: 0;
 }
-.toggle-btn.on { background: var(--gradient-hero); }
-.toggle-knob {
-  position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
-  border-radius: 50%; background: #fff; transition: transform 0.2s ease;
+
+.toggle-btn.on {
+  background: var(--gradient-hero);
 }
-.toggle-btn.on .toggle-knob { transform: translateX(22px); }
+
+.toggle-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s ease;
+}
+
+.toggle-btn.on .toggle-knob {
+  transform: translateX(22px);
+}
 
 .card-row {
-  display: flex; align-items: center; gap: 1rem;
-  background: var(--bg-surface); border: 1px solid var(--border-subtle);
-  border-radius: 12px; padding: 1rem 1.2rem;
-}
-.card-icon {
-  width: 40px; height: 40px; border-radius: 10px;
-  background: var(--gradient-hero); display: grid; place-items: center;
-  color: #fff; font-size: 1.1rem; flex-shrink: 0;
-}
-.card-info { flex: 1; }
-.card-num { font-size: 0.92rem; font-weight: 700; }
-.card-active-badge {
-  background: color-mix(in srgb, var(--success) 15%, transparent);
-  color: var(--success); font-size: 0.75rem; font-weight: 700;
-  padding: 0.2rem 0.6rem; border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 1rem 1.2rem;
 }
 
-.next-payment { display: flex; flex-direction: column; }
+.card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--gradient-hero);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.card-info {
+  flex: 1;
+}
+
+.card-num {
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.card-active-badge {
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+  color: var(--success);
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+}
+
+.next-payment {
+  display: flex;
+  flex-direction: column;
+}
+
 .np-item {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 0.6rem 0; border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border-subtle);
   font-size: 0.88rem;
 }
-.np-item:last-child { border-bottom: none; }
-.np-item .fl { padding: 0; }
+
+.np-item:last-child {
+  border-bottom: none;
+}
+
+.np-item .fl {
+  padding: 0;
+}
 
 /* ── Empty state ──────────────────────────────────────────────────────────── */
 .empty-state {
-  display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
-  padding: 3rem 2rem; color: var(--text-secondary); text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 3rem 2rem;
+  color: var(--text-secondary);
+  text-align: center;
 }
-.empty-state i { font-size: 2rem; opacity: 0.5; }
-.empty-state p { margin: 0; font-weight: 600; font-size: 0.92rem; }
+
+.empty-state i {
+  font-size: 2rem;
+  opacity: 0.5;
+}
+
+.empty-state p {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
 
 /* ── Not found ────────────────────────────────────────────────────────────── */
 .not-found {
-  padding: 4rem; text-align: center; display: flex;
-  flex-direction: column; align-items: center; gap: 1rem;
+  padding: 4rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
 }
-.not-found i { font-size: 2.4rem; color: var(--text-secondary); }
+
+.not-found i {
+  font-size: 2.4rem;
+  color: var(--text-secondary);
+}
 </style>
