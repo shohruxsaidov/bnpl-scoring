@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDealStore } from '@/stores/deal'
 import { useClientScoringStore } from '@/stores/clientScoring'
+import { fetchContractPdfUrl } from '@/composables/useDealsApi'
 
 const deal = useDealStore()
 const scoring = useClientScoringStore()
 const router = useRouter()
 
 const dealId = computed(() => deal.sessionData.createdDealId ?? '—')
+const downloading = ref(false)
+const downloadError = ref<string | null>(null)
 
 function newDeal() {
   deal.reset()
@@ -23,19 +26,25 @@ function backToDashboard() {
   else router.push('/')
 }
 
-function downloadContract() {
-  const blob = new Blob(
-    [
-      `KONTRAKT\n=========\nDeal ID: ${dealId.value}\nClient: ${`${deal.sessionData.client?.firstName ?? ''} ${deal.sessionData.client?.lastName ?? ''}`.trim()}\nTariff: ${deal.sessionData.tariff?.name}\nGenerated: ${new Date().toISOString()}\n\n(Mock contract document)`,
-    ],
-    { type: 'text/plain' },
-  )
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${dealId.value}-kontrakt.txt`
-  a.click()
-  URL.revokeObjectURL(url)
+async function downloadContract() {
+  const id = deal.sessionData.createdDealId
+  if (!id) return
+
+  downloading.value = true
+  downloadError.value = null
+
+  try {
+    const url = await fetchContractPdfUrl(id)
+    const a = document.createElement('a')
+    a.href = url
+    a.target = '_blank'
+    a.download = `${id}-kontrakt.pdf`
+    a.click()
+  } catch {
+    downloadError.value = 'Не удалось загрузить документ. Попробуйте ещё раз.'
+  } finally {
+    downloading.value = false
+  }
 }
 </script>
 
@@ -53,8 +62,9 @@ function downloadContract() {
     </div>
 
     <div class="actions">
-      <button class="btn-ghost" @click="downloadContract">
-        <i class="pi pi-download" /> {{ $t('stepDone.downloadContract') }}
+      <button class="btn-ghost" :disabled="downloading" @click="downloadContract">
+        <i :class="downloading ? 'pi pi-spin pi-spinner' : 'pi pi-download'" />
+        {{ downloading ? $t('stepDone.downloading') : $t('stepDone.downloadContract') }}
       </button>
       <button class="btn-ghost" @click="newDeal">
         <i class="pi pi-plus" /> {{ $t('stepDone.newDeal') }}
@@ -63,6 +73,7 @@ function downloadContract() {
         <i class="pi pi-home" /> {{ $t('stepDone.backToDashboard') }}
       </button>
     </div>
+    <p v-if="downloadError" class="download-error">{{ downloadError }}</p>
   </div>
 </template>
 
@@ -126,5 +137,14 @@ function downloadContract() {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
+}
+.btn-ghost:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.download-error {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--danger);
 }
 </style>

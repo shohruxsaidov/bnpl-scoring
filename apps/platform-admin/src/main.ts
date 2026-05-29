@@ -26,11 +26,15 @@ const i18n = createI18n({
 
 const app = createApp(App)
 
-app.use(createPinia())
+const pinia = createPinia()
+app.use(pinia)
+
+// Restore session BEFORE installing the router so the beforeEach guard
+// sees the correct auth state on the very first navigation (e.g. after reload).
+await useAuthStore().restoreSession()
+
 app.use(VueQueryPlugin)
 app.use(router)
-
-await useAuthStore().restoreSession()
 
 app.use(i18n)
 app.use(PrimeVue, {

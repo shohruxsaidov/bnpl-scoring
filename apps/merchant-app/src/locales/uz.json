@@ -689,6 +689,7 @@
     "subtitle": "Shartnoma yaratildi va imzolashga tayyor.",
     "dealId": "Shartnoma ID",
     "downloadContract": "Shartnomani yuklab olish",
+    "downloading": "Yuklanmoqda…",
     "newDeal": "Yangi shartnoma",
     "backToDashboard": "Bosh sahifaga qaytish"
   },

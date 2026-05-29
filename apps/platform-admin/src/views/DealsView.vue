@@ -1,22 +1,26 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
 import { useDealsStore } from '@/stores/deals'
-import { useTenantsStore } from '@/stores/tenants'
 import StatusBadge from '@/components/StatusBadge.vue'
 import MonoAmount from '@/components/MonoAmount.vue'
-import { formatDate, formatSom } from '@/utils/money'
+import { formatDate } from '@/utils/money'
 import type { Deal, DealStatus } from '@/types'
 
 const deals = useDealsStore()
-const tenants = useTenantsStore()
+const router = useRouter()
 const { t } = useI18n()
 
+onMounted(() => deals.fetchDeals())
+
+// ── Filters ───────────────────────────────────────────────────────────────
+
 const statusFilter = ref<DealStatus | null>(null)
-const tenantFilter = ref<string | null>(null)
+const search = ref('')
 
 const statusOptions = computed<{ label: string; value: DealStatus | null }[]>(() => [
   { label: t('deals.allStatuses'), value: null },
@@ -27,408 +31,266 @@ const statusOptions = computed<{ label: string; value: DealStatus | null }[]>(()
   { label: t('deals.statusScoring'), value: 'scoring' },
 ])
 
-const tenantOptions = computed(() => [
-  { label: t('deals.allTenants'), value: null },
-  ...tenants.options,
-])
+const filtered = computed<Deal[]>(() => {
+  let list = deals.deals
+  if (statusFilter.value) list = list.filter((d) => d.status === statusFilter.value)
+  if (search.value.trim()) {
+    const q = search.value.toLowerCase()
+    list = list.filter(
+      (d) =>
+        d.clientName.toLowerCase().includes(q) ||
+        d.id.toLowerCase().includes(q) ||
+        d.clientPhone.includes(q),
+    )
+  }
+  return list
+})
 
-const filtered = computed<Deal[]>(() =>
-  deals.deals.filter(
-    (d) =>
-      (!statusFilter.value || d.status === statusFilter.value) &&
-      (!tenantFilter.value || d.tenantId === tenantFilter.value),
-  ),
-)
+// ── KPI ───────────────────────────────────────────────────────────────────
 
-function tenantName(id: string): string {
-  return tenants.byId(id)?.name ?? '—'
-}
-
-const selected = ref<Deal | null>(null)
-const decisionLabel = computed<Record<string, string>>(() => ({
-  approved: t('deals.decisionApproved'),
-  declined: t('deals.decisionDeclined'),
-  partial: t('deals.decisionPartial'),
-  manual_review: t('deals.decisionManualReview'),
+const stats = computed(() => ({
+  total: deals.deals.length,
+  active: deals.deals.filter((d) => d.status === 'active').length,
+  overdue: deals.deals.filter((d) => d.status === 'overdue').length,
+  volume: deals.platformVolume,
 }))
 
-function openDeal(d: Deal) {
-  selected.value = d
+function formatSomM(tiyin: number): string {
+  const som = tiyin / 100
+  if (som >= 1_000_000_000) return `${(som / 1_000_000_000).toFixed(1)}B`
+  if (som >= 1_000_000) return `${(som / 1_000_000).toFixed(1)}M`
+  if (som >= 1_000) return `${(som / 1_000).toFixed(0)}K`
+  return som.toFixed(0)
 }
-function closePanel() {
-  selected.value = null
+
+function openDeal(deal: Deal) {
+  router.push(`/deals/${deal.id}`)
 }
 </script>
 
 <template>
-  <div class="deals">
-    <div class="filters surface-card">
-      <div class="filter">
-        <span class="filter-label">{{ $t('deals.status') }}</span>
+  <div class="deals-page">
+
+    <!-- ── Loading skeleton ────────────────────────────────────────────── -->
+    <template v-if="deals.loading">
+      <div class="kpi-strip">
+        <div v-for="i in 4" :key="i" class="kpi-card surface-card skeleton-card" />
+      </div>
+      <div class="surface-card skeleton-table" />
+    </template>
+
+    <!-- ── Error ──────────────────────────────────────────────────────── -->
+    <div v-else-if="deals.error" class="surface-card error-state">
+      <i class="pi pi-exclamation-circle" />
+      <p>{{ deals.error }}</p>
+      <button class="btn-ghost" @click="deals.fetchDeals()">{{ $t('common.retry') }}</button>
+    </div>
+
+    <template v-else>
+      <!-- ── Page header ──────────────────────────────────────────────── -->
+      <div class="page-header">
+        <div>
+          <h1 class="page-title">{{ $t('routeTitle.deals') }}</h1>
+          <p class="page-sub">{{ $t('deals.dealsCount', { count: filtered.length }) }}</p>
+        </div>
+      </div>
+
+      <!-- ── KPI strip ────────────────────────────────────────────────── -->
+      <div class="kpi-strip">
+        <div class="kpi-card surface-card">
+          <div class="kpi-icon-row">
+            <div class="kpi-icon" style="background:var(--gradient-hero)"><i class="pi pi-briefcase" /></div>
+          </div>
+          <span class="kpi-label">{{ $t('overview.totalDeals') }}</span>
+          <span class="kpi-value font-mono">{{ stats.total }}</span>
+        </div>
+        <div class="kpi-card surface-card">
+          <div class="kpi-icon-row">
+            <div class="kpi-icon" style="background:linear-gradient(135deg,#00c49a,#00d4aa)"><i class="pi pi-bolt" /></div>
+          </div>
+          <span class="kpi-label">{{ $t('tenantDetail.statusActive') }}</span>
+          <span class="kpi-value font-mono" style="color:var(--success)">{{ stats.active }}</span>
+        </div>
+        <div class="kpi-card surface-card">
+          <div class="kpi-icon-row">
+            <div class="kpi-icon" style="background:linear-gradient(135deg,#6C63FF,#8B5CF6)"><i class="pi pi-wallet" /></div>
+          </div>
+          <span class="kpi-label">{{ $t('overview.platformVolume') }}</span>
+          <span class="kpi-value font-mono text-gradient">{{ formatSomM(stats.volume) }} {{ $t('common.som') }}</span>
+        </div>
+        <div class="kpi-card surface-card">
+          <div class="kpi-icon-row">
+            <div class="kpi-icon" style="background:linear-gradient(135deg,#FF4C4C,#FF7070)"><i class="pi pi-exclamation-triangle" /></div>
+          </div>
+          <span class="kpi-label">{{ $t('overview.overdueDeals') }}</span>
+          <span class="kpi-value font-mono" :style="stats.overdue > 0 ? 'color:var(--danger)' : ''">{{ stats.overdue }}</span>
+        </div>
+      </div>
+
+      <!-- ── Filters ──────────────────────────────────────────────────── -->
+      <div class="surface-card filters-bar">
+        <span class="search-wrap">
+          <i class="pi pi-search search-icon" />
+          <input
+            v-model="search"
+            class="search-input"
+            :placeholder="$t('topbar.searchPlaceholder')"
+          />
+        </span>
         <Select
           v-model="statusFilter"
           :options="statusOptions"
           option-label="label"
           option-value="value"
           :placeholder="$t('deals.allStatuses')"
+          class="status-select"
         />
       </div>
-      <div class="filter">
-        <span class="filter-label">{{ $t('deals.tenant') }}</span>
-        <Select
-          v-model="tenantFilter"
-          :options="tenantOptions"
-          option-label="label"
-          option-value="value"
-          :placeholder="$t('deals.allTenants')"
-        />
+
+      <!-- ── Table ────────────────────────────────────────────────────── -->
+      <div class="surface-card table-card">
+        <DataTable
+          :value="filtered"
+          data-key="id"
+          row-hover
+          removable-sort
+          paginator
+          :rows="15"
+          :rows-per-page-options="[10, 15, 25, 50]"
+          paginator-template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
+          size="small"
+          class="deals-table"
+          @row-click="openDeal($event.data as Deal)"
+        >
+          <Column :header="$t('deals.dealId')" field="id" style="width:300px">
+            <template #body="{ data }">
+              <span class="font-mono deal-id">{{ data.id }}</span>
+            </template>
+          </Column>
+
+          <Column :header="$t('deals.client')" field="clientName" sortable>
+            <template #body="{ data }">
+              <div class="client-cell">
+                <span class="client-name">{{ data.clientName }}</span>
+                <span class="client-phone font-mono muted">{{ data.clientPhone }}</span>
+              </div>
+            </template>
+          </Column>
+
+          <Column :header="$t('deals.status')" field="status" sortable style="width:130px">
+            <template #body="{ data }">
+              <StatusBadge :status="data.status" />
+            </template>
+          </Column>
+
+          <Column :header="$t('deals.amount')" field="amount" sortable style="width:160px">
+            <template #body="{ data }">
+              <MonoAmount :value="data.amount" size="sm" />
+            </template>
+          </Column>
+
+          <Column :header="$t('deals.score')" field="score" sortable style="width:90px">
+            <template #body="{ data }">
+              <span class="font-mono muted">{{ data.score || '—' }}</span>
+            </template>
+          </Column>
+
+          <Column :header="$t('deals.agent')" field="agentName" sortable>
+            <template #body="{ data }">
+              <span class="muted">{{ data.agentName }}</span>
+            </template>
+          </Column>
+
+          <Column :header="$t('deals.date')" field="createdAt" sortable style="width:110px">
+            <template #body="{ data }">
+              <span class="font-mono muted">{{ formatDate(data.createdAt) }}</span>
+            </template>
+          </Column>
+
+          <Column style="width:52px">
+            <template #body="{ data }">
+              <button class="open-btn" @click.stop="openDeal(data)">
+                <i class="pi pi-arrow-right" />
+              </button>
+            </template>
+          </Column>
+        </DataTable>
       </div>
-      <span class="result-count muted">{{ $t('deals.dealsCount', { count: filtered.length }) }}</span>
-    </div>
-
-    <div class="surface-card table-wrap">
-      <DataTable
-        :value="filtered"
-        data-key="id"
-        paginator
-        :rows="10"
-        size="small"
-        selection-mode="single"
-        :selection="selected"
-        @row-click="openDeal($event.data as Deal)"
-      >
-        <Column :header="$t('deals.dealId')">
-          <template #body="{ data }">
-            <span class="font-mono accent">{{ data.id }}</span>
-          </template>
-        </Column>
-        <Column :header="$t('deals.tenant')">
-          <template #body="{ data }">{{ tenantName(data.tenantId) }}</template>
-        </Column>
-        <Column :header="$t('deals.client')">
-          <template #body="{ data }">{{ data.clientName }}</template>
-        </Column>
-        <Column :header="$t('deals.amount')" sortable field="amount">
-          <template #body="{ data }">
-            <MonoAmount :value="data.amount" size="sm" />
-          </template>
-        </Column>
-        <Column :header="$t('deals.status')" sortable field="status">
-          <template #body="{ data }">
-            <StatusBadge :status="data.status" />
-          </template>
-        </Column>
-        <Column :header="$t('deals.score')" sortable field="score">
-          <template #body="{ data }">
-            <span class="font-mono">{{ data.score || '—' }}</span>
-          </template>
-        </Column>
-        <Column :header="$t('deals.decision')">
-          <template #body="{ data }">
-            <span class="muted">{{ decisionLabel[data.decision] }}</span>
-          </template>
-        </Column>
-        <Column :header="$t('deals.agent')">
-          <template #body="{ data }">{{ data.agentName }}</template>
-        </Column>
-        <Column :header="$t('deals.date')" sortable field="createdAt">
-          <template #body="{ data }">
-            <span class="font-mono muted">{{ formatDate(data.createdAt) }}</span>
-          </template>
-        </Column>
-      </DataTable>
-    </div>
-
-    <!-- Slide-over panel -->
-    <transition name="slide">
-      <div v-if="selected" class="slideover">
-        <header class="so-head">
-          <div>
-            <span class="font-mono accent so-id">{{ selected.id }}</span>
-            <StatusBadge :status="selected.status" />
-          </div>
-          <button class="so-close" @click="closePanel">
-            <i class="pi pi-times" />
-          </button>
-        </header>
-
-        <div class="so-body">
-          <div class="so-section">
-            <h4>{{ $t('deals.clientSection') }}</h4>
-            <div class="kv">
-              <span>{{ $t('deals.name') }}</span><span>{{ selected.clientName }}</span>
-            </div>
-            <div class="kv">
-              <span>{{ $t('deals.pinfl') }}</span><span class="font-mono">{{ selected.clientPinfl }}</span>
-            </div>
-            <div class="kv">
-              <span>{{ $t('deals.phone') }}</span><span class="font-mono">{{ selected.clientPhone }}</span>
-            </div>
-            <div class="kv">
-              <span>{{ $t('deals.tenant') }}</span><span>{{ tenantName(selected.tenantId) }}</span>
-            </div>
-            <div class="kv">
-              <span>{{ $t('deals.agent') }}</span><span>{{ selected.agentName }}</span>
-            </div>
-          </div>
-
-          <div class="so-section">
-            <h4>{{ $t('deals.tariffSection') }}</h4>
-            <div class="kv">
-              <span>{{ $t('deals.plan') }}</span><span>{{ selected.tariffName }}</span>
-            </div>
-            <div class="kv">
-              <span>{{ $t('deals.principal') }}</span>
-              <span><MonoAmount :value="selected.amount" size="sm" /></span>
-            </div>
-            <div class="kv">
-              <span>{{ $t('deals.totalPayable') }}</span>
-              <span><MonoAmount :value="selected.totalPayable" size="sm" /></span>
-            </div>
-          </div>
-
-          <div class="so-section">
-            <h4>{{ $t('deals.basket') }}</h4>
-            <div v-for="(b, i) in selected.basket" :key="i" class="basket-row">
-              <span class="b-name">{{ b.name }}</span>
-              <span class="b-qty font-mono">×{{ b.quantity }}</span>
-              <span class="b-price font-mono">{{ formatSom(b.price) }}</span>
-            </div>
-          </div>
-
-          <div v-if="selected.factors.length" class="so-section">
-            <h4>{{ $t('deals.scoreBreakdown', { score: selected.score }) }}</h4>
-            <div v-for="(f, i) in selected.factors" :key="i" class="factor-row">
-              <span class="f-label">{{ f.label }}</span>
-              <span
-                class="f-weight font-mono"
-                :style="{ color: f.weight >= 0 ? 'var(--success)' : 'var(--danger)' }"
-              >
-                {{ f.weight >= 0 ? '+' : '' }}{{ f.weight.toFixed(2) }}
-              </span>
-              <span class="f-value font-mono">{{ f.value }}</span>
-            </div>
-          </div>
-
-          <div class="so-section">
-            <h4>{{ $t('deals.schedulePreview') }}</h4>
-            <div v-for="row in selected.schedule.slice(0, 3)" :key="row.index" class="sch-row">
-              <span class="font-mono muted">#{{ row.index }}</span>
-              <span class="font-mono">{{ formatDate(row.date) }}</span>
-              <span class="font-mono sch-amt">{{ formatSom(row.amount) }}</span>
-            </div>
-            <span class="muted sch-more">
-              {{ $t('deals.morePayments', { count: Math.max(0, selected.schedule.length - 3) }) }}
-            </span>
-          </div>
-
-          <button class="btn-ghost full">
-            {{ $t('deals.openFullDetail') }} <i class="pi pi-external-link" />
-          </button>
-        </div>
-      </div>
-    </transition>
-    <transition name="fade">
-      <div v-if="selected" class="so-backdrop" @click="closePanel" />
-    </transition>
+    </template>
   </div>
 </template>
 
 <style scoped>
-.deals {
-  display: flex;
-  flex-direction: column;
-  gap: 0.9rem;
+.deals-page { display: flex; flex-direction: column; gap: 1.4rem; }
+
+/* ── Page header ────────────────────────────────────────────────────────── */
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.page-title { margin: 0 0 0.2rem; font-size: 1.55rem; font-weight: 800; }
+.page-sub { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
+
+/* ── KPI strip ──────────────────────────────────────────────────────────── */
+.kpi-strip { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; }
+.kpi-card { padding: 1.25rem 1.4rem; display: flex; flex-direction: column; gap: 0.4rem; }
+.kpi-icon-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.3rem; }
+.kpi-icon { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; color: #fff; font-size: 1rem; }
+.kpi-label { font-size: 0.72rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; }
+.kpi-value { font-size: 1.6rem; font-weight: 800; line-height: 1; }
+
+/* ── Skeleton ───────────────────────────────────────────────────────────── */
+.skeleton-card { height: 110px; opacity: 0.5; animation: pulse 1.4s ease-in-out infinite; }
+.skeleton-table { height: 400px; opacity: 0.5; animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { opacity:.5 } 50% { opacity:.25 } }
+
+/* ── Filters ────────────────────────────────────────────────────────────── */
+.filters-bar { display: flex; align-items: center; gap: 0.8rem; padding: 0.9rem 1.2rem; flex-wrap: wrap; }
+.search-wrap { display: flex; align-items: center; position: relative; flex: 1; min-width: 200px; }
+.search-icon { position: absolute; left: 0.75rem; color: var(--text-secondary); font-size: 0.9rem; pointer-events: none; }
+.search-input {
+  width: 100%; padding: 0.5rem 0.75rem 0.5rem 2.2rem;
+  border: 1px solid var(--border-subtle); border-radius: 10px;
+  background: var(--bg-base); color: var(--text-primary);
+  font-size: 0.88rem; font-family: inherit; outline: none;
+  transition: border-color 0.15s ease;
 }
-.filters {
-  display: flex;
-  align-items: flex-end;
-  gap: 1rem;
-  padding: 0.9rem 1.1rem;
+.search-input:focus { border-color: var(--accent-2); }
+.status-select { width: 180px; flex-shrink: 0; }
+
+/* ── Table ──────────────────────────────────────────────────────────────── */
+.table-card { padding: 0; overflow: hidden; }
+:deep(.deals-table .p-datatable-thead > tr > th) {
+  background: var(--bg-surface); border-bottom: 1px solid var(--border-subtle);
+  font-size: 0.72rem; font-weight: 700; color: var(--text-secondary);
+  text-transform: uppercase; letter-spacing: 0.05em; padding: 0.7rem 1rem;
 }
-.filter {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  width: 220px;
+:deep(.deals-table .p-datatable-tbody > tr) { cursor: pointer; transition: background 0.12s ease; }
+:deep(.deals-table .p-datatable-tbody > tr:hover) { background: var(--bg-surface) !important; }
+:deep(.deals-table .p-datatable-tbody > tr > td) {
+  padding: 0.8rem 1rem; border-bottom: 1px solid var(--border-subtle); vertical-align: middle;
 }
-.filter-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-secondary);
-}
-.result-count {
-  margin-left: auto;
-  font-size: 0.82rem;
-  font-weight: 600;
-  padding-bottom: 0.5rem;
-}
-.table-wrap {
-  padding: 0;
-  overflow: hidden;
-}
-.accent {
-  color: var(--accent-2);
-  font-weight: 700;
+:deep(.deals-table .p-paginator) {
+  padding: 0.8rem 1rem; border-top: 1px solid var(--border-subtle); background: var(--bg-surface);
 }
 
-.slideover {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 400px;
-  height: 100vh;
-  background: var(--bg-base);
-  border-left: 1px solid var(--border-subtle);
-  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.25);
-  z-index: 60;
-  display: flex;
-  flex-direction: column;
+/* ── Cells ──────────────────────────────────────────────────────────────── */
+.deal-id { font-size: 0.78rem; font-weight: 700; color: var(--accent-2); }
+.client-cell { display: flex; flex-direction: column; gap: 0.15rem; }
+.client-name { font-weight: 700; }
+.client-phone { font-size: 0.78rem; }
+.muted { color: var(--text-secondary); }
+.open-btn {
+  width: 32px; height: 32px; border-radius: 8px;
+  border: 1px solid var(--border-subtle); background: var(--bg-base);
+  color: var(--text-secondary); cursor: pointer;
+  display: grid; place-items: center; font-size: 0.8rem; transition: all 0.15s ease;
 }
-.so-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.2rem;
-  border-bottom: 1px solid var(--border-subtle);
-}
-.so-head > div {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-.so-id {
-  font-size: 0.95rem;
-}
-.so-close {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-surface);
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-}
-.so-close:hover {
-  color: var(--danger);
-  border-color: var(--danger);
-}
-.so-body {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1.1rem 1.2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.2rem;
-}
-.so-section h4 {
-  margin: 0 0 0.6rem;
-  font-size: 0.74rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-secondary);
-}
-.kv {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.32rem 0;
-  font-size: 0.84rem;
-}
-.kv > span:first-child {
-  color: var(--text-secondary);
-}
-.kv > span:last-child {
-  font-weight: 600;
-}
-.basket-row {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.35rem 0;
-  font-size: 0.82rem;
-  border-bottom: 1px solid var(--border-subtle);
-}
-.basket-row:last-child {
-  border-bottom: none;
-}
-.b-name {
-  flex: 1;
-  font-weight: 600;
-}
-.b-qty {
-  color: var(--text-secondary);
-}
-.b-price {
-  font-size: 0.78rem;
-}
-.factor-row {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.32rem 0;
-  font-size: 0.82rem;
-}
-.f-label {
-  flex: 1;
-  color: var(--text-secondary);
-}
-.f-weight {
-  width: 52px;
-  text-align: right;
-  font-weight: 700;
-}
-.f-value {
-  width: 70px;
-  text-align: right;
-  font-weight: 600;
-}
-.sch-row {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  padding: 0.32rem 0;
-  font-size: 0.82rem;
-}
-.sch-amt {
-  margin-left: auto;
-  font-weight: 600;
-}
-.sch-more {
-  display: block;
-  margin-top: 0.4rem;
-  font-size: 0.76rem;
-}
-.btn-ghost.full {
-  width: 100%;
-  justify-content: center;
-  margin-top: 0.4rem;
-}
-.so-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(10, 10, 20, 0.4);
-  z-index: 55;
-}
+.open-btn:hover { background: var(--gradient-accent); border-color: transparent; color: #fff; }
 
-.slide-enter-active,
-.slide-leave-active {
-  transition: transform 0.25s ease;
-}
-.slide-enter-from,
-.slide-leave-to {
-  transform: translateX(100%);
-}
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.25s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
+/* ── Error state ────────────────────────────────────────────────────────── */
+.error-state { padding: 3rem 2rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; text-align: center; }
+.error-state i { font-size: 2.2rem; color: var(--danger); }
+.error-state p { margin: 0; font-weight: 600; color: var(--text-secondary); }
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 900px) { .kpi-strip { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 600px) { .kpi-strip { grid-template-columns: 1fr 1fr; } }
 </style>

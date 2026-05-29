@@ -524,6 +524,7 @@ export async function generateKontrakt(data: KontraktData, lang: 'ru' | 'uz'): P
     { text: `${fmt(data.totalPayable)} ${t.currency}`, width: sColW[2] ?? 0, align: 'right' },
     { text: '', width: sColW[3] ?? 0 },
   ], { rowHeight: 14 })
+  y += 6
 
   // ── Notes ─────────────────────────────────────────────────────────────────
   doc.font('Regular').fontSize(8.5).fillColor('#1a1a1a')

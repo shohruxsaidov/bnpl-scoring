@@ -26,12 +26,16 @@ const i18n = createI18n({
 
 const app = createApp(App)
 
-app.use(createPinia())
+const pinia = createPinia()
+app.use(pinia)
 app.use(VueQueryPlugin)
-app.use(router)
 
+// Restore session BEFORE installing the router so the beforeEach guard
+// sees the correct auth state on the very first navigation (e.g. after reload).
 const auth = useAuthStore()
 await auth.restoreSession()
+
+app.use(router)
 
 if (auth.isAuthenticated) {
   const notifications = useNotificationsStore()
