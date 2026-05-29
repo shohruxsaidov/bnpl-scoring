@@ -25,7 +25,8 @@
     "merchant": "Продавец",
     "tariffs": "Тарифы",
     "sendNotification": "Уведомления",
-    "buyout": "Выкуп"
+    "buyout": "Выкуп",
+    "testPayment": "Тест оплаты"
   },
   "breadcrumb": {
     "overview": "Обзор",
@@ -38,7 +39,8 @@
     "blacklist": "Чёрный список",
     "tariffs": "Тарифы",
     "notifications": "Уведомления",
-    "buyout": "Выкуп"
+    "buyout": "Выкуп",
+    "testPayment": "Тест оплаты"
   },
   "topbar": {
     "scoring": "Скоринг",
@@ -56,6 +58,7 @@
     "blacklist": "Чёрный список",
     "notifications": "Уведомления",
     "buyout": "Выкуп",
+    "testPayment": "Тест оплаты",
     "platformAdmin": "Админ платформы",
     "logout": "Выйти",
     "toggleSidebar": "Переключить панель"

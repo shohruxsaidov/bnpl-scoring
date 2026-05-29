@@ -114,8 +114,8 @@ The raw bureau score (0–999) returned by KATM in the `scoring_grade` field of 
 _Avoid_: KATM score, bureau score, scoring_grade
 
 **Card Score**:
-The scored output from PlumGate's SCORING module, derived from the Client's bank card transaction history (Uzcard or Humo). When available, contributes one or more weighted criteria to the global scoring model. When unavailable (soft skip), those criteria score 0 — no penalty. Not a replacement for KATM inputs. Not the same as the platform's Score.
-_Avoid_: PlumGate score, transaction score, card scoring result
+The scored output from PlumGate's SCORING module, derived from the Client's bank card transaction history (Uzcard or Humo). **Required** to proceed past the Karta step — the Wizard blocks until a Card Score is obtained. Contributes weighted criteria to the global scoring model. Not a replacement for KATM inputs. Not the same as the platform's Score.
+_Avoid_: PlumGate score, transaction score, card scoring result, optional scoring
 
 **KATM**:
 The Uzbekistan credit bureau. Queried during the Клиент step to retrieve a Client's existing loan obligations. Identifies individuals by **PINFL**. Queried on every new Deal; the result refreshes the Client's Platform Credit Limit.
@@ -199,6 +199,8 @@ Three separate tables back the three auth flows:
 `users` is an intentional divergence from the domain term "Client" — the table name was chosen for simplicity. The domain term "Client" remains correct everywhere else (code, API, UI).
 
 ## Flagged ambiguities
+
+- "Soft skip" appeared in the Card Score definition — resolved: **Card Score is required**. The Wizard blocks at the Karta step until PlumGate scoring returns a result. There is no skip path.
 
 - "Договор", "Сделка", and "Контракт" all appeared in the UI — resolved: **Договор = Deal** (the financing record), **Сделка** is a synonym for Deal used in tab labels only, **Контракт = Kontrakt** (the generated legal document). Never use "Contract" for the Deal itself.
 - "Tenant" was used throughout the codebase — resolved: replaced by **Merchant** (business entity) and **Branch** (single location). `tenant_id` → `merchant_id`; `branch_id` added to Deals and Employees.

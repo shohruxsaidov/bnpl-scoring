@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import { useDealStore } from '@/stores/deal'
@@ -11,74 +11,178 @@ const deal = useDealStore()
 const clientScoring = useClientScoringStore()
 const { t } = useI18n()
 
-const cards = ref<Card[]>([
-  {
-    id: 'card_1',
-    maskedPan: '8600 •••• •••• 4417',
-    holderName: 'AKMAL TURSUNOV',
-    expiry: '08/27',
-    bank: 'Uzcard',
-  },
-  {
-    id: 'card_2',
-    maskedPan: '9860 •••• •••• 1290',
-    holderName: 'AKMAL TURSUNOV',
-    expiry: '11/26',
-    bank: 'Humo',
-  },
-])
+// ── Card list ────────────────────────────────────────────────────────────────
 
-const selectedId = ref<string | null>(deal.sessionData.selectedCard?.id ?? null)
+const cards = ref<Card[]>([])
+const loadingCards = ref(false)
+const loadCardsError = ref<string | null>(null)
+
+async function fetchCards() {
+  const clientId = deal.sessionData.client?.id
+  if (!clientId) return
+
+  loadingCards.value = true
+  loadCardsError.value = null
+  try {
+    const data = await apiFetch<{ cards: Card[] }>(
+      `/merchant/cards?clientId=${clientId}`,
+    )
+    cards.value = data.cards
+    // Restore previously selected card if it still exists in the list
+    if (deal.sessionData.selectedCard) {
+      const stillExists = cards.value.some(
+        (c) => c.plumCardId === deal.sessionData.selectedCard?.plumCardId,
+      )
+      if (!stillExists) deal.setCard(null as unknown as Card)
+    }
+  } catch {
+    loadCardsError.value = t('stepKarta.loadCardsError')
+  } finally {
+    loadingCards.value = false
+  }
+}
+
+onMounted(fetchCards)
+
+// ── Card selection ───────────────────────────────────────────────────────────
+
+const selectedId = ref<string | null>(
+  deal.sessionData.selectedCard?.plumCardId ?? null,
+)
+
+function selectCard(plumCardId: string) {
+  selectedId.value = plumCardId
+  // Reset scoring result when switching cards
+  result.value = null
+  scoreError.value = null
+}
+
+const selectedCard = computed(() =>
+  cards.value.find((c) => c.plumCardId === selectedId.value),
+)
+
+// ── Add card flow ────────────────────────────────────────────────────────────
+
 const adding = ref(false)
 const newPan = ref('')
 const newExpiry = ref('')
 
+// OTP phase
+const addSessionId = ref<string | null>(null)
+const maskedPhone = ref<string | null>(null)
+const otpCode = ref('')
+const addLoading = ref(false)
+const addError = ref<string | null>(null)
+
+function openAddForm() {
+  adding.value = true
+  addSessionId.value = null
+  maskedPhone.value = null
+  otpCode.value = ''
+  newPan.value = ''
+  newExpiry.value = ''
+  addError.value = null
+}
+
+function cancelAdd() {
+  adding.value = false
+  addSessionId.value = null
+  maskedPhone.value = null
+  otpCode.value = ''
+  newPan.value = ''
+  newExpiry.value = ''
+  addError.value = null
+}
+
+async function requestAddCard() {
+  if (!/^\d{4} \d{4} \d{4} \d{4}$/.test(newPan.value)) return
+  if (!newExpiry.value) return
+
+  addLoading.value = true
+  addError.value = null
+  try {
+    const data = await apiFetch<{ sessionId: string; maskedPhone: string }>(
+      '/merchant/cards/add',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          clientId: deal.sessionData.client?.id,
+          cardNumber: newPan.value,
+          expiry: newExpiry.value,
+        }),
+      },
+    )
+    addSessionId.value = data.sessionId
+    maskedPhone.value = data.maskedPhone
+  } catch {
+    addError.value = t('stepKarta.addCardError')
+  } finally {
+    addLoading.value = false
+  }
+}
+
+async function confirmOtp() {
+  if (!addSessionId.value || otpCode.value.length < 4) return
+
+  addLoading.value = true
+  addError.value = null
+  try {
+    const data = await apiFetch<{ card: Card }>(
+      '/merchant/cards/confirm',
+      {
+        method: 'POST',
+        body: JSON.stringify({ sessionId: addSessionId.value, otp: otpCode.value }),
+      },
+    )
+    cards.value.push(data.card)
+    selectedId.value = data.card.plumCardId
+    result.value = null
+    cancelAdd()
+  } catch {
+    addError.value = t('stepKarta.otpError')
+  } finally {
+    addLoading.value = false
+  }
+}
+
+// ── Scoring ──────────────────────────────────────────────────────────────────
+
 const scoring = ref(false)
 const progress = ref(0)
 const result = ref<CardScoreResult | null>(null)
+const scoreError = ref<string | null>(null)
 
-let timer: ReturnType<typeof setInterval> | null = null
+let progressTimer: ReturnType<typeof setInterval> | null = null
 
-function selectCard(id: string) {
-  selectedId.value = id
-  result.value = null
-}
-
-function addCard() {
-  if (!/^\d{4} \d{4} \d{4} \d{4}$/.test(newPan.value)) return
-  const masked =
-    newPan.value.slice(0, 4) + ' •••• •••• ' + newPan.value.slice(-4)
-  const card: Card = {
-    id: `card_${cards.value.length + 1}`,
-    maskedPan: masked,
-    holderName: (`${deal.sessionData.client?.firstName ?? ''} ${deal.sessionData.client?.lastName ?? ''}`.trim() || 'CLIENT').toUpperCase(),
-    expiry: newExpiry.value || '01/28',
-    bank: 'Uzcard',
-  }
-  cards.value.push(card)
-  selectedId.value = card.id
-  adding.value = false
-  newPan.value = ''
-  newExpiry.value = ''
+function clearTimer() {
+  if (progressTimer) { clearInterval(progressTimer); progressTimer = null }
 }
 
 async function verifyCard() {
-  if (!selectedId.value) return
+  if (!selectedCard.value) return
+
   scoring.value = true
   progress.value = 0
   result.value = null
+  scoreError.value = null
 
-  // Animate progress bar while the API call is in flight
-  timer = setInterval(() => {
-    if (progress.value < 85) progress.value += 8 + Math.random() * 7
-  }, 220)
+  // Animate progress bar — stays below 85 % until real result arrives
+  progressTimer = setInterval(() => {
+    if (progress.value < 85) progress.value += 6 + Math.random() * 6
+  }, 250)
 
   try {
     const data = await apiFetch<{ score: number; limit: number; decision: string }>(
       '/merchant/cards/score',
-      { method: 'POST', body: JSON.stringify({ cardId: selectedId.value }) },
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          plumCardId: selectedCard.value.plumCardId,
+          pcType: selectedCard.value.pcType,
+        }),
+      },
     )
-    if (timer) clearInterval(timer)
+    clearTimer()
     progress.value = 100
     result.value = {
       score: data.score,
@@ -86,16 +190,21 @@ async function verifyCard() {
       limit: data.limit,
     }
   } catch {
-    if (timer) clearInterval(timer)
+    clearTimer()
     progress.value = 0
+    scoreError.value = t('stepKarta.scoreError')
   } finally {
     scoring.value = false
   }
 }
 
-const selectedCard = computed(() =>
-  cards.value.find((c) => c.id === selectedId.value),
-)
+function resetSelection() {
+  selectedId.value = null
+  result.value = null
+  scoreError.value = null
+}
+
+// ── Decision display ─────────────────────────────────────────────────────────
 
 const decisionMeta = computed(() => {
   if (!result.value) return null
@@ -107,21 +216,21 @@ const decisionMeta = computed(() => {
   return { label: t('stepKarta.declined'), color: 'var(--danger)', bg: 'var(--danger-bg)' }
 })
 
+// ── Continue ─────────────────────────────────────────────────────────────────
+
 function next() {
-  if (selectedCard.value && result.value) {
-    deal.setCard(selectedCard.value)
-    // Persist the Card Score result in the dedicated scoring store (persisted,
-    // survives refresh between Karta and Tarif steps per ADR-0010).
-    clientScoring.setCompleted({
-      scoringId: `mock-${Date.now()}`,
-      scoreSum: result.value.score,
-      coefficient: result.value.score >= 700 ? 1.0 : result.value.score >= 600 ? 0.8 : 0,
-      decision: result.value.decision,
-      platformCreditLimit: result.value.limit,
-      criteriaScores: {},
-    })
-    deal.complete('karta')
-  }
+  if (!selectedCard.value || !result.value) return
+
+  deal.setCard(selectedCard.value)
+  clientScoring.setCompleted({
+    scoringId: `plum-${selectedCard.value.plumCardId}-${Date.now()}`,
+    scoreSum: result.value.score,
+    coefficient: result.value.score >= 700 ? 1.0 : result.value.score >= 600 ? 0.8 : 0,
+    decision: result.value.decision,
+    platformCreditLimit: result.value.limit,
+    criteriaScores: {},
+  })
+  deal.complete('karta')
 }
 </script>
 
@@ -134,19 +243,36 @@ function next() {
       </div>
     </header>
 
-    <div class="cards-grid">
+    <!-- Loading cards -->
+    <div v-if="loadingCards" class="state-row">
+      <i class="pi pi-spin pi-spinner" />
+      <span>{{ $t('stepKarta.loadingCards') }}</span>
+    </div>
+
+    <!-- Load error -->
+    <div v-else-if="loadCardsError" class="state-row state-error">
+      <i class="pi pi-exclamation-circle" />
+      <span>{{ loadCardsError }}</span>
+      <button class="btn-ghost" @click="fetchCards">{{ $t('common.retry') }}</button>
+      <button class="btn-ghost" style="margin-left: auto" @click="openAddForm">
+        <i class="pi pi-plus" /> {{ $t('stepKarta.addCard') }}
+      </button>
+    </div>
+
+    <!-- Card grid -->
+    <div v-else class="cards-grid">
       <button
         v-for="card in cards"
-        :key="card.id"
+        :key="card.plumCardId"
         class="bank-card"
-        :class="{ selected: selectedId === card.id }"
-        @click="selectCard(card.id)"
+        :class="{ selected: selectedId === card.plumCardId }"
+        @click="selectCard(card.plumCardId)"
       >
         <div class="bc-top">
           <span class="bc-bank">{{ card.bank }}</span>
           <i
             class="pi"
-            :class="selectedId === card.id ? 'pi-check-circle' : 'pi-circle'"
+            :class="selectedId === card.plumCardId ? 'pi-check-circle' : 'pi-circle'"
           />
         </div>
         <div class="bc-pan font-mono">{{ card.maskedPan }}</div>
@@ -156,32 +282,70 @@ function next() {
         </div>
       </button>
 
-      <button v-if="!adding" class="add-card" @click="adding = true">
+      <button v-if="!adding" class="add-card" @click="openAddForm">
         <i class="pi pi-plus" />
         <span>{{ $t('stepKarta.addCard') }}</span>
       </button>
     </div>
 
+    <!-- Add card form -->
     <div v-if="adding" class="add-form">
-      <div class="field">
-        <label class="field-label">{{ $t('stepKarta.cardNumber') }}</label>
-        <InputText
-          v-model="newPan"
-          placeholder="8600 1234 5678 9012"
-          class="font-mono"
-          maxlength="19"
-        />
-      </div>
-      <div class="field" style="max-width: 140px">
-        <label class="field-label">{{ $t('stepKarta.expiry') }}</label>
-        <InputText v-model="newExpiry" placeholder="08/27" class="font-mono" />
-      </div>
-      <div class="add-actions">
-        <button class="btn-ghost" @click="adding = false">{{ $t('stepKarta.cancel') }}</button>
-        <button class="btn-gradient" @click="addCard">{{ $t('stepKarta.add') }}</button>
-      </div>
+      <!-- Phase 1: card details -->
+      <template v-if="!addSessionId">
+        <div class="field">
+          <label class="field-label">{{ $t('stepKarta.cardNumber') }}</label>
+          <InputText
+            v-model="newPan"
+            placeholder="8600 1234 5678 9012"
+            class="font-mono"
+            maxlength="19"
+          />
+        </div>
+        <div class="field" style="max-width: 140px">
+          <label class="field-label">{{ $t('stepKarta.expiry') }}</label>
+          <InputText v-model="newExpiry" placeholder="08/27" class="font-mono" maxlength="5" />
+        </div>
+        <div class="add-actions">
+          <button class="btn-ghost" :disabled="addLoading" @click="cancelAdd">
+            {{ $t('stepKarta.cancel') }}
+          </button>
+          <button class="btn-gradient" :disabled="addLoading" @click="requestAddCard">
+            <i v-if="addLoading" class="pi pi-spin pi-spinner" />
+            {{ $t('stepKarta.sendOtp') }}
+          </button>
+        </div>
+      </template>
+
+      <!-- Phase 2: OTP entry -->
+      <template v-else>
+        <div class="otp-hint">
+          <i class="pi pi-mobile" />
+          {{ $t('stepKarta.otpSentTo', { phone: maskedPhone }) }}
+        </div>
+        <div class="field" style="max-width: 200px">
+          <label class="field-label">{{ $t('stepKarta.otpCode') }}</label>
+          <InputText
+            v-model="otpCode"
+            placeholder="• • • • • •"
+            class="font-mono"
+            maxlength="8"
+          />
+        </div>
+        <div class="add-actions">
+          <button class="btn-ghost" :disabled="addLoading" @click="cancelAdd">
+            {{ $t('stepKarta.cancel') }}
+          </button>
+          <button class="btn-gradient" :disabled="addLoading || otpCode.length < 4" @click="confirmOtp">
+            <i v-if="addLoading" class="pi pi-spin pi-spinner" />
+            {{ $t('stepKarta.confirm') }}
+          </button>
+        </div>
+      </template>
+
+      <p v-if="addError" class="add-error">{{ addError }}</p>
     </div>
 
+    <!-- Verify row -->
     <div class="verify-row">
       <button
         class="btn-ghost"
@@ -199,6 +363,7 @@ function next() {
       </div>
     </div>
 
+    <!-- Score result -->
     <transition name="fade">
       <div v-if="result" class="score-result">
         <div class="sr-score">
@@ -210,6 +375,22 @@ function next() {
           :style="{ color: decisionMeta?.color, background: decisionMeta?.bg }"
         >
           {{ decisionMeta?.label }}
+        </div>
+      </div>
+    </transition>
+
+    <!-- Scoring error -->
+    <transition name="fade">
+      <div v-if="scoreError" class="score-error-block">
+        <i class="pi pi-exclamation-triangle" />
+        <span>{{ scoreError }}</span>
+        <div class="score-error-actions">
+          <button class="btn-ghost" @click="verifyCard">
+            <i class="pi pi-refresh" /> {{ $t('common.retry') }}
+          </button>
+          <button class="btn-ghost btn-muted" @click="resetSelection">
+            {{ $t('stepKarta.useDifferentCard') }}
+          </button>
         </div>
       </div>
     </transition>
@@ -239,6 +420,21 @@ function next() {
   color: var(--text-secondary);
   font-size: 0.88rem;
 }
+
+/* ── State rows ──────────────────────────────────────────────────────────── */
+.state-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.5rem 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+.state-error {
+  color: var(--danger);
+}
+
+/* ── Cards grid ──────────────────────────────────────────────────────────── */
 .cards-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -304,8 +500,11 @@ function next() {
   border-color: var(--accent-2);
   color: var(--accent-2);
 }
+
+/* ── Add card form ───────────────────────────────────────────────────────── */
 .add-form {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   gap: 1rem;
   background: var(--bg-surface);
@@ -320,6 +519,22 @@ function next() {
   display: flex;
   gap: 0.6rem;
 }
+.otp-hint {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+.add-error {
+  width: 100%;
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--danger);
+}
+
+/* ── Verify row ──────────────────────────────────────────────────────────── */
 .verify-row {
   display: flex;
   align-items: center;
@@ -352,6 +567,8 @@ function next() {
   color: var(--text-secondary);
   font-weight: 700;
 }
+
+/* ── Score result ────────────────────────────────────────────────────────── */
 .score-result {
   margin-top: 1.4rem;
   display: flex;
@@ -381,6 +598,31 @@ function next() {
   font-weight: 800;
   font-size: 0.85rem;
 }
+
+/* ── Score error block ───────────────────────────────────────────────────── */
+.score-error-block {
+  margin-top: 1.2rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--danger-bg, #fff0f0);
+  color: var(--danger);
+  padding: 1rem 1.4rem;
+  border-radius: 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+.score-error-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-left: auto;
+}
+.btn-muted {
+  opacity: 0.7;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
 .sc-foot {
   display: flex;
   align-items: center;

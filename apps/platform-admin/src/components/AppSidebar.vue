@@ -28,6 +28,7 @@ const nav = computed<NavItem[]>(() => [
   { label: t('nav.blacklist'), icon: 'pi pi-ban', to: '/blacklist' },
   { label: t('nav.buyout'), icon: 'pi pi-shopping-bag', to: '/buyout' },
   { label: t('nav.notifications'), icon: 'pi pi-send', to: '/notifications' },
+  { label: t('nav.testPayment'), icon: 'pi pi-wallet', to: '/test-payment' },
 ])
 
 async function logout() {

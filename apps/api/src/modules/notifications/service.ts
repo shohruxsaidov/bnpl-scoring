@@ -97,6 +97,57 @@ export async function notifyDealCreated(
   )
 }
 
+export async function notifyPaymentReceived(
+  db: Db,
+  opts: {
+    dealId: string
+    merchantId: bigint
+    branchId: bigint
+    clientId: bigint
+    paidTiyin: bigint
+    scheduleIndex: number
+    fullyPaid: boolean
+  },
+) {
+  const [[clientRow], employees] = await Promise.all([
+    db
+      .select({ firstName: clients.firstName, lastName: clients.lastName })
+      .from(clients)
+      .where(eq(clients.id, opts.clientId))
+      .limit(1),
+    db
+      .select({ id: merchantUsers.id, roles: merchantUsers.roles, branchId: merchantUsers.branchId })
+      .from(merchantUsers)
+      .where(and(eq(merchantUsers.merchantId, opts.merchantId), eq(merchantUsers.active, true))),
+  ])
+
+  const clientName = clientRow ? `${clientRow.firstName} ${clientRow.lastName}` : '—'
+  const amountSom = String(Math.round(Number(opts.paidTiyin) / 100))
+
+  const recipients = employees.filter(
+    (e) =>
+      e.roles.includes('merchant_admin') ||
+      (e.roles.includes('branch_admin') && e.branchId === opts.branchId),
+  )
+
+  await Promise.all(
+    recipients.map((r) =>
+      createNotification(db, {
+        actorType: 'employee',
+        actorId: r.id,
+        type: 'payment_received',
+        params: {
+          dealId: opts.dealId,
+          clientName,
+          amount: amountSom,
+          paymentIndex: String(opts.scheduleIndex + 1),
+          fullyPaid: opts.fullyPaid ? 'true' : 'false',
+        },
+      }),
+    ),
+  )
+}
+
 export async function listNotifications(db: Db, actorType: ActorType, actorId: bigint) {
   return db
     .select()

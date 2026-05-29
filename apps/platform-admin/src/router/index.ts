@@ -78,6 +78,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/SendNotificationView.vue'),
         meta: { titleKey: 'routeTitle.sendNotification', breadcrumbKeys: ['breadcrumb.notifications'] },
       },
+      {
+        path: 'test-payment',
+        name: 'test-payment',
+        component: () => import('@/views/TestPaymentView.vue'),
+        meta: { titleKey: 'routeTitle.testPayment', breadcrumbKeys: ['breadcrumb.testPayment'] },
+      },
     ],
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },

@@ -4,7 +4,9 @@ import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import Checkbox from 'primevue/checkbox'
 import { useDealStore } from '@/stores/deal'
+import type { KatmSummary } from '@/stores/deal'
 import { useClientApi } from '@/composables/useClientApi'
+import { apiFetch } from '@/utils/apiFetch'
 import type { Client } from '@/types'
 
 const deal = useDealStore()
@@ -65,6 +67,7 @@ const myidError = ref('')
 // KATM
 const katmConsent = ref(deal.sessionData.katmConsent)
 const katmLoading = ref(false)
+const katmError = ref('')
 const katmDone = ref(!!deal.sessionData.katmConsent && !!deal.sessionData.client)
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -189,11 +192,21 @@ function confirmNewClient() {
 }
 
 async function queryKatm() {
-  if (!katmConsent.value) return
+  if (!katmConsent.value || !confirmedClient.value) return
   katmLoading.value = true
-  await new Promise((r) => setTimeout(r, 800))
-  katmLoading.value = false
-  katmDone.value = true
+  katmError.value = ''
+  try {
+    const result = await apiFetch<KatmSummary>('/merchant/katm/query', {
+      method: 'POST',
+      body: JSON.stringify({ clientId: confirmedClient.value.id }),
+    })
+    deal.setKatmResult(result)
+    katmDone.value = true
+  } catch {
+    katmError.value = t('stepClient.katmError')
+  } finally {
+    katmLoading.value = false
+  }
 }
 
 function resetSearch() {
@@ -212,6 +225,7 @@ function resetSearch() {
   pinflError.value = ''
   katmConsent.value = false
   katmDone.value = false
+  katmError.value = ''
   myidError.value = ''
 }
 
@@ -453,6 +467,16 @@ const clientFullName = computed(() =>
         <div v-if="katmDone" class="katm-result">
           <i class="pi pi-check-circle" />
           {{ $t('stepClient.katmResult') }}
+        </div>
+      </transition>
+
+      <transition name="fade">
+        <div v-if="katmError" class="katm-error">
+          <i class="pi pi-exclamation-triangle" />
+          {{ katmError }}
+          <button class="btn-ghost btn-sm" @click="queryKatm">
+            <i class="pi pi-refresh" /> {{ $t('common.retry') }}
+          </button>
         </div>
       </transition>
     </template>
@@ -966,6 +990,22 @@ const clientFullName = computed(() =>
   border-radius: 12px;
   font-weight: 600;
   font-size: 0.86rem;
+}
+.katm-error {
+  margin-top: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--danger);
+  background: var(--danger-bg, #fff0f0);
+  padding: 0.8rem 1.1rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.86rem;
+}
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 0.25rem 0.6rem;
 }
 
 /* ── Tags ── */

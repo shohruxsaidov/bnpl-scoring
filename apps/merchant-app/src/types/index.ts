@@ -58,7 +58,11 @@ export interface Client {
 }
 
 export interface Card {
+  /** PlumGate userCardId — required for scoring and payment calls */
   id: string
+  /** PlumGate userCardId (same value as id, explicit alias for clarity) */
+  plumCardId: string
+  pcType: 'uzcard' | 'humo'
   maskedPan: string
   holderName: string
   expiry: string

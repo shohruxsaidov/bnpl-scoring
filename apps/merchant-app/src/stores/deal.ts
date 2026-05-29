@@ -33,11 +33,26 @@ export const DEAL_STEPS: DealStep[] = [
   { key: 'done', label: 'Готово', icon: 'pi pi-check-circle' },
 ]
 
+export interface KatmSummary {
+  demandId: string
+  consentId: string
+  score: number
+  scoringClass: string
+  scoringLevel: string
+  activeLoans: number
+  allDebtSum: number
+  overdueCount: number
+  overdueAmount: number
+  hasDefaults: boolean
+  hasCreditBan: boolean
+}
+
 interface SessionData {
   client: Client | null
   isNewClient: boolean
   myidVerified: boolean
   katmConsent: boolean
+  katmResult: KatmSummary | null
   selectedCard: Card | null
   tariff: Tariff | null
   basket: BasketItem[]
@@ -53,6 +68,7 @@ function emptySession(): SessionData {
     isNewClient: false,
     myidVerified: false,
     katmConsent: false,
+    katmResult: null,
     selectedCard: null,
     tariff: null,
     basket: [],
@@ -141,6 +157,9 @@ export const useDealStore = defineStore('deal', {
     },
     setKatmConsent(v: boolean) {
       this.sessionData.katmConsent = v
+    },
+    setKatmResult(result: KatmSummary) {
+      this.sessionData.katmResult = result
     },
     setCard(card: Card) {
       this.sessionData.selectedCard = card

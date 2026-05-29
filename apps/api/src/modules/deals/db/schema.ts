@@ -104,6 +104,8 @@ export const dealPaymentSchedules = pgTable('deal_payment_schedules', {
   index: integer('index').notNull(),
   dueDate: date('due_date').notNull(),
   amount: bigint('amount', { mode: 'bigint' }).notNull(),
+  /** Cumulative amount paid so far (tiyin). Fully paid when paidAmount >= amount. */
+  paidAmount: bigint('paid_amount', { mode: 'bigint' }).notNull().$defaultFn(() => 0n),
   paid: boolean('paid').notNull().default(false),
   paidAt: timestamp('paid_at', { withTimezone: true }),
 })
