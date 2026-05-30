@@ -9,6 +9,9 @@ import adminBlacklistRoutes from "./blacklist/routes"
 import adminNotificationRoutes from "./notifications/routes"
 import adminDealRoutes from "./deals/routes"
 import adminPermissionsRoutes from "./permissions/routes"
+import adminScoringHistoryRoutes from "./scoringHistory/routes"
+import adminPaymentRoutes from "./payments/routes"
+import adminCollectionBoardRoutes from "./collectionBoard/routes"
 import mxikRoutes from "../mxik/routes"
 
 export default async function adminModule(app: FastifyInstance) {
@@ -22,5 +25,8 @@ export default async function adminModule(app: FastifyInstance) {
   await app.register(adminNotificationRoutes, { prefix: "/admin/notifications" })
   await app.register(adminDealRoutes, { prefix: "/admin/deals" })
   await app.register(adminPermissionsRoutes, { prefix: "/admin/permissions" })
+  await app.register(adminScoringHistoryRoutes, { prefix: "/admin/scoring-history" })
+  await app.register(adminPaymentRoutes, { prefix: "/admin/payments" })
+  await app.register(adminCollectionBoardRoutes, { prefix: "/admin/collection-board" })
   await app.register(mxikRoutes, { prefix: "/admin/mxik", preHandler: app.verifyAdminJwt })
 }

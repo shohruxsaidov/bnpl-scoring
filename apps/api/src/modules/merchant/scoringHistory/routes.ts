@@ -1,7 +1,7 @@
 import { Type } from '@sinclair/typebox'
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import type { FastifyInstance } from 'fastify'
-import { listScorings, getScoring, createScoring } from './service'
+import { createScoring } from './service'
 
 type JwtPayload = {
   sub: string
@@ -17,8 +17,6 @@ function payload(request: { user: unknown }) {
 export default async function merchantScoringHistoryRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
   const db = app.db
-
-  const IdParams = Type.Object({ id: Type.String() })
 
   const CreateBody = Type.Object({
     clientId: Type.String({ minLength: 1 }),
@@ -50,33 +48,6 @@ export default async function merchantScoringHistoryRoutes(app: FastifyInstance)
         if (err.code === 'client_not_found') return reply.code(404).send({ code: 'client_not_found' })
         throw err
       }
-    },
-  )
-
-  /* ── GET / — list scoring runs for this merchant ──────────────────────── */
-  fastify.get('/', { preHandler: app.verifyMerchantJwt }, async (request) => {
-    const p = payload(request)
-    const records = await listScorings(db, BigInt(p.merchantId))
-    return { records }
-  })
-
-  /* ── GET /:id — single scoring run detail ─────────────────────────────── */
-  fastify.get(
-    '/:id',
-    { schema: { params: IdParams }, preHandler: app.verifyMerchantJwt },
-    async (request, reply) => {
-      const p = payload(request)
-
-      let scoringId: bigint
-      try {
-        scoringId = BigInt(request.params.id)
-      } catch {
-        return reply.code(400).send({ code: 'invalid_id' })
-      }
-
-      const scoring = await getScoring(db, scoringId, BigInt(p.merchantId))
-      if (!scoring) return reply.code(404).send({ code: 'scoring_not_found' })
-      return { scoring }
     },
   )
 }

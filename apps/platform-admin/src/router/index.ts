@@ -73,6 +73,30 @@ const routes: RouteRecordRaw[] = [
         meta: { titleKey: 'routeTitle.buyout', breadcrumbKeys: ['breadcrumb.buyout'] },
       },
       {
+        path: 'collection-board',
+        name: 'collection-board',
+        component: () => import('@/views/CollectionBoardView.vue'),
+        meta: { titleKey: 'routeTitle.collectionBoard', breadcrumbKeys: ['breadcrumb.collectionBoard'] },
+      },
+      {
+        path: 'scoring-history',
+        name: 'scoring-history',
+        component: () => import('@/views/ScoringHistoryView.vue'),
+        meta: { titleKey: 'routeTitle.scoringHistory', breadcrumbKeys: ['breadcrumb.scoringHistory'] },
+      },
+      {
+        path: 'scoring-history/:id',
+        name: 'scoring-detail',
+        component: () => import('@/views/ScoringDetailView.vue'),
+        meta: { titleKey: 'routeTitle.scoringHistory', breadcrumbKeys: ['breadcrumb.scoringHistory', 'breadcrumb.detail'] },
+      },
+      {
+        path: 'payments',
+        name: 'payments',
+        component: () => import('@/views/PaymentsView.vue'),
+        meta: { titleKey: 'routeTitle.payments', breadcrumbKeys: ['breadcrumb.payments'] },
+      },
+      {
         path: 'notifications',
         name: 'notifications',
         component: () => import('@/views/SendNotificationView.vue'),

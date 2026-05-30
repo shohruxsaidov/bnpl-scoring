@@ -1,7 +1,7 @@
 import { and, count, eq, lte, not, inArray, sql } from 'drizzle-orm'
 import type { Db } from '../../../db'
 import { deals, dealPaymentSchedules } from '../../deals/db/schema'
-import { clients } from '../../id/db/schema'
+import { clients, merchants } from '../../id/db/schema'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -9,6 +9,8 @@ import { clients } from '../../id/db/schema'
 
 export interface OverdueCard {
   dealId: string
+  merchantId: string
+  merchantName: string
   clientName: string
   clientPhone: string
   /** tiyin */
@@ -23,17 +25,31 @@ export interface AgingBucket {
 }
 
 // ---------------------------------------------------------------------------
-// Query
+// Query — aging buckets across all merchants. Optional merchantId filter.
 // ---------------------------------------------------------------------------
 
 const EXCLUDED_STATUSES = ['draft', 'scoring', 'declined', 'closed'] as const
 
-export async function getCollectionBoard(db: Db, merchantId: bigint): Promise<AgingBucket[]> {
+export async function getCollectionBoard(
+  db: Db,
+  filters: { merchantId?: bigint } = {},
+): Promise<AgingBucket[]> {
   const today = new Date().toISOString().slice(0, 10)
+
+  const where = [
+    not(inArray(deals.status, [...EXCLUDED_STATUSES])),
+    eq(dealPaymentSchedules.paid, false),
+    lte(dealPaymentSchedules.dueDate, today),
+  ]
+  if (filters.merchantId) {
+    where.push(eq(deals.merchantId, filters.merchantId))
+  }
 
   const rows = await db
     .select({
       dealId: deals.id,
+      merchantId: deals.merchantId,
+      merchantName: merchants.name,
       firstName: clients.firstName,
       lastName: clients.lastName,
       clientPhone: clients.phone,
@@ -43,17 +59,13 @@ export async function getCollectionBoard(db: Db, merchantId: bigint): Promise<Ag
     })
     .from(deals)
     .innerJoin(clients, eq(clients.id, deals.clientId))
+    .leftJoin(merchants, eq(deals.merchantId, merchants.id))
     .innerJoin(dealPaymentSchedules, eq(dealPaymentSchedules.dealId, deals.id))
-    .where(
-      and(
-        eq(deals.merchantId, merchantId),
-        not(inArray(deals.status, [...EXCLUDED_STATUSES])),
-        eq(dealPaymentSchedules.paid, false),
-        lte(dealPaymentSchedules.dueDate, today),
-      ),
-    )
+    .where(and(...where))
     .groupBy(
       deals.id,
+      deals.merchantId,
+      merchants.name,
       clients.firstName,
       clients.lastName,
       clients.phone,
@@ -64,6 +76,8 @@ export async function getCollectionBoard(db: Db, merchantId: bigint): Promise<Ag
     .filter((r) => Number(r.daysOverdue) > 0)
     .map((r) => ({
       dealId: r.dealId,
+      merchantId: r.merchantId.toString(),
+      merchantName: r.merchantName ?? '—',
       clientName: `${r.firstName} ${r.lastName}`,
       clientPhone: r.clientPhone,
       principal: Number(r.principal ?? 0),

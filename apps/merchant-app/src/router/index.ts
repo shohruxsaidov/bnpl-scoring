@@ -79,30 +79,6 @@ const routes: RouteRecordRaw[] = [
         meta: { titleKey: 'routeTitle.employees', breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.employees'], adminOnly: true },
       },
       {
-        path: 'admin/collection-board',
-        name: 'admin-collection-board',
-        component: () => import('@/views/admin/CollectionBoardView.vue'),
-        meta: { titleKey: 'routeTitle.collectionBoard', breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.collectionBoard'], adminOnly: true },
-      },
-      {
-        path: 'admin/scoring-history',
-        name: 'admin-scoring-history',
-        component: () => import('@/views/admin/ScoringHistoryView.vue'),
-        meta: { titleKey: 'routeTitle.scoringHistory', breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.scoringHistory'], adminOnly: true },
-      },
-      {
-        path: 'admin/payments',
-        name: 'admin-payments',
-        component: () => import('@/views/admin/PaymentsView.vue'),
-        meta: { titleKey: 'routeTitle.payments', breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.payments'], adminOnly: true },
-      },
-      {
-        path: 'admin/scoring-history/:id',
-        name: 'admin-scoring-history-detail',
-        component: () => import('@/views/admin/ScoringHistoryDetailView.vue'),
-        meta: { titleKey: 'routeTitle.scoringDetail', breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.scoringHistory', 'breadcrumb.detail'], adminOnly: true },
-      },
-      {
         path: 'notifications',
         name: 'notifications',
         component: () => import('@/views/NotificationsView.vue'),

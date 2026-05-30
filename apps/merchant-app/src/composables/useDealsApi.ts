@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { apiFetch } from '@/utils/apiFetch'
-import { SCORING_HISTORY_KEY } from '@/composables/useScoringHistoryApi'
 import type { Ref } from 'vue'
 
 // ---------------------------------------------------------------------------
@@ -118,7 +117,6 @@ export function useCreateDealMutation() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: DEALS_KEY })
-      qc.invalidateQueries({ queryKey: SCORING_HISTORY_KEY })
     },
   })
 }

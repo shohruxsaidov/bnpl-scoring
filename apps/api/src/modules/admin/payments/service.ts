@@ -1,7 +1,7 @@
-import { desc, eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import type { Db } from '../../../db'
 import { deals, dealPaymentSchedules } from '../../deals/db/schema'
-import { clients } from '../../id/db/schema'
+import { clients, merchants } from '../../id/db/schema'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -9,6 +9,8 @@ import { clients } from '../../id/db/schema'
 
 export interface Payment {
   id: string
+  merchantId: string
+  merchantName: string
   clientName: string
   clientPhone: string
   contractId: string
@@ -21,19 +23,25 @@ export interface Payment {
 }
 
 // ---------------------------------------------------------------------------
-// Query
-// ---------------------------------------------------------------------------
-
+// List payments (installment schedule rows) across all merchants.
+// Optional merchantId filter.
+//
 // The deal_payment_schedules table only tracks a `paid` boolean (no payment
 // method column and no cancelled/void state), so:
-//   - status: paid === true  → 'confirmed', otherwise 'pending'
-//     ('cancelled' is part of the contract but never produced by the current schema)
+//   - status: paid === true → 'confirmed', otherwise 'pending'
 //   - type: defaults to 'transfer' (no payment-method column exists yet)
-export async function listPayments(db: Db, merchantId: bigint): Promise<Payment[]> {
-  const rows = await db
+// ---------------------------------------------------------------------------
+
+export async function listPayments(
+  db: Db,
+  filters: { merchantId?: bigint } = {},
+): Promise<Payment[]> {
+  let query = db
     .select({
       id: dealPaymentSchedules.id,
       contractId: deals.id,
+      merchantId: deals.merchantId,
+      merchantName: merchants.name,
       firstName: clients.firstName,
       lastName: clients.lastName,
       clientPhone: clients.phone,
@@ -45,11 +53,20 @@ export async function listPayments(db: Db, merchantId: bigint): Promise<Payment[
     .from(dealPaymentSchedules)
     .innerJoin(deals, eq(dealPaymentSchedules.dealId, deals.id))
     .innerJoin(clients, eq(clients.id, deals.clientId))
-    .where(eq(deals.merchantId, merchantId))
+    .leftJoin(merchants, eq(deals.merchantId, merchants.id))
     .orderBy(desc(dealPaymentSchedules.dueDate))
+    .$dynamic()
+
+  if (filters.merchantId) {
+    query = query.where(eq(deals.merchantId, filters.merchantId))
+  }
+
+  const rows = await query
 
   return rows.map((r) => ({
     id: r.id.toString(),
+    merchantId: r.merchantId.toString(),
+    merchantName: r.merchantName ?? '—',
     clientName: `${r.firstName} ${r.lastName}`,
     clientPhone: r.clientPhone,
     contractId: r.contractId,
