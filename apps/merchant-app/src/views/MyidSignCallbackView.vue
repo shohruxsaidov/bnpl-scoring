@@ -11,7 +11,6 @@ const deal = useDealStore()
 const scoring = useClientScoringStore()
 
 onMounted(async () => {
-  debugger
   const params = new URLSearchParams(window.location.search)
   const code = params.get('auth_code')
   const signingSessionToken = sessionStorage.getItem('myid_sign_session_token')

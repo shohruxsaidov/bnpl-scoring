@@ -1,72 +1,33 @@
-# ADR 0006: Zero-Downtime Deployment
-# Services: nginx · app-blue · app-green · postgres · loki · alloy · grafana
+name: scoring
+
+# Production stack for the scoring turborepo.
 #
-# Blue-green: deploy.sh starts the idle slot, waits for healthy,
-# flips nginx via SIGHUP, then stops the old slot. No request is dropped.
+#   postgres        PostgreSQL 16 (Drizzle target)
+#   redis           Redis 7 (ioredis client in the API)
+#   api             Fastify + Drizzle backend (apps/api), listens on :4000
+#   platform-admin  Vue + Vite SPA (apps/platform-admin)  -> nginx
+#   merchant-app    Vue + Vite SPA (apps/merchant-app)    -> nginx
+#   client-portal   Vue + Vite SPA (apps/client-portal)   -> nginx
+#
+# Each SPA's nginx serves the static build AND reverse-proxies /api/v1 to the
+# api service, matching the apps' VITE_API_URL=/api/v1 convention.
+#
+# Quick start:
+#   cp .env.docker.example .env   # then fill in JWT_SECRET, integration creds
+#   docker compose up -d --build
+#
+# Every value has a local default, so it also boots with no .env file.
 
 services:
-
-  # ── Traffic router ──────────────────────────────────────────────────────────
-  nginx:
-    image: nginx:1.27-alpine
-    ports:
-      - "80:80"
-    volumes:
-      - ./deploy/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./deploy/nginx/active-slot:/etc/nginx/active-slot:ro
-      - nginx-logs:/var/log/nginx
-      - frontend-assets:/var/www:ro
-    depends_on:
-      app-blue:
-        condition: service_healthy
-    restart: unless-stopped
-
-  # ── Application — blue slot ──────────────────────────────────────────────────
-  app-blue:
-    image: scoring-app:${BLUE_TAG:-latest}
-    container_name: scoring-blue
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL}
-      JWT_SECRET: ${JWT_SECRET}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
-    restart: unless-stopped
-
-  # ── Application — green slot ─────────────────────────────────────────────────
-  # Idle between deployments; deploy.sh starts it, waits for healthy, flips nginx.
-  app-green:
-    image: scoring-app:${GREEN_TAG:-latest}
-    container_name: scoring-green
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL}
-      JWT_SECRET: ${JWT_SECRET}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
-    profiles: ["idle"]
-
-  # ── Database (expand/contract migration policy applies) ────────────────────
   postgres:
-    image: postgres:17-alpine
+    image: postgres:16-alpine
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-scoring}
       POSTGRES_USER: ${POSTGRES_USER:-scoring}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-scoring}
+      POSTGRES_DB: ${POSTGRES_DB:-scoring}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -74,77 +35,101 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
 
-  # ── Observability stack ───────────────────────────────────────────────────
-  # ── Observability stack (ADR 0007) ───────────────────────────────────────
-  loki:
-    image: grafana/loki:3.3.2
-    volumes:
-      - ./deploy/loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
-      - loki-data:/loki
-    command: -config.file=/etc/loki/local-config.yaml
+  redis:
+    image: redis:7-alpine
     restart: unless-stopped
-
-  tempo:
-    image: grafana/tempo:2.7.1
-    volumes:
-      - ./deploy/tempo/tempo-config.yaml:/etc/tempo/config.yaml:ro
-      - tempo-data:/var/tempo
-    command: -config.file=/etc/tempo/config.yaml
-    restart: unless-stopped
-
-  prometheus:
-    image: prom/prometheus:v3.1.0
-    volumes:
-      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus-data:/prometheus
-    command:
-      - --config.file=/etc/prometheus/prometheus.yml
-      - --storage.tsdb.retention.time=15d
-      - --web.enable-remote-write-receiver
-    restart: unless-stopped
-
-  alloy:
-    image: grafana/alloy:v1.5.1
+    command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "4317:4317"   # OTLP gRPC — Node.js app sends traces + logs here
-      - "4318:4318"   # OTLP HTTP — alternative endpoint
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
-      - ./deploy/alloy/config.alloy:/etc/alloy/config.alloy:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - nginx-logs:/var/log/nginx:ro
-      - alloy-data:/var/lib/alloy/data
-    command: run --server.http.listen-addr=0.0.0.0:12345 /etc/alloy/config.alloy
-    depends_on:
-      - loki
-      - tempo
-      - prometheus
-    restart: unless-stopped
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  grafana:
-    image: grafana/grafana:11.4.0
-    ports:
-      - "3001:3000"
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    restart: unless-stopped
+    # Loads MyID / PlumGate / KATM / MinIO / OTEL settings if the file exists.
+    # Infra values below override anything in it so they point at the compose network.
+    env_file:
+      - path: ./apps/api/.env
+        required: false
     environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?set GRAFANA_PASSWORD in .env}
-      GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s:%(http_port)s/grafana/"
-    volumes:
-      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
-      - grafana-data:/var/lib/grafana
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-scoring}:${POSTGRES_PASSWORD:-scoring}@postgres:5432/${POSTGRES_DB:-scoring}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change-me-please-at-least-32-characters}
+      # Keep external integrations mocked unless real creds are provided.
+      PLUM_MOCK: ${PLUM_MOCK:-true}
+      KATM_MOCK: ${KATM_MOCK:-true}
+    ports:
+      - "${API_PORT:-4000}:4000"
     depends_on:
-      - loki
-      - tempo
-      - prometheus
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('net').connect(4000,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  platform-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        APP_DIR: apps/platform-admin
+        VITE_API_URL: /api/v1
     restart: unless-stopped
+    ports:
+      - "${PLATFORM_ADMIN_PORT:-4001}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  merchant-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        APP_DIR: apps/merchant-app
+        VITE_API_URL: /api/v1
+    restart: unless-stopped
+    ports:
+      - "${MERCHANT_APP_PORT:-4002}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  client-portal:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        APP_DIR: apps/client-portal
+        VITE_API_URL: /api/v1
+    restart: unless-stopped
+    ports:
+      - "${CLIENT_PORTAL_PORT:-4003}:80"
+    depends_on:
+      api:
+        condition: service_healthy
 
 volumes:
   postgres-data:
-  loki-data:
-  tempo-data:
-  prometheus-data:
-  grafana-data:
-  alloy-data:
-  nginx-logs:
-  frontend-assets:
+  redis-data:

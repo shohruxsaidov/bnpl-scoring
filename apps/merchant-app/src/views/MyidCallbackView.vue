@@ -14,7 +14,6 @@ onMounted(async () => {
   const code = route.query.auth_code as string
 
   const regToken = sessionStorage.getItem('myid_reg_token')
-  debugger
   if (!code || !regToken) {
     router.replace({ name: 'deals-create' })
     return
