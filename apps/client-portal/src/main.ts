@@ -30,35 +30,39 @@ const pinia = createPinia()
 app.use(pinia)
 app.use(VueQueryPlugin)
 
-// Restore session BEFORE installing the router so the beforeEach guard
-// sees the correct auth state on the very first navigation (e.g. after reload).
-const auth = useAuthStore()
-await auth.restoreSession()
+async function bootstrap() {
+  // Restore session BEFORE installing the router so the beforeEach guard
+  // sees the correct auth state on the very first navigation (e.g. after reload).
+  const auth = useAuthStore()
+  await auth.restoreSession()
 
-app.use(router)
+  app.use(router)
 
-if (auth.isAuthenticated) {
-  const notifications = useNotificationsStore()
-  await notifications.fetchAll()
-  notifications.connectSSE()
-}
+  if (auth.isAuthenticated) {
+    const notifications = useNotificationsStore()
+    await notifications.fetchAll()
+    notifications.connectSSE()
+  }
 
-app.use(i18n)
-app.use(PrimeVue, {
-  ripple: true,
-  unstyled: false,
-  theme: {
-    preset: Aura,
-    options: {
-      darkModeSelector: '[data-theme="dark"]',
-      cssLayer: {
-        name: 'primevue',
-        order: 'theme, base, primevue',
+  app.use(i18n)
+  app.use(PrimeVue, {
+    ripple: true,
+    unstyled: false,
+    theme: {
+      preset: Aura,
+      options: {
+        darkModeSelector: '[data-theme="dark"]',
+        cssLayer: {
+          name: 'primevue',
+          order: 'theme, base, primevue',
+        },
       },
     },
-  },
-})
-app.use(ToastService)
-app.directive('tooltip', Tooltip)
+  })
+  app.use(ToastService)
+  app.directive('tooltip', Tooltip)
 
-app.mount('#app')
+  app.mount('#app')
+}
+
+bootstrap()

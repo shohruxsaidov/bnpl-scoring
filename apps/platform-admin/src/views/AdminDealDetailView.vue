@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { formatDate, formatDateTime, formatSomShort } from '@/utils/money'
-import { useAdminDealQuery, type AdminDealDetail } from '@/composables/useAdminDealsApi'
+import { useAdminDealQuery } from '@/composables/useAdminDealsApi'
 
 const route = useRoute()
 const router = useRouter()

@@ -10,9 +10,12 @@ const router = useRouter()
 
 const client = computed(() => auth.user)
 
+const fullName = computed(() =>
+  client.value ? `${client.value.firstName} ${client.value.lastName}`.trim() : '',
+)
+
 const initials = computed(() => {
-  const n = client.value?.fullName ?? ''
-  return n
+  return fullName.value
     .split(' ')
     .map((p) => p[0])
     .slice(0, 2)
@@ -35,7 +38,7 @@ async function logout() {
   <div v-if="client" class="profile">
     <header class="ph surface-card">
       <div class="avatar">{{ initials }}</div>
-      <div class="ph-name">{{ client.fullName }}</div>
+      <div class="ph-name">{{ fullName }}</div>
       <div class="ph-phone font-mono">{{ client.phone }}</div>
     </header>
 
@@ -43,7 +46,7 @@ async function logout() {
       <h2 class="block-title">{{ $t('profile.personalInfo') }}</h2>
       <div class="row">
         <span class="row-label">{{ $t('profile.fullName') }}</span>
-        <span class="row-value">{{ client.fullName }}</span>
+        <span class="row-value">{{ fullName }}</span>
       </div>
       <div class="row">
         <span class="row-label">{{ $t('profile.phone') }}</span>

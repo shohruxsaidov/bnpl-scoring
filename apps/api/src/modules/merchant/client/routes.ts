@@ -155,7 +155,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
         { expiresIn: '15m' },
       );
 
-      return { regToken, redirectUrl: myidResult.redirectUrl, mock: myidResult.mock };
+      return { regToken, redirectUrl: myidResult.redirectUrl };
     },
   );
 

@@ -25,7 +25,7 @@ function makeKatmClient() {
   const credentials = Buffer.from(`${env.KATM_LOGIN}:${env.KATM_PASSWORD}`).toString('base64')
   const base = env.KATM_BASE_URL.endsWith('/') ? env.KATM_BASE_URL : `${env.KATM_BASE_URL}/`
   return ky.create({
-    prefixUrl: base,
+    baseUrl: base,
     timeout: env.KATM_TIMEOUT,
     retry: 0,
     headers: {

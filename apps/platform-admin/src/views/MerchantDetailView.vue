@@ -227,8 +227,7 @@ const productSaving = ref(false)
 
 function openProduct() {
   productForm.value = { categoryId: null, name: '', tanNarxi: null, mxikCode: '', packageCode: null, packageName: '' }
-  mxikData.value = null
-  mxikSuggestions.value = []
+  _resetMxik()
   showProduct.value = true
 }
 
@@ -284,6 +283,10 @@ function onMxikInputAdmin(e: Event) {
 
 function triggerMxikLookup() {
   selectedCode.value = productForm.value.mxikCode.trim()
+}
+
+function clearSearchDelayed() {
+  window.setTimeout(clearSearch, 200)
 }
 
 function selectMxikSuggestionAdmin(item: MxikEntry) {
@@ -714,7 +717,7 @@ function truncate(value: string, max = 48): string {
               class="font-mono mxik-input"
               :placeholder="$t('merchantDetail.mxikPlaceholder')"
               @input="onMxikInputAdmin"
-              @blur="() => setTimeout(clearSearch, 200)"
+              @blur="clearSearchDelayed"
               @keydown.enter.prevent="triggerMxikLookup"
             />
             <button

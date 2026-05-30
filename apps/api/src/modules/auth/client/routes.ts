@@ -2,7 +2,6 @@ import { env } from './../../../env';
 import { Type } from '@sinclair/typebox';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance, FastifyReply } from 'fastify';
-import { env } from '../../../env.js';
 import type { users } from '../../id/db/schema.js';
 import {
   createOtp,

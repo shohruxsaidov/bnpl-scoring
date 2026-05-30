@@ -29,30 +29,34 @@ const app = createApp(App)
 const pinia = createPinia()
 app.use(pinia)
 
-// Restore session BEFORE installing the router so the beforeEach guard
-// sees the correct auth state on the very first navigation (e.g. after reload).
-await useAuthStore().restoreSession()
+async function bootstrap() {
+  // Restore session BEFORE installing the router so the beforeEach guard
+  // sees the correct auth state on the very first navigation (e.g. after reload).
+  await useAuthStore().restoreSession()
 
-app.use(VueQueryPlugin)
-app.use(router)
+  app.use(VueQueryPlugin)
+  app.use(router)
 
-app.use(i18n)
-app.use(PrimeVue, {
-  ripple: true,
-  unstyled: false,
-  theme: {
-    preset: Aura,
-    options: {
-      darkModeSelector: '[data-theme="dark"]',
-      cssLayer: {
-        name: 'primevue',
-        order: 'theme, base, primevue',
+  app.use(i18n)
+  app.use(PrimeVue, {
+    ripple: true,
+    unstyled: false,
+    theme: {
+      preset: Aura,
+      options: {
+        darkModeSelector: '[data-theme="dark"]',
+        cssLayer: {
+          name: 'primevue',
+          order: 'theme, base, primevue',
+        },
       },
     },
-  },
-})
-app.use(ToastService)
-app.use(ConfirmationService)
-app.directive('tooltip', Tooltip)
+  })
+  app.use(ToastService)
+  app.use(ConfirmationService)
+  app.directive('tooltip', Tooltip)
 
-app.mount('#app')
+  app.mount('#app')
+}
+
+bootstrap()
