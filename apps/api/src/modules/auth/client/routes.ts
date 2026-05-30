@@ -160,7 +160,10 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
     const existing = await findUserByPinfl(db, pinfl);
     if (existing) return reply.code(409).send({ code: 'pinfl_taken' });
 
-    const redirectUrl = encodeURIComponent(env.MYID_WEB_REDIRECT_URI + '/signing_up');
+    // Client portal lives on its own host, so it needs a dedicated MyID redirect
+    // base; fall back to the merchant base when not configured.
+    const clientRedirectBase = env.CLIENT_PORTAL_URL;
+    const redirectUrl = encodeURIComponent(clientRedirectBase + '/myid/callback/signing_up');
 
     const myidResult = await createMyidSession(db, redis, pinfl, request.ip, redirectUrl).catch(
       (err) => {

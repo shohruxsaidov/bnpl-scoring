@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, nextTick, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
@@ -34,9 +34,10 @@ const steps = [
 
 /** Reg tokens carried between steps. */
 const regToken = ref('')
-const myidIframeUrl = ref<string | null>(null)
 const myidMock = ref(false)
 const devOtp = ref('')
+/** Error surfaced after returning from a failed MyID redirect. */
+const resumeError = ref('')
 
 /* ── Step 1 — phone ─────────────────────────────────────────────────────── */
 const phoneDigits = ref('')
@@ -156,8 +157,19 @@ async function submitIdentity() {
   try {
     const data = await submitPinflMutation.mutateAsync({ regToken: regToken.value, pinfl: pinflDigits.value })
     regToken.value = data.regToken
-    myidMock.value = !!data.mock
-    myidIframeUrl.value = data.iframeUrl ?? null
+    debugger
+
+    if (data.redirectUrl && !data.mock) {
+      // Persist the reg token across the full-page MyID redirect — the callback
+      // view restores it to complete verification on return.
+      sessionStorage.setItem('myid_reg_token', data.regToken)
+      step.value = 4
+      window.location.href = data.redirectUrl
+      return
+    }
+
+    // Mock / no-redirect fallback — complete inline (see watch on step).
+    myidMock.value = true
     step.value = 4
   } catch (err) {
     const code = (err as Error).message
@@ -168,15 +180,6 @@ async function submitIdentity() {
 /* ── Step 4 — MyID ──────────────────────────────────────────────────────── */
 const myidError = ref('')
 const verifiedUser = ref<AuthUser | null>(null)
-
-function onMessage(e: MessageEvent) {
-  if (typeof e.data !== 'object' || !e.data) return
-  const { code } = e.data as { code?: string }
-  if (code) {
-    window.removeEventListener('message', onMessage)
-    completeMyid(code)
-  }
-}
 
 async function completeMyid(code?: string) {
   myidError.value = ''
@@ -197,11 +200,14 @@ async function completeMyid(code?: string) {
 
 
 onMounted(() => {
-  window.addEventListener('message', onMessage)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('message', onMessage)
+  // Returned from a failed MyID redirect — restart the wizard with an error.
+  const failed = sessionStorage.getItem('myid_reg_failed')
+  if (failed) {
+    sessionStorage.removeItem('myid_reg_failed')
+    resumeError.value = failed === 'pinfl_taken' ? t('register.pinflTaken')
+      : failed === 'pinfl_mismatch' ? t('register.pinflMismatch')
+        : t('register.requestFailed')
+  }
 })
 
 
@@ -317,6 +323,11 @@ function goToLogin() {
           </div>
         </div>
 
+        <!-- error after returning from a failed MyID redirect -->
+        <div v-if="resumeError && step === 1" class="resume-error">
+          <i class="pi pi-exclamation-circle" /> {{ resumeError }}
+        </div>
+
         <!-- step 1: phone -->
         <template v-if="step === 1">
           <h2>{{ $t('register.phoneTitle') }}</h2>
@@ -400,8 +411,6 @@ function goToLogin() {
             <p class="sub center">{{ myidLoading ? $t('register.myidVerifying') : $t('register.myidSub') }}</p>
 
             <span v-if="myidError" class="field-error center">{{ myidError }}</span>
-
-            <iframe v-if="!myidMock && myidIframeUrl" :src="myidIframeUrl" class="myid-frame" allow="camera" />
           </div>
         </template>
 
@@ -434,7 +443,7 @@ function goToLogin() {
               <div v-if="verifiedUser?.passportSerial" class="vf">
                 <span class="vf-label">{{ $t('register.verifiedPassport') }}</span>
                 <span class="vf-value font-mono">{{ verifiedUser.passportSerial }} {{ verifiedUser.passportNumber
-                  }}</span>
+                }}</span>
               </div>
             </div>
 
@@ -1084,12 +1093,18 @@ function goToLogin() {
   margin-top: 1rem;
 }
 
-.myid-frame {
-  width: 100%;
-  height: 460px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 14px;
-  margin-top: 0.5rem;
+.resume-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.4rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--danger);
 }
 
 /* verified step */

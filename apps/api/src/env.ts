@@ -1,29 +1,30 @@
-import "dotenv/config";
-import { z } from "zod";
+import 'dotenv/config';
+import { z } from 'zod';
 
 const schema = z.object({
-  NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(3000),
   DATABASE_URL: z.string().url(),
   JWT_SECRET: z.string().min(32),
-  JWT_EXPIRES_IN: z.string().default("15m"),
+  JWT_EXPIRES_IN: z.string().default('15m'),
   SESSION_EXPIRES_DAYS: z.coerce.number().default(30),
   MYID_WEB_BASE_URL: z.string().url().optional(),
   MYID_WEB_IFRAME_URL: z.string().url().optional(),
-  MYID_WEB_REDIRECT_URI: z.string().url().optional(),
+  MERCHANT_PORTAL_URL: z.string().url(),
+  CLIENT_PORTAL_URL: z.string().url(),
   MYID_WEB_SIGN_REDIRECT_URI: z.string().url().optional(),
   MYID_WEB_CLIENT_ID: z.string().optional(),
   MYID_WEB_CLIENT_SECRET: z.string().optional(),
-  MINIO_ENDPOINT: z.string().default("localhost"),
+  MINIO_ENDPOINT: z.string().default('localhost'),
   MINIO_PORT: z.coerce.number().default(9000),
   MINIO_USE_SSL: z.coerce.boolean().default(false),
-  MINIO_ACCESS_KEY: z.string().default("minioadmin"),
-  MINIO_SECRET_KEY: z.string().default("minioadmin"),
-  MINIO_BUCKET: z.string().default("scoring-documents"),
-  MXIK_API_URL: z.string().url().default("https://utilities.thebetacompany.uz"),
-  REDIS_URL: z.string().default("redis://localhost:6379"),
+  MINIO_ACCESS_KEY: z.string().default('minioadmin'),
+  MINIO_SECRET_KEY: z.string().default('minioadmin'),
+  MINIO_BUCKET: z.string().default('scoring-documents'),
+  MXIK_API_URL: z.string().url().default('https://utilities.thebetacompany.uz'),
+  REDIS_URL: z.string().default('redis://localhost:6379'),
   // PlumGate card integration
-  PLUM_BASE_URL: z.string().url().default("https://pay.myuzcard.uz/api"),
+  PLUM_BASE_URL: z.string().url().default('https://pay.myuzcard.uz/api'),
   PLUM_LOGIN: z.string().optional(),
   PLUM_PASSWORD: z.string().optional(),
   PLUM_TIMEOUT: z.coerce.number().default(15_000),
@@ -38,7 +39,7 @@ const schema = z.object({
   LOKI_URL: z.string().url().optional(),
   OTEL_TRACES_ENDPOINT: z.string().url().optional(),
   OTEL_METRICS_ENDPOINT: z.string().url().optional(),
-  OTEL_SERVICE_NAME: z.string().default("scoring-api"),
+  OTEL_SERVICE_NAME: z.string().default('scoring-api'),
 });
 
 export const env = schema.parse(process.env);

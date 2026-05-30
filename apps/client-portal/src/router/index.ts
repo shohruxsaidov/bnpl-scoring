@@ -15,6 +15,12 @@ const routes: RouteRecordRaw[] = [
     meta: { public: true, title: 'Create account' },
   },
   {
+    path: '/myid/callback/signing_up',
+    name: 'register-myid-callback',
+    component: () => import('@/views/RegisterMyidCallbackView.vue'),
+    meta: { public: true },
+  },
+  {
     path: '/',
     component: () => import('@/components/AppShell.vue'),
     children: [

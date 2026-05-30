@@ -27,7 +27,7 @@ export function useRegistrationApi() {
 
   const submitPinflMutation = useMutation({
     mutationFn: ({ regToken, pinfl }: { regToken: string; pinfl: string }) =>
-      post<{ regToken: string; iframeUrl?: string; mock?: boolean }>('/auth/client/register/pinfl', { regToken, pinfl }),
+      post<{ regToken: string; redirectUrl?: string; mock?: boolean }>('/auth/client/register/pinfl', { regToken, pinfl }),
   })
 
   const completeMyidMutation = useMutation({

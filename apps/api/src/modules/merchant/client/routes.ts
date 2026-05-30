@@ -139,7 +139,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
 
       const existing = await findClientByPinflAndMerchant(db, pinfl, BigInt(payload.merchantId));
       if (existing) return reply.code(409).send({ code: 'client_already_registered' });
-      const redirectUrl = encodeURIComponent(env.MYID_WEB_REDIRECT_URI + '/registration');
+      const redirectUrl = encodeURIComponent(env.MERCHANT_PORTAL_URL + '/myid/callback/registration');
 
       const myidResult = await createMyidSession(db, redis, pinfl, request.ip, redirectUrl);
 
@@ -273,7 +273,10 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
     clientId: Type.String({ minLength: 1 }),
     tariffId: Type.String({ minLength: 1 }),
     basket: Type.Array(
-      Type.Object({ productId: Type.String({ minLength: 1 }), quantity: Type.Integer({ minimum: 1 }) }),
+      Type.Object({
+        productId: Type.String({ minLength: 1 }),
+        quantity: Type.Integer({ minimum: 1 }),
+      }),
       { minItems: 1 },
     ),
     paymentDay: Type.Integer({ minimum: 1, maximum: 28 }),
@@ -294,7 +297,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
     { schema: { body: MyidSignSessionBody }, preHandler: app.verifyMerchantJwt },
     async (request) => {
       const { pinfl } = request.body;
-      const redirectUrl = encodeURIComponent(env.MYID_WEB_REDIRECT_URI + '/signing_deal');
+      const redirectUrl = encodeURIComponent(env.MERCHANT_PORTAL_URL + '/myid/callback/signing_deal');
 
       const myidResult = await createMyidSession(db, redis, pinfl, request.ip, redirectUrl);
 
@@ -320,7 +323,12 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
     '/myid-sign-complete',
     { schema: { body: MyidSignCompleteBody }, preHandler: app.verifyMerchantJwt },
     async (request, reply) => {
-      const jwtPayload = request.user as { sub: string; merchantId: string; branchId: string; role: string };
+      const jwtPayload = request.user as {
+        sub: string;
+        merchantId: string;
+        branchId: string;
+        role: string;
+      };
 
       // ── 1. Verify OTP consent token ────────────────────────────────────────
       let signingPayload: { phone: string; purpose: string };
@@ -372,8 +380,10 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
           lang: 'ru',
         });
       } catch (err: any) {
-        if (err.code === 'tariff_not_found') return reply.code(400).send({ code: 'tariff_not_found' });
-        if (err.code === 'product_not_found') return reply.code(400).send({ code: 'product_not_found' });
+        if (err.code === 'tariff_not_found')
+          return reply.code(400).send({ code: 'tariff_not_found' });
+        if (err.code === 'product_not_found')
+          return reply.code(400).send({ code: 'product_not_found' });
         throw err;
       }
 
