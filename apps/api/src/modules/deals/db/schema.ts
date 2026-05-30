@@ -61,7 +61,9 @@ export const deals = pgTable('deals', {
 export const clientScorings = pgTable('client_scorings', {
   id: bigserial('id', { mode: 'bigint' }).primaryKey(),
   clientId: bigint('client_id', { mode: 'bigint' }).notNull().references(() => clients.id),
-  dealId: uuid('deal_id').notNull().references(() => deals.id),
+  // Nullable: a scoring run is recorded the moment KATM + card scoring completes,
+  // before any deal exists. Linked to a deal later if the wizard reaches creation.
+  dealId: uuid('deal_id').references(() => deals.id),
   // Full per-criterion breakdown: { income, workPeriod, creditHistory, overdues, liabilities, demographics, cardScore }
   criteriaScores: jsonb('criteria_scores'),
   scoreSum: numeric('score_sum', { precision: 10, scale: 2 }),

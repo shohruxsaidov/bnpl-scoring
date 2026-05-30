@@ -1,5 +1,6 @@
 {
   "common": {
+    "loading": "Загрузка…",
     "cancel": "Отмена",
     "save": "Сохранить",
     "add": "Добавить",
@@ -607,6 +608,7 @@
     "noProducts": "Товаров пока нет",
     "searchPlaceholder": "Поиск по названию или коду МХИК",
     "basketTotal": "Себестоимость",
+    "basePrice": "Без наценки:",
     "withMarkup": "С наценкой ({pct}%)",
     "range": "Диапазон: {min} – {max}",
     "addMore": "Добавьте ещё {amount} сум до минимума",

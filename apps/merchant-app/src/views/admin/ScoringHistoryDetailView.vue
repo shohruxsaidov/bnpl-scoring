@@ -2,12 +2,17 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useScoringQuery } from '@/composables/useScoringHistoryApi'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 
 const id = computed(() => route.params.id as string)
+
+const { data: detail, isLoading, isError } = useScoringQuery(id)
+
+const FACTOR_COLORS = ['#7b68ee', '#00c49a', '#4a9eff', '#9898bb', '#ff6b6b', '#ffb02e', '#ff8c42']
 
 interface SessionStep {
   label: string
@@ -16,58 +21,40 @@ interface SessionStep {
   code: string
 }
 
-interface ScoreFactor {
-  label: string
-  score: number
-  max: number
-  color: string
-}
+const sessionSteps = computed<SessionStep[]>(() => {
+  const d = detail.value
+  if (!d) return []
+  const when = new Date(d.scoredAt)
+  const date = when.toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  const time = when.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  return [
+    { label: t('scoringDetail.waitingScore'), date, time, code: String(d.score) },
+    { label: statusLabel(d.status), date, time, code: '' },
+  ]
+})
 
-const detail = computed(() => ({
-  id: id.value,
-  fullName: "SAIDOV SHOHRUH ABDULLA O'G'LI",
-  firstName: 'SHOHRUH',
-  lastName: 'SAIDOV',
-  patronymic: "ABDULLA O'G'LI",
-  phone: '+998934244724',
-  score: 625,
-  limit: 150000000,
-  status: 'review' as const,
-  date: '16/05/2026, 14:08',
-  pinfl: '31909975580035',
-  birthDate: '19/09/1997',
-  gender: '',
-  region: '',
-  address: '',
-  passport: 'AD6423999',
-  citizenship: "O'zbekiston",
-  platformStats: {
-    total: 71,
-    active: 54,
-    closed: 0,
-    overdue: 0,
-    totalPaid: 0,
-  },
-}))
+const factors = computed(() => {
+  const list = detail.value?.factors ?? []
+  const max = list.reduce((m, f) => Math.max(m, f.score), 0) || 1
+  return list.map((f, i) => ({
+    label: f.label,
+    score: f.score,
+    percent: Math.round((f.score / max) * 100),
+    color: FACTOR_COLORS[i % FACTOR_COLORS.length],
+  }))
+})
 
-const sessionSteps = computed<SessionStep[]>(() => [
-  { label: t('scoringDetail.waitingScore'), date: '16/05/2026', time: '14:08:54', code: '625' },
-  { label: t('scoringDetail.underReview'), date: '16/05/2026', time: '14:08:54', code: '' },
-])
-
-const scoreFactors: ScoreFactor[] = [
-  { label: 'Yosh', score: 150, max: 150, color: '#7b68ee' },
-  { label: 'Daromad', score: 250, max: 250, color: '#00c49a' },
-  { label: 'KATM reyting', score: 125, max: 250, color: '#4a9eff' },
-  { label: 'Ish staji', score: 0, max: 200, color: '#9898bb' },
-  { label: "To'lov tarixi", score: 100, max: 150, color: '#ff6b6b' },
-]
-
-const totalScore = computed(() => scoreFactors.reduce((s, f) => s + f.score, 0))
-const totalMax = computed(() => scoreFactors.reduce((s, f) => s + f.max, 0))
+const totalScore = computed(() => factors.value.reduce((s, f) => s + f.score, 0))
 
 function fmtLimit(tiyin: number) {
   return (tiyin / 100).toLocaleString('ru-RU')
+}
+
+function fmtDateTime(iso: string) {
+  const d = new Date(iso)
+  const date = d.toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  const time = d.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })
+  return `${date}, ${time}`
 }
 
 function scoreColor(score: number) {
@@ -94,6 +81,10 @@ function statusLabel(s: string) {
       {{ $t('scoringDetail.backToList') }}
     </button>
 
+    <div v-if="isLoading" class="state-msg">{{ $t('common.loading') }}</div>
+    <div v-else-if="isError || !detail" class="state-msg">{{ $t('scoringHistory.noData') }}</div>
+
+    <template v-else>
     <!-- Hero card -->
     <div class="hero-card">
       <div class="hero-left">
@@ -123,7 +114,7 @@ function statusLabel(s: string) {
         <div class="hero-divider" />
         <div class="hero-stat">
           <span class="hs-label">{{ $t('scoringDetail.date') }}</span>
-          <span class="hs-value">{{ detail.date }}</span>
+          <span class="hs-value">{{ fmtDateTime(detail.scoredAt) }}</span>
         </div>
       </div>
     </div>
@@ -163,23 +154,23 @@ function statusLabel(s: string) {
         <span class="section-title">{{ $t('scoringDetail.scoreDistribution') }}</span>
       </div>
       <div class="score-factors">
-        <div v-for="factor in scoreFactors" :key="factor.label" class="factor-row">
-          <span class="factor-label">{{ factor.label }}</span>
-          <div class="factor-bar-track">
-            <div
-              class="factor-bar-fill"
-              :style="{
-                width: factor.max > 0 ? (factor.score / factor.max) * 100 + '%' : '0%',
-                background: factor.color,
-              }"
-            />
+        <div v-if="factors.length === 0" class="empty-factors">{{ $t('scoringHistory.noData') }}</div>
+        <template v-else>
+          <div v-for="factor in factors" :key="factor.label" class="factor-row">
+            <span class="factor-label">{{ factor.label }}</span>
+            <div class="factor-bar-track">
+              <div
+                class="factor-bar-fill"
+                :style="{ width: factor.percent + '%', background: factor.color }"
+              />
+            </div>
+            <span class="factor-score">{{ factor.score }}</span>
           </div>
-          <span class="factor-score">{{ factor.score }}/{{ factor.max }}</span>
-        </div>
-        <div class="factor-total">
-          <span class="total-label">{{ $t('scoringDetail.total') }}</span>
-          <span class="total-value">{{ totalScore }} / {{ totalMax }}</span>
-        </div>
+          <div class="factor-total">
+            <span class="total-label">{{ $t('scoringDetail.total') }}</span>
+            <span class="total-value">{{ totalScore }}</span>
+          </div>
+        </template>
       </div>
     </div>
 
@@ -266,10 +257,11 @@ function statusLabel(s: string) {
         </div>
         <div class="ps-item">
           <span class="ps-label">{{ $t('scoringDetail.totalPaid') }}</span>
-          <span class="ps-value">{{ detail.platformStats.totalPaid }}</span>
+          <span class="ps-value">{{ fmtLimit(detail.platformStats.totalPaid) }}</span>
         </div>
       </div>
     </div>
+    </template>
   </div>
 </template>
 
@@ -278,6 +270,19 @@ function statusLabel(s: string) {
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.state-msg {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+.empty-factors {
+  padding: 1.5rem 0;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
 }
 
 /* Back link */

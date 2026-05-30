@@ -4,48 +4,21 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import SkeletonStatCards from '@/components/SkeletonStatCards.vue'
 import SkeletonTable from '@/components/SkeletonTable.vue'
-import { usePageLoad } from '@/composables/usePageLoad'
-
-interface ScoringRecord {
-  id: string
-  clientName: string
-  clientPhone: string
-  score: number
-  limit: number
-  region: string
-  address: string
-  date: string
-  status: 'approved' | 'declined' | 'pending'
-}
+import { formatDate } from '@/utils/money'
+import { useScoringHistoryQuery, type ScoringListItem } from '@/composables/useScoringHistoryApi'
 
 const router = useRouter()
-const { loading } = usePageLoad()
 const { t } = useI18n()
 const search = ref('')
 const statusFilter = ref<'all' | 'approved' | 'declined'>('all')
+
+const { data: recordsData, isLoading: loading } = useScoringHistoryQuery()
+const records = computed<ScoringListItem[]>(() => recordsData.value ?? [])
 
 const statusOptions = computed(() => [
   { label: t('scoringHistory.all'), value: 'all' },
   { label: t('scoringHistory.approved'), value: 'approved' },
   { label: t('scoringHistory.declined'), value: 'declined' },
-])
-
-const records = ref<ScoringRecord[]>([
-  { id: 'PROC-20260516-2646', clientName: 'SHOHRUH SAIDOV', clientPhone: '+998934244724', score: 625, limit: 150000000, region: '', address: '', date: '16/05/2026', status: 'pending' },
-  { id: 'PROC-20260516-6410', clientName: 'SHOHRUH SAIDOV', clientPhone: '+998934244724', score: 625, limit: 170000000, region: '', address: '', date: '16/05/2026', status: 'pending' },
-  { id: 'PROC-20260516-7251', clientName: 'SHOHRUH SAIDOV', clientPhone: '+998934244724', score: 625, limit: 70000000, region: '', address: '', date: '16/05/2026', status: 'pending' },
-  { id: 'PROC-20260516-4120', clientName: 'SHOHRUH SAIDOV', clientPhone: '+998934244724', score: 625, limit: 50000000, region: '', address: '', date: '16/05/2026', status: 'pending' },
-  { id: 'PROC-20260516-4094', clientName: 'SHOHRUH SAIDOV', clientPhone: '+998934244724', score: 625, limit: 60000000, region: '', address: '', date: '16/05/2026', status: 'pending' },
-  { id: 'PROC-20260516-3221', clientName: 'NURBEK HAYDAROV', clientPhone: '+998957708789', score: 615, limit: 60000000, region: '', address: 'Кашкадарьинская область, Камашинский район, Бадахшон...', date: '16/05/2026', status: 'pending' },
-  { id: 'PROC-20260516-8206', clientName: 'NURBEK HAYDAROV', clientPhone: '+998957708789', score: 615, limit: 100000000, region: '', address: 'Кашкадарьинская область, Камашинский район, Бадахшон...', date: '16/05/2026', status: 'pending' },
-  { id: 'PROC-20260516-2060', clientName: 'NURILLA ABDIYEV', clientPhone: '+998909690608', score: 615, limit: 140000000, region: '', address: '', date: '16/05/2026', status: 'pending' },
-  { id: 'PROC-20260516-1729', clientName: 'NURBEK HAYDAROV', clientPhone: '+998957708789', score: 615, limit: 90000000, region: '', address: 'Кашкадарьинская область, Камашинский район, Бадахшон...', date: '16/05/2026', status: 'pending' },
-  { id: 'PROC-20260514-4599', clientName: 'SHOHRUH SAIDOV', clientPhone: '+998934244724', score: 625, limit: 100000000, region: '', address: '', date: '14/05/2026', status: 'pending' },
-  { id: 'PROC-20260514-1248', clientName: 'SHOHRUH SAIDOV', clientPhone: '+998934244724', score: 625, limit: 50000000, region: '', address: '', date: '14/05/2026', status: 'pending' },
-  { id: 'PROC-20260513-5146', clientName: 'SHOHRUH SAIDOV', clientPhone: '+998934244724', score: 625, limit: 120000000, region: '', address: '', date: '13/05/2026', status: 'pending' },
-  { id: 'PROC-20260513-2854', clientName: 'SHOHRUH SAIDOV', clientPhone: '+998934244724', score: 625, limit: 140000000, region: '', address: '', date: '13/05/2026', status: 'pending' },
-  { id: 'PROC-20260513-7574', clientName: 'SHOHRUH SAIDOV', clientPhone: '+998934244724', score: 625, limit: 160000000, region: '', address: '', date: '13/05/2026', status: 'pending' },
-  { id: 'PROC-20260513-4600', clientName: 'SHOHRUH SAIDOV', clientPhone: '+998934244724', score: 625, limit: 130000000, region: '', address: '', date: '13/05/2026', status: 'pending' },
 ])
 
 const stats = computed(() => ({
@@ -213,7 +186,7 @@ function openDetail(id: string) {
               </td>
               <td class="muted-cell">{{ row.region || '—' }}</td>
               <td class="address-cell">{{ row.address || '—' }}</td>
-              <td class="date-cell">{{ row.date }}</td>
+              <td class="date-cell">{{ formatDate(row.scoredAt) }}</td>
             </tr>
             <tr v-if="filtered.length === 0">
               <td colspan="7" class="empty-row">{{ $t('scoringHistory.noData') }}</td>

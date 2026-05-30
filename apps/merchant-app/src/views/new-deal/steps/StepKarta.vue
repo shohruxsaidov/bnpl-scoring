@@ -4,11 +4,13 @@ import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import { useDealStore } from '@/stores/deal'
 import { useClientScoringStore } from '@/stores/clientScoring'
+import { useSaveScoringMutation } from '@/composables/useScoringHistoryApi'
 import { apiFetch } from '@/utils/apiFetch'
 import type { Card, CardScoreResult, ScoreDecision } from '@/types'
 
 const deal = useDealStore()
 const clientScoring = useClientScoringStore()
+const saveScoring = useSaveScoringMutation()
 const { t } = useI18n()
 
 // ── Card list ────────────────────────────────────────────────────────────────
@@ -218,17 +220,56 @@ const decisionMeta = computed(() => {
 
 // ── Continue ─────────────────────────────────────────────────────────────────
 
-function next() {
+async function next() {
   if (!selectedCard.value || !result.value) return
 
   deal.setCard(selectedCard.value)
+
+  const coefficient =
+    result.value.score >= 700 ? 1.0 : result.value.score >= 600 ? 0.8 : 0
+
+  // Scoring breakdown: card score + KATM-derived credit signals
+  const katm = deal.sessionData.katmResult
+  const criteriaScores: Record<string, number> = { cardScore: result.value.score }
+  if (katm) {
+    criteriaScores.katmScore = katm.score
+    criteriaScores.activeLoans = katm.activeLoans
+    criteriaScores.overdueCount = katm.overdueCount
+  }
+
+  // Record the scoring run now so it appears in the admin history even if no deal
+  // is ever created. Skip if this exact result was already saved on a prior pass.
+  const clientId = deal.sessionData.client?.id
+  const alreadySaved =
+    clientScoring.scoringId != null &&
+    /^\d+$/.test(clientScoring.scoringId) &&
+    clientScoring.scoreSum === result.value.score &&
+    clientScoring.decision === result.value.decision
+
+  let scoringId: string | null = clientScoring.scoringId
+  if (clientId && !alreadySaved) {
+    try {
+      const res = await saveScoring.mutateAsync({
+        clientId,
+        scoreSum: result.value.score,
+        coefficient,
+        decision: result.value.decision,
+        platformCreditLimit: result.value.limit,
+        criteriaScores,
+      })
+      scoringId = res.id
+    } catch {
+      // Non-blocking: the agent can still continue the wizard if recording fails
+    }
+  }
+
   clientScoring.setCompleted({
-    scoringId: `plum-${selectedCard.value.plumCardId}-${Date.now()}`,
+    scoringId: scoringId ?? `plum-${selectedCard.value.plumCardId}-${Date.now()}`,
     scoreSum: result.value.score,
-    coefficient: result.value.score >= 700 ? 1.0 : result.value.score >= 600 ? 0.8 : 0,
+    coefficient,
     decision: result.value.decision,
     platformCreditLimit: result.value.limit,
-    criteriaScores: {},
+    criteriaScores,
   })
   deal.complete('karta')
 }

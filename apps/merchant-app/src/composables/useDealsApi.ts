@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { apiFetch } from '@/utils/apiFetch'
+import { SCORING_HISTORY_KEY } from '@/composables/useScoringHistoryApi'
 import type { Ref } from 'vue'
 
 // ---------------------------------------------------------------------------
@@ -61,6 +62,12 @@ export interface CreateDealInput {
   signingToken: string
   scoreSum?: number | null
   scoringDecision?: string | null
+  coefficient?: number | null
+  /** Platform credit limit, tiyin */
+  platformCreditLimit?: number | null
+  criteriaScores?: Record<string, number> | null
+  /** client_scorings.id recorded at scoring time, linked to this deal */
+  scoringId?: string | null
   lang?: 'ru' | 'uz'
 }
 
@@ -111,6 +118,7 @@ export function useCreateDealMutation() {
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: DEALS_KEY })
+      qc.invalidateQueries({ queryKey: SCORING_HISTORY_KEY })
     },
   })
 }

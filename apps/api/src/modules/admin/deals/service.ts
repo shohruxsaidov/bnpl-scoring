@@ -99,7 +99,7 @@ export async function listAdminDeals(
   // Keep only the latest scoring per deal
   const scoringByDeal = new Map<string, (typeof scoringRows)[number]>()
   for (const s of scoringRows) {
-    if (!scoringByDeal.has(s.dealId)) scoringByDeal.set(s.dealId, s)
+    if (s.dealId && !scoringByDeal.has(s.dealId)) scoringByDeal.set(s.dealId, s)
   }
 
   // 3. Assemble ──────────────────────────────────────────────────────────────

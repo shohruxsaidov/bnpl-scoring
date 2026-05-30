@@ -1,5 +1,6 @@
 {
   "common": {
+    "loading": "Yuklanmoqda…",
     "cancel": "Bekor qilish",
     "save": "Saqlash",
     "add": "Qo'shish",
@@ -607,6 +608,7 @@
     "noProducts": "Hali mahsulot yo'q",
     "searchPlaceholder": "Nomi yoki MXIK kodi bo'yicha qidirish",
     "basketTotal": "Tannarx",
+    "basePrice": "Ustamasiz:",
     "withMarkup": "Ustama bilan ({pct}%)",
     "range": "Oraliq: {min} – {max}",
     "addMore": "Minimumga yetish uchun yana {amount} so'm qo'shing",

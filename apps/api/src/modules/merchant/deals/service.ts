@@ -1,7 +1,7 @@
 import { and, desc, eq } from 'drizzle-orm'
 import type { Client as MinioClient } from 'minio'
 import type { Db } from '../../../db'
-import { deals, dealItems, dealPaymentSchedules } from '../../deals/db/schema'
+import { deals, dealItems, dealPaymentSchedules, clientScorings } from '../../deals/db/schema'
 import { clients, tariffs, merchantUsers, merchants, branches, products } from '../../id/db/schema'
 import { generateKontrakt, type KontraktData } from './pdf'
 import { env } from '../../../env'
@@ -34,6 +34,13 @@ export interface CreateDealInput {
   markupPercent: number
   scoreSum: number | null
   scoringDecision: string | null
+  // Full scoring snapshot — persisted to client_scorings (scoring history)
+  coefficient?: number | null
+  /** Tiyin */
+  platformCreditLimit?: bigint | null
+  criteriaScores?: Record<string, number> | null
+  /** Existing client_scorings.id to link to this deal (recorded at scoring time) */
+  scoringId?: bigint | null
   lang: 'ru' | 'uz'
 }
 
@@ -92,6 +99,11 @@ export interface ResolveAndCreateDealInput {
   paymentDay: number
   scoreSum: number | null
   scoringDecision: string | null
+  coefficient?: number | null
+  /** Tiyin */
+  platformCreditLimit?: bigint | null
+  criteriaScores?: Record<string, number> | null
+  scoringId?: bigint | null
   lang: 'ru' | 'uz'
 }
 
@@ -138,6 +150,10 @@ export async function resolveAndCreateDeal(db: Db, input: ResolveAndCreateDealIn
     markupPercent,
     scoreSum: input.scoreSum,
     scoringDecision: input.scoringDecision,
+    coefficient: input.coefficient ?? null,
+    platformCreditLimit: input.platformCreditLimit ?? null,
+    criteriaScores: input.criteriaScores ?? null,
+    scoringId: input.scoringId ?? null,
     lang: input.lang,
   })
 }
@@ -202,6 +218,26 @@ export async function createDeal(db: Db, input: CreateDealInput) {
     })
 
     await tx.insert(dealPaymentSchedules).values(scheduleRows)
+
+    // Scoring is normally recorded earlier (the moment it completes) with a NULL
+    // deal_id. If we have that row's id, link it to this deal. Otherwise fall back
+    // to inserting a snapshot now, when enough scoring data is present.
+    if (input.scoringId != null) {
+      await tx
+        .update(clientScorings)
+        .set({ dealId: deal.id })
+        .where(eq(clientScorings.id, input.scoringId))
+    } else if (input.scoringDecision != null && input.platformCreditLimit != null) {
+      await tx.insert(clientScorings).values({
+        clientId: input.clientId,
+        dealId: deal.id,
+        criteriaScores: input.criteriaScores ?? null,
+        scoreSum: input.scoreSum?.toString() ?? null,
+        coefficient: input.coefficient != null ? input.coefficient.toString() : null,
+        decision: input.scoringDecision,
+        platformCreditLimit: input.platformCreditLimit,
+      })
+    }
 
     return deal
   })

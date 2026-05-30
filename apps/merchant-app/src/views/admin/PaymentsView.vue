@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useQuery } from '@tanstack/vue-query'
 import SkeletonStatCards from '@/components/SkeletonStatCards.vue'
 import SkeletonTable from '@/components/SkeletonTable.vue'
-import { usePageLoad } from '@/composables/usePageLoad'
+import { apiFetch } from '@/utils/apiFetch'
 
 type PaymentStatus = 'confirmed' | 'pending' | 'cancelled'
 type PaymentType = 'cash' | 'card' | 'transfer'
@@ -21,14 +22,12 @@ interface Payment {
 }
 
 const { t } = useI18n()
-const { loading } = usePageLoad()
 const activeTab = ref<TabKey>('all')
 const search = ref('')
 const statusFilter = ref<'all' | PaymentStatus>('all')
 
 const tabs = computed<{ key: TabKey; label: string; icon: string }[]>(() => [
   { key: 'all', label: t('payments.tabAll'), icon: 'pi pi-credit-card' },
-  { key: 'manual', label: t('payments.tabManual'), icon: 'pi pi-pen-to-square' },
   { key: 'scheduled', label: t('payments.tabScheduled'), icon: 'pi pi-calendar' },
 ])
 
@@ -45,7 +44,15 @@ const typeLabels = computed<Record<PaymentType, string>>(() => ({
   transfer: t('payments.typeTransfer'),
 }))
 
-const payments = ref<Payment[]>([])
+const { data, isPending: loading } = useQuery({
+  queryKey: ['merchant-payments'],
+  queryFn: async () => {
+    const res = await apiFetch<{ payments: Payment[] }>('/merchant/payments')
+    return res.payments
+  },
+})
+
+const payments = computed<Payment[]>(() => data.value ?? [])
 
 const dialogOpen = ref(false)
 const form = ref({

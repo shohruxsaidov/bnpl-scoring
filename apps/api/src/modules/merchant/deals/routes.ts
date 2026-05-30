@@ -34,6 +34,10 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
     signingToken: Type.String({ minLength: 1 }),
     scoreSum: Type.Optional(Type.Number()),
     scoringDecision: Type.Optional(Type.String()),
+    coefficient: Type.Optional(Type.Number()),
+    platformCreditLimit: Type.Optional(Type.Number()),
+    criteriaScores: Type.Optional(Type.Record(Type.String(), Type.Number())),
+    scoringId: Type.Optional(Type.String()),
     lang: Type.Optional(Type.Union([Type.Literal('ru'), Type.Literal('uz')])),
   })
 
@@ -64,7 +68,17 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
         return reply.code(400).send({ code: 'invalid_signing_purpose' })
       }
 
-      const { basket, paymentDay, scoreSum, scoringDecision, lang } = request.body
+      const {
+        basket,
+        paymentDay,
+        scoreSum,
+        scoringDecision,
+        coefficient,
+        platformCreditLimit,
+        criteriaScores,
+        scoringId,
+        lang,
+      } = request.body
 
       let deal: Awaited<ReturnType<typeof resolveAndCreateDeal>>
       try {
@@ -78,6 +92,10 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
           paymentDay,
           scoreSum: scoreSum ?? null,
           scoringDecision: scoringDecision ?? null,
+          coefficient: coefficient ?? null,
+          platformCreditLimit: platformCreditLimit != null ? BigInt(Math.round(platformCreditLimit)) : null,
+          criteriaScores: criteriaScores ?? null,
+          scoringId: scoringId ? BigInt(scoringId) : null,
           lang: lang ?? 'ru',
         })
       } catch (err: any) {

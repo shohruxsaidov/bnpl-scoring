@@ -133,6 +133,10 @@ async function signSubmit() {
       signingToken: signingToken.value,
       scoreSum: scoring.scoreSum,
       scoringDecision: scoring.decision,
+      coefficient: scoring.coefficient,
+      platformCreditLimit: scoring.platformCreditLimit,
+      criteriaScores: (scoring.criteriaScores as Record<string, number> | null) ?? null,
+      scoringId: scoring.scoringId && /^\d+$/.test(scoring.scoringId) ? scoring.scoringId : null,
       lang: lang.value,
     })
 
@@ -174,38 +178,18 @@ async function signSubmit() {
           </div>
           <div>
             <dt>{{ $t('stepVerification.passport') }}</dt>
-            <dd class="font-mono">{{ sd.client?.passportSerial }}</dd>
+            <dd class="font-mono">{{ sd.client?.passportSerial }}{{ sd.client?.passportNumber }}</dd>
           </div>
+          
         </dl>
       </section>
 
-      <section class="sum-block">
-        <h4><i class="pi pi-credit-card" /> {{ $t('stepVerification.cardScore') }}</h4>
-        <dl>
-          <div>
-            <dt>{{ $t('stepVerification.card') }}</dt>
-            <dd class="font-mono">{{ sd.selectedCard?.maskedPan }}</dd>
-          </div>
-          <div>
-            <dt>{{ $t('stepVerification.bank') }}</dt>
-            <dd>{{ sd.selectedCard?.bank }}</dd>
-          </div>
-          <div>
-            <dt>{{ $t('stepVerification.score') }}</dt>
-            <dd class="font-mono">{{ scoring.scoreSum }}</dd>
-          </div>
-          <div>
-            <dt>{{ $t('stepVerification.decision') }}</dt>
-            <dd>{{ scoring.decision }}</dd>
-          </div>
-        </dl>
-      </section>
+
 
       <section class="sum-block">
         <h4><i class="pi pi-percentage" /> {{ $t('stepVerification.tariff') }}</h4>
         <dl>
           <div>
-            <dt>{{ $t('stepVerification.plan') }}</dt>
             <dd>{{ sd.tariff?.name }}</dd>
           </div>
           <div>

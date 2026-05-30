@@ -105,8 +105,14 @@ function next() {
           </div>
           <div class="p-bottom">
             <div class="p-prices">
-              <MonoAmount :value="finalPrice(p.tanNarxi)" size="sm" />
-              <span v-if="tariff" class="p-markup">+{{ tariff.markupPercent }}%</span>
+              <div class="p-price-row">
+                <MonoAmount :value="finalPrice(p.tanNarxi)" size="sm" />
+                <span v-if="tariff" class="p-markup">+{{ tariff.markupPercent }}%</span>
+              </div>
+              <span v-if="tariff && tariff.markupPercent > 0" class="p-base">
+                {{ $t('stepMahsulot.basePrice') }}
+                <MonoAmount :value="basePrice(p.tanNarxi)" size="sm" :gradient="false" />
+              </span>
             </div>
             <button class="add-btn" @click="deal.addToBasket(p)">
               <i class="pi pi-plus" /> {{ $t('stepMahsulot.add') }}
@@ -324,8 +330,26 @@ function next() {
 
 .p-prices {
   display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.p-price-row {
+  display: flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+.p-base {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+}
+
+.p-base :deep(.mono-amount) {
+  color: var(--text-secondary);
 }
 
 .p-markup {
