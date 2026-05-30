@@ -138,6 +138,7 @@
     "statusOverdue": "Muddati o'tgan",
     "statusUpcoming": "Kelasi",
     "noPayments": "Hali to'lovlar qayd etilmagan.",
+    "instalmentNo": "{no}-to'lov",
     "markup": "Ustama",
     "contractTitle": "Shartnoma {number}",
     "contractSigned": "Imzolangan {date}",

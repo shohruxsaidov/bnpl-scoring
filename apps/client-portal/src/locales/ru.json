@@ -139,6 +139,7 @@
     "statusOverdue": "Просрочен",
     "statusUpcoming": "Предстоящий",
     "noPayments": "Платежей пока нет.",
+    "instalmentNo": "Взнос {no}",
     "markup": "Наценка",
     "contractTitle": "Контракт {number}",
     "contractSigned": "Подписан {date}",

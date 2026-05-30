@@ -35,6 +35,10 @@ export interface IntegrationLogEntry {
   response: unknown;
   status: number | null;
   errorMessage: string | null;
+  /** When the request left the service. */
+  requestTimestamp: Date;
+  /** When the response (or error) was received. */
+  responseTimestamp: Date;
 }
 
 export function logIntegration(db: Db, entry: IntegrationLogEntry): void {
@@ -47,6 +51,10 @@ export function logIntegration(db: Db, entry: IntegrationLogEntry): void {
       response: redact(entry.response) as Record<string, unknown>,
       status: entry.status,
       errorMessage: entry.errorMessage,
+      requestTimestamp: entry.requestTimestamp,
+      responseTimestamp: entry.responseTimestamp,
+      responseTimeInMs:
+        entry.responseTimestamp.getTime() - entry.requestTimestamp.getTime(),
     })
     .catch(() => {
       // fire-and-forget: log write failures must never surface to the caller

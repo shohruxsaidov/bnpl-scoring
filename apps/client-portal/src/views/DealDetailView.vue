@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
@@ -14,28 +14,33 @@ const deals = useDealsStore()
 const toast = useToast()
 const { t } = useI18n()
 
+const loading = ref(false)
 const deal = computed(() => deals.byId(route.params.id as string))
 
-type Tab = 'schedule' | 'payments' | 'contract'
+onMounted(async () => {
+  const id = route.params.id as string
+  const existing = deals.byId(id)
+  if (!existing || !existing.schedule.length) {
+    loading.value = true
+    await deals.fetchById(id)
+    loading.value = false
+  }
+})
+
+type Tab = 'schedule' | 'payments'
 const tab = ref<Tab>('schedule')
 
 const tabs: { key: Tab; labelKey: string; icon: string }[] = [
   { key: 'schedule', labelKey: 'dealDetail.tabSchedule', icon: 'pi-calendar' },
   { key: 'payments', labelKey: 'dealDetail.tabPayments', icon: 'pi-wallet' },
-  { key: 'contract', labelKey: 'dealDetail.tabContract', icon: 'pi-file' },
 ]
+
+const paidEntries = computed(() =>
+  deal.value?.schedule.filter((e) => e.paid) ?? [],
+)
 
 function back() {
   router.back()
-}
-
-function downloadContract() {
-  toast.add({
-    severity: 'info',
-    summary: t('dealDetail.downloadStarted'),
-    detail: t('dealDetail.downloadDetail', { number: deal.value?.contract.number }),
-    life: 3000,
-  })
 }
 
 function pay() {
@@ -50,7 +55,11 @@ function pay() {
 </script>
 
 <template>
-  <div v-if="deal" class="detail">
+  <div v-if="loading" class="loading-wrap">
+    <i class="pi pi-spin pi-spinner" />
+  </div>
+
+  <div v-else-if="deal" class="detail">
     <button class="back-btn" @click="back">
       <i class="pi pi-arrow-left" /> {{ $t('dealDetail.back') }}
     </button>
@@ -115,16 +124,16 @@ function pay() {
         v-for="row in deal.schedule"
         :key="row.no"
         class="sched-row"
-        :class="{ overdue: row.status === 'overdue' }"
+        :class="{ overdue: !row.paid && deal.status === 'overdue' && row.no === deal.paymentsMade + 1 }"
       >
         <span class="col-no font-mono">{{ row.no }}</span>
         <span class="col-date font-mono">{{ formatDateLong(row.dueDate) }}</span>
         <span class="col-amt font-mono">{{ formatSomShort(row.amount) }}</span>
         <span class="col-st">
-          <span v-if="row.status === 'paid'" class="pill paid">
+          <span v-if="row.paid" class="pill paid">
             <i class="pi pi-check" /> {{ $t('dealDetail.statusPaid') }}
           </span>
-          <span v-else-if="row.status === 'overdue'" class="pill overdue">
+          <span v-else-if="!row.paid && deal.status === 'overdue' && row.no === deal.paymentsMade + 1" class="pill overdue">
             <i class="pi pi-exclamation-triangle" /> {{ $t('dealDetail.statusOverdue') }}
           </span>
           <span v-else class="pill upcoming">
@@ -135,49 +144,22 @@ function pay() {
     </section>
 
     <!-- Payments -->
-    <section v-else-if="tab === 'payments'" class="panel surface-card">
-      <div v-if="!deal.payments.length" class="empty">
+    <section v-else class="panel surface-card">
+      <div v-if="!paidEntries.length" class="empty">
         {{ $t('dealDetail.noPayments') }}
       </div>
-      <div v-for="p in deal.payments" :key="p.id" class="pay-row">
+      <div v-for="p in paidEntries" :key="p.no" class="pay-row">
         <div class="pay-icon">
           <i class="pi pi-check-circle" />
         </div>
         <div class="pay-mid">
-          <span class="pay-date font-mono">{{ formatDateLong(p.date) }}</span>
-          <span class="pay-txn font-mono">{{ p.txnId }}</span>
+          <span class="pay-date font-mono">{{ formatDateLong(p.paidAt ?? p.dueDate) }}</span>
+          <span class="pay-label">{{ $t('dealDetail.instalmentNo', { no: p.no }) }}</span>
         </div>
         <div class="pay-right">
           <span class="pay-amt font-mono">{{ formatSomShort(p.amount) }} {{ $t('common.som') }}</span>
-          <span class="pay-provider" :class="p.provider.toLowerCase()">{{ p.provider }}</span>
         </div>
       </div>
-    </section>
-
-    <!-- Contract -->
-    <section v-else class="panel surface-card contract">
-      <div class="ct-doc">
-        <div class="ct-icon"><i class="pi pi-file-pdf" /></div>
-        <div class="ct-info">
-          <div class="ct-title">{{ $t('dealDetail.contractTitle', { number: deal.contract.number }) }}</div>
-          <div class="ct-sub">{{ $t('dealDetail.contractSigned', { date: formatDateLong(deal.contract.signedAt) }) }}</div>
-        </div>
-        <span v-if="deal.contract.signed" class="pill paid">
-          <i class="pi pi-check" /> {{ $t('dealDetail.signed') }}
-        </span>
-      </div>
-
-      <div v-if="deal.contract.myIdVerified" class="ct-myid">
-        <i class="pi pi-verified" />
-        <div>
-          <strong>{{ $t('dealDetail.myidVerified') }}</strong>
-          <span>{{ $t('dealDetail.myidDetail') }}</span>
-        </div>
-      </div>
-
-      <button class="btn-gradient ct-download" @click="downloadContract">
-        <i class="pi pi-download" /> {{ $t('dealDetail.downloadPdf') }}
-      </button>
     </section>
   </div>
 
@@ -191,6 +173,14 @@ function pay() {
 </template>
 
 <style scoped>
+.loading-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40vh;
+  font-size: 2rem;
+  color: var(--accent-1);
+}
 .detail {
   display: flex;
   flex-direction: column;
@@ -409,12 +399,9 @@ function pay() {
   font-size: 0.88rem;
   font-weight: 700;
 }
-.pay-txn {
+.pay-label {
   font-size: 0.72rem;
   color: var(--text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .pay-right {
   display: flex;
@@ -426,84 +413,6 @@ function pay() {
 .pay-amt {
   font-size: 0.88rem;
   font-weight: 800;
-}
-.pay-provider {
-  font-size: 0.68rem;
-  font-weight: 800;
-  padding: 0.15rem 0.5rem;
-  border-radius: 999px;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-.pay-provider.payme {
-  background: color-mix(in srgb, #00bfa5 18%, transparent);
-  color: #00bfa5;
-}
-.pay-provider.click {
-  background: color-mix(in srgb, #4a7dff 18%, transparent);
-  color: #4a7dff;
-}
-
-.contract {
-  display: flex;
-  flex-direction: column;
-  gap: 1.1rem;
-}
-.ct-doc {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-}
-.ct-icon {
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
-  background: var(--bg-surface);
-  color: var(--accent-2);
-  display: grid;
-  place-items: center;
-  font-size: 1.3rem;
-  flex-shrink: 0;
-}
-.ct-info {
-  flex: 1;
-}
-.ct-title {
-  font-size: 0.98rem;
-  font-weight: 800;
-}
-.ct-sub {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  margin-top: 0.15rem;
-}
-.ct-myid {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  background: var(--success-bg);
-  border-radius: 12px;
-  padding: 0.9rem 1rem;
-}
-.ct-myid i {
-  color: var(--success);
-  font-size: 1.3rem;
-}
-.ct-myid strong {
-  display: block;
-  font-size: 0.88rem;
-  color: var(--success);
-}
-.ct-myid span {
-  font-size: 0.78rem;
-  color: var(--text-secondary);
-}
-.ct-download {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
 }
 
 .missing {

@@ -215,6 +215,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       firstName: myidUser.firstName,
       lastName: myidUser.lastName,
       birthDate: myidUser.birthDate,
+      middleName: myidUser.middleName,
       gender: myidUser.gender,
       nationality: myidUser.nationality,
       passportSerial: myidUser.passportSerial,

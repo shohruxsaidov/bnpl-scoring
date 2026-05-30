@@ -11,7 +11,7 @@ import permissionsPlugin from "./plugins/permissions";
 import minioPlugin from "./plugins/minio";
 import redisPlugin from "./plugins/redis";
 import healthRoutes from "./routes/health.js";
-import { authModule, merchantModule, adminModule, notificationsModule } from "./modules/index.js";
+import { authModule, merchantModule, adminModule, notificationsModule, clientModule } from "./modules/index.js";
 import { env } from "./env.js";
 
 const isDev = env.NODE_ENV !== "production";
@@ -91,6 +91,7 @@ export async function buildApp() {
   await app.register(merchantModule, { prefix: "/api/v1" });
   await app.register(adminModule, { prefix: "/api/v1" });
   await app.register(notificationsModule, { prefix: "/api/v1" });
+  await app.register(clientModule, { prefix: "/api/v1" });
 
   return app;
 }

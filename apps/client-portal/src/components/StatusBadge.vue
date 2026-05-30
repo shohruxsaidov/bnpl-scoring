@@ -10,6 +10,8 @@ const COLORS: Record<DealStatus, { fg: string; bg: string }> = {
   active: { fg: 'var(--success)', bg: 'var(--success-bg)' },
   closed: { fg: 'var(--text-secondary)', bg: 'var(--bg-surface)' },
   overdue: { fg: 'var(--danger)', bg: 'var(--danger-bg)' },
+  approved: { fg: 'var(--accent-2)', bg: 'color-mix(in srgb, var(--accent-2) 12%, var(--bg-surface))' },
+  declined: { fg: 'var(--danger)', bg: 'var(--danger-bg)' },
 }
 
 const cfg = computed(() => ({

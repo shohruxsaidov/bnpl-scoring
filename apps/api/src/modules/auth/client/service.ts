@@ -130,6 +130,7 @@ export async function createUser(
     pinfl: string;
     firstName: string;
     lastName: string;
+    middleName: string | null;
     birthDate: string;
     gender: string;
     nationality: string;

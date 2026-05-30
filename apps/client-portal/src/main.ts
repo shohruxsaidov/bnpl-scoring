@@ -13,6 +13,7 @@ import App from './App.vue'
 import router from './router'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationsStore } from '@/stores/notifications'
+import { useDealsStore } from '@/stores/deals'
 import uz from './locales/uz.json'
 import ru from './locales/ru.json'
 import './styles/main.css'
@@ -40,7 +41,8 @@ async function bootstrap() {
 
   if (auth.isAuthenticated) {
     const notifications = useNotificationsStore()
-    await notifications.fetchAll()
+    const dealsStore = useDealsStore()
+    await Promise.all([notifications.fetchAll(), dealsStore.fetchAll()])
     notifications.connectSSE()
   }
 

@@ -167,6 +167,7 @@ export async function queryInfoscore(
     report_type: '077',
   }
 
+  const requestTimestamp = new Date()
   try {
     const data = await client
       .post('infoscore', { json: reqBody })
@@ -180,6 +181,8 @@ export async function queryInfoscore(
       response: data,
       status: 200,
       errorMessage: null,
+      requestTimestamp,
+      responseTimestamp: new Date(),
     })
 
     return parseKatmResponse(data)
@@ -192,6 +195,8 @@ export async function queryInfoscore(
       response: null,
       status: err instanceof IntegrationError ? err.statusCode : null,
       errorMessage: err instanceof Error ? err.message : String(err),
+      requestTimestamp,
+      responseTimestamp: new Date(),
     })
     throw err
   }

@@ -50,6 +50,7 @@ export const users = pgTable('users', {
   pinfl: varchar('pinfl', { length: 14 }).notNull().unique(),
   firstName: varchar('first_name', { length: 100 }).notNull(),
   lastName: varchar('last_name', { length: 100 }).notNull(),
+  middleName: varchar('middle_name', { length: 100 }),
   birthDate: date('birth_date').notNull(),
   gender: varchar('gender', { length: 10 }).notNull(),
   nationality: varchar('nationality', { length: 100 }).notNull(),

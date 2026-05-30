@@ -17,6 +17,7 @@ export interface MyidUserData {
   firstName: string;
   lastName: string;
   birthDate: string;
+  middleName: string | null;
   gender: 'male' | 'female';
   nationality: string;
   passportSerial: string | null;
@@ -228,6 +229,7 @@ export async function exchangeMyidCode(db: Db, redis: Redis, code: string): Prom
       pinfl: common_data.pinfl,
       firstName: common_data.first_name,
       lastName: common_data.last_name,
+      middleName: common_data.middle_name,
       birthDate,
       gender: common_data.gender === '2' ? 'female' : 'male',
       nationality: common_data.nationality ?? 'UZB',

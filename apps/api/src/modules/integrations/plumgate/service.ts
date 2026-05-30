@@ -168,6 +168,7 @@ export async function listCards(db: Db, clientId: string): Promise<PlumCard[]> {
   const client = makePlumClient()
   const reqParams = { userId: clientId }
 
+  const requestTimestamp = new Date()
   try {
     const data = await client
       .get('UserCard/getAllUserCards', { searchParams: reqParams })
@@ -181,6 +182,8 @@ export async function listCards(db: Db, clientId: string): Promise<PlumCard[]> {
       response: data,
       status: 200,
       errorMessage: null,
+      requestTimestamp,
+      responseTimestamp: new Date(),
     })
 
     return (data ?? []).map(toPlumCard)
@@ -193,6 +196,8 @@ export async function listCards(db: Db, clientId: string): Promise<PlumCard[]> {
       response: null,
       status: err instanceof IntegrationError ? err.statusCode : null,
       errorMessage: err instanceof Error ? err.message : String(err),
+      requestTimestamp,
+      responseTimestamp: new Date(),
     })
     throw err
   }
@@ -221,6 +226,7 @@ export async function addCard(
     templateId: env.PLUM_TEMPLATE_ID,
   }
 
+  const requestTimestamp = new Date()
   try {
     const data = await client
       .post('UserCard/createUserCard', { json: reqBody })
@@ -234,6 +240,8 @@ export async function addCard(
       response: data,
       status: 200,
       errorMessage: null,
+      requestTimestamp,
+      responseTimestamp: new Date(),
     })
 
     return { sessionId: data.sessionId, maskedPhone: data.phone }
@@ -246,6 +254,8 @@ export async function addCard(
       response: null,
       status: err instanceof IntegrationError ? err.statusCode : null,
       errorMessage: err instanceof Error ? err.message : String(err),
+      requestTimestamp,
+      responseTimestamp: new Date(),
     })
     throw err
   }
@@ -263,6 +273,7 @@ export async function confirmCard(
   const client = makePlumClient()
   const reqBody = { sessionId: params.sessionId, smsCode: params.otp }
 
+  const requestTimestamp = new Date()
   try {
     const data = await client
       .post('UserCard/confirmUserCardCreate', { json: reqBody })
@@ -276,6 +287,8 @@ export async function confirmCard(
       response: data,
       status: 200,
       errorMessage: null,
+      requestTimestamp,
+      responseTimestamp: new Date(),
     })
 
     return toPlumCard(data)
@@ -288,6 +301,8 @@ export async function confirmCard(
       response: null,
       status: err instanceof IntegrationError ? err.statusCode : null,
       errorMessage: err instanceof Error ? err.message : String(err),
+      requestTimestamp,
+      responseTimestamp: new Date(),
     })
     throw err
   }
@@ -317,6 +332,7 @@ async function scoreUzcard(db: Db, userCardId: string): Promise<PlumScoreResult>
   const createBody = { userCardId, templateId: env.PLUM_TEMPLATE_ID }
   let scoringId: string
 
+  const createRequestTimestamp = new Date()
   try {
     const data = await client
       .post('Scoring/createScoringCard', { json: createBody })
@@ -330,6 +346,8 @@ async function scoreUzcard(db: Db, userCardId: string): Promise<PlumScoreResult>
       response: data,
       status: 200,
       errorMessage: null,
+      requestTimestamp: createRequestTimestamp,
+      responseTimestamp: new Date(),
     })
 
     scoringId = data.sessionId
@@ -342,6 +360,8 @@ async function scoreUzcard(db: Db, userCardId: string): Promise<PlumScoreResult>
       response: null,
       status: err instanceof IntegrationError ? err.statusCode : null,
       errorMessage: err instanceof Error ? err.message : String(err),
+      requestTimestamp: createRequestTimestamp,
+      responseTimestamp: new Date(),
     })
     throw err
   }
@@ -350,6 +370,7 @@ async function scoreUzcard(db: Db, userCardId: string): Promise<PlumScoreResult>
   const pollParams = { cardId: userCardId }
   for (let attempt = 0; attempt < 10; attempt++) {
     await delay(1000)
+    const requestTimestamp = new Date()
     try {
       const data = await client
         .get('Scoring/scoringGetPoint', { searchParams: pollParams })
@@ -364,6 +385,8 @@ async function scoreUzcard(db: Db, userCardId: string): Promise<PlumScoreResult>
           response: data,
           status: 200,
           errorMessage: null,
+          requestTimestamp,
+          responseTimestamp: new Date(),
         })
 
         return {
@@ -382,6 +405,8 @@ async function scoreUzcard(db: Db, userCardId: string): Promise<PlumScoreResult>
         response: null,
         status: err instanceof IntegrationError ? err.statusCode : null,
         errorMessage: err instanceof Error ? err.message : String(err),
+        requestTimestamp,
+        responseTimestamp: new Date(),
       })
     }
   }
@@ -398,6 +423,7 @@ async function scoreHumo(db: Db, userCardId: string): Promise<PlumScoreResult> {
   const createBody = { userCardId, templateId: env.PLUM_TEMPLATE_ID }
   let sessionId: string
 
+  const createRequestTimestamp = new Date()
   try {
     const data = await client
       .post('Scoring/HumoScoring', { json: createBody })
@@ -411,6 +437,8 @@ async function scoreHumo(db: Db, userCardId: string): Promise<PlumScoreResult> {
       response: data,
       status: 200,
       errorMessage: null,
+      requestTimestamp: createRequestTimestamp,
+      responseTimestamp: new Date(),
     })
 
     sessionId = data.sessionId
@@ -423,6 +451,8 @@ async function scoreHumo(db: Db, userCardId: string): Promise<PlumScoreResult> {
       response: null,
       status: err instanceof IntegrationError ? err.statusCode : null,
       errorMessage: err instanceof Error ? err.message : String(err),
+      requestTimestamp: createRequestTimestamp,
+      responseTimestamp: new Date(),
     })
     throw err
   }
@@ -431,6 +461,7 @@ async function scoreHumo(db: Db, userCardId: string): Promise<PlumScoreResult> {
   const avgBody = { sessionId }
   for (let attempt = 0; attempt < 10; attempt++) {
     await delay(1000)
+    const requestTimestamp = new Date()
     try {
       const data = await client
         .post('Scoring/HumoScoringAvg', { json: avgBody })
@@ -445,6 +476,8 @@ async function scoreHumo(db: Db, userCardId: string): Promise<PlumScoreResult> {
           response: data,
           status: 200,
           errorMessage: null,
+          requestTimestamp,
+          responseTimestamp: new Date(),
         })
 
         return {
@@ -462,6 +495,8 @@ async function scoreHumo(db: Db, userCardId: string): Promise<PlumScoreResult> {
         response: null,
         status: err instanceof IntegrationError ? err.statusCode : null,
         errorMessage: err instanceof Error ? err.message : String(err),
+        requestTimestamp,
+        responseTimestamp: new Date(),
       })
     }
   }

@@ -32,7 +32,7 @@ export function useRegistrationApi() {
 
   const completeMyidMutation = useMutation({
     mutationFn: ({ regToken, myidCode }: { regToken: string; myidCode?: string }) =>
-      post<{ user: AuthUser }>('/auth/client/register/complete', { regToken, myidCode: myidCode ?? 'mock' }),
+      post<{ user: AuthUser }>('/auth/client/register/complete', { regToken, myidCode }),
   })
 
   return {

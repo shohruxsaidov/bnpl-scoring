@@ -16,6 +16,9 @@ export const integrationLogs = pgTable("integration_logs", {
   response: jsonb("response"),
   status: integer("status"),
   errorMessage: text("error_message"),
+  responseTimeInMs: integer("response_time_in_ms"),
+  requestTimestamp: timestamp("request_timestamp", { withTimezone: true }),
+  responseTimestamp: timestamp("response_timestamp", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),

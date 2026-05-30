@@ -157,7 +157,6 @@ async function submitIdentity() {
   try {
     const data = await submitPinflMutation.mutateAsync({ regToken: regToken.value, pinfl: pinflDigits.value })
     regToken.value = data.regToken
-    debugger
 
     if (data.redirectUrl && !data.mock) {
       // Persist the reg token across the full-page MyID redirect — the callback

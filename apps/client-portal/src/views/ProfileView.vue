@@ -3,7 +3,6 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import ThemeToggle from '@/components/ThemeToggle.vue'
-import type { LinkedCard } from '@/types'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -22,11 +21,6 @@ const initials = computed(() => {
     .join('')
     .toUpperCase()
 })
-
-const cards: LinkedCard[] = [
-  { id: 'card_1', brand: 'UZCARD', pan: '8600 **** **** 4417' },
-  { id: 'card_2', brand: 'HUMO', pan: '9860 **** **** 0192' },
-]
 
 async function logout() {
   await auth.logout()
@@ -51,17 +45,6 @@ async function logout() {
       <div class="row">
         <span class="row-label">{{ $t('profile.phone') }}</span>
         <span class="row-value font-mono">{{ client.phone }}</span>
-      </div>
-    </section>
-
-    <section class="block surface-card">
-      <h2 class="block-title">{{ $t('profile.linkedCards') }}</h2>
-      <div v-for="c in cards" :key="c.id" class="card-row">
-        <span class="card-icon"><i class="pi pi-credit-card" /></span>
-        <div class="card-info">
-          <span class="card-brand">{{ c.brand }}</span>
-          <span class="card-pan font-mono">{{ c.pan }}</span>
-        </div>
       </div>
     </section>
 

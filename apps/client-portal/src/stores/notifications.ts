@@ -59,7 +59,7 @@ export const useNotificationsStore = defineStore('notifications', {
   actions: {
     async fetchAll() {
       try {
-        const res = await fetch(`${API}/api/v1/notifications`, { credentials: 'include' });
+        const res = await fetch(`${API}/notifications`, { credentials: 'include' });
         if (!res.ok) return;
         const data: { notifications: ApiNotification[] } = await res.json();
         this.items = data.notifications.map(toAppNotification);
@@ -70,7 +70,7 @@ export const useNotificationsStore = defineStore('notifications', {
 
     connectSSE() {
       if (this._source) return;
-      const source = new EventSource(`${API}/api/v1/notifications/stream`, {
+      const source = new EventSource(`${API}/notifications/stream`, {
         withCredentials: true,
       });
       source.addEventListener('notification', (e) => {
@@ -92,7 +92,7 @@ export const useNotificationsStore = defineStore('notifications', {
     markAllRead() {
       const unread = this.items.filter((n) => !n.read);
       unread.forEach((n) => (n.read = true));
-      fetch(`${API}/api/v1/notifications/read-all`, {
+      fetch(`${API}/notifications/read-all`, {
         method: 'POST',
         credentials: 'include',
         body: '{}',
@@ -105,7 +105,7 @@ export const useNotificationsStore = defineStore('notifications', {
       const n = this.items.find((x) => x.id === id);
       if (!n || n.read) return;
       n.read = true;
-      fetch(`${API}/api/v1/notifications/${id}/read`, {
+      fetch(`${API}/notifications/${id}/read`, {
         method: 'PATCH',
         credentials: 'include',
         body: '{}',

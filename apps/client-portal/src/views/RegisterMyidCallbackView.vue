@@ -10,7 +10,6 @@ const auth = useAuthStore()
 const { completeMyidMutation } = useRegistrationApi()
 
 onMounted(async () => {
-  debugger
   const code = new URLSearchParams(window.location.search).get('auth_code')
   const regToken = sessionStorage.getItem('myid_reg_token')
 
