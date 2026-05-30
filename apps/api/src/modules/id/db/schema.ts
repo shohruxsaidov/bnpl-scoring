@@ -1,5 +1,11 @@
 import { bigint, bigserial, boolean, date, integer, jsonb, numeric, pgTable, primaryKey, text, timestamp, unique, uuid, varchar } from 'drizzle-orm/pg-core'
 
+export const rolePermissions = pgTable('role_permissions', {
+  role: varchar('role', { length: 50 }).notNull(),
+  feature: varchar('feature', { length: 50 }).notNull(),
+  allowed: boolean('allowed').notNull().default(true),
+}, (t) => [primaryKey({ columns: [t.role, t.feature] })])
+
 export const users = pgTable('users', {
   id: bigserial('id', { mode: 'bigint' }).primaryKey(),
   phone: varchar('phone', { length: 20 }).notNull().unique(),

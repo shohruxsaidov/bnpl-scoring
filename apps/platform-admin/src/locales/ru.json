@@ -26,7 +26,8 @@
     "tariffs": "Тарифы",
     "sendNotification": "Уведомления",
     "buyout": "Выкуп",
-    "testPayment": "Тест оплаты"
+    "testPayment": "Тест оплаты",
+    "permissions": "Разрешения"
   },
   "breadcrumb": {
     "overview": "Обзор",
@@ -40,7 +41,8 @@
     "tariffs": "Тарифы",
     "notifications": "Уведомления",
     "buyout": "Выкуп",
-    "testPayment": "Тест оплаты"
+    "testPayment": "Тест оплаты",
+    "permissions": "Разрешения"
   },
   "topbar": {
     "scoring": "Скоринг",
@@ -59,9 +61,26 @@
     "notifications": "Уведомления",
     "buyout": "Выкуп",
     "testPayment": "Тест оплаты",
+    "permissions": "Разрешения",
     "platformAdmin": "Админ платформы",
     "logout": "Выйти",
     "toggleSidebar": "Переключить панель"
+  },
+  "permissions": {
+    "title": "Разрешения ролей",
+    "subtitle": "Глобальная настройка доступа для каждой роли в приложении продавца",
+    "role": "Роль",
+    "saved": "Сохранено",
+    "roles": {
+      "agent": "Агент",
+      "branch_admin": "Администратор филиала",
+      "merchant_admin": "Администратор продавца"
+    },
+    "features": {
+      "view_deals_list": "Список сделок",
+      "create_deal": "Создать сделку",
+      "view_admin_panel": "Панель администратора"
+    }
   },
   "notifications": {
     "pageTitle": "Уведомления",

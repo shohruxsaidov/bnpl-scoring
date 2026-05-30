@@ -3,6 +3,12 @@ import type { EmployeeRole } from "@/types";
 
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
+export interface RolePermissions {
+  view_deals_list: boolean;
+  create_deal: boolean;
+  view_admin_panel: boolean;
+}
+
 export interface AuthEmployee {
   id: string;
   fullName: string;
@@ -20,13 +26,25 @@ interface RolePickerState {
 interface AuthState {
   employee: AuthEmployee | null;
   activeRole: EmployeeRole | null;
+  permissions: RolePermissions;
   rolePicker: RolePickerState | null;
+}
+
+const DEFAULT_PERMISSIONS: RolePermissions = {
+  view_deals_list: true,
+  create_deal: false,
+  view_admin_panel: false,
+};
+
+function extractPermissions(user: any): RolePermissions {
+  return user.permissions ?? DEFAULT_PERMISSIONS;
 }
 
 export const useAuthStore = defineStore("auth", {
   state: (): AuthState => ({
     employee: null,
     activeRole: null,
+    permissions: { ...DEFAULT_PERMISSIONS },
     rolePicker: null,
   }),
 
@@ -42,6 +60,7 @@ export const useAuthStore = defineStore("auth", {
       if (s.activeRole === "branch_admin") return "Branch Admin";
       return "Agent";
     },
+    can: (s) => (feature: keyof RolePermissions): boolean => s.permissions[feature],
   },
 
   actions: {
@@ -67,6 +86,7 @@ export const useAuthStore = defineStore("auth", {
       } else {
         this.employee = body.user;
         this.activeRole = body.user.role;
+        this.permissions = extractPermissions(body.user);
         this.rolePicker = null;
       }
     },
@@ -86,6 +106,7 @@ export const useAuthStore = defineStore("auth", {
       const body = await res.json();
       this.employee = body.user;
       this.activeRole = body.user.role;
+      this.permissions = extractPermissions(body.user);
       this.rolePicker = null;
     },
 
@@ -98,6 +119,7 @@ export const useAuthStore = defineStore("auth", {
         const body = await res.json();
         this.employee = body.user;
         this.activeRole = body.user.role;
+        this.permissions = extractPermissions(body.user);
         return true;
       };
 
@@ -118,6 +140,7 @@ export const useAuthStore = defineStore("auth", {
       }).catch(() => {});
       this.employee = null;
       this.activeRole = null;
+      this.permissions = { ...DEFAULT_PERMISSIONS };
       this.rolePicker = null;
     },
   },

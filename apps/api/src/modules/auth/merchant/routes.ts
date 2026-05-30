@@ -1,7 +1,9 @@
 import { Type } from "@sinclair/typebox";
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import type { FastifyInstance, FastifyReply } from "fastify";
+import { eq } from "drizzle-orm";
 import { env } from "../../../env.js";
+import { rolePermissions } from "../../id/db/schema.js";
 import {
   createMerchantSession,
   findMerchantUserByEmail,
@@ -75,6 +77,12 @@ function clearAuthCookies(reply: FastifyReply): void {
   reply.clearCookie(SESSION_COOKIE, { ...baseCookie });
 }
 
+type Permissions = {
+  view_deals_list: boolean;
+  create_deal: boolean;
+  view_admin_panel: boolean;
+};
+
 function serializeEmployee(
   employee: {
     id: bigint;
@@ -84,6 +92,7 @@ function serializeEmployee(
     branchId: bigint;
   },
   role: string,
+  permissions: Permissions,
 ) {
   return {
     id: employee.id.toString(),
@@ -92,6 +101,17 @@ function serializeEmployee(
     role,
     merchantId: employee.merchantId.toString(),
     branchId: employee.branchId.toString(),
+    permissions,
+  };
+}
+
+async function loadPermissions(db: FastifyInstance["db"], role: string): Promise<Permissions> {
+  const rows = await db.select().from(rolePermissions).where(eq(rolePermissions.role, role));
+  const map = Object.fromEntries(rows.map((r) => [r.feature, r.allowed]));
+  return {
+    view_deals_list: map["view_deals_list"] ?? true,
+    create_deal: map["create_deal"] ?? false,
+    view_admin_panel: map["view_admin_panel"] ?? false,
   };
 }
 
@@ -135,7 +155,8 @@ export default async function merchantAuthRoutes(app: FastifyInstance) {
           roles[0]!,
         );
         setAuthCookies(app, reply, employee, roles[0]!, sessionToken);
-        return { user: serializeEmployee(employee, roles[0]!) };
+        const permissions = await loadPermissions(db, roles[0]!);
+        return { user: serializeEmployee(employee, roles[0]!, permissions) };
       }
 
       // Multiple roles — return picker token instead of issuing a session.
@@ -192,8 +213,8 @@ export default async function merchantAuthRoutes(app: FastifyInstance) {
 
       const { sessionToken } = await createMerchantSession(db, employee.id, role);
       setAuthCookies(app, reply, employee, role, sessionToken);
-
-      return { user: serializeEmployee(employee, role) };
+      const permissions = await loadPermissions(db, role);
+      return { user: serializeEmployee(employee, role, permissions) };
     },
   );
 
@@ -233,7 +254,8 @@ export default async function merchantAuthRoutes(app: FastifyInstance) {
       if (!employee || !employee.active) {
         return reply.code(401).send({ code: "unauthorized" });
       }
-      return { user: serializeEmployee(employee, payload.role) };
+      const permissions = await loadPermissions(db, payload.role);
+      return { user: serializeEmployee(employee, payload.role, permissions) };
     },
   );
 

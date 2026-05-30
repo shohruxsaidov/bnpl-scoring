@@ -84,6 +84,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/TestPaymentView.vue'),
         meta: { titleKey: 'routeTitle.testPayment', breadcrumbKeys: ['breadcrumb.testPayment'] },
       },
+      {
+        path: 'permissions',
+        name: 'permissions',
+        component: () => import('@/views/PermissionsView.vue'),
+        meta: { titleKey: 'routeTitle.permissions', breadcrumbKeys: ['breadcrumb.permissions'] },
+      },
     ],
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },

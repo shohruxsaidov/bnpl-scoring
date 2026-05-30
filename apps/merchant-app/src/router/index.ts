@@ -136,11 +136,15 @@ router.beforeEach((to) => {
     return { name: 'login' }
   }
 
-  if (to.meta.adminOnly && !auth.isAdmin) {
+  if (to.meta.adminOnly && !auth.can('view_admin_panel')) {
     return { name: 'dashboard' }
   }
 
-  if (to.meta.agentOnly && !auth.isAgent) {
+  if (to.meta.agentOnly && !auth.can('create_deal')) {
+    return { name: 'dashboard' }
+  }
+
+  if (to.name === 'deals' && !auth.can('view_deals_list')) {
     return { name: 'dashboard' }
   }
 

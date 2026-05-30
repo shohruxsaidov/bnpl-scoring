@@ -22,8 +22,8 @@ interface NavItem {
 
 const mainNav = computed<NavItem[]>(() => [
   { label: t('nav.dashboard'), icon: 'pi pi-th-large', to: '/', show: true },
-  { label: t('nav.deals'), icon: 'pi pi-briefcase', to: '/deals', show: true },
-  { label: t('nav.newDeal'), icon: 'pi pi-plus-circle', to: '/deals/create', show: auth.isAgent },
+  { label: t('nav.deals'), icon: 'pi pi-briefcase', to: '/deals', show: auth.can('view_deals_list') },
+  { label: t('nav.newDeal'), icon: 'pi pi-plus-circle', to: '/deals/create', show: auth.can('create_deal') },
   { label: t('nav.notifications'), icon: 'pi pi-bell', to: '/notifications', show: true },
 ])
 
@@ -70,12 +70,12 @@ async function logout() {
         </RouterLink>
       </template>
 
-      <div v-if="auth.isAdmin" class="divider">
+      <div v-if="auth.can('view_admin_panel')" class="divider">
         <span v-if="!props.collapsed">{{ $t('nav.admin') }}</span>
         <span v-else class="dot-divider" />
       </div>
 
-      <template v-if="auth.isAdmin">
+      <template v-if="auth.can('view_admin_panel')">
         <RouterLink v-for="item in adminNav" :key="item.to" :to="item.to" class="nav-link" exact-active-class="active"
           :title="item.label">
           <i :class="item.icon" />

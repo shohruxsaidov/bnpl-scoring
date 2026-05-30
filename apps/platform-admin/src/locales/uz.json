@@ -26,7 +26,8 @@
     "tariffs": "Tariflar",
     "sendNotification": "Bildirishnomalar",
     "buyout": "Sotib olish",
-    "testPayment": "To'lov testi"
+    "testPayment": "To'lov testi",
+    "permissions": "Ruxsatlar"
   },
   "breadcrumb": {
     "overview": "Umumiy ko'rinish",
@@ -40,7 +41,8 @@
     "tariffs": "Tariflar",
     "notifications": "Bildirishnomalar",
     "buyout": "Sotib olish",
-    "testPayment": "To'lov testi"
+    "testPayment": "To'lov testi",
+    "permissions": "Ruxsatlar"
   },
   "topbar": {
     "scoring": "Skoring",
@@ -59,9 +61,26 @@
     "notifications": "Bildirishnomalar",
     "buyout": "Sotib olish",
     "testPayment": "To'lov testi",
+    "permissions": "Ruxsatlar",
     "platformAdmin": "Platforma admin",
     "logout": "Chiqish",
     "toggleSidebar": "Yon panelni almashtirish"
+  },
+  "permissions": {
+    "title": "Rol ruxsatlari",
+    "subtitle": "Savdogar ilovasida har bir rol uchun global kirish sozlamasi",
+    "role": "Rol",
+    "saved": "Saqlandi",
+    "roles": {
+      "agent": "Agent",
+      "branch_admin": "Filial admini",
+      "merchant_admin": "Savdogar admini"
+    },
+    "features": {
+      "view_deals_list": "Shartnomalar ro'yxati",
+      "create_deal": "Shartnoma yaratish",
+      "view_admin_panel": "Admin paneli"
+    }
   },
   "notifications": {
     "pageTitle": "Bildirishnomalar",

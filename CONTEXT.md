@@ -29,6 +29,10 @@ A named permission set assigned to an Employee. Three Roles exist:
 - **Merchant Admin** — manages all Branches, all Employees, and views all Deals across the Merchant; selects active Tariffs from the Finsum catalog
 _Avoid_: Permission, access level, group
 
+**Role Permission Matrix**:
+The global configuration table (`role_permissions`) that controls which named Features each Role can access in the Merchant App. Managed exclusively by the Platform Admin via the Permissions page. Three Features exist: `view_deals_list`, `create_deal`, `view_admin_panel`. Defaults match the original hardcoded router behaviour. Changes take effect on the Employee's next login (permissions are returned by `GET /auth/merchant/me` and cached in the auth store for the session duration).
+_Avoid_: Permission flags, access control list, feature flags
+
 **Client**:
 A platform-wide identity representing the end-consumer. A Client record is keyed by PINFL and exists above the Merchant boundary — the same Client can receive Deals from multiple Merchants. Carries a persistent **platform-wide credit limit** set by Finsum. A Client authenticates into the Client Portal using phone OTP; their session carries no `merchant_id` since they are not scoped to any single Merchant.
 _Avoid_: Customer, buyer, borrower
