@@ -101,7 +101,7 @@
     "branches": "Filiallar"
   },
   "role": {
-    "merchantAdmin": "Savdogar Admin",
+    "merchantAdmin": "Merchant Admin",
     "agent": "Agent"
   },
   "login": {
@@ -119,7 +119,7 @@
     "demoAgentOnly": "faqat agent",
     "chooseRole": "Rol tanlang",
     "roleIntro": "Hisobingizda bir nechta rol bor. Ushbu sessiyada qanday ishlashni tanlang.",
-    "merchantAdmin": "Savdogar Admin",
+    "merchantAdmin": "Merchant Admin",
     "merchantAdminDesc": "Katalog, tariflar va xodimlarni boshqarish",
     "agent": "Agent",
     "agentDesc": "Yangi kredit shartnomalarini rasmiylashtirish",
@@ -260,7 +260,7 @@
     "dealNumber": "Bitim raqami",
     "status": "Holat",
     "dealCost": "Bitim qiymati",
-    "merchantPrice": "Savdogar narxi",
+    "merchantPrice": "Merchant narxi",
     "paymentDay": "To'lov kuni",
     "prepayment": "Oldindan to'lov",
     "markup": "Ustama",
@@ -309,7 +309,7 @@
     "inn": "STIR: 302 184 711 · Toshkent sh.",
     "pinfl": "PINFL: {pinfl}",
     "financialTerms": "Moliyaviy shartlar",
-    "merchantPriceTerm": "Savdogar narxi",
+    "merchantPriceTerm": "Merchant narxi",
     "markupUstama": "Ustama",
     "dealCostTerm": "Bitim qiymati",
     "installmentTerm": "Bo'lib to'lash muddati",
