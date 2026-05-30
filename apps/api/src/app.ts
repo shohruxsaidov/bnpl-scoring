@@ -7,6 +7,7 @@ import { trace } from "@opentelemetry/api";
 import dbPlugin from "./plugins/db.js";
 import cookiePlugin from "./plugins/cookie.js";
 import jwtPlugin from "./plugins/jwt.js";
+import permissionsPlugin from "./plugins/permissions";
 import minioPlugin from "./plugins/minio";
 import redisPlugin from "./plugins/redis";
 import healthRoutes from "./routes/health.js";
@@ -80,6 +81,7 @@ export async function buildApp() {
   await app.register(cookiePlugin);
   await app.register(jwtPlugin);
   await app.register(dbPlugin);
+  await app.register(permissionsPlugin);
   await app.register(redisPlugin);
   await app.register(minioPlugin);
 

@@ -6,10 +6,10 @@ import {
   timingSafeEqual,
 } from "node:crypto";
 import { promisify } from "node:util";
-import { and, eq, gt, isNull } from "drizzle-orm";
-import type { Db } from "../../../db/index.js";
-import { adminSessions, adminUsers } from "../../id/db/schema.js";
-import { env } from "../../../env.js";
+import { and, count, eq, gt, isNull } from "drizzle-orm";
+import type { Db } from "../../../db/index";
+import { adminSessions, adminUsers, roles } from "../../id/db/schema";
+import { env } from "../../../env";
 
 const scryptAsync = promisify(scrypt);
 
@@ -55,7 +55,13 @@ export async function findAdminById(db: Db, id: bigint) {
 
 export async function createAdminUser(
   db: Db,
-  input: { email: string; password: string; fullName: string; createdById: bigint },
+  input: {
+    email: string;
+    password: string;
+    fullName: string;
+    roleId: bigint;
+    createdById: bigint;
+  },
 ) {
   const passwordHash = await hashPassword(input.password);
   const [row] = await db
@@ -64,10 +70,44 @@ export async function createAdminUser(
       email: input.email.toLowerCase(),
       passwordHash,
       fullName: input.fullName,
+      roleId: input.roleId,
       createdById: input.createdById,
     })
     .returning();
   return row!;
+}
+
+export async function listAdminUsers(db: Db) {
+  return db
+    .select({
+      id: adminUsers.id,
+      email: adminUsers.email,
+      fullName: adminUsers.fullName,
+      roleId: adminUsers.roleId,
+      active: adminUsers.active,
+      createdAt: adminUsers.createdAt,
+    })
+    .from(adminUsers)
+    .orderBy(adminUsers.createdAt);
+}
+
+export async function setAdminRole(db: Db, adminId: bigint, roleId: bigint) {
+  const [row] = await db
+    .update(adminUsers)
+    .set({ roleId })
+    .where(eq(adminUsers.id, adminId))
+    .returning();
+  return row;
+}
+
+// Number of active admins holding a Superadmin role — used to block removing the last one.
+export async function countActiveSuperadmins(db: Db): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(adminUsers)
+    .innerJoin(roles, eq(adminUsers.roleId, roles.id))
+    .where(and(eq(adminUsers.active, true), eq(roles.isSuperadmin, true)));
+  return row?.n ?? 0;
 }
 
 export async function createAdminSession(

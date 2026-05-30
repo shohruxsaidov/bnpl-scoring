@@ -15,14 +15,33 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core';
 
+// RBAC roles. Custom, global templates managed from the admin platform.
+// `key` is a stable slug (e.g. 'agent', 'superadmin'); seeded system roles rely on it.
+export const roles = pgTable(
+  'roles',
+  {
+    id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+    key: varchar('key', { length: 50 }).notNull(),
+    name: varchar('name', { length: 100 }).notNull(),
+    platform: varchar('platform', { length: 10 }).notNull(), // 'merchant' | 'admin'
+    isSuperadmin: boolean('is_superadmin').notNull().default(false),
+    isSystem: boolean('is_system').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [unique().on(t.platform, t.key)],
+);
+
+// Default-deny grant list: a row means the Feature is granted to the Role.
+// Superadmin bypasses this table entirely (treated as holding every Feature).
 export const rolePermissions = pgTable(
   'role_permissions',
   {
-    role: varchar('role', { length: 50 }).notNull(),
+    roleId: bigint('role_id', { mode: 'bigint' })
+      .notNull()
+      .references(() => roles.id, { onDelete: 'cascade' }),
     feature: varchar('feature', { length: 50 }).notNull(),
-    allowed: boolean('allowed').notNull().default(true),
   },
-  (t) => [primaryKey({ columns: [t.role, t.feature] })],
+  (t) => [primaryKey({ columns: [t.roleId, t.feature] })],
 );
 
 export const users = pgTable('users', {
@@ -90,6 +109,8 @@ export const adminUsers = pgTable('admin_users', {
   email: varchar('email', { length: 255 }).notNull().unique(),
   passwordHash: varchar('password_hash', { length: 500 }).notNull(),
   fullName: varchar('full_name', { length: 200 }).notNull(),
+  // Exactly one admin Role; nullable only to ease migration/backfill of existing rows.
+  roleId: bigint('role_id', { mode: 'bigint' }).references(() => roles.id),
   active: boolean('active').notNull().default(true),
   createdById: bigint('created_by_id', { mode: 'bigint' }), // null for the initial seeded admin
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

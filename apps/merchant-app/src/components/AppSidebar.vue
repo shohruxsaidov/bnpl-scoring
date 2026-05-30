@@ -22,18 +22,21 @@ interface NavItem {
 
 const mainNav = computed<NavItem[]>(() => [
   { label: t('nav.dashboard'), icon: 'pi pi-th-large', to: '/', show: true },
-  { label: t('nav.deals'), icon: 'pi pi-briefcase', to: '/deals', show: auth.can('view_deals_list') },
+  { label: t('nav.deals'), icon: 'pi pi-briefcase', to: '/deals', show: auth.can('view_deals') },
   { label: t('nav.newDeal'), icon: 'pi pi-plus-circle', to: '/deals/create', show: auth.can('create_deal') },
-  { label: t('nav.notifications'), icon: 'pi pi-bell', to: '/notifications', show: true },
+  { label: t('nav.notifications'), icon: 'pi pi-bell', to: '/notifications', show: auth.can('view_notifications') },
 ])
 
 const adminNav = computed<NavItem[]>(() => [
-  { label: t('nav.products'), icon: 'pi pi-box', to: '/admin/products', show: true },
-  { label: t('nav.categories'), icon: 'pi pi-tags', to: '/admin/categories', show: true },
-  { label: t('nav.branches'), icon: 'pi pi-map-marker', to: '/admin/branches', show: true },
-  { label: t('nav.employees'), icon: 'pi pi-users', to: '/admin/employees', show: true },
-  { label: t('nav.tariffs'), icon: 'pi pi-percentage', to: '/admin/tariffs', show: true },
+  { label: t('nav.products'), icon: 'pi pi-box', to: '/admin/products', show: auth.can('manage_products') },
+  { label: t('nav.categories'), icon: 'pi pi-tags', to: '/admin/categories', show: auth.can('manage_categories') },
+  { label: t('nav.branches'), icon: 'pi pi-map-marker', to: '/admin/branches', show: auth.can('manage_branches') },
+  { label: t('nav.employees'), icon: 'pi pi-users', to: '/admin/employees', show: auth.can('manage_employees') },
+  { label: t('nav.tariffs'), icon: 'pi pi-percentage', to: '/admin/tariffs', show: auth.can('manage_tariffs') },
 ])
+
+// The admin section is shown when the Employee can reach at least one admin page.
+const canAdminSection = computed<boolean>(() => adminNav.value.some((i) => i.show))
 
 async function logout() {
   await auth.logout()
@@ -67,17 +70,19 @@ async function logout() {
         </RouterLink>
       </template>
 
-      <div v-if="auth.can('view_admin_panel')" class="divider">
+      <div v-if="canAdminSection" class="divider">
         <span v-if="!props.collapsed">{{ $t('nav.admin') }}</span>
         <span v-else class="dot-divider" />
       </div>
 
-      <template v-if="auth.can('view_admin_panel')">
-        <RouterLink v-for="item in adminNav" :key="item.to" :to="item.to" class="nav-link" exact-active-class="active"
-          :title="item.label">
-          <i :class="item.icon" />
-          <span v-if="!props.collapsed">{{ item.label }}</span>
-        </RouterLink>
+      <template v-if="canAdminSection">
+        <template v-for="item in adminNav" :key="item.to">
+          <RouterLink v-if="item.show" :to="item.to" class="nav-link" exact-active-class="active"
+            :title="item.label">
+            <i :class="item.icon" />
+            <span v-if="!props.collapsed">{{ item.label }}</span>
+          </RouterLink>
+        </template>
       </template>
     </nav>
 

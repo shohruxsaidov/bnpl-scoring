@@ -15,8 +15,8 @@ declare module "@fastify/jwt" {
   interface FastifyJWT {
     user:
       | { sub: string; type: "client" }
-      | { sub: string; type: "admin" }
-      | { sub: string; type: "merchant"; merchantId: string; branchId: string; role: string };
+      | { sub: string; type: "admin"; roleId: string | null }
+      | { sub: string; type: "merchant"; merchantId: string; branchId: string; role: string; roleId: string };
   }
 }
 
@@ -44,7 +44,7 @@ export default fp(async function jwtPlugin(app: FastifyInstance) {
       try {
         const token = request.cookies["admin_access_token"];
         if (!token) throw new Error("missing token");
-        const payload = app.jwt.verify<{ sub: string; type: "admin" }>(token);
+        const payload = app.jwt.verify<{ sub: string; type: "admin"; roleId: string | null }>(token);
         if (payload.type !== "admin") throw new Error("wrong type");
         request.user = payload;
       } catch {
@@ -65,6 +65,7 @@ export default fp(async function jwtPlugin(app: FastifyInstance) {
           merchantId: string;
           branchId: string;
           role: string;
+          roleId: string;
         }>(token);
         if (payload.type !== "merchant") throw new Error("wrong type");
         request.user = payload;

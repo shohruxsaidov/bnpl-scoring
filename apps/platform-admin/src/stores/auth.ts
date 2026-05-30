@@ -12,6 +12,10 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     isAuthenticated: (s): boolean => s.admin !== null,
+    isSuperadmin: (s): boolean => s.admin?.isSuperadmin ?? false,
+    // Superadmin implicitly holds every Feature; everyone else only their grants.
+    can: (s) => (feature: string): boolean =>
+      (s.admin?.isSuperadmin ?? false) || (s.admin?.permissions?.includes(feature) ?? false),
     initials: (s): string =>
       s.admin
         ? s.admin.fullName

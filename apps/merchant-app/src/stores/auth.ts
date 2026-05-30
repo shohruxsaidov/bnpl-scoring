@@ -3,11 +3,8 @@ import type { EmployeeRole } from "@/types";
 
 const API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
-export interface RolePermissions {
-  view_deals_list: boolean;
-  create_deal: boolean;
-  view_admin_panel: boolean;
-}
+// A granted Feature key (e.g. 'view_deals', 'create_deal', 'manage_products').
+export type Permission = string;
 
 export interface AuthEmployee {
   id: string;
@@ -26,25 +23,19 @@ interface RolePickerState {
 interface AuthState {
   employee: AuthEmployee | null;
   activeRole: EmployeeRole | null;
-  permissions: RolePermissions;
+  permissions: Permission[];
   rolePicker: RolePickerState | null;
 }
 
-const DEFAULT_PERMISSIONS: RolePermissions = {
-  view_deals_list: true,
-  create_deal: false,
-  view_admin_panel: false,
-};
-
-function extractPermissions(user: any): RolePermissions {
-  return user.permissions ?? DEFAULT_PERMISSIONS;
+function extractPermissions(user: any): Permission[] {
+  return Array.isArray(user.permissions) ? user.permissions : [];
 }
 
 export const useAuthStore = defineStore("auth", {
   state: (): AuthState => ({
     employee: null,
     activeRole: null,
-    permissions: { ...DEFAULT_PERMISSIONS },
+    permissions: [],
     rolePicker: null,
   }),
 
@@ -60,7 +51,7 @@ export const useAuthStore = defineStore("auth", {
       if (s.activeRole === "branch_admin") return "Branch Admin";
       return "Agent";
     },
-    can: (s) => (feature: keyof RolePermissions): boolean => s.permissions[feature],
+    can: (s) => (feature: Permission): boolean => s.permissions.includes(feature),
   },
 
   actions: {
@@ -140,7 +131,7 @@ export const useAuthStore = defineStore("auth", {
       }).catch(() => {});
       this.employee = null;
       this.activeRole = null;
-      this.permissions = { ...DEFAULT_PERMISSIONS };
+      this.permissions = [];
       this.rolePicker = null;
     },
   },

@@ -1,6 +1,6 @@
 # ADR 0004: Authentication & Authorization
 
-**Status:** Accepted
+**Status:** Accepted (authorization model amended 2026-05-30 — see "Authorization: RBAC")
 
 ## Decisions
 
@@ -34,12 +34,40 @@ Access tokens are JWTs stored in `httpOnly` cookies — never in `localStorage`.
 **Platform admin accounts are created by existing admins.**
 No public registration endpoint exists for `admin_users`. A logged-in Platform Admin can create new admin accounts via `POST /admin/users` (guarded by the admin JWT). Seed-only creation was rejected as an operational burden as the Finsum team grows.
 
+## Authorization: RBAC
+
+_Amends the role/authorization aspects of this ADR (the original assumed a fixed three-role enum enforced by hardcoded route checks). The auth flows, session model, and registration above are unchanged._
+
+**Backend is the source of truth; the matrix is enforced, not cosmetic.**
+Every guarded route calls `requirePermission(feature)`. The prior hardcoded role checks (`role === 'merchant_admin'`, etc.) are removed. The frontend hides UI as a convenience only. Rejected: keeping the matrix frontend-only — a crafted request bypassed it entirely, so toggling a permission did not actually restrict the API.
+
+**Roles are custom, global templates — defined only on the admin platform.**
+A `roles` table replaces the fixed enum. Each Role belongs to one platform (`merchant` or `admin`). Merchant Roles are global — they apply to every Merchant's Employees, with no `merchant_id` column. Rejected: _per-merchant roles_ (each Merchant gets its own role set) — far more UI and every resolution must carry `merchant_id`, unneeded since Finsum centrally defines the role structure. Rejected: _fixed enum_ — cannot express new roles (e.g. a future "Cashier") without a code change. The existing `agent` / `branch_admin` / `merchant_admin` are seeded with stable keys as defaults.
+
+**Page/feature-level Features, not resource×action.**
+A Feature is a coarse capability guarding a screen/operation group (`view_deals`, `manage_employees`, `manage_payments`), with a `view_*` / `manage_*` split where read-only access is meaningful. The catalog of valid Features is a typed constant in code (one set per platform), giving compile-time-safe guards and a single source of truth; an endpoint exposes it so the Permissions page can render matrix rows. Rejected: _resource×action CRUD_ — dozens of mostly-nonsensical combinations to manage. Rejected: _field/row-level_ — row visibility is already handled by `merchant_id` / `branch_id` / agent-owns-Deal scoping, which is orthogonal to Features.
+
+**Default-deny grant list.**
+`role_permissions` is keyed by `role_id` + feature; a row means _granted_, absence means _denied_. A newly created Role starts with zero access. Rejected: the prior _default-allow_ behaviour — a new Role would have full access until explicitly restricted, unsafe once the backend enforces it.
+
+**Permissions resolve from an in-memory cache keyed by Role.**
+The JWT carries the Role identifier; the guard resolves Role → `Set<feature>` from an in-memory cache loaded from `role_permissions` and invalidated when an admin edits permissions. No per-request DB hit; edits take effect immediately platform-wide. Rejected: _per-request DB lookup_ (a round-trip on every guarded route) and _baking the feature list into the JWT_ (a 15–30 min stale window on every permission change).
+
+**Immutable Superadmin role on the admin platform.**
+The admin platform had no roles. A seeded `superadmin` Role implicitly holds every Feature and bypasses the grant table; it cannot be edited, deleted, or stripped of Features, and at least one Platform Admin must always hold it. The initial seeded admin holds it. Rejected: _no guard_ — one bad edit could brick the admin platform and need DB/engineer recovery. A non-Superadmin holding `manage_roles` may only grant Features they themselves hold and may never view/edit the Superadmin Role or grant `manage_admins` / `manage_roles` — this caps silent self-escalation.
+
+**Single Role per admin; multi-Role per Employee.**
+`admin_users` gains a `role_id` FK (exactly one); no admin login picker. Employees keep multiple merchant Roles with the login picker from the original decision above. Rejected: mirroring multi-Role on admins — adds a join table and a picker step for a small, centrally-managed group that rarely needs more than one Role.
+
+**Role assignment is local; Merchant Admins can only mint Agents.**
+Platform Admins assign admin Roles to admin users and provision the elevated Merchant accounts (Branch Admin, Merchant Admin) via `admin/employees`. A Merchant Admin creating an Employee may assign only the seeded `agent` Role (hardcoded by key) — never `branch_admin`, `merchant_admin`, or any other Role. Rejected: a _merchant-assignable flag_ on Roles and a _role-level hierarchy_ — unnecessary indirection for the single concrete rule ("Merchant Admins create Agents only").
+
 ## JWT Claims
 
 | Token type | Claims |
 |---|---|
-| Admin | `sub` (admin_user id), `type: 'admin'` |
-| Merchant | `sub` (merchant_user id), `merchantId`, `branchId`, `role`, `type: 'merchant'` |
+| Admin | `sub` (admin_user id), `roleId`, `type: 'admin'` |
+| Merchant | `sub` (merchant_user id), `merchantId`, `branchId`, `role`, `roleId`, `type: 'merchant'` |
 | Client | `sub` (user id), `type: 'client'` |
 
 ## Auth Endpoints
@@ -61,11 +89,24 @@ No public registration endpoint exists for `admin_users`. A logged-in Platform A
 ## Schema (auth tables)
 
 ```
-admin_users       — id, email, password_hash, full_name, created_by, created_at
-merchant_users    — id, email, password_hash, full_name, merchant_id, branch_id, roles[], active, created_at
+admin_users       — id, email, password_hash, full_name, role_id (FK roles), created_by, created_at
+merchant_users    — id, email, password_hash, full_name, merchant_id, branch_id, roles[] (role keys), active, created_at
 users             — id, phone, pinfl (unique), full_name, myid_verified_at, created_at
 
 admin_sessions    — id, admin_user_id (FK), refresh_token_hash, expires_at, created_at, revoked_at
-merchant_sessions — id, merchant_user_id (FK), refresh_token_hash, expires_at, created_at, revoked_at
+merchant_sessions — id, merchant_user_id (FK), selected_role, refresh_token_hash, expires_at, created_at, revoked_at
 client_sessions   — id, user_id (FK), refresh_token_hash, expires_at, created_at, revoked_at
 ```
+
+### Schema (RBAC tables)
+
+```
+roles             — id, key (stable slug, unique per platform), name, platform ('merchant' | 'admin'),
+                    is_superadmin (bool), is_system (bool, seeded/undeletable), created_at
+role_permissions  — role_id (FK roles), feature (string)        PK (role_id, feature)   — presence = granted
+```
+
+Notes:
+- The `feature` catalog is not a table — valid keys are a typed constant in code, one set per platform.
+- Superadmin (`is_superadmin = true`) bypasses `role_permissions` and is treated as holding every Feature.
+- `merchant_users.roles[]` stores Role **keys** (stable slugs), preserving multi-Role + the login picker; the JWT carries the selected Role's key and `role_id`.

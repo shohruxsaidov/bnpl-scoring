@@ -16,24 +16,34 @@ interface NavItem {
   label: string
   icon: string
   to: string
+  feature?: string
+  superadmin?: boolean
 }
 
-const nav = computed<NavItem[]>(() => [
+const allNav = computed<NavItem[]>(() => [
   { label: t('nav.overview'), icon: 'pi pi-th-large', to: '/' },
-  { label: t('nav.merchants'), icon: 'pi pi-building', to: '/merchants' },
-  { label: t('nav.allDeals'), icon: 'pi pi-credit-card', to: '/deals' },
-  { label: t('nav.tariffs'), icon: 'pi pi-percentage', to: '/tariffs' },
-  { label: t('nav.employees'), icon: 'pi pi-users', to: '/employees' },
-  { label: t('nav.settings'), icon: 'pi pi-cog', to: '/settings' },
-  { label: t('nav.blacklist'), icon: 'pi pi-ban', to: '/blacklist' },
-  { label: t('nav.buyout'), icon: 'pi pi-shopping-bag', to: '/buyout' },
-  { label: t('nav.collectionBoard'), icon: 'pi pi-table', to: '/collection-board' },
-  { label: t('nav.scoringHistory'), icon: 'pi pi-chart-line', to: '/scoring-history' },
-  { label: t('nav.payments'), icon: 'pi pi-credit-card', to: '/payments' },
-  { label: t('nav.notifications'), icon: 'pi pi-send', to: '/notifications' },
-  { label: t('nav.testPayment'), icon: 'pi pi-wallet', to: '/test-payment' },
-  { label: t('nav.permissions'), icon: 'pi pi-shield', to: '/permissions' },
+  { label: t('nav.merchants'), icon: 'pi pi-building', to: '/merchants', feature: 'view_merchants' },
+  { label: t('nav.allDeals'), icon: 'pi pi-credit-card', to: '/deals', feature: 'view_deals' },
+  { label: t('nav.tariffs'), icon: 'pi pi-percentage', to: '/tariffs', feature: 'view_tariffs' },
+  { label: t('nav.employees'), icon: 'pi pi-users', to: '/employees', feature: 'manage_employees' },
+  { label: t('nav.settings'), icon: 'pi pi-cog', to: '/settings', feature: 'manage_settings' },
+  { label: t('nav.blacklist'), icon: 'pi pi-ban', to: '/blacklist', feature: 'manage_blacklist' },
+  { label: t('nav.buyout'), icon: 'pi pi-shopping-bag', to: '/buyout', feature: 'manage_buyout' },
+  { label: t('nav.collectionBoard'), icon: 'pi pi-table', to: '/collection-board', feature: 'view_collection_board' },
+  { label: t('nav.scoringHistory'), icon: 'pi pi-chart-line', to: '/scoring-history', feature: 'view_scoring_history' },
+  { label: t('nav.payments'), icon: 'pi pi-credit-card', to: '/payments', feature: 'view_payments' },
+  { label: t('nav.notifications'), icon: 'pi pi-send', to: '/notifications', feature: 'send_notifications' },
+  { label: t('nav.testPayment'), icon: 'pi pi-wallet', to: '/test-payment', superadmin: true },
+  { label: t('nav.permissions'), icon: 'pi pi-shield', to: '/permissions', feature: 'manage_roles' },
 ])
+
+const nav = computed<NavItem[]>(() =>
+  allNav.value.filter((item) => {
+    if (item.superadmin) return auth.isSuperadmin
+    if (item.feature) return auth.can(item.feature)
+    return true
+  }),
+)
 
 async function logout() {
   await auth.logout()

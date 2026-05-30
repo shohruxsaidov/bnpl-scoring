@@ -6,6 +6,11 @@ export interface PlatformAdmin {
   id: string
   fullName: string
   email: string
+  roleId: string | null
+  roleKey: string | null
+  roleName: string | null
+  isSuperadmin: boolean
+  permissions: string[]
 }
 
 export type TenantStatus = 'active' | 'suspended'

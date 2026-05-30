@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify"
+import type { FastifyInstance, FastifyPluginAsync } from "fastify"
 import adminMerchantRoutes from "./merchants/routes"
 import adminBranchRoutes from "./branches/routes"
 import adminEmployeeRoutes from "./employees/routes"
@@ -14,19 +14,37 @@ import adminPaymentRoutes from "./payments/routes"
 import adminCollectionBoardRoutes from "./collectionBoard/routes"
 import mxikRoutes from "../mxik/routes"
 
+interface FeatureMap {
+  read?: string
+  write?: string
+}
+
+// Wraps a route module so every request is authenticated and then checked
+// against the module's Feature(s) — read Feature for GET/HEAD, write for the rest.
+// This centralizes admin-platform enforcement without touching each route file.
+function guarded(routes: FastifyPluginAsync, map: FeatureMap): FastifyPluginAsync {
+  return async (scope) => {
+    scope.addHook("onRequest", scope.verifyAdminJwt)
+    scope.addHook("preHandler", scope.requirePermissionByMethod(map))
+    await scope.register(routes)
+  }
+}
+
 export default async function adminModule(app: FastifyInstance) {
-  await app.register(adminMerchantRoutes, { prefix: "/admin/merchants" })
-  await app.register(adminBranchRoutes, { prefix: "/admin/branches" })
-  await app.register(adminEmployeeRoutes, { prefix: "/admin/employees" })
-  await app.register(adminCategoryRoutes, { prefix: "/admin/categories" })
-  await app.register(adminProductRoutes, { prefix: "/admin/products" })
-  await app.register(adminTariffRoutes, { prefix: "/admin/tariffs" })
-  await app.register(adminBlacklistRoutes, { prefix: "/admin/blacklist" })
-  await app.register(adminNotificationRoutes, { prefix: "/admin/notifications" })
-  await app.register(adminDealRoutes, { prefix: "/admin/deals" })
+  await app.register(guarded(adminMerchantRoutes, { read: "view_merchants", write: "manage_merchants" }), { prefix: "/admin/merchants" })
+  await app.register(guarded(adminBranchRoutes, { read: "view_merchants", write: "manage_merchants" }), { prefix: "/admin/branches" })
+  await app.register(guarded(adminEmployeeRoutes, { read: "manage_employees", write: "manage_employees" }), { prefix: "/admin/employees" })
+  await app.register(guarded(adminCategoryRoutes, { read: "manage_categories", write: "manage_categories" }), { prefix: "/admin/categories" })
+  await app.register(guarded(adminProductRoutes, { read: "manage_products", write: "manage_products" }), { prefix: "/admin/products" })
+  await app.register(guarded(adminTariffRoutes, { read: "view_tariffs", write: "manage_tariffs" }), { prefix: "/admin/tariffs" })
+  await app.register(guarded(adminBlacklistRoutes, { read: "manage_blacklist", write: "manage_blacklist" }), { prefix: "/admin/blacklist" })
+  await app.register(guarded(adminNotificationRoutes, { read: "send_notifications", write: "send_notifications" }), { prefix: "/admin/notifications" })
+  await app.register(guarded(adminDealRoutes, { read: "view_deals", write: "manage_payments" }), { prefix: "/admin/deals" })
+  await app.register(guarded(adminScoringHistoryRoutes, { read: "view_scoring_history" }), { prefix: "/admin/scoring-history" })
+  await app.register(guarded(adminPaymentRoutes, { read: "view_payments", write: "manage_payments" }), { prefix: "/admin/payments" })
+  await app.register(guarded(adminCollectionBoardRoutes, { read: "view_collection_board" }), { prefix: "/admin/collection-board" })
+  // Permissions module guards itself with manage_roles per-route.
   await app.register(adminPermissionsRoutes, { prefix: "/admin/permissions" })
-  await app.register(adminScoringHistoryRoutes, { prefix: "/admin/scoring-history" })
-  await app.register(adminPaymentRoutes, { prefix: "/admin/payments" })
-  await app.register(adminCollectionBoardRoutes, { prefix: "/admin/collection-board" })
+  // MXIK reference lookups: any authenticated admin.
   await app.register(mxikRoutes, { prefix: "/admin/mxik", preHandler: app.verifyAdminJwt })
 }

@@ -40,7 +40,7 @@ const routes: RouteRecordRaw[] = [
         path: 'deals/create',
         name: 'deals-create',
         component: () => import('@/views/new-deal/NewDealView.vue'),
-        meta: { titleKey: 'routeTitle.dealsCreate', breadcrumbKeys: ['breadcrumb.deals', 'breadcrumb.newDeal'], agentOnly: true },
+        meta: { titleKey: 'routeTitle.dealsCreate', breadcrumbKeys: ['breadcrumb.deals', 'breadcrumb.newDeal'], feature: 'create_deal' },
       },
       {
         path: 'deals/:id',
@@ -52,31 +52,31 @@ const routes: RouteRecordRaw[] = [
         path: 'admin/products',
         name: 'admin-products',
         component: () => import('@/views/admin/ProductsView.vue'),
-        meta: { titleKey: 'routeTitle.products', breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.products'], adminOnly: true },
+        meta: { titleKey: 'routeTitle.products', breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.products'], feature: 'manage_products' },
       },
       {
         path: 'admin/categories',
         name: 'admin-categories',
         component: () => import('@/views/admin/CategoriesView.vue'),
-        meta: { titleKey: 'routeTitle.categories', breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.categories'], adminOnly: true },
+        meta: { titleKey: 'routeTitle.categories', breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.categories'], feature: 'manage_categories' },
       },
       {
         path: 'admin/tariffs',
         name: 'admin-tariffs',
         component: () => import('@/views/admin/TariffsView.vue'),
-        meta: { titleKey: 'routeTitle.tariffs', breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.tariffs'], adminOnly: true },
+        meta: { titleKey: 'routeTitle.tariffs', breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.tariffs'], feature: 'manage_tariffs' },
       },
       {
         path: 'admin/branches',
         name: 'admin-branches',
         component: () => import('@/views/admin/BranchesView.vue'),
-        meta: { titleKey: 'routeTitle.branches', breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.branches'], adminOnly: true },
+        meta: { titleKey: 'routeTitle.branches', breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.branches'], feature: 'manage_branches' },
       },
       {
         path: 'admin/employees',
         name: 'admin-employees',
         component: () => import('@/views/admin/EmployeesView.vue'),
-        meta: { titleKey: 'routeTitle.employees', breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.employees'], adminOnly: true },
+        meta: { titleKey: 'routeTitle.employees', breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.employees'], feature: 'manage_employees' },
       },
       {
         path: 'notifications',
@@ -112,15 +112,12 @@ router.beforeEach((to) => {
     return { name: 'login' }
   }
 
-  if (to.meta.adminOnly && !auth.can('view_admin_panel')) {
+  const feature = to.meta.feature as string | undefined
+  if (feature && !auth.can(feature)) {
     return { name: 'dashboard' }
   }
 
-  if (to.meta.agentOnly && !auth.can('create_deal')) {
-    return { name: 'dashboard' }
-  }
-
-  if (to.name === 'deals' && !auth.can('view_deals_list')) {
+  if (to.name === 'deals' && !auth.can('view_deals')) {
     return { name: 'dashboard' }
   }
 

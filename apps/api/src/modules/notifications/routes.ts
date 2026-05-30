@@ -13,8 +13,8 @@ import {
 
 type AnyPayload =
   | { sub: string; type: 'client' }
-  | { sub: string; type: 'admin' }
-  | { sub: string; type: 'merchant'; merchantId: string; branchId: string; role: string }
+  | { sub: string; type: 'admin'; roleId: string | null }
+  | { sub: string; type: 'merchant'; merchantId: string; branchId: string; role: string; roleId: string }
 
 function actorFrom(user: AnyPayload): { actorType: ActorType; actorId: bigint } {
   if (user.type === 'merchant') return { actorType: 'employee', actorId: BigInt(user.sub) }

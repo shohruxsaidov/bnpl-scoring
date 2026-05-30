@@ -47,13 +47,12 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
 
   fastify.post(
     '/',
-    { schema: { body: CreateDealBody }, preHandler: app.verifyMerchantJwt },
+    {
+      schema: { body: CreateDealBody },
+      preHandler: [app.verifyMerchantJwt, app.requirePermission('create_deal')],
+    },
     async (request, reply) => {
       const p = payload(request)
-
-      if (p.role !== 'agent') {
-        return reply.code(403).send({ code: 'agent_only' })
-      }
 
       let signingPayload: { phone: string; purpose: string }
       try {

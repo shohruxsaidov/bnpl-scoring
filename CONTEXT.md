@@ -7,8 +7,8 @@ A three-party platform where **Finsum Nasiya** (capital owner) funds instalment 
 ### People
 
 **Platform Admin**:
-A Finsum Nasiya staff member with system-wide access. Creates and manages Merchants, Branches, Employees, Products, Categories, Tariffs, the Scoring Model, and Payouts. Identified by email. The only actor who can create other Platform Admin accounts. Has no `merchant_id` or Branch scope.
-_Avoid_: Superadmin, system user, operator
+A Finsum Nasiya staff member who operates the admin platform. Identified by email; holds exactly one admin Role that determines access. Has no `merchant_id` or Branch scope. The breadth of access depends on the Role — only the **Superadmin** Role grants system-wide access. Provisions the elevated Merchant accounts (Branch Admins and Merchant Admins) and other Platform Admin accounts.
+_Avoid_: system user, operator. (Note: **Superadmin** is a specific admin Role, not a synonym for Platform Admin.)
 
 **Merchant**:
 A business entity that operates on the platform with one or more Branches. Has its own product catalog and selects which Finsum-managed Tariffs to offer its clients.
@@ -23,15 +23,22 @@ A Merchant user account in the system. An Employee holds one or more Roles that 
 _Avoid_: Staff, user, agent, admin (use Role names instead)
 
 **Role**:
-A named permission set assigned to an Employee. Three Roles exist:
-- **Agent** — issues Deals via the Wizard, scoped to their Branch
-- **Branch Admin** — manages Agents and views Deals within one Branch
-- **Merchant Admin** — manages all Branches, all Employees, and views all Deals across the Merchant; selects active Tariffs from the Finsum catalog
-_Avoid_: Permission, access level, group
+A named set of Features. A Role belongs to one **platform** — either `merchant` (assignable to Employees) or `admin` (assignable to Platform Admins). Roles are global templates: a merchant Role applies to every Merchant's Employees (no `merchant_id` scope). Roles are custom — defined and granted Features exclusively from the admin platform — but several are seeded with stable keys and serve as defaults:
+- **Agent** (`agent`, merchant) — issues Deals via the Wizard, scoped to their Branch. The only Role a Merchant Admin may assign when creating Employees.
+- **Branch Admin** (`branch_admin`, merchant) — manages Agents and views Deals within one Branch.
+- **Merchant Admin** (`merchant_admin`, merchant) — manages all Branches, all Employees, all Deals across the Merchant; selects active Tariffs.
+- **Superadmin** (`superadmin`, admin) — implicitly holds every Feature; cannot be edited, deleted, or stripped of Features; at least one Platform Admin must always hold it. Seeded; held by the initial admin.
+
+An Employee may hold one or more merchant Roles (a login picker selects one per session); a Platform Admin holds exactly one admin Role. A Role grants _capabilities_, not data scope — which rows an actor sees is still governed by `merchant_id` / `branch_id` / agent-owns-Deal filters, independent of the Role.
+_Avoid_: access level, group, permission (use **Feature** for the unit of access)
+
+**Feature**:
+The unit of access in the permission system — a named, page/feature-level capability (e.g. `view_deals`, `manage_employees`, `manage_payments`). The full catalog of valid Features is fixed in code, one set per platform, and is the source of truth route guards enforce. A Feature is either granted to a Role or not; there is no per-field or per-record Feature.
+_Avoid_: permission flag, scope, ACL entry
 
 **Role Permission Matrix**:
-The global configuration table (`role_permissions`) that controls which named Features each Role can access in the Merchant App. Managed exclusively by the Platform Admin via the Permissions page. Three Features exist: `view_deals_list`, `create_deal`, `view_admin_panel`. Defaults match the original hardcoded router behaviour. Changes take effect on the Employee's next login (permissions are returned by `GET /auth/merchant/me` and cached in the auth store for the session duration).
-_Avoid_: Permission flags, access control list, feature flags
+The grant list (`role_permissions`, keyed by `role_id` + Feature) recording which Features each Role holds. **Default-deny**: a Role has only the Features explicitly granted to it; a newly created Role starts with none. Superadmin bypasses the table entirely. Managed exclusively from the admin platform via the Permissions page; a non-Superadmin editor may only grant Features they themselves hold and may never touch the Superadmin Role or grant `manage_roles` / `manage_admins`. The matrix is **enforced by the backend** — every guarded route checks it via a `requirePermission(feature)` guard, resolving the actor's Role to its Feature set from an in-memory cache (keyed by Role, invalidated on edit). The frontend hides UI as a convenience only. Edits take effect immediately, platform-wide.
+_Avoid_: permission flags, access control list, feature flags
 
 **Client**:
 A platform-wide identity representing the end-consumer. A Client record is keyed by PINFL and exists above the Merchant boundary — the same Client can receive Deals from multiple Merchants. Carries a persistent **platform-wide credit limit** set by Finsum. A Client authenticates into the Client Portal using phone OTP; their session carries no `merchant_id` since they are not scoped to any single Merchant.

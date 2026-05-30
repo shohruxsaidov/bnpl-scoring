@@ -1,9 +1,9 @@
 import { Type } from '@sinclair/typebox';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance, FastifyReply } from 'fastify';
-import { eq } from 'drizzle-orm';
-import { env } from '../../../env.js';
-import { rolePermissions } from '../../id/db/schema.js';
+import { env } from '../../../env';
+import type { Db } from '../../../db/index';
+import { findRoleByKey, listRoleFeatures } from '../../../rbac/service';
 import {
   createMerchantSession,
   findMerchantUserByEmail,
@@ -12,7 +12,7 @@ import {
   verifyMerchantSession,
   verifyPassword,
   type MerchantRole,
-} from './service.js';
+} from './service';
 
 const ACCESS_MAX_AGE = 15 * 60;
 const SESSION_MAX_AGE = env.SESSION_EXPIRES_DAYS * 24 * 60 * 60;
@@ -42,6 +42,7 @@ function buildAccessToken(
   app: FastifyInstance,
   employee: { id: bigint; merchantId: bigint; branchId: bigint },
   role: string,
+  roleId: bigint,
 ): string {
   return app.jwt.sign(
     {
@@ -49,6 +50,7 @@ function buildAccessToken(
       merchantId: employee.merchantId.toString(),
       branchId: employee.branchId.toString(),
       role,
+      roleId: roleId.toString(),
       type: 'merchant',
     },
     { expiresIn: ACCESS_MAX_AGE },
@@ -60,9 +62,10 @@ function setAuthCookies(
   reply: FastifyReply,
   employee: { id: bigint; merchantId: bigint; branchId: bigint },
   role: string,
+  roleId: bigint,
   sessionToken: string,
 ): void {
-  reply.setCookie(ACCESS_COOKIE, buildAccessToken(app, employee, role), {
+  reply.setCookie(ACCESS_COOKIE, buildAccessToken(app, employee, role, roleId), {
     ...baseCookie,
     maxAge: ACCESS_MAX_AGE,
   });
@@ -77,12 +80,6 @@ function clearAuthCookies(reply: FastifyReply): void {
   reply.clearCookie(SESSION_COOKIE, { ...baseCookie });
 }
 
-type Permissions = {
-  view_deals_list: boolean;
-  create_deal: boolean;
-  view_admin_panel: boolean;
-};
-
 function serializeEmployee(
   employee: {
     id: bigint;
@@ -92,27 +89,27 @@ function serializeEmployee(
     branchId: bigint;
   },
   role: string,
-  permissions: Permissions,
+  roleId: bigint,
+  permissions: string[],
 ) {
   return {
     id: employee.id.toString(),
     fullName: employee.fullName,
     email: employee.email,
     role,
+    roleId: roleId.toString(),
     merchantId: employee.merchantId.toString(),
     branchId: employee.branchId.toString(),
     permissions,
   };
 }
 
-async function loadPermissions(db: FastifyInstance['db'], role: string): Promise<Permissions> {
-  const rows = await db.select().from(rolePermissions).where(eq(rolePermissions.role, role));
-  const map = Object.fromEntries(rows.map((r) => [r.feature, r.allowed]));
-  return {
-    view_deals_list: map['view_deals_list'] ?? true,
-    create_deal: map['create_deal'] ?? true,
-    view_admin_panel: map['view_admin_panel'] ?? false,
-  };
+// Resolves a merchant Role key to its row + the Features it grants.
+async function resolveRoleByKey(db: Db, roleKey: string) {
+  const role = await findRoleByKey(db, 'merchant', roleKey);
+  if (!role) return undefined;
+  const permissions = await listRoleFeatures(db, role.id);
+  return { role, permissions };
 }
 
 export default async function merchantAuthRoutes(app: FastifyInstance) {
@@ -146,10 +143,13 @@ export default async function merchantAuthRoutes(app: FastifyInstance) {
     const roles = employee.roles as MerchantRole[];
 
     if (roles.length === 1) {
+      const resolved = await resolveRoleByKey(db, roles[0]!);
+      if (!resolved) return reply.code(500).send({ code: 'role_not_configured' });
       const { sessionToken } = await createMerchantSession(db, employee.id, roles[0]!);
-      setAuthCookies(app, reply, employee, roles[0]!, sessionToken);
-      const permissions = await loadPermissions(db, roles[0]!);
-      return { user: serializeEmployee(employee, roles[0]!, permissions) };
+      setAuthCookies(app, reply, employee, roles[0]!, resolved.role.id, sessionToken);
+      return {
+        user: serializeEmployee(employee, roles[0]!, resolved.role.id, resolved.permissions),
+      };
     }
 
     // Multiple roles — return picker token instead of issuing a session.
@@ -200,10 +200,12 @@ export default async function merchantAuthRoutes(app: FastifyInstance) {
       return reply.code(401).send({ code: 'invalid_credentials' });
     }
 
+    const resolved = await resolveRoleByKey(db, role);
+    if (!resolved) return reply.code(500).send({ code: 'role_not_configured' });
+
     const { sessionToken } = await createMerchantSession(db, employee.id, role);
-    setAuthCookies(app, reply, employee, role, sessionToken);
-    const permissions = await loadPermissions(db, role);
-    return { user: serializeEmployee(employee, role, permissions) };
+    setAuthCookies(app, reply, employee, role, resolved.role.id, sessionToken);
+    return { user: serializeEmployee(employee, role, resolved.role.id, resolved.permissions) };
   });
 
   /* ── Session lifecycle ──────────────────────────────────────────────────── */
@@ -218,9 +220,15 @@ export default async function merchantAuthRoutes(app: FastifyInstance) {
       return reply.code(401).send({ code: 'unauthorized' });
     }
 
+    const resolved = await resolveRoleByKey(db, result.session.selectedRole);
+    if (!resolved) {
+      clearAuthCookies(reply);
+      return reply.code(401).send({ code: 'unauthorized' });
+    }
+
     reply.setCookie(
       ACCESS_COOKIE,
-      buildAccessToken(app, result.employee, result.session.selectedRole),
+      buildAccessToken(app, result.employee, result.session.selectedRole, resolved.role.id),
       { ...baseCookie, maxAge: ACCESS_MAX_AGE },
     );
 
@@ -234,13 +242,15 @@ export default async function merchantAuthRoutes(app: FastifyInstance) {
       merchantId: string;
       branchId: string;
       role: string;
+      roleId: string;
     };
     const employee = await findMerchantUserById(db, BigInt(payload.sub));
     if (!employee || !employee.active) {
       return reply.code(401).send({ code: 'unauthorized' });
     }
-    const permissions = await loadPermissions(db, payload.role);
-    return { user: serializeEmployee(employee, payload.role, permissions) };
+    const resolved = await resolveRoleByKey(db, payload.role);
+    if (!resolved) return reply.code(500).send({ code: 'role_not_configured' });
+    return { user: serializeEmployee(employee, payload.role, resolved.role.id, resolved.permissions) };
   });
 
   fastify.post('/logout', async (request, reply) => {

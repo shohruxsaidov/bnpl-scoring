@@ -9,14 +9,11 @@ function merchantId(request: { user: unknown }) {
   return BigInt((request.user as MerchantPayload).merchantId);
 }
 
-function isAdmin(request: { user: unknown }) {
-  return (request.user as MerchantPayload).role === 'merchant_admin';
-}
-
 export default async function merchantTariffRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
   const db = app.db;
   const preHandler = app.verifyMerchantJwt;
+  const manage = [app.verifyMerchantJwt, app.requirePermission('manage_tariffs')];
 
   const IdParams = Type.Object({ id: Type.String() });
 
@@ -34,14 +31,12 @@ export default async function merchantTariffRoutes(app: FastifyInstance) {
     };
   });
 
-  fastify.post('/:id', { schema: { params: IdParams }, preHandler }, async (request, reply) => {
-    if (!isAdmin(request)) return reply.code(403).send({ code: 'forbidden' });
+  fastify.post('/:id', { schema: { params: IdParams }, preHandler: manage }, async (request, reply) => {
     await selectTariff(db, merchantId(request), BigInt(request.params.id));
     return reply.code(204).send();
   });
 
-  fastify.delete('/:id', { schema: { params: IdParams }, preHandler }, async (request, reply) => {
-    if (!isAdmin(request)) return reply.code(403).send({ code: 'forbidden' });
+  fastify.delete('/:id', { schema: { params: IdParams }, preHandler: manage }, async (request, reply) => {
     await deselectTariff(db, merchantId(request), BigInt(request.params.id));
     return reply.code(204).send();
   });

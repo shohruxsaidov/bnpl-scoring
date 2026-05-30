@@ -132,20 +132,19 @@
     "date": "Sana"
   },
   "permissions": {
-    "title": "Rol ruxsatlari",
-    "subtitle": "Savdogar ilovasida har bir rol uchun global kirish sozlamasi",
+    "title": "Rollar va ruxsatlar",
+    "subtitle": "Ikkala platforma uchun rollar va funksiyalarga kirishni boshqarish",
     "role": "Rol",
+    "feature": "Funksiya",
     "saved": "Saqlandi",
-    "roles": {
-      "agent": "Agent",
-      "branch_admin": "Filial admini",
-      "merchant_admin": "Savdogar admini"
-    },
-    "features": {
-      "view_deals_list": "Shartnomalar ro'yxati",
-      "create_deal": "Shartnoma yaratish",
-      "view_admin_panel": "Admin paneli"
-    }
+    "platformMerchant": "Savdogar platformasi",
+    "platformAdmin": "Administrator platformasi",
+    "newRoleKey": "Rol kaliti (masalan, cashier)",
+    "newRoleName": "Rol nomi",
+    "addRole": "Rol qo'shish",
+    "deleteRole": "Rolni o'chirish",
+    "roleCreated": "Rol yaratildi",
+    "roleDeleted": "Rol o'chirildi"
   },
   "notifications": {
     "pageTitle": "Bildirishnomalar",

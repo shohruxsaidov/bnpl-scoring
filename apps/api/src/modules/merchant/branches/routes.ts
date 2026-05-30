@@ -9,14 +9,6 @@ function merchantId(request: { user: unknown }) {
   return BigInt((request.user as MerchantPayload).merchantId)
 }
 
-function requireAdmin(request: { user: unknown }, reply: { code: (n: number) => { send: (b: unknown) => unknown } }) {
-  if ((request.user as MerchantPayload).role !== "merchant_admin") {
-    reply.code(403).send({ code: "forbidden" })
-    return false
-  }
-  return true
-}
-
 function serialize(b: NonNullable<Awaited<ReturnType<typeof createBranch>>>) {
   return { ...b, id: b.id.toString(), merchantId: b.merchantId.toString() }
 }
@@ -25,6 +17,7 @@ export default async function merchantBranchRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
   const db = app.db
   const preHandler = app.verifyMerchantJwt
+  const manage = [app.verifyMerchantJwt, app.requirePermission("manage_branches")]
 
   const IdParams = Type.Object({ id: Type.String() })
   const CreateBody = Type.Object({
@@ -44,14 +37,12 @@ export default async function merchantBranchRoutes(app: FastifyInstance) {
     return { branches: rows.map(serialize) }
   })
 
-  fastify.post("/", { schema: { body: CreateBody }, preHandler }, async (request, reply) => {
-    if (!requireAdmin(request, reply)) return
+  fastify.post("/", { schema: { body: CreateBody }, preHandler: manage }, async (request, reply) => {
     const branch = await createBranch(db, { merchantId: merchantId(request), ...request.body })
     return reply.code(201).send({ branch: serialize(branch) })
   })
 
-  fastify.patch("/:id", { schema: { params: IdParams, body: UpdateBody }, preHandler }, async (request, reply) => {
-    if (!requireAdmin(request, reply)) return
+  fastify.patch("/:id", { schema: { params: IdParams, body: UpdateBody }, preHandler: manage }, async (request, reply) => {
     const branch = await updateBranch(db, BigInt(request.params.id), merchantId(request), request.body)
     if (!branch) return reply.code(404).send({ code: "not_found" })
     return { branch: serialize(branch) }

@@ -9,14 +9,6 @@ function merchantId(request: { user: unknown }) {
   return BigInt((request.user as MerchantPayload).merchantId)
 }
 
-function requireAdmin(request: { user: unknown }, reply: { code: (n: number) => { send: (b: unknown) => unknown } }) {
-  if ((request.user as MerchantPayload).role !== "merchant_admin") {
-    reply.code(403).send({ code: "forbidden" })
-    return false
-  }
-  return true
-}
-
 function serialize(e: NonNullable<Awaited<ReturnType<typeof createEmployee>>>) {
   return { ...e, id: e.id.toString(), merchantId: e.merchantId.toString(), branchId: e.branchId.toString() }
 }
@@ -25,27 +17,24 @@ export default async function merchantEmployeeRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
   const db = app.db
   const preHandler = app.verifyMerchantJwt
+  const manage = [app.verifyMerchantJwt, app.requirePermission("manage_employees")]
 
   const IdParams = Type.Object({ id: Type.String() })
 
+  // A Merchant Admin may only create/manage Agents — elevated roles are
+  // provisioned from the admin platform.
   const CreateBody = Type.Object({
     email: Type.String({ format: "email" }),
     password: Type.String({ minLength: 8 }),
     fullName: Type.String({ minLength: 1 }),
     branchId: Type.String(),
-    roles: Type.Array(
-      Type.Union([Type.Literal("agent"), Type.Literal("branch_admin"), Type.Literal("merchant_admin")]),
-      { minItems: 1 },
-    ),
+    roles: Type.Array(Type.Literal("agent"), { minItems: 1, maxItems: 1 }),
   })
 
   const UpdateBody = Type.Partial(Type.Object({
     fullName: Type.String({ minLength: 1 }),
     branchId: Type.String(),
-    roles: Type.Array(
-      Type.Union([Type.Literal("agent"), Type.Literal("branch_admin"), Type.Literal("merchant_admin")]),
-      { minItems: 1 },
-    ),
+    roles: Type.Array(Type.Literal("agent"), { minItems: 1, maxItems: 1 }),
     active: Type.Boolean(),
   }))
 
@@ -54,8 +43,7 @@ export default async function merchantEmployeeRoutes(app: FastifyInstance) {
     return { employees: rows.map(serialize) }
   })
 
-  fastify.post("/", { schema: { body: CreateBody }, preHandler }, async (request, reply) => {
-    if (!requireAdmin(request, reply)) return
+  fastify.post("/", { schema: { body: CreateBody }, preHandler: manage }, async (request, reply) => {
     const employee = await createEmployee(db, {
       email: request.body.email,
       password: request.body.password,
@@ -67,8 +55,7 @@ export default async function merchantEmployeeRoutes(app: FastifyInstance) {
     return reply.code(201).send({ employee: serialize(employee) })
   })
 
-  fastify.patch("/:id", { schema: { params: IdParams, body: UpdateBody }, preHandler }, async (request, reply) => {
-    if (!requireAdmin(request, reply)) return
+  fastify.patch("/:id", { schema: { params: IdParams, body: UpdateBody }, preHandler: manage }, async (request, reply) => {
     const input = {
       ...request.body,
       branchId: request.body.branchId ? BigInt(request.body.branchId) : undefined,

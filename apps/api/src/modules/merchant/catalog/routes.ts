@@ -12,10 +12,6 @@ function merchantId(request: { user: unknown }) {
   return BigInt((request.user as MerchantPayload).merchantId)
 }
 
-function isAdmin(request: { user: unknown }) {
-  return (request.user as MerchantPayload).role === "merchant_admin"
-}
-
 function serializeCategory(c: NonNullable<Awaited<ReturnType<typeof createCategory>>>) {
   return { ...c, id: c.id.toString(), merchantId: c.merchantId.toString() }
 }
@@ -28,6 +24,8 @@ export default async function merchantCatalogRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
   const db = app.db
   const preHandler = app.verifyMerchantJwt
+  const manageCategories = [app.verifyMerchantJwt, app.requirePermission("manage_categories")]
+  const manageProducts = [app.verifyMerchantJwt, app.requirePermission("manage_products")]
 
   const IdParams = Type.Object({ id: Type.String() })
 
@@ -59,14 +57,12 @@ export default async function merchantCatalogRoutes(app: FastifyInstance) {
     return { categories: rows.map(serializeCategory) }
   })
 
-  fastify.post("/categories", { schema: { body: CreateCategoryBody }, preHandler }, async (request, reply) => {
-    if (!isAdmin(request)) return reply.code(403).send({ code: "forbidden" })
+  fastify.post("/categories", { schema: { body: CreateCategoryBody }, preHandler: manageCategories }, async (request, reply) => {
     const category = await createCategory(db, { merchantId: merchantId(request), name: request.body.name })
     return reply.code(201).send({ category: serializeCategory(category) })
   })
 
-  fastify.patch("/categories/:id", { schema: { params: IdParams, body: UpdateCategoryBody }, preHandler }, async (request, reply) => {
-    if (!isAdmin(request)) return reply.code(403).send({ code: "forbidden" })
+  fastify.patch("/categories/:id", { schema: { params: IdParams, body: UpdateCategoryBody }, preHandler: manageCategories }, async (request, reply) => {
     const category = await updateCategory(db, BigInt(request.params.id), merchantId(request), request.body)
     if (!category) return reply.code(404).send({ code: "not_found" })
     return { category: serializeCategory(category) }
@@ -79,8 +75,7 @@ export default async function merchantCatalogRoutes(app: FastifyInstance) {
     return { products: rows.map(serializeProduct) }
   })
 
-  fastify.post("/products", { schema: { body: CreateProductBody }, preHandler }, async (request, reply) => {
-    if (!isAdmin(request)) return reply.code(403).send({ code: "forbidden" })
+  fastify.post("/products", { schema: { body: CreateProductBody }, preHandler: manageProducts }, async (request, reply) => {
     const product = await createProduct(db, {
       merchantId: merchantId(request),
       categoryId: BigInt(request.body.categoryId),
@@ -93,8 +88,7 @@ export default async function merchantCatalogRoutes(app: FastifyInstance) {
     return reply.code(201).send({ product: serializeProduct(product) })
   })
 
-  fastify.patch("/products/:id", { schema: { params: IdParams, body: UpdateProductBody }, preHandler }, async (request, reply) => {
-    if (!isAdmin(request)) return reply.code(403).send({ code: "forbidden" })
+  fastify.patch("/products/:id", { schema: { params: IdParams, body: UpdateProductBody }, preHandler: manageProducts }, async (request, reply) => {
     const input = {
       ...request.body,
       categoryId: request.body.categoryId ? BigInt(request.body.categoryId) : undefined,

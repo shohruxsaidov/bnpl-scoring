@@ -132,20 +132,19 @@
     "date": "Дата"
   },
   "permissions": {
-    "title": "Разрешения ролей",
-    "subtitle": "Глобальная настройка доступа для каждой роли в приложении продавца",
+    "title": "Роли и разрешения",
+    "subtitle": "Управление ролями и доступом к функциям для обеих платформ",
     "role": "Роль",
+    "feature": "Функция",
     "saved": "Сохранено",
-    "roles": {
-      "agent": "Агент",
-      "branch_admin": "Администратор филиала",
-      "merchant_admin": "Администратор продавца"
-    },
-    "features": {
-      "view_deals_list": "Список сделок",
-      "create_deal": "Создать сделку",
-      "view_admin_panel": "Панель администратора"
-    }
+    "platformMerchant": "Платформа продавца",
+    "platformAdmin": "Платформа администратора",
+    "newRoleKey": "Ключ роли (напр. cashier)",
+    "newRoleName": "Название роли",
+    "addRole": "Добавить роль",
+    "deleteRole": "Удалить роль",
+    "roleCreated": "Роль создана",
+    "roleDeleted": "Роль удалена"
   },
   "notifications": {
     "pageTitle": "Уведомления",

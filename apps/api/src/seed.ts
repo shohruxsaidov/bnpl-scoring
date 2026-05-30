@@ -1,9 +1,11 @@
 import "dotenv/config";
+import { isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { adminUsers, branches, categories, merchantTariffs, merchantUsers, merchants, products, tariffs } from "./modules/id/db/schema.js";
-import { hashPassword as hashMerchantPassword } from "./modules/auth/merchant/service.js";
-import { hashPassword as hashAdminPassword } from "./modules/auth/admin/service.js";
+import { adminUsers, branches, categories, merchantTariffs, merchantUsers, merchants, products, rolePermissions, roles, tariffs } from "./modules/id/db/schema";
+import { hashPassword as hashMerchantPassword } from "./modules/auth/merchant/service";
+import { hashPassword as hashAdminPassword } from "./modules/auth/admin/service";
+import { MERCHANT_FEATURES } from "./rbac/features";
 
 const client = postgres(process.env["DATABASE_URL"]!);
 const db = drizzle(client);
@@ -39,9 +41,46 @@ const seeds = [
   },
 ];
 
+// Default Feature grants for the seeded merchant Roles. Merchant Admin holds the
+// whole catalog; Superadmin (admin platform) bypasses grants entirely.
+const MERCHANT_ROLE_GRANTS: Record<string, string[]> = {
+  agent: ["view_dashboard", "view_deals", "create_deal", "view_notifications"],
+  branch_admin: ["view_dashboard", "view_deals", "manage_employees", "view_notifications"],
+  merchant_admin: [...MERCHANT_FEATURES],
+};
+
 async function seed() {
+  // ── Roles & permissions ───────────────────────────────────────────────────
+  console.log("Seeding roles & permissions...");
+
+  await db
+    .insert(roles)
+    .values([
+      { key: "superadmin", name: "Superadmin", platform: "admin", isSuperadmin: true, isSystem: true },
+      { key: "agent", name: "Agent", platform: "merchant", isSystem: true },
+      { key: "branch_admin", name: "Branch Admin", platform: "merchant", isSystem: true },
+      { key: "merchant_admin", name: "Merchant Admin", platform: "merchant", isSystem: true },
+    ])
+    .onConflictDoNothing();
+
+  const roleRows = await db.select().from(roles);
+  const roleId = (platform: string, key: string) =>
+    roleRows.find((r) => r.platform === platform && r.key === key)!.id;
+
+  for (const [key, features] of Object.entries(MERCHANT_ROLE_GRANTS)) {
+    const rid = roleId("merchant", key);
+    await db
+      .insert(rolePermissions)
+      .values(features.map((feature) => ({ roleId: rid, feature })))
+      .onConflictDoNothing();
+    console.log(`  ✓ ${key}: ${features.length} feature(s)`);
+  }
+
+  const superadminId = roleId("admin", "superadmin");
+  console.log("  ✓ Superadmin (implicit all features)");
+
   // ── Merchant & Branches ───────────────────────────────────────────────────
-  console.log("Seeding merchant & branches...");
+  console.log("\nSeeding merchant & branches...");
 
   await db
     .insert(merchants)
@@ -96,10 +135,13 @@ async function seed() {
     const passwordHash = await hashAdminPassword(a.password);
     await db
       .insert(adminUsers)
-      .values({ email: a.email, passwordHash, fullName: a.fullName })
+      .values({ email: a.email, passwordHash, fullName: a.fullName, roleId: superadminId })
       .onConflictDoNothing();
     console.log(`  ✓ ${a.email}`);
   }
+
+  // Backfill any pre-existing admin lacking a Role so they are not locked out.
+  await db.update(adminUsers).set({ roleId: superadminId }).where(isNull(adminUsers.roleId));
 
   // ── Tariffs ──────────────────────────────────────────────────────────────
   console.log("\nSeeding tariffs...");
@@ -177,8 +219,8 @@ async function seed() {
   console.log("    agent@technomart.uz   → agent (direct)");
   console.log("    branch@technomart.uz  → branch_admin (direct)");
   console.log("  Platform Admin (password: adminpass123):");
-  console.log("    ops@finsum.uz         → platform admin");
-  console.log("    finance@finsum.uz     → platform admin");
+  console.log("    ops@finsum.uz         → Superadmin");
+  console.log("    finance@finsum.uz     → Superadmin");
 
   await client.end();
 }
