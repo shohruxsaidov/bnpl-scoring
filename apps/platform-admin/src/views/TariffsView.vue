@@ -29,21 +29,17 @@ const schema = toTypedSchema(
     name: z.string().min(1, t('tariffs.nameRequired')),
     termMonths: z.number().int().min(1).max(120),
     markupPercent: z.number().min(0).max(100),
-    creditMinSom: z.number().min(0),
-    creditMaxSom: z.number().min(0),
   }),
 )
 
 const { handleSubmit, errors, defineField, resetForm, setValues } = useForm({
   validationSchema: schema,
-  initialValues: { name: '', termMonths: 6, markupPercent: 8, creditMinSom: 500000, creditMaxSom: 50000000 },
+  initialValues: { name: '', termMonths: 6, markupPercent: 8 },
 })
 
 const [name, nameAttrs] = defineField('name')
 const [termMonths, termMonthsAttrs] = defineField('termMonths')
 const [markupPercent, markupPercentAttrs] = defineField('markupPercent')
-const [creditMinSom, creditMinSomAttrs] = defineField('creditMinSom')
-const [creditMaxSom, creditMaxSomAttrs] = defineField('creditMaxSom')
 
 onMounted(() => {
   tariffs.fetchAll().catch(() => toast.add({ severity: 'error', summary: t('tariffs.loadFailed'), life: 3000 }))
@@ -61,8 +57,6 @@ function openEdit(tariff: Tariff) {
     name: tariff.name,
     termMonths: tariff.termMonths,
     markupPercent: tariff.markupPercent,
-    creditMinSom: tariff.creditMin / 100,
-    creditMaxSom: tariff.creditMax / 100,
   })
   showDialog.value = true
 }
@@ -74,8 +68,6 @@ const submit = handleSubmit(async (values) => {
       name: values.name,
       termMonths: values.termMonths,
       markupPercent: values.markupPercent,
-      creditMin: Math.round(values.creditMinSom * 100),
-      creditMax: Math.round(values.creditMaxSom * 100),
     }
     if (editingId.value) {
       await tariffs.update(editingId.value, payload)
@@ -109,10 +101,6 @@ function remove(tariff: Tariff) {
     },
   })
 }
-
-function fmt(tiyin: number) {
-  return (tiyin / 100).toLocaleString('uz-UZ')
-}
 </script>
 
 <template>
@@ -142,13 +130,6 @@ function fmt(tiyin: number) {
         <Column :header="$t('tariffs.markup')">
           <template #body="{ data }">
             <span class="markup font-mono">{{ data.markupPercent }}%</span>
-          </template>
-        </Column>
-        <Column :header="$t('tariffs.creditRange')">
-          <template #body="{ data }">
-            <span class="font-mono range">
-              {{ fmt(data.creditMin) }} – {{ fmt(data.creditMax) }} {{ $t('common.som') }}
-            </span>
           </template>
         </Column>
         <Column :header="$t('tariffs.active')">
@@ -196,16 +177,6 @@ function fmt(tiyin: number) {
             <InputNumber v-model="markupPercent" v-bind="markupPercentAttrs" :min="0" :max="100" :max-fraction-digits="2" fluid />
           </div>
         </div>
-        <div class="grid2">
-          <div class="field">
-            <label class="field-label">{{ $t('tariffs.creditMin') }}</label>
-            <InputNumber v-model="creditMinSom" v-bind="creditMinSomAttrs" :min="0" fluid />
-          </div>
-          <div class="field">
-            <label class="field-label">{{ $t('tariffs.creditMax') }}</label>
-            <InputNumber v-model="creditMaxSom" v-bind="creditMaxSomAttrs" :min="0" fluid />
-          </div>
-        </div>
       </form>
       <template #footer>
         <button class="btn-ghost" @click="showDialog = false">{{ $t('common.cancel') }}</button>
@@ -248,10 +219,6 @@ function fmt(tiyin: number) {
 .markup {
   color: var(--accent-2);
   font-weight: 700;
-}
-.range {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
 }
 .row-actions {
   display: flex;

@@ -176,8 +176,6 @@ export const tariffs = pgTable('tariffs', {
   name: varchar('name', { length: 200 }).notNull(),
   termMonths: integer('term_months').notNull(),
   markupPercent: numeric('markup_percent', { precision: 5, scale: 2 }).notNull(),
-  creditMin: bigint('credit_min', { mode: 'bigint' }).notNull(),
-  creditMax: bigint('credit_max', { mode: 'bigint' }).notNull(),
   active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });

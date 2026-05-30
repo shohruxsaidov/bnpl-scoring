@@ -17,13 +17,7 @@ const limit = computed(() => scoring.platformCreditLimit ?? 0)
 
 const selectedId = ref<string | null>(deal.sessionData.tariff?.id ?? null)
 
-function isAffordable(t: Tariff): boolean {
-  // The approved limit must fall within the tariff's credit range.
-  return limit.value >= t.creditMin && limit.value <= t.creditMax
-}
-
 function select(t: Tariff) {
-  if (!isAffordable(t)) return
   selectedId.value = t.id
 }
 
@@ -61,11 +55,7 @@ function next() {
         v-for="t in catalog.activeTariffs"
         :key="t.id"
         class="tariff-card"
-        :class="{
-          selected: selectedId === t.id,
-          disabled: !isAffordable(t),
-        }"
-        :disabled="!isAffordable(t)"
+        :class="{ selected: selectedId === t.id }"
         @click="select(t)"
       >
         <div class="tc-head">
@@ -81,16 +71,6 @@ function next() {
         <div class="tc-markup">
           {{ $t('stepTarif.ustama') }} <strong>{{ t.markupPercent }}%</strong>
         </div>
-        <div class="tc-range">
-          <span class="tcr-label">{{ $t('stepTarif.creditRange') }}</span>
-          <span class="font-mono tcr-val">
-            {{ (t.creditMin / 100).toLocaleString('uz-UZ') }} –
-            {{ (t.creditMax / 100).toLocaleString('uz-UZ') }}
-          </span>
-        </div>
-        <span v-if="!isAffordable(t)" class="locked">
-          <i class="pi pi-lock" /> {{ $t('stepTarif.outOfLimit') }}
-        </span>
       </button>
     </div>
 
@@ -172,10 +152,6 @@ function next() {
   border-color: var(--accent-2);
   box-shadow: var(--accent-glow);
 }
-.tariff-card.disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
 .tc-head {
   display: flex;
   justify-content: space-between;
@@ -201,33 +177,6 @@ function next() {
 }
 .tc-markup strong {
   color: var(--accent-2);
-}
-.tc-range {
-  margin-top: 0.4rem;
-  padding-top: 0.7rem;
-  border-top: 1px solid var(--border-subtle);
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-.tcr-label {
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-}
-.tcr-val {
-  font-size: 0.8rem;
-  font-weight: 700;
-}
-.locked {
-  margin-top: 0.4rem;
-  font-size: 0.74rem;
-  color: var(--danger);
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
 }
 .sc-foot {
   display: flex;

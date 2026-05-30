@@ -28,8 +28,6 @@ export default async function merchantTariffRoutes(app: FastifyInstance) {
         name: t.name,
         termMonths: t.termMonths,
         markupPercent: parseFloat(t.markupPercent),
-        creditMin: Number(t.creditMin),
-        creditMax: Number(t.creditMax),
         active: t.active,
         selected: true,
       })),

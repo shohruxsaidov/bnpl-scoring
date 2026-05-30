@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useDealStore } from '@/stores/deal'
 import { useCatalogStore } from '@/stores/catalog'
 import MonoAmount from '@/components/MonoAmount.vue'
 
 const deal = useDealStore()
 const catalog = useCatalogStore()
-const { t: tr } = useI18n()
 
 onMounted(() => catalog.fetchCatalog())
 
@@ -46,24 +44,10 @@ const totalWithMarkup = computed(() => {
   return Math.round(total.value * (1 + pct / 100))
 })
 
-const withinRange = computed(() => {
-  const t = tariff.value
-  if (!t) return false
-  return total.value >= t.creditMin && total.value <= t.creditMax
-})
-
-const rangeMsg = computed(() => {
-  const t = tariff.value
-  if (!t) return ''
-  if (total.value < t.creditMin)
-    return tr('stepMahsulot.addMore', { amount: ((t.creditMin - total.value) / 100).toLocaleString('uz-UZ') })
-  if (total.value > t.creditMax)
-    return tr('stepMahsulot.overMax', { amount: ((total.value - t.creditMax) / 100).toLocaleString('uz-UZ') })
-  return tr('stepMahsulot.withinRange')
-})
+const canProceed = computed(() => !!tariff.value && total.value > 0)
 
 function next() {
-  if (withinRange.value) deal.complete('mahsulot')
+  if (canProceed.value) deal.complete('mahsulot')
 }
 </script>
 
@@ -161,23 +145,13 @@ function next() {
           <span>{{ $t('stepMahsulot.withMarkup', { pct: tariff.markupPercent }) }}</span>
           <MonoAmount :value="totalWithMarkup" size="md" />
         </div>
-        <div v-if="tariff" class="bs-range font-mono">
-          {{ $t('stepMahsulot.range', {
-            min: (tariff.creditMin / 100).toLocaleString('uz-UZ'),
-            max: (tariff.creditMax / 100).toLocaleString('uz-UZ'),
-          }) }}
-        </div>
-        <div class="bs-status" :class="withinRange ? 'ok' : 'bad'">
-          <i :class="withinRange ? 'pi pi-check-circle' : 'pi pi-exclamation-triangle'" />
-          {{ rangeMsg }}
-        </div>
       </div>
 
       <div class="basket-foot">
         <button class="btn-ghost" @click="deal.back()">
           <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
         </button>
-        <button class="btn-gradient" :disabled="!withinRange" @click="next">
+        <button class="btn-gradient" :disabled="!canProceed" @click="next">
           {{ $t('common.continue') }} <i class="pi pi-arrow-right" />
         </button>
       </div>
@@ -522,31 +496,6 @@ function next() {
 .markup-row {
   padding-top: 0.4rem;
   border-top: 1px solid var(--border-subtle);
-}
-
-.bs-range {
-  font-size: 0.72rem;
-  color: var(--text-secondary);
-}
-
-.bs-status {
-  font-size: 0.76rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.6rem 0.8rem;
-  border-radius: 10px;
-}
-
-.bs-status.ok {
-  color: var(--success);
-  background: var(--success-bg);
-}
-
-.bs-status.bad {
-  color: var(--warning);
-  background: var(--warning-bg);
 }
 
 .basket-foot {

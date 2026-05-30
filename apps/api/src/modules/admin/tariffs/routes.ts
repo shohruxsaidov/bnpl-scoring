@@ -9,8 +9,6 @@ function serialize(t: NonNullable<Awaited<ReturnType<typeof getTariff>>>) {
     name: t.name,
     termMonths: t.termMonths,
     markupPercent: parseFloat(t.markupPercent),
-    creditMin: Number(t.creditMin),
-    creditMax: Number(t.creditMax),
     active: t.active,
     createdAt: t.createdAt.toISOString(),
   }
@@ -27,8 +25,6 @@ export default async function adminTariffRoutes(app: FastifyInstance) {
     name: Type.String({ minLength: 1 }),
     termMonths: Type.Integer({ minimum: 1, maximum: 120 }),
     markupPercent: Type.Number({ minimum: 0, maximum: 100 }),
-    creditMin: Type.Integer({ minimum: 0 }),
-    creditMax: Type.Integer({ minimum: 0 }),
   })
 
   const UpdateBody = Type.Partial(
@@ -36,8 +32,6 @@ export default async function adminTariffRoutes(app: FastifyInstance) {
       name: Type.String({ minLength: 1 }),
       termMonths: Type.Integer({ minimum: 1, maximum: 120 }),
       markupPercent: Type.Number({ minimum: 0, maximum: 100 }),
-      creditMin: Type.Integer({ minimum: 0 }),
-      creditMax: Type.Integer({ minimum: 0 }),
       active: Type.Boolean(),
     }),
   )
@@ -48,23 +42,19 @@ export default async function adminTariffRoutes(app: FastifyInstance) {
   })
 
   fastify.post('/', { schema: { body: CreateBody }, preHandler }, async (request, reply) => {
-    const { creditMin, creditMax, markupPercent, ...rest } = request.body
+    const { markupPercent, ...rest } = request.body
     const tariff = await createTariff(db, {
       ...rest,
       markupPercent: markupPercent.toFixed(2),
-      creditMin: BigInt(creditMin),
-      creditMax: BigInt(creditMax),
     })
     return reply.code(201).send({ tariff: serialize(tariff) })
   })
 
   fastify.patch('/:id', { schema: { params: IdParams, body: UpdateBody }, preHandler }, async (request, reply) => {
-    const { creditMin, creditMax, markupPercent, ...rest } = request.body
+    const { markupPercent, ...rest } = request.body
     const input = {
       ...rest,
       ...(markupPercent !== undefined && { markupPercent: markupPercent.toFixed(2) }),
-      ...(creditMin !== undefined && { creditMin: BigInt(creditMin) }),
-      ...(creditMax !== undefined && { creditMax: BigInt(creditMax) }),
     }
     const tariff = await updateTariff(db, BigInt(request.params.id), input)
     if (!tariff) return reply.code(404).send({ code: 'not_found' })

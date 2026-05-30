@@ -93,9 +93,6 @@ export interface Tariff {
   name: string
   termMonths: number
   markupPercent: number
-  /** tiyin */
-  creditMin: number
-  creditMax: number
   active: boolean
 }
 

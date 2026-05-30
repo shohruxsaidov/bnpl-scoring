@@ -43,8 +43,6 @@ const STANDARD_TARIFFS: Tariff[] = [
     name: '3 oy · Ustama 5%',
     termMonths: 3,
     markupPercent: 5,
-    creditMin: 50000000,
-    creditMax: 1500000000,
     active: true,
   },
   {
@@ -52,8 +50,6 @@ const STANDARD_TARIFFS: Tariff[] = [
     name: '6 oy · Ustama 8%',
     termMonths: 6,
     markupPercent: 8,
-    creditMin: 100000000,
-    creditMax: 2500000000,
     active: true,
   },
   {
@@ -61,8 +57,6 @@ const STANDARD_TARIFFS: Tariff[] = [
     name: '9 oy · Ustama 11%',
     termMonths: 9,
     markupPercent: 11,
-    creditMin: 100000000,
-    creditMax: 3000000000,
     active: true,
   },
   {
@@ -70,8 +64,6 @@ const STANDARD_TARIFFS: Tariff[] = [
     name: '12 oy · Ustama 14%',
     termMonths: 12,
     markupPercent: 14,
-    creditMin: 200000000,
-    creditMax: 5000000000,
     active: false,
   },
 ]

@@ -13,7 +13,7 @@ export async function getTariff(db: Db, id: bigint) {
 
 export async function createTariff(
   db: Db,
-  input: { name: string; termMonths: number; markupPercent: string; creditMin: bigint; creditMax: bigint },
+  input: { name: string; termMonths: number; markupPercent: string },
 ) {
   const [row] = await db.insert(tariffs).values(input).returning()
   return row!
@@ -22,7 +22,7 @@ export async function createTariff(
 export async function updateTariff(
   db: Db,
   id: bigint,
-  input: Partial<{ name: string; termMonths: number; markupPercent: string; creditMin: bigint; creditMax: bigint; active: boolean }>,
+  input: Partial<{ name: string; termMonths: number; markupPercent: string; active: boolean }>,
 ) {
   const [row] = await db.update(tariffs).set(input).where(eq(tariffs.id, id)).returning()
   return row

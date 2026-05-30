@@ -31,10 +31,6 @@ async function toggle(id: string, currentlySelected: boolean) {
     toggling.value.delete(id)
   }
 }
-
-function fmt(tiyin: number) {
-  return (tiyin / 100).toLocaleString('uz-UZ')
-}
 </script>
 
 <template>
@@ -61,13 +57,6 @@ function fmt(tiyin: number) {
           <Column :header="$t('tariffs.markup')">
             <template #body="{ data }">
               <span class="markup font-mono">{{ data.markupPercent }}%</span>
-            </template>
-          </Column>
-          <Column :header="$t('tariffs.creditRange')">
-            <template #body="{ data }">
-              <span class="font-mono range">
-                {{ fmt(data.creditMin) }} – {{ fmt(data.creditMax) }} {{ $t('common.som') }}
-              </span>
             </template>
           </Column>
           <Column :header="$t('tariffs.selected')" :style="{ width: '120px' }">
@@ -111,9 +100,5 @@ function fmt(tiyin: number) {
 .markup {
   color: var(--accent-2);
   font-weight: 700;
-}
-.range {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
 }
 </style>

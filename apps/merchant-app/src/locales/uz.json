@@ -226,7 +226,6 @@
     "name": "Nomi",
     "term": "Muddat",
     "markup": "Ustama",
-    "creditRange": "Kredit oralig'i",
     "selected": "Ulangan",
     "mo": "oy",
     "noTariffs": "Mavjud tariflar yo'q",
@@ -594,8 +593,6 @@
     "approvedLimit": "Tasdiqlangan limit",
     "months": "oy",
     "ustama": "Ustama:",
-    "creditRange": "Kredit oralig'i",
-    "outOfLimit": "Limit oralig'idan tashqarida",
     "back": "Orqaga",
     "continue": "Davom etish"
   },
@@ -610,10 +607,6 @@
     "basketTotal": "Tannarx",
     "basePrice": "Ustamasiz:",
     "withMarkup": "Ustama bilan ({pct}%)",
-    "range": "Oraliq: {min} – {max}",
-    "addMore": "Minimumga yetish uchun yana {amount} so'm qo'shing",
-    "overMax": "Maksimumdan {amount} so'mga oshib ketdi",
-    "withinRange": "Savat jami tarif kredit oralig'ida",
     "back": "Orqaga",
     "continue": "Davom etish"
   },

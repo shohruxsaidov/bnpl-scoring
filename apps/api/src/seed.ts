@@ -107,10 +107,10 @@ async function seed() {
   const tariffRows = await db
     .insert(tariffs)
     .values([
-      { name: "3 oy",  termMonths: 3,  markupPercent: "8.00",  creditMin: 500000n,   creditMax: 5000000n,  active: true },
-      { name: "6 oy",  termMonths: 6,  markupPercent: "12.00", creditMin: 1000000n,  creditMax: 10000000n, active: true },
-      { name: "12 oy", termMonths: 12, markupPercent: "18.00", creditMin: 2000000n,  creditMax: 20000000n, active: true },
-      { name: "24 oy", termMonths: 24, markupPercent: "28.00", creditMin: 5000000n,  creditMax: 50000000n, active: true },
+      { name: "3 oy",  termMonths: 3,  markupPercent: "8.00",  active: true },
+      { name: "6 oy",  termMonths: 6,  markupPercent: "12.00", active: true },
+      { name: "12 oy", termMonths: 12, markupPercent: "18.00", active: true },
+      { name: "24 oy", termMonths: 24, markupPercent: "28.00", active: true },
     ])
     .onConflictDoNothing()
     .returning({ id: tariffs.id, name: tariffs.name });

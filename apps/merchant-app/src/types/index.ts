@@ -75,9 +75,6 @@ export interface Tariff {
   termMonths: number
   /** Ustama — markup percent */
   markupPercent: number
-  /** Stored in tiyin (1/100 som) */
-  creditMin: number
-  creditMax: number
   active: boolean
   /** Whether this merchant has selected this tariff */
   selected: boolean

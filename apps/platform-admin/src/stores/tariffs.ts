@@ -30,8 +30,6 @@ export const useTariffsStore = defineStore('tariffs', {
       name: string
       termMonths: number
       markupPercent: number
-      creditMin: number
-      creditMax: number
     }): Promise<Tariff> {
       const body = await api<{ tariff: Tariff }>('/admin/tariffs', {
         method: 'POST',

@@ -275,16 +275,6 @@ function toggleStatus() {
               <span class="font-mono">{{ data.markupPercent }}%</span>
             </template>
           </Column>
-          <Column :header="$t('tenantDetail.creditMin')">
-            <template #body="{ data }">
-              <MonoAmount :value="data.creditMin" size="sm" />
-            </template>
-          </Column>
-          <Column :header="$t('tenantDetail.creditMax')">
-            <template #body="{ data }">
-              <MonoAmount :value="data.creditMax" size="sm" />
-            </template>
-          </Column>
           <Column :header="$t('tenantDetail.active')">
             <template #body="{ data }">
               <span class="dot-state" :class="{ on: data.active }">
