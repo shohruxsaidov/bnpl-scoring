@@ -234,7 +234,8 @@ onMounted(async () => {
 
 .platform-tabs {
   display: inline-flex;
-  background: var(--surface-ground, #f1f1f4);
+  background: var(--bg-deep);
+  border: 1px solid var(--border-subtle);
   border-radius: 999px;
   padding: 0.25rem;
 }
@@ -248,12 +249,17 @@ onMounted(async () => {
   font-size: 0.82rem;
   cursor: pointer;
   color: var(--text-secondary);
+  transition: color var(--t-fast, 120ms) ease, background var(--t-fast, 120ms) ease;
+}
+
+.platform-tabs button:hover:not(.active) {
+  color: var(--text-primary);
 }
 
 .platform-tabs button.active {
-  background: var(--surface-card, #fff);
-  color: var(--text-primary, #111);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: var(--sh-sm);
 }
 
 .create-card {

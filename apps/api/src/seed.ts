@@ -32,12 +32,12 @@ const seeds = [
     roles: ["agent"],
   },
   {
-    email: "branch@technomart.uz",
+    email: "agent2@technomart.uz",
     password: "password123",
     fullName: "Sardor Toshmatov",
     merchantId: MERCHANT_ID,
     branchId: BRANCH_B_ID,
-    roles: ["branch_admin"],
+    roles: ["agent"],
   },
 ];
 
@@ -45,7 +45,6 @@ const seeds = [
 // whole catalog; Superadmin (admin platform) bypasses grants entirely.
 const MERCHANT_ROLE_GRANTS: Record<string, string[]> = {
   agent: ["view_dashboard", "view_deals", "create_deal", "view_notifications"],
-  branch_admin: ["view_dashboard", "view_deals", "manage_employees", "view_notifications"],
   merchant_admin: [...MERCHANT_FEATURES],
 };
 
@@ -58,7 +57,6 @@ async function seed() {
     .values([
       { key: "superadmin", name: "Superadmin", platform: "admin", isSuperadmin: true, isSystem: true },
       { key: "agent", name: "Agent", platform: "merchant", isSystem: true },
-      { key: "branch_admin", name: "Branch Admin", platform: "merchant", isSystem: true },
       { key: "merchant_admin", name: "Merchant Admin", platform: "merchant", isSystem: true },
     ])
     .onConflictDoNothing();
@@ -217,7 +215,7 @@ async function seed() {
   console.log("  Merchant (password: password123):");
   console.log("    admin@technomart.uz   → merchant_admin + agent (role picker)");
   console.log("    agent@technomart.uz   → agent (direct)");
-  console.log("    branch@technomart.uz  → branch_admin (direct)");
+  console.log("    agent2@technomart.uz  → agent (direct)");
   console.log("  Platform Admin (password: adminpass123):");
   console.log("    ops@finsum.uz         → Superadmin");
   console.log("    finance@finsum.uz     → Superadmin");

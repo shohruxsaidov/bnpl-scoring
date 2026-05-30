@@ -63,7 +63,6 @@ export function isValidFeature(platform: Platform, feature: string): boolean {
 // Role a Merchant Admin may assign when creating Employees.
 export const MERCHANT_ROLE_KEYS = {
   agent: 'agent',
-  branchAdmin: 'branch_admin',
   merchantAdmin: 'merchant_admin',
 } as const;
 

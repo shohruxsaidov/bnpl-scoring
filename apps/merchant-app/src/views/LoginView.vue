@@ -35,7 +35,6 @@ const loading = ref(false)
 
 const roleConfig: Record<string, { icon: string; label: string; desc: string }> = {
   merchant_admin: { icon: 'pi pi-shield', label: t('login.merchantAdmin'), desc: t('login.merchantAdminDesc') },
-  branch_admin: { icon: 'pi pi-building', label: t('login.branchAdmin'), desc: t('login.branchAdminDesc') },
   agent: { icon: 'pi pi-user-plus', label: t('login.agent'), desc: t('login.agentDesc') },
 }
 

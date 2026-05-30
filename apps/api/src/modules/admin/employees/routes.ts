@@ -32,7 +32,6 @@ export default async function adminEmployeeRoutes(app: FastifyInstance) {
       roles: Type.Array(
         Type.Union([
           Type.Literal("agent"),
-          Type.Literal("branch_admin"),
           Type.Literal("merchant_admin"),
         ]),
         { minItems: 1 },

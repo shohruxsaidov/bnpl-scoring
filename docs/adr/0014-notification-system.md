@@ -4,7 +4,7 @@ The platform needs in-app notifications across three actor types (Employee, Clie
 
 ## Considered options
 
-**Fan-out-at-write vs shared row + join table.** A single notification row shared across multiple recipients (e.g. one `overdue` row for both Branch Admin and Merchant Admin) would require a `notification_reads` join table to track per-user read state. We chose fan-out-at-write: `NotificationService.create()` inserts one row per recipient. This keeps `read` as a plain boolean on the row and removes the join table entirely. The trade-off is duplicate rows in the DB for multi-recipient events, which is acceptable at our volume.
+**Fan-out-at-write vs shared row + join table.** A single notification row shared across multiple recipients (e.g. one `overdue` row for several Merchant Admins) would require a `notification_reads` join table to track per-user read state. We chose fan-out-at-write: `NotificationService.create()` inserts one row per recipient. This keeps `read` as a plain boolean on the row and removes the join table entirely. The trade-off is duplicate rows in the DB for multi-recipient events, which is acceptable at our volume.
 
 **`type`+`params` vs rendered strings.** Storing a rendered `title`/`body` in the DB would require the backend to know the user's language at write time and makes re-rendering impossible. We store only `type` (e.g. `deal_approved`) and structured `params` (e.g. `{ clientName, dealId, score }`). Each frontend maps `type → i18n key` and renders locally. The `client-portal` store previously used plain strings — this is a known divergence that will be migrated.
 

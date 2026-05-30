@@ -13,7 +13,7 @@ import { env } from "../../../env.js";
 
 const scryptAsync = promisify(scrypt);
 
-export type MerchantRole = "agent" | "branch_admin" | "merchant_admin";
+export type MerchantRole = "agent" | "merchant_admin";
 
 function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");

@@ -30,7 +30,6 @@ onMounted(() => catalog.fetchAll())
 
 const ROLE_OPTIONS: { label: string; value: EmployeeRole }[] = [
   { label: 'Agent', value: 'agent' },
-  { label: 'Branch Admin', value: 'branch_admin' },
   { label: 'Merchant Admin', value: 'merchant_admin' },
 ]
 
@@ -97,7 +96,7 @@ async function toggleActive(e: Employee) {
 }
 
 function roleLabel(r: EmployeeRole): string {
-  return r === 'merchant_admin' ? t('employees.merchantAdmin') : r === 'branch_admin' ? t('employees.branchAdmin') : t('employees.agent')
+  return r === 'merchant_admin' ? t('employees.merchantAdmin') : t('employees.agent')
 }
 </script>
 
@@ -230,7 +229,6 @@ function roleLabel(r: EmployeeRole): string {
 .roles { display: flex; gap: 0.4rem; flex-wrap: wrap; }
 .role-chip { padding: 0.25rem 0.65rem; border-radius: 999px; font-size: 0.72rem; font-weight: 800; }
 .role-chip.merchant_admin { background: var(--success-bg); color: var(--success); }
-.role-chip.branch_admin { background: color-mix(in srgb, var(--accent-1) 15%, transparent); color: var(--accent-1); }
 .role-chip.agent { background: var(--warning-bg); color: var(--warning); }
 .ra-btn {
   width: 32px; height: 32px; border-radius: 8px;

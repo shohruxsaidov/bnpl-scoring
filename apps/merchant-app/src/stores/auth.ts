@@ -42,13 +42,11 @@ export const useAuthStore = defineStore("auth", {
   getters: {
     isAuthenticated: (s): boolean =>
       s.employee !== null && s.activeRole !== null,
-    isAdmin: (s): boolean =>
-      s.activeRole === "merchant_admin" || s.activeRole === "branch_admin",
+    isAdmin: (s): boolean => s.activeRole === "merchant_admin",
     isAgent: (s): boolean => s.activeRole === "agent",
     requiresRolePicker: (s): boolean => s.rolePicker !== null,
     roleLabel: (s): string => {
       if (s.activeRole === "merchant_admin") return "Merchant Admin";
-      if (s.activeRole === "branch_admin") return "Branch Admin";
       return "Agent";
     },
     can: (s) => (feature: Permission): boolean => s.permissions.includes(feature),

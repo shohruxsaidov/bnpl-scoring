@@ -42,7 +42,7 @@ function tabLabel(tab: Tab): string {
   return t(TAB_LABEL_KEYS[tab])
 }
 
-const ROLE_OPTIONS = ['agent', 'branch_admin', 'merchant_admin']
+const ROLE_OPTIONS = ['agent', 'merchant_admin']
 
 const branches = computed(() => merchants.branchesFor(merchantId.value))
 const categories = computed(() => merchants.categoriesFor(merchantId.value))

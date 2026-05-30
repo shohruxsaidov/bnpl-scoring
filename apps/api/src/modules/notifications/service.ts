@@ -64,7 +64,7 @@ export async function notifyDealCreated(
       .where(eq(merchantUsers.id, opts.agentId))
       .limit(1),
     db
-      .select({ id: merchantUsers.id, roles: merchantUsers.roles, branchId: merchantUsers.branchId })
+      .select({ id: merchantUsers.id, roles: merchantUsers.roles })
       .from(merchantUsers)
       .where(
         and(
@@ -79,11 +79,7 @@ export async function notifyDealCreated(
   const agentName = agentRow?.fullName ?? '—'
   const amountSom = String(Math.round(Number(opts.amountTiyin) / 100))
 
-  const recipients = employees.filter(
-    (e) =>
-      e.roles.includes('merchant_admin') ||
-      (e.roles.includes('branch_admin') && e.branchId === opts.branchId),
-  )
+  const recipients = employees.filter((e) => e.roles.includes('merchant_admin'))
 
   await Promise.all(
     recipients.map((r) =>
@@ -116,7 +112,7 @@ export async function notifyPaymentReceived(
       .where(eq(clients.id, opts.clientId))
       .limit(1),
     db
-      .select({ id: merchantUsers.id, roles: merchantUsers.roles, branchId: merchantUsers.branchId })
+      .select({ id: merchantUsers.id, roles: merchantUsers.roles })
       .from(merchantUsers)
       .where(and(eq(merchantUsers.merchantId, opts.merchantId), eq(merchantUsers.active, true))),
   ])
@@ -124,11 +120,7 @@ export async function notifyPaymentReceived(
   const clientName = clientRow ? `${clientRow.firstName} ${clientRow.lastName}` : '—'
   const amountSom = String(Math.round(Number(opts.paidTiyin) / 100))
 
-  const recipients = employees.filter(
-    (e) =>
-      e.roles.includes('merchant_admin') ||
-      (e.roles.includes('branch_admin') && e.branchId === opts.branchId),
-  )
+  const recipients = employees.filter((e) => e.roles.includes('merchant_admin'))
 
   await Promise.all(
     recipients.map((r) =>

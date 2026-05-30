@@ -212,7 +212,7 @@ export async function payScheduleItem(
 
   await db.update(deals).set({ status: newStatus }).where(eq(deals.id, dealId))
 
-  // Notify merchant admins / branch admins — fire-and-forget
+  // Notify merchant admins — fire-and-forget
   db.select({ merchantId: deals.merchantId, branchId: deals.branchId, clientId: deals.clientId })
     .from(deals)
     .where(eq(deals.id, dealId))
