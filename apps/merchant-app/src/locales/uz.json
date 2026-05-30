@@ -593,6 +593,7 @@
     "approvedLimit": "Tasdiqlangan limit",
     "months": "oy",
     "ustama": "Ustama:",
+    "limit": "Limit",
     "back": "Orqaga",
     "continue": "Davom etish"
   },
@@ -607,6 +608,8 @@
     "basketTotal": "Tannarx",
     "basePrice": "Ustamasiz:",
     "withMarkup": "Ustama bilan ({pct}%)",
+    "limit": "Limit ({months} oy)",
+    "overLimit": "Limitdan {amount} so'mga oshib ketdi",
     "back": "Orqaga",
     "continue": "Davom etish"
   },

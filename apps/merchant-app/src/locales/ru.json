@@ -593,6 +593,7 @@
     "approvedLimit": "Одобренный лимит",
     "months": "месяцев",
     "ustama": "Устама:",
+    "limit": "Лимит",
     "back": "Назад",
     "continue": "Продолжить"
   },
@@ -607,6 +608,8 @@
     "basketTotal": "Себестоимость",
     "basePrice": "Без наценки:",
     "withMarkup": "С наценкой ({pct}%)",
+    "limit": "Лимит ({months} мес)",
+    "overLimit": "Превышен лимит на {amount} сум",
     "back": "Назад",
     "continue": "Продолжить"
   },

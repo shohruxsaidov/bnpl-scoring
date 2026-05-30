@@ -2,10 +2,12 @@
 import { computed, onMounted, ref } from 'vue'
 import { useDealStore } from '@/stores/deal'
 import { useCatalogStore } from '@/stores/catalog'
+import { useClientScoringStore } from '@/stores/clientScoring'
 import MonoAmount from '@/components/MonoAmount.vue'
 
 const deal = useDealStore()
 const catalog = useCatalogStore()
+const scoring = useClientScoringStore()
 
 onMounted(() => catalog.fetchCatalog())
 
@@ -44,7 +46,16 @@ const totalWithMarkup = computed(() => {
   return Math.round(total.value * (1 + pct / 100))
 })
 
-const canProceed = computed(() => !!tariff.value && total.value > 0)
+/** Approved limit (tiyin) scaled by the selected tariff's term in months */
+const effectiveLimit = computed(
+  () => (scoring.platformCreditLimit ?? 0) * (tariff.value?.termMonths ?? 0),
+)
+
+const withinLimit = computed(() => totalWithMarkup.value <= effectiveLimit.value)
+
+const canProceed = computed(
+  () => !!tariff.value && total.value > 0 && withinLimit.value,
+)
 
 function next() {
   if (canProceed.value) deal.complete('mahsulot')
@@ -144,6 +155,16 @@ function next() {
         <div v-if="tariff" class="bs-row markup-row">
           <span>{{ $t('stepMahsulot.withMarkup', { pct: tariff.markupPercent }) }}</span>
           <MonoAmount :value="totalWithMarkup" size="md" />
+        </div>
+        <div v-if="tariff" class="bs-row">
+          <span>{{ $t('stepMahsulot.limit', { months: tariff.termMonths }) }}</span>
+          <MonoAmount :value="effectiveLimit" size="md" :gradient="false" />
+        </div>
+        <div v-if="tariff && !withinLimit" class="bs-overlimit">
+          <i class="pi pi-exclamation-triangle" />
+          {{ $t('stepMahsulot.overLimit', {
+            amount: ((totalWithMarkup - effectiveLimit) / 100).toLocaleString('uz-UZ'),
+          }) }}
         </div>
       </div>
 
@@ -496,6 +517,18 @@ function next() {
 .markup-row {
   padding-top: 0.4rem;
   border-top: 1px solid var(--border-subtle);
+}
+
+.bs-overlimit {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--warning);
+  background: var(--warning-bg);
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
 }
 
 .basket-foot {

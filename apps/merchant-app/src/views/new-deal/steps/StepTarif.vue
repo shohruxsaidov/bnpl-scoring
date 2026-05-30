@@ -71,6 +71,10 @@ function next() {
         <div class="tc-markup">
           {{ $t('stepTarif.ustama') }} <strong>{{ t.markupPercent }}%</strong>
         </div>
+        <div class="tc-limit">
+          <span class="tcl-label">{{ $t('stepTarif.limit') }}</span>
+          <MonoAmount :value="limit * t.termMonths" size="sm" :gradient="false" />
+        </div>
       </button>
     </div>
 
@@ -177,6 +181,20 @@ function next() {
 }
 .tc-markup strong {
   color: var(--accent-2);
+}
+.tc-limit {
+  margin-top: 0.4rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.tcl-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
 }
 .sc-foot {
   display: flex;
