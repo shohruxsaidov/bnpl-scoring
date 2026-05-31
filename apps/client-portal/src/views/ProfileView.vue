@@ -1,11 +1,27 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
+import { useNotificationsStore } from '@/stores/notifications'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 
 const auth = useAuthStore()
+const notifs = useNotificationsStore()
 const router = useRouter()
+const { locale } = useI18n()
+
+const pushSupported = 'serviceWorker' in navigator && 'PushManager' in window
+
+function togglePush() {
+  if (notifs.pushEnabled) notifs.disablePush()
+  else notifs.enablePush()
+}
+
+function setLang(lang: 'uz' | 'ru') {
+  locale.value = lang
+  localStorage.setItem('lang', lang)
+}
 
 const client = computed(() => auth.user)
 
@@ -50,12 +66,44 @@ async function logout() {
 
     <section class="block surface-card">
       <h2 class="block-title">{{ $t('profile.preferences') }}</h2>
+      <div class="row nav-row" @click="router.push({ name: 'notifications' })">
+        <span class="row-label">{{ $t('nav.alerts') }}</span>
+        <div class="row-right">
+          <span v-if="notifs.unreadCount > 0" class="notif-badge">{{ notifs.unreadCount }}</span>
+          <i class="pi pi-chevron-right row-chevron" />
+        </div>
+      </div>
+      <div class="row">
+        <span class="row-label">{{ $t('profile.language') }}</span>
+        <div class="lang-switch">
+          <button
+            class="lang-btn"
+            :class="{ active: locale === 'uz' }"
+            @click="setLang('uz')"
+          >UZ</button>
+          <span class="lang-sep">|</span>
+          <button
+            class="lang-btn"
+            :class="{ active: locale === 'ru' }"
+            @click="setLang('ru')"
+          >RU</button>
+        </div>
+      </div>
       <div class="row toggle-row">
         <div>
           <span class="row-value">{{ $t('profile.appearance') }}</span>
           <span class="row-hint">{{ $t('profile.appearanceHint') }}</span>
         </div>
         <ThemeToggle />
+      </div>
+      <div v-if="pushSupported" class="row toggle-row">
+        <div>
+          <span class="row-value">{{ $t('profile.pushNotifications') }}</span>
+          <span class="row-hint">{{ $t('profile.pushNotificationsHint') }}</span>
+        </div>
+        <button class="push-toggle" :class="{ active: notifs.pushEnabled }" @click="togglePush">
+          <span class="push-knob" />
+        </button>
       </div>
     </section>
 
@@ -138,6 +186,64 @@ async function logout() {
 .toggle-row {
   align-items: center;
 }
+.nav-row {
+  cursor: pointer;
+}
+.nav-row:hover {
+  color: var(--accent-2);
+}
+.row-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.notif-badge {
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+}
+.row-chevron {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+.lang-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  border-radius: 10px;
+  padding: 0.25rem 0.5rem;
+}
+.lang-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 0.76rem;
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+  border-radius: 6px;
+  transition: color 0.15s ease;
+  font-family: inherit;
+}
+.lang-btn:hover {
+  color: var(--text-primary);
+}
+.lang-btn.active {
+  color: var(--accent-2);
+}
+.lang-sep {
+  color: var(--border-subtle);
+  font-size: 0.76rem;
+}
 .row-hint {
   display: block;
   font-size: 0.76rem;
@@ -204,5 +310,33 @@ async function logout() {
 }
 .logout:hover {
   background: color-mix(in srgb, var(--danger) 18%, transparent);
+}
+.push-toggle {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background: var(--border-subtle);
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+  padding: 0;
+}
+.push-toggle.active {
+  background: var(--accent-2);
+}
+.push-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s ease;
+}
+.push-toggle.active .push-knob {
+  transform: translateX(18px);
 }
 </style>

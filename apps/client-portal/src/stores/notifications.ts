@@ -17,11 +17,12 @@ const KIND_MAP: Record<string, NotificationKind> = {
   deal_approved: 'deal',
   deal_declined: 'deal',
   new_deal: 'deal',
+  deal_issued: 'deal',
+  payment_due: 'payment',
   admin_message: 'message',
 };
 
 function toAppNotification(raw: ApiNotification): AppNotification {
-  // admin_message carries free-text title + body in params
   if (raw.type === 'admin_message') {
     return {
       id: raw.id,
@@ -42,10 +43,11 @@ function toAppNotification(raw: ApiNotification): AppNotification {
   };
 }
 
+
 export const useNotificationsStore = defineStore('notifications', {
   state: () => ({
     items: [] as AppNotification[],
-    _source: null as EventSource | null,
+    pushEnabled: false,
   }),
 
   getters: {
@@ -68,25 +70,71 @@ export const useNotificationsStore = defineStore('notifications', {
       }
     },
 
-    connectSSE() {
-      if (this._source) return;
-      const source = new EventSource(`${API}/notifications/stream`, {
-        withCredentials: true,
+    /** Called from main.ts after SW is registered to wire up postMessage. */
+    listenForPushMessages() {
+      navigator.serviceWorker?.addEventListener('message', (event) => {
+        if (event.data?.type === 'push_notification') {
+          const raw = event.data.payload as ApiNotification;
+          const n = toAppNotification(raw);
+          if (!this.items.find((x) => x.id === n.id)) {
+            this.items = [n, ...this.items];
+          }
+        }
       });
-      source.addEventListener('notification', (e) => {
-        const raw = JSON.parse((e as MessageEvent).data) as ApiNotification;
-        this.items = [toAppNotification(raw), ...this.items];
-      });
-      source.onerror = () => {
-        source.close();
-        this._source = null;
-      };
-      this._source = source;
     },
 
-    disconnectSSE() {
-      this._source?.close();
-      this._source = null;
+    async checkPushStatus() {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      this.pushEnabled = !!sub;
+    },
+
+    async enablePush() {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') return;
+
+      const keyRes = await fetch(`${API}/client/push/vapid-key`, { credentials: 'include' });
+      const { publicKey } = await keyRes.json();
+
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: publicKey,
+      });
+
+      const { endpoint, keys } = sub.toJSON() as {
+        endpoint: string;
+        keys: { p256dh: string; auth: string };
+      };
+
+      await fetch(`${API}/client/push/subscribe`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint, p256dh: keys.p256dh, auth: keys.auth }),
+      });
+
+      this.pushEnabled = true;
+    },
+
+    async disablePush() {
+      if (!('serviceWorker' in navigator)) return;
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (!sub) return;
+
+      await fetch(`${API}/client/push/subscribe`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: sub.endpoint }),
+      });
+
+      await sub.unsubscribe();
+      this.pushEnabled = false;
     },
 
     markAllRead() {

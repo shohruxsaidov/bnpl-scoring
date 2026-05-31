@@ -34,7 +34,7 @@ export interface Deal {
   paymentsTotal: number
   nextPaymentDate: string | null
   nextPaymentAmount: number
-  schedule: ScheduleEntry[]
+  schedule?: ScheduleEntry[]
   createdAt: string
 }
 

@@ -43,7 +43,7 @@ export const deals = pgTable('deals', {
   totalPayable: bigint('total_payable', { mode: 'bigint' }),
   /** Copied from tariffs.term_months at creation time */
   termMonths: integer('term_months'),
-  // Scoring result — copied from client_scorings at deal activation
+  // Scoring result — copied from scoring_histories at deal activation
   scoreSum: numeric('score_sum', { precision: 10, scale: 2 }),
   scoringDecision: varchar('scoring_decision', { length: 20 }),
   // Kontrakt language selected at Wizard verification step
@@ -56,16 +56,22 @@ export const deals = pgTable('deals', {
 })
 
 // ---------------------------------------------------------------------------
-// client_scorings
-// One row per scoring run. FK on this side to avoid circular dependency with deals.
-// Stores the full criteria breakdown (jsonb) + actionable fields as columns.
+// scoring_histories
+// One row per scoring run. No FK constraints — client/deal data is snapshotted
+// at scoring time so records remain accurate even if linked rows change.
 // ---------------------------------------------------------------------------
-export const clientScorings = pgTable('client_scorings', {
+export const scoringHistories = pgTable('scoring_histories', {
   id: bigserial('id', { mode: 'bigint' }).primaryKey(),
-  clientId: bigint('client_id', { mode: 'bigint' }).notNull().references(() => clients.id),
-  // Nullable: a scoring run is recorded the moment KATM + card scoring completes,
-  // before any deal exists. Linked to a deal later if the wizard reaches creation.
-  dealId: uuid('deal_id').references(() => deals.id),
+  // Link to clients row (nullable — self-service scoring has no merchant-scoped client)
+  clientId: bigint('client_id', { mode: 'bigint' }).references(() => clients.id),
+  // Client snapshot at scoring time
+  firstName: varchar('first_name', { length: 100 }),
+  lastName: varchar('last_name', { length: 100 }),
+  middleName: varchar('middle_name', { length: 100 }),
+  passportNumber: varchar('passport_number', { length: 10 }),
+  passportSeries: varchar('passport_series', { length: 5 }),
+  pinfl: varchar('pinfl', { length: 14 }),
+  phoneNumber: varchar('phone_number', { length: 20 }),
   // Full per-criterion breakdown: { income, workPeriod, creditHistory, overdues, liabilities, demographics, cardScore }
   criteriaScores: jsonb('criteria_scores'),
   scoreSum: numeric('score_sum', { precision: 10, scale: 2 }),

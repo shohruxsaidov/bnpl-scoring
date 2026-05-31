@@ -36,6 +36,10 @@ const schema = z.object({
   KATM_PASSWORD: z.string().optional(),
   KATM_TIMEOUT: z.coerce.number().default(20_000),
   KATM_MOCK: z.coerce.boolean().default(false),
+  // Web Push (VAPID)
+  VAPID_PUBLIC_KEY: z.string().min(1),
+  VAPID_PRIVATE_KEY: z.string().min(1),
+  VAPID_SUBJECT: z.string().default('mailto:admin@finsum.uz'),
   LOKI_URL: z.string().url().optional(),
   OTEL_TRACES_ENDPOINT: z.string().url().optional(),
   OTEL_METRICS_ENDPOINT: z.string().url().optional(),

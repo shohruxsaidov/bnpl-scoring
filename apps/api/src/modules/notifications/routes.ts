@@ -86,6 +86,10 @@ export default async function notificationRoutes(app: FastifyInstance) {
 
   fastify.get('/stream', { preHandler: verifyAny }, (request, reply) => {
     const { actorType, actorId } = actorFrom(request.user as AnyPayload)
+    if (actorType === 'client') {
+      reply.code(403).send({ code: 'client_uses_push' })
+      return
+    }
     const raw = reply.raw
 
     reply.hijack()

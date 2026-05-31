@@ -1,15 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useNotificationsStore } from '@/stores/notifications'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
-const notifications = useNotificationsStore()
-
-const unread = computed(() => notifications.unreadCount)
 
 interface NavItem {
   name: string
@@ -21,7 +16,7 @@ interface NavItem {
 const items: NavItem[] = [
   { name: 'home', labelKey: 'nav.home', icon: 'pi-home', match: ['home'] },
   { name: 'deals', labelKey: 'nav.deals', icon: 'pi-credit-card', match: ['deals', 'deal-detail'] },
-  { name: 'notifications', labelKey: 'nav.alerts', icon: 'pi-bell', match: ['notifications'] },
+  { name: 'scoring', labelKey: 'nav.scoring', icon: 'pi-chart-bar', match: ['scoring'] },
   { name: 'profile', labelKey: 'nav.profile', icon: 'pi-user', match: ['profile'] },
 ]
 
@@ -45,11 +40,6 @@ function go(item: NavItem) {
     >
       <span class="icon-wrap">
         <i class="pi" :class="item.icon" />
-        <span
-          v-if="item.name === 'notifications' && unread > 0"
-          class="nav-badge"
-          >{{ unread }}</span
-        >
       </span>
       <span class="nav-label">{{ t(item.labelKey) }}</span>
     </button>
@@ -65,7 +55,8 @@ function go(item: NavItem) {
   z-index: 20;
   display: flex;
   background: var(--bg-base);
-  border-top: 1px solid var(--border-subtle);
+  border-top: 2px solid var(--border-subtle);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.18);
   padding: 0.5rem 0.5rem calc(0.5rem + env(safe-area-inset-bottom));
 }
 .nav-item {
@@ -106,20 +97,5 @@ function go(item: NavItem) {
   background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
-}
-.nav-badge {
-  position: absolute;
-  top: -6px;
-  right: -10px;
-  background: var(--danger);
-  color: #fff;
-  font-size: 0.58rem;
-  font-weight: 800;
-  min-width: 16px;
-  height: 16px;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  padding: 0 4px;
 }
 </style>

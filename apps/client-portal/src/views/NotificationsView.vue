@@ -24,12 +24,10 @@ function onClick(id: string) {
 <template>
   <div class="notifications">
     <header class="head">
-      <div>
-        <h1>{{ $t('notifications.title') }}</h1>
-        <p class="sub">
-          {{ $t('notifications.unreadOf', { count: store.unreadCount, total: store.items.length }) }}
-        </p>
-      </div>
+      <h1>{{ $t('notifications.title') }}</h1>
+      <p class="sub">
+        {{ $t('notifications.unreadOf', { count: store.unreadCount, total: store.items.length }) }}
+      </p>
       <button
         class="mark-all"
         :disabled="!hasUnread"
@@ -71,9 +69,8 @@ function onClick(id: string) {
 }
 .head {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.3rem;
 }
 .head h1 {
   margin: 0;
@@ -81,20 +78,22 @@ function onClick(id: string) {
   font-weight: 800;
 }
 .sub {
-  margin: 0.3rem 0 0;
+  margin: 0;
   color: var(--text-secondary);
   font-size: 0.88rem;
 }
 .mark-all {
+  align-self: flex-start;
+  margin-top: 0.5rem;
   background: transparent;
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
-  padding: 0.6rem 0.9rem;
+  padding: 0.55rem 1rem;
   color: var(--accent-2);
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
+  font-family: inherit;
   cursor: pointer;
-  white-space: nowrap;
   transition: all 0.15s ease;
 }
 .mark-all:hover:not(:disabled) {

@@ -15,10 +15,7 @@ export default async function adminScoringHistoryRoutes(app: FastifyInstance) {
 
   /* GET /admin/scoring-history */
   fastify.get('/', { schema: { querystring: ListQuery }, preHandler }, async (request) => {
-    const { merchantId } = request.query
-    const records = await listScorings(db, {
-      merchantId: merchantId ? BigInt(merchantId) : undefined,
-    })
+    const records = await listScorings(db)
     return { records }
   })
 

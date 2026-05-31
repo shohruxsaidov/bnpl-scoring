@@ -43,6 +43,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Deal' },
       },
       {
+        path: 'scoring',
+        name: 'scoring',
+        component: () => import('@/views/ScoringView.vue'),
+        meta: { title: 'Credit limit' },
+      },
+      {
         path: 'notifications',
         name: 'notifications',
         component: () => import('@/views/NotificationsView.vue'),

@@ -74,20 +74,16 @@ export async function mockScoreCard(params: {
   plumCardId: string
   pcType: 'uzcard' | 'humo'
 }): Promise<PlumScoreResult> {
-  // Simulate the ~3–5 s the real vendor takes
   await delay(2000)
 
-  // Deterministic-ish score based on card ID so results are consistent per card
+  // Deterministic seed per card so the same card always returns the same limit
   const seed = params.plumCardId.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
-  const score = 550 + (seed % 400)   // range 550–949
+  const score = 700 + (seed % 250) // always approved range: 700–949
 
-  const decision: PlumScoreResult['decision'] =
-    score >= 700 ? 'approved' : score >= 600 ? 'manual_review' : 'declined'
+  // Limit between 500 000 and 2 000 000 som (in tiyin: 50 000 000 – 200 000 000)
+  const MIN = 50_000_000
+  const MAX = 200_000_000
+  const limit = MIN + (seed % (MAX - MIN + 1))
 
-  const limit =
-    score >= 700 ? 700_000_000
-    : score >= 600 ? 400_000_000
-    : 0
-
-  return { score, limit, decision }
+  return { score, limit, decision: 'approved' }
 }

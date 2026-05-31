@@ -107,7 +107,7 @@ _Avoid_: Credit limit, loan amount, ceiling, max amount
 ### Credit limit
 
 **Platform Credit Limit**:
-The maximum total instalment exposure Finsum Nasiya will extend to a Client across all Merchants. Computed from KATM data and PlumGate card scoring using the global scoring model. Stored on the Client record. Reduced by active Deal balances; restored automatically when a Deal is fully repaid. Only Finsum platform admin can manually refresh the base limit.
+The maximum total instalment exposure Finsum Nasiya will extend to a Client across all Merchants. Computed from KATM data and PlumGate card scoring using the global scoring model. In the Wizard flow, stored in `scoring_histories` at scoring time (a `platform_credit_limit` column on `clients` is planned but not yet implemented). In the self-service flow, stored in `user_limits`. Reduced by active Deal balances; restored automatically when a Deal is fully repaid. Only Finsum platform admin can manually refresh the base limit.
 _Avoid_: Client limit, credit score limit
 
 **Available Balance**:
@@ -121,12 +121,24 @@ The platform's creditworthiness value computed for a Client as a weighted criter
 _Avoid_: Rating, grade, creditworthiness
 
 **InfoScore Grade**:
-The raw bureau score (0–999) returned by KATM in the `scoring_grade` field of an InfoScore (077) response. Stored on the Wizard Session for audit. The global scoring model uses granular KATM credit history fields (overdue counts, liability counts, loan applications) rather than the InfoScore Grade directly. Not the same as the platform's Score.
+The raw bureau score (0–999) returned by KATM in the `scoring_grade` field of an InfoScore (077) response. Stored on the Deal (`infoscore_raw`) for audit in the Wizard flow; stored in the Scoring Pipeline `result` jsonb for self-service scoring. The global scoring model uses granular KATM credit history fields (overdue counts, liability counts, loan applications) rather than the InfoScore Grade directly. Not the same as the platform's Score.
 _Avoid_: KATM score, bureau score, scoring_grade
 
 **Card Score**:
 The scored output from PlumGate's SCORING module, derived from the Client's bank card transaction history (Uzcard or Humo). **Required** to proceed past the Karta step — the Wizard blocks until a Card Score is obtained. Contributes weighted criteria to the global scoring model. Not a replacement for KATM inputs. Not the same as the platform's Score.
 _Avoid_: PlumGate score, transaction score, card scoring result, optional scoring
+
+**Scoring Session**:
+A self-service scoring request initiated by a Client through the Client portal. Keyed on `users.id` — platform-wide, no Merchant scope. Created when the Client submits KATM consent (not on page open). Its UUID serves as the `claim_id` for the KATM query and stores `consent_id` + `consent_date` directly. Tracks overall status (`pending | running | completed | failed`). Permanently separate from the Wizard scoring flow, which is Agent-driven and keyed on `clients.id`.
+_Avoid_: User scoring request, scoring request, self-service session
+
+**Scoring Pipeline**:
+One step within a Scoring Session. Type is either `katm` or `card_scoring`. Tracks status (`pending | running | completed | failed`) and result (jsonb) independently. KATM always runs first — if KATM fails the session fails and card scoring never starts. Card scoring failure also fails the session. Operates at the logical step level; low-level HTTP calls are still captured in `integration_logs`.
+_Avoid_: Scoring step, scoring stage
+
+**User Limit**:
+The current active Platform Credit Limit for a Client who has completed a self-service Scoring Session. One row per `users.id`, upserted after each completed session. Permanently separate from the Wizard-path limit (`scoring_histories` / future `clients.platform_credit_limit`). Read by the Client portal to display the Client's available credit. Written alongside a `scoring_histories` audit row on each completed session.
+_Avoid_: Client limit (reserved for Platform Credit Limit in the Wizard flow)
 
 **KATM**:
 The Uzbekistan credit bureau. Queried during the Клиент step to retrieve a Client's existing loan obligations. Identifies individuals by **PINFL**. Queried on every new Deal; the result refreshes the Client's Platform Credit Limit.
@@ -171,8 +183,12 @@ _Avoid_: Settlement log, payout history
 ### Notifications
 
 **Notification**:
-A system-generated message delivered to exactly one actor (Employee, Client, or Platform Admin) when a notable platform event occurs. Carries a `type` and structured `params`; the frontend derives the human-readable text from these fields. Persisted for 90 days.
+A system-generated message delivered to exactly one actor (Employee, Client, or Platform Admin) when a notable platform event occurs. Carries a `type` and structured `params`; the frontend derives the human-readable text from these fields. Persisted for 90 days. Delivered to Employees and Platform Admins via SSE; delivered to Clients via Web Push (see ADR-0016).
 _Avoid_: Alert, message, event
+
+**Push Subscription**:
+A browser-issued endpoint URL plus encryption keys (`p256dh`, `auth`) stored per `users` row in `push_subscriptions`. Represents one browser or device through which a Client can receive Web Push Notifications. One Client may hold multiple Push Subscriptions (different browsers or devices). Created when the Client enables push notifications in ProfileView; deleted when the push service returns `410` or `404` on a send attempt.
+_Avoid_: Device token, FCM token, push token
 
 **Notification Type**:
 The discriminator on a Notification that identifies which event occurred. Employee types: `deal_approved`, `deal_declined`, `payment_received`, `overdue`, `new_deal`. Client types: `deal_issued`, `payment_received`, `payment_due`. Platform Admin type: `payout_pending`.
@@ -193,6 +209,9 @@ _Avoid_: Notification kind, notification category
 - A **Deal** produces exactly one **Kontrakt**
 - A **Kontrakt** produces exactly one **Payout** obligation toward the Merchant
 - A **Deal** carries one **Score** result (stored in `client_scorings`) — set during the Tarif step
+- A `users` row has at most one **User Limit** (upserted from self-service Scoring Sessions)
+- A **Scoring Session** belongs to one `users` row and produces exactly two **Scoring Pipelines** (`katm`, `card_scoring`)
+- A **Scoring Pipeline** belongs to exactly one **Scoring Session**
 - A **Deal** carries one **DealPaymentSchedule** — set when the Deal is confirmed
 - A **Basket** is persisted as one or more **DealItems** on the Deal
 - A **Notification** belongs to exactly one actor; fan-out creates one **Notification** row per recipient at write time
@@ -239,6 +258,8 @@ Key decisions live in `docs/adr/` as thematic files:
 | `0012-three-party-platform-model.md` | Finsum as capital owner; Merchant + Branch hierarchy; global Tariffs and Scoring Model; persistent platform-wide Client credit limit; Merchant paid at tan narxi on signing |
 | `0013-mxik-integration.md` | Backend proxy for MXIK registry; `mxik_cache` table; cache-first lookup; search is cache-only; `package_code` + `package_name` stored on Product; integration logging per ADR-0005 |
 | `0014-notification-system.md` | One `notifications` table for all actor types; fan-out-at-write (one row per recipient); SSE delivery; `type`+`params` only stored (no rendered strings); 90-day TTL via pg-boss |
+| `0015-self-service-scoring-flow.md` | Self-service scoring keyed on `users.id`; `scoring_sessions` + `scoring_pipelines` + `user_limits`; KATM hard block; permanently separate from Wizard scoring |
+| `0016-client-web-push-notifications.md` | Web push replaces SSE for Clients; VAPID env vars; `push_subscriptions` table; manual SW; opt-in toggle in ProfileView; admin_message broadcast |
 
 ## Example dialogue
 

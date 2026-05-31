@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
-import AppTopbar from './AppTopbar.vue'
 import BottomNav from './BottomNav.vue'
 </script>
 
 <template>
   <div class="shell">
-    <AppTopbar />
-
     <main class="content">
       <div class="content-inner">
         <RouterView v-slot="{ Component }">
@@ -33,7 +30,6 @@ import BottomNav from './BottomNav.vue'
   flex: 1;
   display: flex;
   justify-content: center;
-  /* leave room for the fixed bottom nav */
   padding-bottom: calc(72px + env(safe-area-inset-bottom));
 }
 .content-inner {

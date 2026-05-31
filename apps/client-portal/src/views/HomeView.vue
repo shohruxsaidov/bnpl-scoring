@@ -7,7 +7,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useDealsStore } from '@/stores/deals'
 import StatusBadge from '@/components/StatusBadge.vue'
 import MonoAmount from '@/components/MonoAmount.vue'
-import { formatDateShort, formatDateLong } from '@/utils/money'
+import { formatDateLong } from '@/utils/money'
 import type { Deal } from '@/types'
 
 const auth = useAuthStore()
@@ -21,11 +21,6 @@ const firstName = computed(() => auth.user?.firstName ?? '')
 const activeDeals = computed(() => deals.activeDeals)
 const closedDeals = computed(() => deals.closedDeals)
 const overdueDeals = computed(() => deals.overdueDeals)
-
-const nextDate = computed(() => {
-  const d = deals.nextPaymentDate
-  return d ? formatDateShort(d) : '—'
-})
 
 const bannerDismissed = ref(false)
 const showClosed = ref(false)
@@ -68,22 +63,6 @@ function pay(deal: Deal) {
         </button>
       </div>
     </transition>
-
-    <!-- summary bar -->
-    <section class="summary">
-      <div class="stat-card">
-        <span class="stat-label">{{ $t('home.activeDeals') }}</span>
-        <span class="stat-value">{{ activeDeals.length }}</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-label">{{ $t('home.totalPaid') }}</span>
-        <MonoAmount :value="deals.totalPaid" size="md" :gradient="true" />
-      </div>
-      <div class="stat-card">
-        <span class="stat-label">{{ $t('home.nextPayment') }}</span>
-        <span class="stat-value font-mono accent">{{ nextDate }}</span>
-      </div>
-    </section>
 
     <!-- active deals -->
     <section class="deals-section">
@@ -241,38 +220,6 @@ function pay(deal: Deal) {
   padding: 0.1rem;
 }
 
-.summary {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-}
-.stat-card {
-  background: var(--bg-base);
-  border: 1px solid var(--border-subtle);
-  border-radius: 16px;
-  box-shadow: var(--shadow-card);
-  padding: 1rem 0.85rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-  min-width: 0;
-}
-.stat-label {
-  font-size: 0.7rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-secondary);
-}
-.stat-value {
-  font-size: 1.4rem;
-  font-weight: 800;
-  line-height: 1;
-}
-.stat-value.accent {
-  color: var(--accent-2);
-  font-size: 1.15rem;
-}
 
 .section-title {
   margin: 0 0 0.9rem;

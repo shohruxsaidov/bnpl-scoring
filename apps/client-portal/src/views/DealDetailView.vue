@@ -20,7 +20,7 @@ const deal = computed(() => deals.byId(route.params.id as string))
 onMounted(async () => {
   const id = route.params.id as string
   const existing = deals.byId(id)
-  if (!existing || !existing.schedule.length) {
+  if (!existing || !existing.schedule?.length) {
     loading.value = true
     await deals.fetchById(id)
     loading.value = false
@@ -36,7 +36,7 @@ const tabs: { key: Tab; labelKey: string; icon: string }[] = [
 ]
 
 const paidEntries = computed(() =>
-  deal.value?.schedule.filter((e) => e.paid) ?? [],
+  deal.value?.schedule?.filter((e) => e.paid) ?? [],
 )
 
 function back() {

@@ -25,6 +25,7 @@
   "nav": {
     "home": "Bosh sahifa",
     "deals": "Shartnomalar",
+    "scoring": "Limit",
     "alerts": "Ogohlantirishlar",
     "profile": "Profil"
   },
@@ -161,13 +162,49 @@
     "passport": "Pasport",
     "linkedCards": "Ulangan kartalar",
     "preferences": "Sozlamalar",
+    "language": "Til",
     "appearance": "Ko'rinish",
     "appearanceHint": "Yorug' va qorong'i orasida almashish",
+    "pushNotifications": "Push-bildirishnomalar",
+    "pushNotificationsHint": "To'lovlar va shartnomalar haqida xabar olish",
     "logout": "Chiqish"
   },
   "notifications": {
     "title": "Bildirishnomalar",
     "unreadOf": "{count} ta o'qilmagan, jami {total} ta",
     "markAllRead": "Hammasini o'qilgan deb belgilash"
+  },
+  "scoring": {
+    "yourLimit": "Sizning kredit limitingiz",
+    "updatedOn": "Yangilangan: {date}",
+    "katmChecked": "Kredit tarixi tekshirildi",
+    "katmCheckedSub": "KATM so'rovi muvaffaqiyatli bajarildi",
+    "cardScored": "Karta baholandi",
+    "cardScoredSub": "Tranzaksiya tarixi PlumGate orqali qayta ishlandi",
+    "rescore": "Limitni yangilash",
+    "introTitle": "Kredit limiti",
+    "introSub": "Qancha miqdorda bo'lib to'lash olishingizni bilib oling",
+    "step1": "KATM orqali kredit tarixini tekshirish",
+    "step2": "PlumGate orqali bank kartasini baholash",
+    "step3": "Shaxsiy limitingizni hisoblash",
+    "consentText": "\"Boshlash\"ni bosib, O'zbekiston Respublikasining 301-sonli qonuniga muvofiq KATM'da kredit tarixim so'roviga rozilik beraman.",
+    "startBtn": "Tekshirishni boshlash",
+    "katmRunning": "Kredit tarixi so'ralmoqda",
+    "katmRunningSub": "KATM'ga so'rov yuborilmoqda. Bu bir necha soniya davom etadi...",
+    "cardTitle": "Karta qo'shing",
+    "cardSub": "Tranzaksiyalarni baholash uchun Uzcard yoki Humo karta ma'lumotlarini kiriting",
+    "cardNumber": "Karta raqami",
+    "cardExpiry": "Amal qilish muddati",
+    "cardBtn": "Kartani qo'shish",
+    "otpTitle": "Kartani tasdiqlang",
+    "otpSentTo": "{phone} raqamiga kod yuborildi",
+    "otpSub": "Tasdiqlash kodi telefoningizga yuborildi",
+    "otpCode": "SMS kodini kiriting",
+    "otpBtn": "Tasdiqlash",
+    "scoringRunning": "Reyting hisoblanmoqda",
+    "scoringRunningSub": "Tranzaksiya tarixi tahlil qilinmoqda. Bu 30 soniyagacha davom etishi mumkin...",
+    "errorTitle": "Xatolik yuz berdi",
+    "errorSub": "Baholashni yakunlab bo'lmadi. Qayta urinib ko'ring.",
+    "retryBtn": "Qayta urinish"
   }
 }

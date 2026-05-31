@@ -1,35 +1,10 @@
 import { asc, desc, eq, inArray } from 'drizzle-orm'
 import type { Db } from '../../../db'
-import { deals, dealItems, dealPaymentSchedules, clientScorings, dealComments } from '../../deals/db/schema'
+import { deals, dealItems, dealPaymentSchedules, dealComments } from '../../deals/db/schema'
 import { clients, tariffs, merchantUsers, merchants, adminUsers } from '../../id/db/schema'
-
-// ---------------------------------------------------------------------------
-// Criteria → human-readable label map
-// ---------------------------------------------------------------------------
 
 function formatDealNumber(n: bigint | null | undefined): string {
   return n != null ? `CN-${String(n).padStart(7, '0')}` : '—'
-}
-
-const CRITERIA_LABELS: Record<string, string> = {
-  income: 'Monthly income',
-  workPeriod: 'Employment tenure',
-  creditHistory: 'Credit history',
-  overdues: 'KATM overdue count',
-  liabilities: 'Active liabilities',
-  demographics: 'Demographics',
-  cardScore: 'Card score',
-}
-
-function criteriaToFactors(
-  criteriaScores: Record<string, number> | null | undefined,
-): Array<{ label: string; weight: number; value: string }> {
-  if (!criteriaScores) return []
-  return Object.entries(criteriaScores).map(([key, score]) => ({
-    label: CRITERIA_LABELS[key] ?? key,
-    weight: Number(score),
-    value: String(Number(score).toFixed(2)),
-  }))
 }
 
 // ---------------------------------------------------------------------------
@@ -69,19 +44,14 @@ export async function listAdminDeals(
 
   const ids = nonDraft.map((r) => r.deal.id)
 
-  // 2. Batch-load basket items, schedules, and latest scoring ───────────────
-  const [itemRows, scheduleRows, scoringRows] = await Promise.all([
+  // 2. Batch-load basket items and schedules ───────────────────────────────
+  const [itemRows, scheduleRows] = await Promise.all([
     db.select().from(dealItems).where(inArray(dealItems.dealId, ids)),
     db
       .select()
       .from(dealPaymentSchedules)
       .where(inArray(dealPaymentSchedules.dealId, ids))
       .orderBy(dealPaymentSchedules.dealId, dealPaymentSchedules.index),
-    db
-      .select()
-      .from(clientScorings)
-      .where(inArray(clientScorings.dealId, ids))
-      .orderBy(desc(clientScorings.scoredAt)),
   ])
 
   // Index by dealId for O(1) lookup
@@ -99,15 +69,8 @@ export async function listAdminDeals(
     scheduleByDeal.set(row.dealId, arr)
   }
 
-  // Keep only the latest scoring per deal
-  const scoringByDeal = new Map<string, (typeof scoringRows)[number]>()
-  for (const s of scoringRows) {
-    if (s.dealId && !scoringByDeal.has(s.dealId)) scoringByDeal.set(s.dealId, s)
-  }
-
   // 3. Assemble ──────────────────────────────────────────────────────────────
   return nonDraft.map(({ deal, client, tariff, agent }) => {
-    const scoring = scoringByDeal.get(deal.id)
     const basket = (basketByDeal.get(deal.id) ?? []).map((i) => ({
       name: i.productName,
       quantity: i.quantity,
@@ -120,10 +83,6 @@ export async function listAdminDeals(
       paidAmount: Number(s.paidAmount ?? 0n),
       paid: s.paid,
     }))
-    const factors = criteriaToFactors(
-      scoring?.criteriaScores as Record<string, number> | null,
-    )
-
     return {
       id: deal.id,
       dealNumber: formatDealNumber(deal.dealNumber),
@@ -143,7 +102,7 @@ export async function listAdminDeals(
       createdAt: deal.createdAt.toISOString(),
       basket,
       schedule,
-      factors,
+      factors: [],
     }
   })
 }
@@ -174,22 +133,14 @@ export async function getAdminDeal(db: Db, id: string) {
 
   const { deal, client, tariff, agent, merchant } = row
 
-  const [itemRows, scheduleRows, scoringRows] = await Promise.all([
+  const [itemRows, scheduleRows] = await Promise.all([
     db.select().from(dealItems).where(eq(dealItems.dealId, id)).orderBy(dealItems.id),
     db
       .select()
       .from(dealPaymentSchedules)
       .where(eq(dealPaymentSchedules.dealId, id))
       .orderBy(dealPaymentSchedules.index),
-    db
-      .select()
-      .from(clientScorings)
-      .where(eq(clientScorings.dealId, id))
-      .orderBy(desc(clientScorings.scoredAt))
-      .limit(1),
   ])
-
-  const scoring = scoringRows[0]
 
   return {
     id: deal.id,
@@ -225,9 +176,7 @@ export async function getAdminDeal(db: Db, id: string) {
       paid: s.paid,
       paidAt: s.paidAt?.toISOString() ?? null,
     })),
-    factors: criteriaToFactors(
-      scoring?.criteriaScores as Record<string, number> | null,
-    ),
+    factors: [],
   }
 }
 

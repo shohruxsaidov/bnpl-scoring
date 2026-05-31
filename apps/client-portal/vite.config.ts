@@ -13,7 +13,7 @@ export default defineConfig({
   server: {
     port: 4003,
     proxy: {
-      '/api/v1': 'http://localhost:4000',
+      '/api/v1': 'http://192.168.1.101:4000',
     },
   },
 });

@@ -1,7 +1,7 @@
 import { and, asc, desc, eq } from 'drizzle-orm'
 import type { Client as MinioClient } from 'minio'
 import type { Db } from '../../../db'
-import { deals, dealItems, dealPaymentSchedules, clientScorings } from '../../deals/db/schema'
+import { deals, dealItems, dealPaymentSchedules, scoringHistories } from '../../deals/db/schema'
 import { clients, tariffs, merchantUsers, merchants, branches, products } from '../../id/db/schema'
 import { generateKontrakt, type KontraktData } from './pdf'
 import { env } from '../../../env'
@@ -34,12 +34,12 @@ export interface CreateDealInput {
   markupPercent: number
   scoreSum: number | null
   scoringDecision: string | null
-  // Full scoring snapshot — persisted to client_scorings (scoring history)
+  // Full scoring snapshot — persisted to scoring_histories
   coefficient?: number | null
   /** Tiyin */
   platformCreditLimit?: bigint | null
   criteriaScores?: Record<string, number> | null
-  /** Existing client_scorings.id to link to this deal (recorded at scoring time) */
+  /** Existing scoring_histories.id to link to this deal (recorded at scoring time) */
   scoringId?: bigint | null
   lang: 'ru' | 'uz'
 }
@@ -222,15 +222,28 @@ export async function createDeal(db: Db, input: CreateDealInput) {
     // Scoring is normally recorded earlier (the moment it completes) with a NULL
     // deal_id. If we have that row's id, link it to this deal. Otherwise fall back
     // to inserting a snapshot now, when enough scoring data is present.
-    if (input.scoringId != null) {
-      await tx
-        .update(clientScorings)
-        .set({ dealId: deal.id })
-        .where(eq(clientScorings.id, input.scoringId))
-    } else if (input.scoringDecision != null && input.platformCreditLimit != null) {
-      await tx.insert(clientScorings).values({
-        clientId: input.clientId,
-        dealId: deal.id,
+    if (input.scoringDecision != null && input.platformCreditLimit != null && input.scoringId == null) {
+      const [clientSnap] = await tx
+        .select({
+          firstName: clients.firstName,
+          lastName: clients.lastName,
+          middleName: clients.middleName,
+          passportNumber: clients.passportNumber,
+          passportSerial: clients.passportSerial,
+          pinfl: clients.pinfl,
+          phone: clients.phone,
+        })
+        .from(clients)
+        .where(eq(clients.id, input.clientId))
+        .limit(1)
+      await tx.insert(scoringHistories).values({
+        firstName: clientSnap?.firstName ?? null,
+        lastName: clientSnap?.lastName ?? null,
+        middleName: clientSnap?.middleName ?? null,
+        passportNumber: clientSnap?.passportNumber ?? null,
+        passportSeries: clientSnap?.passportSerial ?? null,
+        pinfl: clientSnap?.pinfl ?? null,
+        phoneNumber: clientSnap?.phone ?? null,
         criteriaScores: input.criteriaScores ?? null,
         scoreSum: input.scoreSum?.toString() ?? null,
         coefficient: input.coefficient != null ? input.coefficient.toString() : null,

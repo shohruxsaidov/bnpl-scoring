@@ -43,7 +43,12 @@ async function bootstrap() {
     const notifications = useNotificationsStore()
     const dealsStore = useDealsStore()
     await Promise.all([notifications.fetchAll(), dealsStore.fetchAll()])
-    notifications.connectSSE()
+    notifications.checkPushStatus()
+    notifications.listenForPushMessages()
+  }
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {})
   }
 
   app.use(i18n)
