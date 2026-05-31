@@ -31,7 +31,8 @@
     "permissions": "Ruxsatlar",
     "collectionBoard": "Inkasso",
     "scoringHistory": "Skoring tarixi",
-    "payments": "To'lovlar"
+    "payments": "To'lovlar",
+    "changePassword": "Parolni o'zgartirish"
   },
   "breadcrumb": {
     "overview": "Umumiy ko'rinish",
@@ -462,7 +463,6 @@
     "address": "Manzil",
     "phone": "Telefon",
     "employeesCount": "Xodimlar",
-    "active": "Faol",
     "fullName": "To'liq ism",
     "email": "Email",
     "password": "Parol",
@@ -757,5 +757,20 @@
     "date": "SANA",
     "som": "so'm",
     "noData": "Ma'lumot yo'q"
+  },
+  "changePassword": {
+    "title": "Parolni o'zgartirish",
+    "subtitle": "Xavfsizlik uchun birinchi kirishda parolni o'zgartirishingiz shart.",
+    "current": "Joriy parol",
+    "new": "Yangi parol",
+    "confirm": "Yangi parolni tasdiqlang",
+    "save": "Saqlash",
+    "saving": "Saqlanmoqda...",
+    "currentRequired": "Joriy parolni kiriting",
+    "newMin": "Parol kamida 8 ta belgidan iborat bo'lishi kerak",
+    "confirmRequired": "Parolni tasdiqlang",
+    "mismatch": "Parollar mos kelmadi",
+    "invalidCurrent": "Joriy parol noto'g'ri",
+    "error": "Xatolik yuz berdi. Qayta urinib ko'ring"
   }
 }

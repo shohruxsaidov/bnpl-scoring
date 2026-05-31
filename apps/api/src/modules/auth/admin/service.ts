@@ -151,6 +151,18 @@ export async function verifyAdminSession(db: Db, sessionToken: string) {
   return { session, admin };
 }
 
+export async function changeAdminPassword(
+  db: Db,
+  id: bigint,
+  newPassword: string,
+): Promise<void> {
+  const passwordHash = await hashPassword(newPassword);
+  await db
+    .update(adminUsers)
+    .set({ passwordHash, mustChangePassword: false })
+    .where(eq(adminUsers.id, id));
+}
+
 export async function revokeAdminSession(
   db: Db,
   sessionToken: string,

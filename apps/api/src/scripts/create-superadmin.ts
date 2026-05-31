@@ -76,6 +76,7 @@ async function main() {
       fullName,
       roleId: superRoleId,
       active: true,
+      mustChangePassword: false,
     });
     console.log(`✓ Created Superadmin ${email}`);
   }

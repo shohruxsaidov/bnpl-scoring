@@ -3,6 +3,7 @@ import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox";
 import type { FastifyInstance, FastifyReply } from "fastify";
 import { env } from "../../../env";
 import {
+  changeAdminPassword,
   countActiveSuperadmins,
   createAdminSession,
   createAdminUser,
@@ -61,7 +62,7 @@ function clearAuthCookies(reply: FastifyReply): void {
   reply.clearCookie(SESSION_COOKIE, { ...baseCookie });
 }
 
-type AdminRow = { id: bigint; email: string; fullName: string; roleId: bigint | null };
+type AdminRow = { id: bigint; email: string; fullName: string; roleId: bigint | null; mustChangePassword: boolean };
 
 // Serializes an admin together with the Feature set its Role grants, so the
 // frontend can drive UI from `permissions`.
@@ -89,6 +90,7 @@ async function serializeAdmin(db: Db, admin: AdminRow) {
     roleKey,
     roleName,
     isSuperadmin,
+    mustChangePassword: admin.mustChangePassword,
     permissions: effectiveFeatures("admin", { isSuperadmin, features }),
   };
 }
@@ -167,6 +169,31 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
 
     return { ok: true };
   });
+
+  /* ── Change password ────────────────────────────────────────────────────── */
+
+  const ChangePasswordBody = Type.Object({
+    currentPassword: Type.String({ minLength: 1 }),
+    newPassword: Type.String({ minLength: 8 }),
+  });
+
+  fastify.post(
+    "/change-password",
+    { schema: { body: ChangePasswordBody }, preHandler: app.verifyAdminJwt },
+    async (request, reply) => {
+      const payload = request.user as { sub: string };
+      const admin = await findAdminById(db, BigInt(payload.sub));
+      if (!admin || !admin.active) {
+        return reply.code(401).send({ code: "unauthorized" });
+      }
+      const ok = await verifyPassword(admin.passwordHash, request.body.currentPassword);
+      if (!ok) {
+        return reply.code(400).send({ code: "invalid_current_password" });
+      }
+      await changeAdminPassword(db, admin.id, request.body.newPassword);
+      return { ok: true };
+    },
+  );
 
   fastify.post("/logout", async (request, reply) => {
     const sessionToken = request.cookies[SESSION_COOKIE];

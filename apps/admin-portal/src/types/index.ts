@@ -10,6 +10,7 @@ export interface PlatformAdmin {
   roleKey: string | null
   roleName: string | null
   isSuperadmin: boolean
+  mustChangePassword: boolean
   permissions: string[]
 }
 

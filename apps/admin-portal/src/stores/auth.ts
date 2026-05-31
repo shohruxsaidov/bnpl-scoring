@@ -61,6 +61,22 @@ export const useAuthStore = defineStore('auth', {
       this.admin = body.user;
     },
 
+    async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+      const res = await fetch(`${API}/auth/admin/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.code ?? 'error');
+      }
+      if (this.admin) {
+        this.admin.mustChangePassword = false;
+      }
+    },
+
     async logout(): Promise<void> {
       await fetch(`${API}/auth/admin/logout`, {
         method: 'POST',

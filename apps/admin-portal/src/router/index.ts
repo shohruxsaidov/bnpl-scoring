@@ -9,6 +9,12 @@ const routes: RouteRecordRaw[] = [
     meta: { public: true, titleKey: 'routeTitle.login' },
   },
   {
+    path: '/change-password',
+    name: 'change-password',
+    component: () => import('@/views/ChangePasswordView.vue'),
+    meta: { titleKey: 'routeTitle.changePassword' },
+  },
+  {
     path: '/',
     component: () => import('@/components/AppShell.vue'),
     children: [
@@ -140,6 +146,10 @@ router.beforeEach((to) => {
 
   if (!auth.isAuthenticated) {
     return { name: 'login' }
+  }
+
+  if (auth.admin?.mustChangePassword && to.name !== 'change-password') {
+    return { name: 'change-password' }
   }
 
   // Dev-only screens are reserved to Superadmin.

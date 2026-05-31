@@ -113,6 +113,7 @@ export const adminUsers = pgTable('admin_users', {
   // Exactly one admin Role; nullable only to ease migration/backfill of existing rows.
   roleId: bigint('role_id', { mode: 'bigint' }).references(() => roles.id),
   active: boolean('active').notNull().default(true),
+  mustChangePassword: boolean('must_change_password').notNull().default(true),
   createdById: bigint('created_by_id', { mode: 'bigint' }), // null for the initial seeded admin
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
