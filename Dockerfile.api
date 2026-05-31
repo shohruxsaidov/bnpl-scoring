@@ -32,5 +32,6 @@ ENV HOST=0.0.0.0
 COPY --from=build /app /app
 WORKDIR /app/apps/api
 EXPOSE 4000
+RUN npm i tsx -g
 # apps/api "start" script -> node dist/server.js
-CMD ["node", "dist/server.js"]
+CMD ["tsx", "dist/server.js"]
