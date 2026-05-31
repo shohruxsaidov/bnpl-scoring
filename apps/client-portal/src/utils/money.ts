@@ -70,6 +70,11 @@ export function relativeTime(iso: string): string {
   return `${months} month${months === 1 ? '' : 's'} ago`
 }
 
+/** Format a deal number as CN-0000001 */
+export function formatDealNumber(n: number): string {
+  return `CN-${String(n).padStart(7, '0')}`
+}
+
 /** Mask a PINFL keeping the first 6 and last 4 digits: 312030****0011 */
 export function maskPinfl(pinfl: string): string {
   if (pinfl.length !== 14) return pinfl

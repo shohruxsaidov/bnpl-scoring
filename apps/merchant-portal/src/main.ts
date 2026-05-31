@@ -17,6 +17,7 @@ import uz from './locales/uz.json'
 import ru from './locales/ru.json'
 import './styles/main.css'
 import { useAuthStore } from './stores/auth'
+import { useNotificationsStore } from './stores/notifications'
 
 const i18n = createI18n({
   legacy: false,
@@ -56,4 +57,10 @@ app.directive('tooltip', Tooltip)
   // fires with the correct auth state already set.
   app.use(router)
   app.mount('#app')
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').then(() => {
+      useNotificationsStore().listenForPushMessages()
+    }).catch(() => {})
+  }
 })()

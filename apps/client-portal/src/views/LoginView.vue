@@ -268,7 +268,7 @@ onBeforeUnmount(() => {
             <div class="phone-input" :class="{ invalid: !!phoneError }">
               <span class="prefix font-mono">+998</span>
               <input id="phone" class="phone-field font-mono" inputmode="numeric" autocomplete="tel"
-                placeholder="91 555 22 33" :value="phoneDisplay" @input="onPhoneInput" @keyup.enter="submitPhone" />
+                placeholder="00 000 00 00" :value="phoneDisplay" @input="onPhoneInput" @keyup.enter="submitPhone" />
             </div>
             <span v-if="phoneError" class="field-error">{{ phoneError }}</span>
           </div>

@@ -60,6 +60,7 @@ function toAppNotification(raw: ApiNotification): AppNotification {
 export const useNotificationsStore = defineStore('notifications', {
   state: () => ({
     items: [] as AppNotification[],
+    pushEnabled: false,
     _source: null as EventSource | null,
   }),
 
@@ -125,6 +126,71 @@ export const useNotificationsStore = defineStore('notifications', {
       apiFetch('/notifications', { method: 'DELETE' }).catch(() => {
         this.items = before
       })
+    },
+
+    listenForPushMessages() {
+      navigator.serviceWorker?.addEventListener('message', (event) => {
+        if (event.data?.type === 'push_notification') {
+          const raw = event.data.payload as ApiNotification
+          const n = toAppNotification(raw)
+          if (!this.items.find((x) => x.id === n.id)) {
+            this.items = [n, ...this.items]
+          }
+        }
+      })
+    },
+
+    async checkPushStatus() {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.getSubscription()
+      this.pushEnabled = !!sub
+    },
+
+    async enablePush() {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+      const permission = await Notification.requestPermission()
+      if (permission !== 'granted') return
+
+      const keyRes = await fetch(`${API}/merchant/push/vapid-key`, { credentials: 'include' })
+      const { publicKey } = await keyRes.json()
+
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: publicKey,
+      })
+
+      const { endpoint, keys } = sub.toJSON() as {
+        endpoint: string
+        keys: { p256dh: string; auth: string }
+      }
+
+      await fetch(`${API}/merchant/push/subscribe`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint, p256dh: keys.p256dh, auth: keys.auth }),
+      })
+
+      this.pushEnabled = true
+    },
+
+    async disablePush() {
+      if (!('serviceWorker' in navigator)) return
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.getSubscription()
+      if (!sub) return
+
+      await fetch(`${API}/merchant/push/subscribe`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: sub.endpoint }),
+      })
+
+      await sub.unsubscribe()
+      this.pushEnabled = false
     },
   },
 })

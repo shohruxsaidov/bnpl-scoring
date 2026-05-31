@@ -337,7 +337,7 @@ function goToLogin() {
             <div class="phone-input" :class="{ invalid: !!phoneError }">
               <span class="prefix font-mono">+998</span>
               <input id="reg-phone" class="phone-field font-mono" inputmode="numeric" autocomplete="tel"
-                placeholder="91 555 22 33" :value="phoneDisplay" @input="onPhoneInput" @keyup.enter="submitPhone" />
+                placeholder="00 000 00 00" :value="phoneDisplay" @input="onPhoneInput" @keyup.enter="submitPhone" />
             </div>
             <span v-if="phoneError" class="field-error">{{ phoneError }}</span>
           </div>
@@ -1173,14 +1173,19 @@ function goToLogin() {
     grid-template-columns: 1fr;
   }
 
+  .auth-card {
+    padding: 20px
+  }
+
   .auth-hero {
     display: none;
   }
 
   .auth-form-wrap {
     background: var(--bg-surface);
-    padding: 1.25rem;
+    padding: 15px;
     align-content: center;
+    min-height: 100svh;
   }
 
   .mobile-brand {

@@ -1,5 +1,5 @@
 import webpush from 'web-push'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import type { Db } from '../../db'
 import { pushSubscriptions } from './db/schema'
 import { env } from '../../env'
@@ -12,27 +12,30 @@ export interface PushSubscriptionInput {
   auth: string
 }
 
-export async function upsertSubscription(db: Db, userId: bigint, sub: PushSubscriptionInput) {
+export async function upsertSubscription(
+  db: Db,
+  actorType: 'client' | 'employee',
+  userId: bigint,
+  sub: PushSubscriptionInput,
+) {
   await db
     .insert(pushSubscriptions)
-    .values({ userId, ...sub })
+    .values({ actorType, userId, ...sub })
     .onConflictDoUpdate({
       target: pushSubscriptions.endpoint,
-      set: { p256dh: sub.p256dh, auth: sub.auth, userId },
+      set: { p256dh: sub.p256dh, auth: sub.auth, userId, actorType },
     })
 }
 
-export async function deleteSubscription(db: Db, userId: bigint, endpoint: string) {
-  await db
-    .delete(pushSubscriptions)
-    .where(eq(pushSubscriptions.endpoint, endpoint))
+export async function deleteSubscription(db: Db, endpoint: string) {
+  await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint))
 }
 
-export async function sendPushToUser(db: Db, userId: bigint, payload: unknown) {
+async function sendPush(db: Db, actorType: 'client' | 'employee', userId: bigint, payload: unknown) {
   const subs = await db
     .select()
     .from(pushSubscriptions)
-    .where(eq(pushSubscriptions.userId, userId))
+    .where(and(eq(pushSubscriptions.actorType, actorType), eq(pushSubscriptions.userId, userId)))
 
   if (!subs.length) return
 
@@ -49,6 +52,14 @@ export async function sendPushToUser(db: Db, userId: bigint, payload: unknown) {
       }
     }),
   )
+}
+
+export function sendPushToUser(db: Db, userId: bigint, payload: unknown) {
+  return sendPush(db, 'client', userId, payload)
+}
+
+export function sendPushToEmployee(db: Db, employeeId: bigint, payload: unknown) {
+  return sendPush(db, 'employee', employeeId, payload)
 }
 
 export async function broadcastPush(db: Db, payload: unknown) {

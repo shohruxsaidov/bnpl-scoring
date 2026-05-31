@@ -38,6 +38,7 @@ export default async function clientDealRoutes(app: FastifyInstance) {
 
         return {
           id: r.deal.id,
+          dealNumber: Number(r.deal.dealNumber),
           status: r.deal.status,
           merchant: r.merchant?.name ?? '',
           amount: Number(r.deal.amount ?? 0),
@@ -88,6 +89,7 @@ export default async function clientDealRoutes(app: FastifyInstance) {
     return {
       deal: {
         id: row.deal.id,
+        dealNumber: Number(row.deal.dealNumber),
         status: row.deal.status,
         merchant: row.merchant?.name ?? '',
         amount: Number(row.deal.amount ?? 0),

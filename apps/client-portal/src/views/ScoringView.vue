@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import MonoAmount from '@/components/MonoAmount.vue'
 import { useScoringStore } from '@/stores/scoring'
 import { API_URL } from '@/stores/auth'
 
 useI18n()
 const scoring = useScoringStore()
+const router = useRouter()
 
 // ---------------------------------------------------------------------------
 // Wizard state
@@ -147,6 +149,11 @@ function retry() {
   step.value = 'intro'
 }
 
+const backLimitStep = () => {
+  step.value = 'limit'
+  scoring.fetchLimit()
+}
+
 function startRescore() {
   scoring.clearLimit()
   retry()
@@ -238,6 +245,9 @@ const cardValid = computed(() => {
         <p class="consent-text">{{ $t('scoring.consentText') }}</p>
       </div>
 
+      <button class="btn-ghost wz-btn" @click="backLimitStep">
+        {{ $t('common.back') }}
+      </button>
       <button class="btn-gradient wz-btn" @click="startScoring">
         {{ $t('scoring.startBtn') }}
       </button>
@@ -260,24 +270,12 @@ const cardValid = computed(() => {
 
       <div class="form-card surface-card">
         <label class="field-label">{{ $t('scoring.cardNumber') }}</label>
-        <input
-          class="field-input font-mono"
-          :value="cardNumber"
-          placeholder="0000 0000 0000 0000"
-          inputmode="numeric"
-          maxlength="19"
-          @input="onCardInput"
-        />
+        <input class="field-input font-mono" :value="cardNumber" placeholder="0000 0000 0000 0000" inputmode="numeric"
+          maxlength="19" @input="onCardInput" />
 
         <label class="field-label mt">{{ $t('scoring.cardExpiry') }}</label>
-        <input
-          class="field-input font-mono"
-          :value="cardExpiry"
-          placeholder="MM/YY"
-          inputmode="numeric"
-          maxlength="5"
-          @input="onExpiryInput"
-        />
+        <input class="field-input font-mono" :value="cardExpiry" placeholder="MM/YY" inputmode="numeric" maxlength="5"
+          @input="onExpiryInput" />
       </div>
 
       <button class="btn-gradient wz-btn" :disabled="!cardValid" @click="addCard">
@@ -298,13 +296,8 @@ const cardValid = computed(() => {
 
       <div class="form-card surface-card">
         <label class="field-label">{{ $t('scoring.otpCode') }}</label>
-        <input
-          v-model="otp"
-          class="field-input font-mono otp-input"
-          placeholder="• • • •"
-          inputmode="numeric"
-          maxlength="8"
-        />
+        <input v-model="otp" class="field-input font-mono otp-input" placeholder="• • • •" inputmode="numeric"
+          maxlength="8" />
       </div>
 
       <button class="btn-gradient wz-btn" :disabled="otp.length < 4" @click="confirmOtp">
@@ -364,6 +357,7 @@ const cardValid = computed(() => {
 .limit-amount {
   color: #fff;
 }
+
 .limit-label {
   font-size: 0.78rem;
   font-weight: 700;
@@ -596,7 +590,9 @@ const cardValid = computed(() => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-title {

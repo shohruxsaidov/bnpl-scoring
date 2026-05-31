@@ -347,7 +347,7 @@ const clientFullName = computed(() =>
         <label class="field-label">{{ $t('stepClient.clientPhone') }}</label>
         <div class="phone-row">
           <span class="phone-prefix">+998</span>
-          <InputText v-model="otpPhone" inputmode="numeric" placeholder="91 555 22 33" class="phone-field-input"
+          <InputText v-model="otpPhone" inputmode="numeric" placeholder="00 000 00 00" class="phone-field-input"
             :invalid="!!otpPhoneError" :disabled="otpLoading" @keydown.enter="sendOtp" @input="otpPhoneError = ''" />
         </div>
         <span v-if="otpPhoneError" class="field-error">{{ otpPhoneError }}</span>
@@ -991,6 +991,7 @@ const clientFullName = computed(() =>
   font-weight: 600;
   font-size: 0.86rem;
 }
+
 .katm-error {
   margin-top: 0.8rem;
   display: flex;
@@ -1003,6 +1004,7 @@ const clientFullName = computed(() =>
   font-weight: 600;
   font-size: 0.86rem;
 }
+
 .btn-sm {
   font-size: 0.8rem;
   padding: 0.25rem 0.6rem;

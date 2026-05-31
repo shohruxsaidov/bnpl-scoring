@@ -7,7 +7,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useDealsStore } from '@/stores/deals'
 import StatusBadge from '@/components/StatusBadge.vue'
 import MonoAmount from '@/components/MonoAmount.vue'
-import { formatDateLong } from '@/utils/money'
+import { formatDateLong, formatDealNumber } from '@/utils/money'
 import type { Deal } from '@/types'
 
 const auth = useAuthStore()
@@ -80,7 +80,7 @@ function pay(deal: Deal) {
         <div class="dc-top">
           <div>
             <div class="dc-merchant">{{ deal.merchant }}</div>
-            <div class="dc-id font-mono">{{ deal.id }}</div>
+            <div class="dc-id font-mono">{{ formatDealNumber(deal.dealNumber) }}</div>
           </div>
           <StatusBadge :status="deal.status" />
         </div>
@@ -148,7 +148,7 @@ function pay(deal: Deal) {
           >
             <div>
               <div class="dc-merchant">{{ deal.merchant }}</div>
-              <div class="dc-id font-mono">{{ deal.id }}</div>
+              <div class="dc-id font-mono">{{ formatDealNumber(deal.dealNumber) }}</div>
             </div>
             <div class="closed-right">
               <MonoAmount :value="deal.amount" size="sm" :gradient="false" />

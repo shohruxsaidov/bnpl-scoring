@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useDealsStore } from '@/stores/deals'
 import StatusBadge from '@/components/StatusBadge.vue'
 import MonoAmount from '@/components/MonoAmount.vue'
-import { formatDateLong } from '@/utils/money'
+import { formatDateLong, formatDealNumber } from '@/utils/money'
 
 const deals = useDealsStore()
 const router = useRouter()
@@ -53,7 +53,7 @@ function openDeal(id: string) {
       <div class="dc-top">
         <div>
           <div class="dc-merchant">{{ deal.merchant }}</div>
-          <div class="dc-id font-mono">{{ deal.id }}</div>
+          <div class="dc-id font-mono">{{ formatDealNumber(deal.dealNumber) }}</div>
         </div>
         <StatusBadge :status="deal.status" />
       </div>

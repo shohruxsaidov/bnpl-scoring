@@ -6,7 +6,7 @@ import { useToast } from 'primevue/usetoast'
 import { useDealsStore } from '@/stores/deals'
 import StatusBadge from '@/components/StatusBadge.vue'
 import MonoAmount from '@/components/MonoAmount.vue'
-import { formatDateLong, formatSomShort } from '@/utils/money'
+import { formatDateLong, formatSomShort, formatDealNumber } from '@/utils/money'
 
 const route = useRoute()
 const router = useRouter()
@@ -68,7 +68,7 @@ function pay() {
       <div class="dh-top">
         <div>
           <div class="dh-merchant">{{ deal.merchant }}</div>
-          <div class="dh-id font-mono">{{ deal.id }}</div>
+          <div class="dh-id font-mono">{{ formatDealNumber(deal.dealNumber) }}</div>
         </div>
         <StatusBadge :status="deal.status" />
       </div>

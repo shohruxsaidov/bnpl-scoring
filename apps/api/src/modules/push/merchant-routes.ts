@@ -4,10 +4,10 @@ import type { FastifyInstance } from 'fastify'
 import { upsertSubscription, deleteSubscription } from './service'
 import { env } from '../../env'
 
-export default async function pushRoutes(app: FastifyInstance) {
+export default async function merchantPushRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
   const db = app.db
-  const preHandler = app.verifyClientJwt
+  const preHandler = app.verifyMerchantJwt
 
   /* ── GET /vapid-key ─────────────────────────────────────────────────────── */
 
@@ -25,8 +25,8 @@ export default async function pushRoutes(app: FastifyInstance) {
     '/subscribe',
     { schema: { body: SubscribeBody }, preHandler },
     async (request, reply) => {
-      const userId = BigInt((request.user as { sub: string }).sub)
-      await upsertSubscription(db, 'client', userId, request.body)
+      const employeeId = BigInt((request.user as { sub: string }).sub)
+      await upsertSubscription(db, 'employee', employeeId, request.body)
       return reply.code(201).send({ ok: true })
     },
   )

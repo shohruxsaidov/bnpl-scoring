@@ -23,6 +23,7 @@ export interface ScheduleEntry {
 
 export interface Deal {
   id: string
+  dealNumber: number
   merchant: string
   amount: number
   totalPayable: number

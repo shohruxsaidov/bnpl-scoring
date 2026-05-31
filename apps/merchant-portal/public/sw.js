@@ -10,7 +10,6 @@ self.addEventListener('push', (event) => {
         focused.postMessage({ type: 'push_notification', payload: data })
         return
       }
-      // post to any open tab so the store can update when the user returns
       if (clientList.length) clientList[0].postMessage({ type: 'push_notification', payload: data })
       return self.registration.showNotification(title, options)
     }),
