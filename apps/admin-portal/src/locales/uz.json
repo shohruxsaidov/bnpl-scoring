@@ -10,7 +10,8 @@
     "som": "so'm",
     "mo": "oy",
     "retry": "Qayta urinish",
-    "error": "Xatolik yuz berdi"
+    "error": "Xatolik yuz berdi",
+    "noData": "Ma'lumot yo'q"
   },
   "routeTitle": {
     "login": "Kirish",
@@ -518,6 +519,7 @@
     "statusScoring": "Skoring",
     "dealsCount": "{count} ta shartnoma",
     "dealId": "Shartnoma ID",
+    "dealNumber": "Shartnoma raqami",
     "client": "Mijoz",
     "amount": "Summa",
     "score": "Ball",

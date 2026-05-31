@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/vue-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { computed } from 'vue'
 import { apiFetch } from '@/utils/apiFetch'
 import type { Ref } from 'vue'
 
@@ -29,6 +30,7 @@ export interface AdminDealFactor {
 
 export interface AdminDealDetail {
   id: string
+  dealNumber: string
   merchantId: string
   merchantName: string
   clientName: string
@@ -51,21 +53,54 @@ export interface AdminDealDetail {
   factors: AdminDealFactor[]
 }
 
+export interface DealComment {
+  id: string
+  text: string
+  createdAt: string
+  authorName: string
+}
+
 // ---------------------------------------------------------------------------
-// Query key
+// Query keys
 // ---------------------------------------------------------------------------
 
 export const adminDealKey = (id: string) => ['admin', 'deals', id] as const
+export const adminDealCommentsKey = (id: string) => ['admin', 'deals', id, 'comments'] as const
 
 // ---------------------------------------------------------------------------
-// Hook
+// Hooks
 // ---------------------------------------------------------------------------
 
 export function useAdminDealQuery(id: Ref<string>) {
   return useQuery({
-    queryKey: adminDealKey(id.value),
+    queryKey: computed(() => adminDealKey(id.value)),
     queryFn: () =>
       apiFetch<{ deal: AdminDealDetail }>(`/admin/deals/${id.value}`).then((r) => r.deal),
     enabled: () => !!id.value,
+  })
+}
+
+export function useDealCommentsQuery(id: Ref<string>) {
+  return useQuery({
+    queryKey: computed(() => adminDealCommentsKey(id.value)),
+    queryFn: () =>
+      apiFetch<{ comments: DealComment[] }>(`/admin/deals/${id.value}/comments`).then(
+        (r) => r.comments,
+      ),
+    enabled: () => !!id.value,
+  })
+}
+
+export function useAddDealComment(dealId: Ref<string>) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (text: string) =>
+      apiFetch<{ comment: DealComment }>(`/admin/deals/${dealId.value}/comments`, {
+        method: 'POST',
+        body: JSON.stringify({ text }),
+      }).then((r) => r.comment),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: adminDealCommentsKey(dealId.value) })
+    },
   })
 }

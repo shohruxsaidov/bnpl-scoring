@@ -1,11 +1,15 @@
-import { desc, eq, inArray } from 'drizzle-orm'
+import { asc, desc, eq, inArray } from 'drizzle-orm'
 import type { Db } from '../../../db'
-import { deals, dealItems, dealPaymentSchedules, clientScorings } from '../../deals/db/schema'
-import { clients, tariffs, merchantUsers, merchants } from '../../id/db/schema'
+import { deals, dealItems, dealPaymentSchedules, clientScorings, dealComments } from '../../deals/db/schema'
+import { clients, tariffs, merchantUsers, merchants, adminUsers } from '../../id/db/schema'
 
 // ---------------------------------------------------------------------------
 // Criteria → human-readable label map
 // ---------------------------------------------------------------------------
+
+function formatDealNumber(n: bigint | null | undefined): string {
+  return n != null ? `CN-${String(n).padStart(7, '0')}` : '—'
+}
 
 const CRITERIA_LABELS: Record<string, string> = {
   income: 'Monthly income',
@@ -122,6 +126,7 @@ export async function listAdminDeals(
 
     return {
       id: deal.id,
+      dealNumber: formatDealNumber(deal.dealNumber),
       tenantId: deal.merchantId.toString(),
       clientName: client ? `${client.firstName} ${client.lastName}` : '—',
       clientPinfl: client?.pinfl ?? '—',
@@ -188,6 +193,7 @@ export async function getAdminDeal(db: Db, id: string) {
 
   return {
     id: deal.id,
+    dealNumber: formatDealNumber(deal.dealNumber),
     merchantId: deal.merchantId.toString(),
     merchantName: merchant?.name ?? '—',
     clientName: client ? `${client.firstName} ${client.lastName}` : '—',
@@ -223,4 +229,46 @@ export async function getAdminDeal(db: Db, id: string) {
       scoring?.criteriaScores as Record<string, number> | null,
     ),
   }
+}
+
+// ---------------------------------------------------------------------------
+// Deal comments — list and create
+// ---------------------------------------------------------------------------
+
+export async function listDealComments(db: Db, dealId: string) {
+  const rows = await db
+    .select({
+      id: dealComments.id,
+      text: dealComments.text,
+      createdAt: dealComments.createdAt,
+      authorName: adminUsers.fullName,
+    })
+    .from(dealComments)
+    .innerJoin(adminUsers, eq(dealComments.adminUserId, adminUsers.id))
+    .where(eq(dealComments.dealId, dealId))
+    .orderBy(asc(dealComments.createdAt))
+
+  return rows.map((r) => ({
+    id: r.id.toString(),
+    text: r.text,
+    createdAt: r.createdAt.toISOString(),
+    authorName: r.authorName,
+  }))
+}
+
+export async function createDealComment(
+  db: Db,
+  dealId: string,
+  adminUserId: bigint,
+  text: string,
+) {
+  const [row] = await db
+    .insert(dealComments)
+    .values({ dealId, adminUserId, text })
+    .returning({
+      id: dealComments.id,
+      createdAt: dealComments.createdAt,
+    })
+
+  return { id: row!.id.toString(), dealId, text, createdAt: row!.createdAt.toISOString() }
 }

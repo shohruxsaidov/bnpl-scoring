@@ -10,7 +10,8 @@
     "som": "сум",
     "mo": "мес",
     "retry": "Повторить",
-    "error": "Произошла ошибка"
+    "error": "Произошла ошибка",
+    "noData": "Нет данных"
   },
   "routeTitle": {
     "login": "Войти",
@@ -81,7 +82,15 @@
     "count": "{count} просроченных",
     "bucket": "{range} дней",
     "daysOverdue": "{days} дн.",
-    "missed": "{count} пропущено"
+    "missed": "{count} пропущено",
+    "panelComments": "Комментарии",
+    "panelPrincipal": "Сумма долга",
+    "panelMissed": "Пропущено",
+    "panelDays": "Дней просрочки",
+    "commentsEmpty": "Комментариев пока нет",
+    "commentPlaceholder": "Написать комментарий…",
+    "commentSubmit": "Отправить",
+    "commentSubmitting": "Отправка…"
   },
   "scoringHistory": {
     "allMerchants": "Все мерчанты",
@@ -518,6 +527,7 @@
     "statusScoring": "Скоринг",
     "dealsCount": "{count} сделок",
     "dealId": "ID сделки",
+    "dealNumber": "Номер сделки",
     "client": "Клиент",
     "amount": "Сумма",
     "score": "Балл",
@@ -687,7 +697,12 @@
     "notFound": "Сделка не найдена.",
     "toDeals": "Все сделки",
     "som": "сум",
-    "month": "мес"
+    "month": "мес",
+    "tabComments": "Комментарии",
+    "commentsEmpty": "Комментариев пока нет",
+    "commentPlaceholder": "Написать комментарий…",
+    "commentSubmit": "Отправить",
+    "commentSubmitting": "Отправка…"
   },
   "onboarding": {
     "title": "Онбординг нового мерчанта",

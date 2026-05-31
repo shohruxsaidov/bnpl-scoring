@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { formatDate, formatDateTime, formatSomShort } from '@/utils/money'
-import { useAdminDealQuery } from '@/composables/useAdminDealsApi'
+import { useAdminDealQuery, useDealCommentsQuery, useAddDealComment } from '@/composables/useAdminDealsApi'
 
 const route = useRoute()
 const router = useRouter()
@@ -22,7 +22,22 @@ const TABS = computed(() => [
   { key: 'accounting', label: t('dealDetail.tabAccounting') },
   { key: 'overdue',    label: t('dealDetail.tabOverdue') },
   { key: 'schedule',   label: t('dealDetail.tabSchedule') },
+  { key: 'comments',   label: t('dealDetail.tabComments') },
 ])
+
+// ── Comments ───────────────────────────────────────────────────────────────
+
+const { data: comments } = useDealCommentsQuery(dealId)
+const { mutate: addComment, isPending: isSubmitting } = useAddDealComment(dealId)
+const newComment = ref('')
+
+function submitComment() {
+  const text = newComment.value.trim()
+  if (!text) return
+  addComment(text, {
+    onSuccess: () => { newComment.value = '' },
+  })
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -255,7 +270,7 @@ function formatDateShort(iso: string): string {
           <i class="pi pi-arrow-left" /> {{ $t('dealDetail.backToDeals') }}
         </button>
         <span class="bc-sep">/</span>
-        <span class="bc-current font-mono">{{ deal.id }}</span>
+        <span class="bc-current font-mono">{{ deal.dealNumber }}</span>
         <StatusBadge :status="(deal.status as any)" />
       </div>
       <div class="hdr-meta muted">
@@ -290,7 +305,7 @@ function formatDateShort(iso: string): string {
           </div>
           <div class="field-row">
             <span class="fl">{{ $t('dealDetail.dealNumber') }}</span>
-            <span class="fv font-mono deal-id-val">{{ deal.id }}</span>
+            <span class="fv font-mono deal-id-val">{{ deal.dealNumber }}</span>
             <span class="fl">{{ $t('dealDetail.status') }}</span>
             <span class="fv"><StatusBadge :status="(deal.status as any)" /></span>
           </div>
@@ -390,7 +405,7 @@ function formatDateShort(iso: string): string {
           </thead>
           <tbody>
             <tr>
-              <td class="font-mono">{{ deal.id }}</td>
+              <td class="font-mono">{{ deal.dealNumber }}</td>
               <td>{{ $t('dealDetail.murabaha') }}</td>
               <td>{{ deal.clientName }}</td>
               <td>{{ deal.termMonths }} {{ $t('dealDetail.month') }}</td>
@@ -431,7 +446,7 @@ function formatDateShort(iso: string): string {
       <div class="section">
         <div class="kontrakt-header">
           <div>
-            <h4 class="section-title" style="margin-bottom:.2rem">{{ $t('dealDetail.contractNo', { id: deal.id }) }}</h4>
+            <h4 class="section-title" style="margin-bottom:.2rem">{{ $t('dealDetail.contractNo', { id: deal.dealNumber }) }}</h4>
             <span class="muted" style="font-size:.82rem">{{ $t('dealDetail.typeDate', { date: formatDate(deal.createdAt) }) }}</span>
           </div>
           <span class="k-badge">{{ $t('dealDetail.activeContract') }}</span>
@@ -610,6 +625,41 @@ function formatDateShort(iso: string): string {
             </tbody>
           </table>
         </template>
+      </div>
+    </div>
+
+    <!-- ── Comments ────────────────────────────────────────────────────────── -->
+    <div v-else-if="activeTab === 'comments'" class="surface-card deal-card">
+      <div class="section">
+        <div v-if="!comments?.length" class="empty-state">
+          <i class="pi pi-comment" />
+          <p>{{ $t('dealDetail.commentsEmpty') }}</p>
+        </div>
+        <div v-else class="comment-list">
+          <div v-for="c in comments" :key="c.id" class="comment-item">
+            <div class="comment-meta">
+              <span class="comment-author">{{ c.authorName }}</span>
+              <span class="muted font-mono comment-time">{{ formatDateTime(c.createdAt) }}</span>
+            </div>
+            <p class="comment-text">{{ c.text }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="section comment-form">
+        <textarea
+          v-model="newComment"
+          class="comment-textarea"
+          :placeholder="$t('dealDetail.commentPlaceholder')"
+          rows="3"
+          :disabled="isSubmitting"
+          @keydown.ctrl.enter="submitComment"
+        />
+        <div class="comment-form-footer">
+          <button class="btn-primary" :disabled="!newComment.trim() || isSubmitting" @click="submitComment">
+            <i class="pi pi-send" />
+            {{ isSubmitting ? $t('dealDetail.commentSubmitting') : $t('dealDetail.commentSubmit') }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -835,6 +885,32 @@ function formatDateShort(iso: string): string {
 .empty-state { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; padding: 3rem 2rem; color: var(--text-secondary); text-align: center; }
 .empty-state i { font-size: 2rem; opacity: 0.5; }
 .empty-state p { margin: 0; font-weight: 600; font-size: 0.92rem; }
+
+/* ── Comments ─────────────────────────────────────────────────────────────── */
+.comment-list { display: flex; flex-direction: column; gap: 0; }
+.comment-item { padding: 0.9rem 0; border-bottom: 1px solid var(--border-subtle); }
+.comment-item:last-child { border-bottom: none; }
+.comment-meta { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem; }
+.comment-author { font-size: 0.82rem; font-weight: 700; }
+.comment-time { font-size: 0.75rem; }
+.comment-text { margin: 0; font-size: 0.88rem; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+.comment-form { display: flex; flex-direction: column; gap: 0.75rem; }
+.comment-textarea {
+  width: 100%; padding: 0.65rem 0.8rem; font-size: 0.88rem; font-family: inherit;
+  background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 8px;
+  color: var(--text-primary); resize: vertical; outline: none; box-sizing: border-box;
+  transition: border-color 0.15s ease;
+}
+.comment-textarea:focus { border-color: var(--accent-2); }
+.comment-textarea:disabled { opacity: 0.6; }
+.comment-form-footer { display: flex; justify-content: flex-end; }
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  background: var(--gradient-hero); color: #fff; border: none; border-radius: 8px;
+  padding: 0.5rem 1.1rem; font-size: 0.85rem; font-weight: 700; font-family: inherit;
+  cursor: pointer; transition: opacity 0.15s ease;
+}
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ── Utilities ────────────────────────────────────────────────────────────── */
 .muted { color: var(--text-secondary); }

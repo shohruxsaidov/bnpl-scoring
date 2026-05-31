@@ -3,6 +3,7 @@ import { apiFetch } from '@/utils/apiFetch'
 
 export interface OverdueCard {
   dealId: string
+  dealNumber: string
   merchantId: string
   merchantName: string
   clientName: string

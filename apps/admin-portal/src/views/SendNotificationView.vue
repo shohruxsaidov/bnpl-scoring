@@ -385,6 +385,7 @@ function targetLabel(b: Broadcast): string {
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
+  overflow: hidden;
 }
 
 .section-title {
@@ -402,6 +403,7 @@ function targetLabel(b: Broadcast): string {
 .target-tab {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.4rem;
   padding: 0.5rem 0.75rem;
   border-radius: 9px;
@@ -412,7 +414,8 @@ function targetLabel(b: Broadcast): string {
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s;
-  white-space: nowrap;
+  text-align: center;
+  word-break: break-word;
 }
 .target-tab:hover {
   border-color: var(--accent-2);

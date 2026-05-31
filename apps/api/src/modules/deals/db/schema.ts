@@ -12,7 +12,7 @@ import {
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
-import { clients, merchantUsers, merchants, branches, tariffs, products } from '../../id/db/schema'
+import { clients, merchantUsers, merchants, branches, tariffs, products, adminUsers } from '../../id/db/schema'
 
 // ---------------------------------------------------------------------------
 // deals
@@ -50,6 +50,8 @@ export const deals = pgTable('deals', {
   lang: varchar('lang', { length: 5 }).notNull().default('ru'),
   // MinIO object key for the cached Kontrakt PDF; null until first generation
   pdfUrl: text('pdf_url'),
+  // Human-readable sequential identifier, formatted as CN-0000001 at the app layer
+  dealNumber: bigserial('deal_number', { mode: 'bigint' }).notNull().unique(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
 
@@ -110,4 +112,16 @@ export const dealPaymentSchedules = pgTable('deal_payment_schedules', {
   paidAmount: bigint('paid_amount', { mode: 'bigint' }).notNull().$defaultFn(() => 0n),
   paid: boolean('paid').notNull().default(false),
   paidAt: timestamp('paid_at', { withTimezone: true }),
+})
+
+// ---------------------------------------------------------------------------
+// deal_comments
+// Admin-authored notes on a deal. Append-only, not editable or deletable.
+// ---------------------------------------------------------------------------
+export const dealComments = pgTable('deal_comments', {
+  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+  dealId: uuid('deal_id').notNull().references(() => deals.id, { onDelete: 'cascade' }),
+  adminUserId: bigint('admin_user_id', { mode: 'bigint' }).notNull().references(() => adminUsers.id),
+  text: text('text').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })

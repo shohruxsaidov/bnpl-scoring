@@ -1,7 +1,7 @@
 import { Type } from '@sinclair/typebox'
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import type { FastifyInstance } from 'fastify'
-import { listAdminDeals, getAdminDeal } from './service'
+import { listAdminDeals, getAdminDeal, listDealComments, createDealComment } from './service'
 
 export default async function adminDealRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
@@ -14,6 +14,10 @@ export default async function adminDealRoutes(app: FastifyInstance) {
   })
 
   const IdParams = Type.Object({ id: Type.String() })
+
+  const CreateCommentBody = Type.Object({
+    text: Type.String({ minLength: 1, maxLength: 2000 }),
+  })
 
   /* GET /admin/deals */
   fastify.get('/', { schema: { querystring: ListQuery }, preHandler }, async (request) => {
@@ -32,4 +36,20 @@ export default async function adminDealRoutes(app: FastifyInstance) {
     return { deal }
   })
 
+  /* GET /admin/deals/:id/comments */
+  fastify.get('/:id/comments', { schema: { params: IdParams }, preHandler }, async (request) => {
+    const comments = await listDealComments(db, request.params.id)
+    return { comments }
+  })
+
+  /* POST /admin/deals/:id/comments */
+  fastify.post(
+    '/:id/comments',
+    { schema: { params: IdParams, body: CreateCommentBody }, preHandler },
+    async (request, reply) => {
+      const adminUserId = BigInt((request.user as { sub: string }).sub)
+      const comment = await createDealComment(db, request.params.id, adminUserId, request.body.text)
+      return reply.code(201).send({ comment })
+    },
+  )
 }

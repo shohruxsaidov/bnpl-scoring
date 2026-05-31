@@ -9,6 +9,7 @@ import { clients, merchants } from '../../id/db/schema'
 
 export interface OverdueCard {
   dealId: string
+  dealNumber: string
   merchantId: string
   merchantName: string
   clientName: string
@@ -48,6 +49,7 @@ export async function getCollectionBoard(
   const rows = await db
     .select({
       dealId: deals.id,
+      dealNumber: deals.dealNumber,
       merchantId: deals.merchantId,
       merchantName: merchants.name,
       firstName: clients.firstName,
@@ -64,6 +66,7 @@ export async function getCollectionBoard(
     .where(and(...where))
     .groupBy(
       deals.id,
+      deals.dealNumber,
       deals.merchantId,
       merchants.name,
       clients.firstName,
@@ -76,6 +79,7 @@ export async function getCollectionBoard(
     .filter((r) => Number(r.daysOverdue) > 0)
     .map((r) => ({
       dealId: r.dealId,
+      dealNumber: r.dealNumber != null ? `CN-${String(r.dealNumber).padStart(7, '0')}` : '—',
       merchantId: r.merchantId.toString(),
       merchantName: r.merchantName ?? '—',
       clientName: `${r.firstName} ${r.lastName}`,

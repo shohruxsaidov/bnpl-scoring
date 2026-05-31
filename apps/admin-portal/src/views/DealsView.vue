@@ -39,7 +39,7 @@ const filtered = computed<Deal[]>(() => {
     list = list.filter(
       (d) =>
         d.clientName.toLowerCase().includes(q) ||
-        d.id.toLowerCase().includes(q) ||
+        d.dealNumber.toLowerCase().includes(q) ||
         d.clientPhone.includes(q),
     )
   }
@@ -162,9 +162,9 @@ function openDeal(deal: Deal) {
           class="deals-table"
           @row-click="openDeal($event.data as Deal)"
         >
-          <Column :header="$t('deals.dealId')" field="id" style="width:300px">
+          <Column :header="$t('deals.dealNumber')" field="dealNumber" sortable style="width:140px">
             <template #body="{ data }">
-              <span class="font-mono deal-id">{{ data.id }}</span>
+              <span class="font-mono deal-id">{{ data.dealNumber }}</span>
             </template>
           </Column>
 

@@ -85,6 +85,7 @@ export interface ScoreFactor {
 
 export interface Deal {
   id: string
+  dealNumber: string
   tenantId: string
   clientName: string
   clientPinfl: string
