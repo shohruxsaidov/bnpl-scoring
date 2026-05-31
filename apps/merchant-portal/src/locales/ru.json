@@ -617,5 +617,14 @@
     "mismatch": "Пароли не совпадают",
     "invalidCurrent": "Неверный текущий пароль",
     "error": "Произошла ошибка. Попробуйте ещё раз"
+  },
+  "search": {
+    "placeholder": "Поиск...",
+    "groupMain": "Основное",
+    "groupAdmin": "Админ",
+    "noResults": "Ничего не найдено: \"{q}\"",
+    "hintSelect": "выбрать",
+    "hintNavigate": "навигация",
+    "hintClose": "закрыть"
   }
 }

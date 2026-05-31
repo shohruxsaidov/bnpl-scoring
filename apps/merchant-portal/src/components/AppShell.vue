@@ -3,26 +3,37 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { RouterView } from 'vue-router'
 import AppSidebar from './AppSidebar.vue'
 import AppTopbar from './AppTopbar.vue'
+import SearchDialog from './SearchDialog.vue'
 import { useNotificationsStore } from '@/stores/notifications'
 
 const notifStore = useNotificationsStore()
 const collapsed = ref(false)
 const mobileOpen = ref(false)
 const isMobile = ref(false)
+const searchOpen = ref(false)
 
 function checkMobile() {
   isMobile.value = window.innerWidth < 768
   if (!isMobile.value) mobileOpen.value = false
 }
 
+function onGlobalKey(e: KeyboardEvent) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault()
+    searchOpen.value = true
+  }
+}
+
 onMounted(() => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
+  window.addEventListener('keydown', onGlobalKey)
   notifStore.fetchAll()
   notifStore.connectSSE()
 })
 onUnmounted(() => {
   window.removeEventListener('resize', checkMobile)
+  window.removeEventListener('keydown', onGlobalKey)
   notifStore.disconnectSSE()
 })
 
@@ -48,11 +59,12 @@ const sidebarVisible = computed(() => isMobile.value ? mobileOpen.value : true)
       @toggle="handleToggle"
     />
     <div class="main">
-      <AppTopbar :show-menu-btn="isMobile" @menu="handleToggle" />
+      <AppTopbar :show-menu-btn="isMobile" @menu="handleToggle" @search="searchOpen = true" />
       <main class="content">
         <RouterView />
       </main>
     </div>
+    <SearchDialog v-model:visible="searchOpen" />
   </div>
 </template>
 

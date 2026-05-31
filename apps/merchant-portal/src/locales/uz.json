@@ -617,5 +617,14 @@
     "mismatch": "Parollar mos kelmadi",
     "invalidCurrent": "Joriy parol noto'g'ri",
     "error": "Xatolik yuz berdi. Qayta urinib ko'ring"
+  },
+  "search": {
+    "placeholder": "Qidirish...",
+    "groupMain": "Asosiy",
+    "groupAdmin": "Admin",
+    "noResults": "Natija topilmadi: \"{q}\"",
+    "hintSelect": "tanlash",
+    "hintNavigate": "navigatsiya",
+    "hintClose": "yopish"
   }
 }
