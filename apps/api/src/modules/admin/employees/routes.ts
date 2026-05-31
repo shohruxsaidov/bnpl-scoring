@@ -1,7 +1,7 @@
 import { Type } from "@sinclair/typebox"
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
 import type { FastifyInstance } from "fastify"
-import { getEmployee, listEmployeesByMerchant, updateEmployee } from "./service"
+import { changeEmployeePassword, getEmployee, listEmployeesByMerchant, updateEmployee } from "./service"
 
 function serializeEmployee(e: NonNullable<Awaited<ReturnType<typeof getEmployee>>>) {
   return { ...e, id: e.id.toString(), merchantId: e.merchantId.toString(), branchId: e.branchId.toString() }
@@ -57,6 +57,20 @@ export default async function adminEmployeeRoutes(app: FastifyInstance) {
       const employee = await updateEmployee(db, BigInt(request.params.id), request.body)
       if (!employee) return reply.code(404).send({ code: "not_found" })
       return { employee: serializeEmployee(employee) }
+    },
+  )
+
+  const ChangePasswordBody = Type.Object({
+    password: Type.String({ minLength: 8 }),
+  })
+
+  fastify.post(
+    "/:id/change-password",
+    { schema: { params: IdParams, body: ChangePasswordBody }, preHandler },
+    async (request, reply) => {
+      const row = await changeEmployeePassword(db, BigInt(request.params.id), request.body.password)
+      if (!row) return reply.code(404).send({ code: "not_found" })
+      return { ok: true }
     },
   )
 }

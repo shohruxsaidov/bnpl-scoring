@@ -6,6 +6,7 @@ export const MERCHANT_FEATURES = [
   'view_dashboard',
   'view_deals',
   'create_deal',
+  "view_products",
   'manage_products',
   'manage_categories',
   'manage_tariffs',

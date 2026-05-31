@@ -138,8 +138,9 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const p = payload(request)
       const merchantId = BigInt(p.merchantId)
-      const deal = await getDealById(db, request.params.id, merchantId)
-      if (!deal) return reply.code(404).send({ code: 'deal_not_found' })
+      const result = await getDealById(db, request.params.id, merchantId)
+      if (!result) return reply.code(404).send({ code: 'deal_not_found' })
+      const { schedule: _schedule, ...deal } = result
       return { deal }
     },
   )

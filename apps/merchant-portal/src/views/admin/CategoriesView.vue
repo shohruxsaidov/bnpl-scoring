@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Skeleton from 'primevue/skeleton'
-import { usePageLoad } from '@/composables/usePageLoad'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import { useConfirm } from 'primevue/useconfirm'
@@ -12,9 +11,10 @@ import type { Category } from '@/types'
 
 const catalog = useCatalogStore()
 const confirm = useConfirm()
-const { loading } = usePageLoad()
 const toast = useToast()
 const { t } = useI18n()
+
+onMounted(() => catalog.fetchCategories())
 
 const dialogVisible = ref(false)
 const editingId = ref<string | null>(null)
@@ -59,7 +59,7 @@ function remove(c: Category) {
 <template>
   <div class="admin-page">
     <!-- skeleton -->
-    <template v-if="loading">
+    <template v-if="catalog.loading">
       <div class="page-actions">
         <Skeleton width="10rem" height="2.2rem" border-radius="10px" />
       </div>
@@ -77,7 +77,7 @@ function remove(c: Category) {
       </div>
     </template>
 
-    <template v-else>
+    <template v-else-if="!catalog.loading">
       <div class="page-actions">
         <button class="btn-gradient" @click="openNew">
           <i class="pi pi-plus" /> {{ $t('categories.addCategory') }}

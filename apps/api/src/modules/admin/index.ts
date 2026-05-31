@@ -8,6 +8,7 @@ import adminTariffRoutes from "./tariffs/routes"
 import adminBlacklistRoutes from "./blacklist/routes"
 import adminNotificationRoutes from "./notifications/routes"
 import adminDealRoutes from "./deals/routes"
+import adminUsersRoutes from "./users/routes"
 import adminPermissionsRoutes from "./permissions/routes"
 import adminScoringHistoryRoutes from "./scoringHistory/routes"
 import adminPaymentRoutes from "./payments/routes"
@@ -43,6 +44,7 @@ export default async function adminModule(app: FastifyInstance) {
   await app.register(guarded(adminScoringHistoryRoutes, { read: "view_scoring_history" }), { prefix: "/admin/scoring-history" })
   await app.register(guarded(adminPaymentRoutes, { read: "view_payments", write: "manage_payments" }), { prefix: "/admin/payments" })
   await app.register(guarded(adminCollectionBoardRoutes, { read: "view_collection_board" }), { prefix: "/admin/collection-board" })
+  await app.register(guarded(adminUsersRoutes, { read: "manage_admins", write: "manage_admins" }), { prefix: "/admin/users" })
   // Permissions module guards itself with manage_roles per-route.
   await app.register(adminPermissionsRoutes, { prefix: "/admin/permissions" })
   // MXIK reference lookups: any authenticated admin.

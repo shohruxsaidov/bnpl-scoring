@@ -39,26 +39,14 @@ function setLang(lang: 'uz' | 'ru') {
         <input type="text" :placeholder="$t('topbar.searchPlaceholder')" />
       </div>
       <div class="lang-switch">
-        <button
-          class="lang-btn"
-          :class="{ active: locale === 'uz' }"
-          @click="setLang('uz')"
-        >
+        <button class="lang-btn" :class="{ active: locale === 'uz' }" @click="setLang('uz')">
           uz
         </button>
         <span class="lang-sep">|</span>
-        <button
-          class="lang-btn"
-          :class="{ active: locale === 'ru' }"
-          @click="setLang('ru')"
-        >
+        <button class="lang-btn" :class="{ active: locale === 'ru' }" @click="setLang('ru')">
           ru
         </button>
       </div>
-      <button class="bell" :title="$t('topbar.notifications')">
-        <i class="pi pi-bell" />
-        <span class="badge">2</span>
-      </button>
     </div>
   </header>
 </template>
@@ -76,12 +64,14 @@ function setLang(lang: 'uz' | 'ru') {
   top: 0;
   z-index: 10;
 }
+
 .page-title {
   font-size: 1.15rem;
   font-weight: 800;
   margin: 0;
   line-height: 1.1;
 }
+
 .crumbs {
   display: flex;
   align-items: center;
@@ -91,18 +81,22 @@ function setLang(lang: 'uz' | 'ru') {
   margin-top: 0.12rem;
   font-weight: 600;
 }
+
 .crumbs .current {
   color: var(--accent-2);
 }
+
 .sep {
   font-size: 0.6rem;
   opacity: 0.6;
 }
+
 .right {
   display: flex;
   align-items: center;
   gap: 0.8rem;
 }
+
 .lang-switch {
   display: flex;
   align-items: center;
@@ -112,6 +106,7 @@ function setLang(lang: 'uz' | 'ru') {
   border-radius: 9px;
   padding: 0.25rem 0.5rem;
 }
+
 .lang-btn {
   background: transparent;
   border: none;
@@ -124,16 +119,20 @@ function setLang(lang: 'uz' | 'ru') {
   border-radius: 6px;
   transition: color 0.15s ease;
 }
+
 .lang-btn:hover {
   color: var(--text-primary);
 }
+
 .lang-btn.active {
   color: var(--accent-2);
 }
+
 .lang-sep {
   color: var(--border-subtle);
   font-size: 0.76rem;
 }
+
 .search {
   display: flex;
   align-items: center;
@@ -144,10 +143,12 @@ function setLang(lang: 'uz' | 'ru') {
   padding: 0.45rem 0.75rem;
   width: 320px;
 }
+
 .search i {
   font-size: 0.85rem;
   color: var(--text-secondary);
 }
+
 .search input {
   flex: 1;
   border: none;
@@ -157,9 +158,11 @@ function setLang(lang: 'uz' | 'ru') {
   font-size: 0.82rem;
   color: var(--text-primary);
 }
+
 .search input::placeholder {
   color: var(--text-secondary);
 }
+
 .bell {
   position: relative;
   width: 36px;
@@ -173,10 +176,12 @@ function setLang(lang: 'uz' | 'ru') {
   place-items: center;
   transition: all 0.15s ease;
 }
+
 .bell:hover {
   color: var(--accent-2);
   border-color: var(--accent-2);
 }
+
 .badge {
   position: absolute;
   top: -5px;

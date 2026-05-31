@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { apiFetch } from '@/utils/apiFetch'
-import type { Ref } from 'vue'
+import { computed, type Ref } from 'vue'
 
 // ---------------------------------------------------------------------------
 // DTOs (mirror what the API returns)
@@ -37,17 +37,8 @@ export interface DealBasketItem {
   quantity: number
 }
 
-export interface DealScheduleRow {
-  index: number
-  dueDate: string
-  amount: number
-  paid: boolean
-  paidAt: string | null
-}
-
 export interface DealDetail extends DealListItem {
   basket: DealBasketItem[]
-  schedule: DealScheduleRow[]
   branchName: string | null
   merchantInn: string | null
   pdfUrl: string | null
@@ -77,16 +68,23 @@ export interface CreateDealInput {
 export const DEALS_KEY = ['deals'] as const
 export const dealKey = (id: string) => ['deals', id] as const
 
+export type DealSortField = 'status' | 'amount' | 'createdAt'
+export type DealSortOrder = 'asc' | 'desc'
+
 // ---------------------------------------------------------------------------
 // Hooks
 // ---------------------------------------------------------------------------
 
 /** Fetch the full list of deals for the current merchant/agent. */
-export function useDealsQuery() {
+export function useDealsQuery(sort?: Ref<{ field: DealSortField; order: DealSortOrder } | null>) {
   return useQuery({
-    queryKey: DEALS_KEY,
-    queryFn: () => apiFetch<{ deals: DealListItem[] }>('/merchant/deals').then((r) => r.deals),
-    staleTime: 30_000, // 30 s — enough freshness for a list
+    queryKey: computed(() => [...DEALS_KEY, sort?.value ?? null]),
+    queryFn: () => {
+      const s = sort?.value
+      const qs = s ? `?sortBy=${s.field}&sortOrder=${s.order}` : ''
+      return apiFetch<{ deals: DealListItem[] }>(`/merchant/deals${qs}`).then((r) => r.deals)
+    },
+    staleTime: 30_000,
   })
 }
 

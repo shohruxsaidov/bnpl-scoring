@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import SkeletonTable from '@/components/SkeletonTable.vue'
-import { usePageLoad } from '@/composables/usePageLoad'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import ToggleSwitch from 'primevue/toggleswitch'
@@ -10,9 +9,10 @@ import { useToast } from 'primevue/usetoast'
 import { useCatalogStore } from '@/stores/catalog'
 
 const catalog = useCatalogStore()
-const { loading } = usePageLoad()
 const toast = useToast()
 const { t } = useI18n()
+
+onMounted(() => catalog.fetchTariffs())
 
 const toggling = ref<Set<string>>(new Set())
 
@@ -35,7 +35,7 @@ async function toggle(id: string, currentlySelected: boolean) {
 
 <template>
   <div class="admin-page">
-    <SkeletonTable v-if="loading" :rows="7" :cols="5" :has-actions="true" :has-header="true" />
+    <SkeletonTable v-if="catalog.loading" :rows="7" :cols="5" :has-actions="true" :has-header="true" />
     <template v-else>
       <div class="page-hint">
         <i class="pi pi-info-circle" />

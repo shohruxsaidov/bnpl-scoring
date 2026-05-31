@@ -147,6 +147,50 @@ export const useCatalogStore = defineStore('catalog', {
       if (emp) await this.updateEmployee(id, { active: !emp.active })
     },
 
+    async fetchEmployees() {
+      if (this.employees.length) return
+      this.loading = true
+      try {
+        const res = await api<{ employees: Employee[] }>('/merchant/employees')
+        this.employees = res.employees
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async fetchBranches() {
+      if (this.branches.length) return
+      this.loading = true
+      try {
+        const res = await api<{ branches: Branch[] }>('/merchant/branches')
+        this.branches = res.branches
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async fetchProducts() {
+      if (this.products.length) return
+      this.loading = true
+      try {
+        const res = await api<{ products: Product[] }>('/merchant/catalog/products')
+        this.products = res.products
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async fetchCategories() {
+      if (this.categories.length) return
+      this.loading = true
+      try {
+        const res = await api<{ categories: Category[] }>('/merchant/catalog/categories')
+        this.categories = res.categories
+      } finally {
+        this.loading = false
+      }
+    },
+
     /** Fetch products + categories only — called lazily by StepMahsulot */
     async fetchCatalog() {
       if (this.products.length && this.categories.length) return
@@ -161,8 +205,13 @@ export const useCatalogStore = defineStore('catalog', {
     /** Fetch tariffs only — called lazily by StepTarif */
     async fetchTariffs() {
       if (this.tariffs.length) return
-      const body = await api<{ tariffs: Tariff[] }>('/merchant/tariffs')
-      this.tariffs = body.tariffs
+      this.loading = true
+      try {
+        const body = await api<{ tariffs: Tariff[] }>('/merchant/tariffs')
+        this.tariffs = body.tariffs
+      } finally {
+        this.loading = false
+      }
     },
 
     async selectTariff(id: string) {

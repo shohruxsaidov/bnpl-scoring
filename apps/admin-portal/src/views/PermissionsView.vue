@@ -40,7 +40,7 @@ const MODULE_CONFIG: Record<Platform, ModuleDef[]> = {
   merchant: [
     { key: 'dashboard', icon: 'chart-bar', features: ['view_dashboard'] },
     { key: 'deals', icon: 'file-edit', features: ['view_deals', 'create_deal'] },
-    { key: 'products', icon: 'box', features: ['manage_products'] },
+    { key: 'products', icon: 'box', features: ['view_products', 'manage_products'] },
     { key: 'categories', icon: 'tags', features: ['manage_categories'] },
     { key: 'tariffs', icon: 'percentage', features: ['manage_tariffs'] },
     { key: 'branches', icon: 'building', features: ['manage_branches'] },
@@ -277,12 +277,8 @@ onMounted(async () => {
     </div>
 
     <div v-else class="roles-grid">
-      <div
-        v-for="role in roles"
-        :key="role.id"
-        class="role-card surface-card"
-        :class="{ expanded: expanded.has(role.id) }"
-      >
+      <div v-for="role in roles" :key="role.id" class="role-card surface-card"
+        :class="{ expanded: expanded.has(role.id) }">
         <div class="role-card__head">
           <div class="role-icon" :style="{ background: colorFor(role.key) }">
             <i :class="`pi pi-${iconFor(role.key)}`" />
@@ -294,12 +290,8 @@ onMounted(async () => {
             </div>
             <div class="role-key">{{ role.key }}</div>
           </div>
-          <button
-            v-if="!role.isSystem && !role.isSuperadmin"
-            class="del-btn"
-            :title="$t('permissions.deleteRole')"
-            @click="deleteRole(role)"
-          >
+          <button v-if="!role.isSystem && !role.isSuperadmin" class="del-btn" :title="$t('permissions.deleteRole')"
+            @click="deleteRole(role)">
             <i class="pi pi-trash" />
           </button>
         </div>
@@ -323,11 +315,9 @@ onMounted(async () => {
             <div class="actions">
               <div v-for="f in m.features" :key="f" class="action-chip">
                 <span class="action-label">{{ actionLabel(f) }}</span>
-                <ToggleSwitch
-                  :model-value="roleHas(role, f)"
+                <ToggleSwitch :model-value="roleHas(role, f)"
                   :disabled="role.isSuperadmin || saving === `${role.id}:${f}`"
-                  @update:model-value="(v: boolean) => toggleFeature(role, f, v)"
-                />
+                  @update:model-value="(v: boolean) => toggleFeature(role, f, v)" />
               </div>
             </div>
           </div>
@@ -335,12 +325,7 @@ onMounted(async () => {
       </div>
     </div>
 
-    <Dialog
-      v-model:visible="showCreate"
-      modal
-      :header="$t('permissions.newRole')"
-      :style="{ width: '420px' }"
-    >
+    <Dialog v-model:visible="showCreate" modal :header="$t('permissions.newRole')" :style="{ width: '420px' }">
       <form id="create-role-form" @submit.prevent="createRole">
         <div class="field">
           <label class="field-label" for="r-key">{{ $t('permissions.newRoleKey') }}</label>
@@ -353,12 +338,7 @@ onMounted(async () => {
       </form>
       <template #footer>
         <button class="btn-ghost" @click="showCreate = false">{{ $t('common.cancel') }}</button>
-        <button
-          type="submit"
-          form="create-role-form"
-          class="btn-create"
-          :disabled="creating || !newKey || !newName"
-        >
+        <button type="submit" form="create-role-form" class="btn-create" :disabled="creating || !newKey || !newName">
           {{ $t('permissions.create') }}
         </button>
       </template>

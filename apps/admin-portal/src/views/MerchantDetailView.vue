@@ -181,6 +181,32 @@ async function toggleEmployee(employee: MerchantEmployee) {
   }
 }
 
+// --- Change employee password ------------------------------------------------
+const showChangePwd = ref(false)
+const changePwdEmployeeId = ref('')
+const changePwdValue = ref('')
+const changePwdSaving = ref(false)
+
+function openChangePwd(employee: MerchantEmployee) {
+  changePwdEmployeeId.value = employee.id
+  changePwdValue.value = ''
+  showChangePwd.value = true
+}
+
+async function submitChangePwd() {
+  if (changePwdValue.value.length < 8) return
+  changePwdSaving.value = true
+  try {
+    await merchants.changeEmployeePassword(changePwdEmployeeId.value, changePwdValue.value)
+    toast.add({ severity: 'success', summary: t('merchantDetail.passwordChanged'), life: 2000 })
+    showChangePwd.value = false
+  } catch {
+    notifyError('merchantDetail.changePasswordFailed')
+  } finally {
+    changePwdSaving.value = false
+  }
+}
+
 // --- Categories --------------------------------------------------------------
 const showCategory = ref(false)
 const categoryForm = ref({ name: '' })
@@ -202,6 +228,29 @@ async function submitCategory() {
     notifyError('merchantDetail.createFailed')
   } finally {
     categorySaving.value = false
+  }
+}
+
+const showEditCategory = ref(false)
+const editCategoryForm = ref({ id: '', name: '' })
+const editCategorySaving = ref(false)
+
+function openEditCategory(category: Category) {
+  editCategoryForm.value = { id: category.id, name: category.name }
+  showEditCategory.value = true
+}
+
+async function submitEditCategory() {
+  if (!editCategoryForm.value.name.trim()) return
+  editCategorySaving.value = true
+  try {
+    await merchants.updateCategory(editCategoryForm.value.id, { name: editCategoryForm.value.name.trim() })
+    toast.add({ severity: 'success', summary: t('merchantDetail.categorySaved'), life: 2000 })
+    showEditCategory.value = false
+  } catch {
+    notifyError('merchantDetail.updateFailed')
+  } finally {
+    editCategorySaving.value = false
   }
 }
 
@@ -486,6 +535,17 @@ function truncate(value: string, max = 48): string {
               />
             </template>
           </Column>
+          <Column style="width: 48px">
+            <template #body="{ data }">
+              <button
+                class="icon-btn"
+                :title="$t('merchantDetail.changePassword')"
+                @click="openChangePwd(data)"
+              >
+                <i class="pi pi-key" />
+              </button>
+            </template>
+          </Column>
         </DataTable>
       </div>
     </section>
@@ -551,6 +611,13 @@ function truncate(value: string, max = 48): string {
                 :model-value="data.active"
                 @update:model-value="toggleCategory(data)"
               />
+            </template>
+          </Column>
+          <Column style="width: 48px">
+            <template #body="{ data }">
+              <button class="icon-btn" :title="$t('common.edit')" @click="openEditCategory(data)">
+                <i class="pi pi-pencil" />
+              </button>
             </template>
           </Column>
         </DataTable>
@@ -662,7 +729,7 @@ function truncate(value: string, max = 48): string {
       </template>
     </Dialog>
 
-    <!-- Category dialog -->
+    <!-- Category create dialog -->
     <Dialog
       v-model:visible="showCategory"
       modal
@@ -671,12 +738,31 @@ function truncate(value: string, max = 48): string {
     >
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.name') }}</label>
-        <InputText v-model="categoryForm.name" />
+        <InputText v-model="categoryForm.name" class="w-full" autofocus />
       </div>
       <template #footer>
         <button class="btn-ghost" @click="showCategory = false">{{ $t('common.cancel') }}</button>
         <button class="btn-gradient" :disabled="categorySaving" @click="submitCategory">
           {{ $t('merchantDetail.create') }}
+        </button>
+      </template>
+    </Dialog>
+
+    <!-- Category edit dialog -->
+    <Dialog
+      v-model:visible="showEditCategory"
+      modal
+      :header="$t('merchantDetail.editCategory')"
+      :style="{ width: '420px' }"
+    >
+      <div class="field">
+        <label class="field-label">{{ $t('merchantDetail.name') }}</label>
+        <InputText v-model="editCategoryForm.name" class="w-full" autofocus />
+      </div>
+      <template #footer>
+        <button class="btn-ghost" @click="showEditCategory = false">{{ $t('common.cancel') }}</button>
+        <button class="btn-gradient" :disabled="editCategorySaving" @click="submitEditCategory">
+          {{ $t('common.save') }}
         </button>
       </template>
     </Dialog>
@@ -775,6 +861,30 @@ function truncate(value: string, max = 48): string {
         <button class="btn-ghost" @click="showProduct = false">{{ $t('common.cancel') }}</button>
         <button class="btn-gradient" :disabled="productSaving" @click="submitProduct">
           {{ $t('merchantDetail.create') }}
+        </button>
+      </template>
+    </Dialog>
+
+    <!-- Change employee password dialog -->
+    <Dialog
+      v-model:visible="showChangePwd"
+      modal
+      :header="$t('merchantDetail.changePasswordTitle')"
+      :style="{ width: '400px' }"
+    >
+      <div class="field">
+        <label class="field-label">{{ $t('merchantDetail.newPassword') }}</label>
+        <InputText v-model="changePwdValue" type="password" autofocus />
+        <span class="field-hint muted">{{ $t('merchantDetail.passwordHint') }}</span>
+      </div>
+      <template #footer>
+        <button class="btn-ghost" @click="showChangePwd = false">{{ $t('common.cancel') }}</button>
+        <button
+          class="btn-gradient"
+          :disabled="changePwdSaving || changePwdValue.length < 8"
+          @click="submitChangePwd"
+        >
+          {{ $t('merchantDetail.changePassword') }}
         </button>
       </template>
     </Dialog>
@@ -1013,4 +1123,14 @@ function truncate(value: string, max = 48): string {
 }
 .mxik-clear-btn:hover { color: var(--danger); }
 .mxik-hint { font-size: 0.75rem; color: var(--text-secondary); margin: 4px 0 0; }
+
+.icon-btn {
+  width: 28px; height: 28px; border-radius: 7px;
+  border: 1px solid var(--border-subtle); background: var(--bg-base);
+  color: var(--text-secondary); cursor: pointer;
+  display: grid; place-items: center; font-size: 0.78rem;
+  transition: all 0.12s ease;
+}
+.icon-btn:hover { color: var(--accent-2); border-color: var(--accent-2); }
+.w-full { width: 100%; }
 </style>

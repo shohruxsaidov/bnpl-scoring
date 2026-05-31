@@ -15,7 +15,7 @@ const catalog = useCatalogStore()
 const toast = useToast()
 const { t } = useI18n()
 
-onMounted(() => catalog.fetchAll())
+onMounted(() => catalog.fetchBranches())
 
 const dialogVisible = ref(false)
 const editingId = ref<string | null>(null)

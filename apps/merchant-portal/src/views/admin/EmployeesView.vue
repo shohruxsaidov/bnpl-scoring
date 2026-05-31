@@ -26,7 +26,7 @@ const filteredEmployees = computed(() => {
   )
 })
 
-onMounted(() => catalog.fetchAll())
+onMounted(() => Promise.all([catalog.fetchEmployees(), catalog.fetchBranches()]))
 
 const ROLE_OPTIONS: { label: string; value: EmployeeRole }[] = [
   { label: 'Agent', value: 'agent' },

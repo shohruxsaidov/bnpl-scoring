@@ -91,6 +91,16 @@ export async function createEmployee(
   return row!
 }
 
+export async function changeEmployeePassword(db: Db, id: bigint, password: string) {
+  const passwordHash = await hashPassword(password)
+  const [row] = await db
+    .update(merchantUsers)
+    .set({ passwordHash, mustChangePassword: true })
+    .where(eq(merchantUsers.id, id))
+    .returning({ id: merchantUsers.id })
+  return row
+}
+
 export async function updateEmployee(
   db: Db,
   id: bigint,

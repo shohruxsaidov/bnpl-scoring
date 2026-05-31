@@ -13,10 +13,12 @@ import { useToast } from 'primevue/usetoast'
 import { useCatalogStore } from '@/stores/catalog'
 import { useMxik, type MxikPackage, type MxikEntry } from '@/composables/useMxik'
 import type { Product } from '@/types'
+import { useAuthStore } from '@/stores/auth'
 
 const catalog = useCatalogStore()
 const confirm = useConfirm()
 const toast = useToast()
+const auth = useAuthStore()
 const { t } = useI18n()
 
 const search = ref('')
@@ -28,7 +30,7 @@ const filteredProducts = computed(() => {
   )
 })
 
-onMounted(() => catalog.fetchAll())
+onMounted(() => catalog.fetchProducts())
 
 const dialogVisible = ref(false)
 const editingId = ref<string | null>(null)
@@ -96,7 +98,8 @@ function onMxikBlur() {
 
 // ── Form open/close ────────────────────────────────────────────────────────
 
-function openNew() {
+async function openNew() {
+  await catalog.fetchCategories()
   editingId.value = null
   form.name = ''
   form.mxikCode = ''
@@ -108,7 +111,8 @@ function openNew() {
   dialogVisible.value = true
 }
 
-function openEdit(p: Product) {
+async function openEdit(p: Product) {
+  await catalog.fetchCategories()
   editingId.value = p.id
   form.name = p.name
   form.mxikCode = p.mxikCode ?? ''
@@ -184,7 +188,7 @@ function formatPrice(v: string) {
           <input v-model="search" class="tt-input" :placeholder="$t('products.searchPlaceholder')" type="text" />
         </div>
         <span class="tt-count">{{ filteredProducts.length }} {{ $t('products.productsCount') }}</span>
-        <button class="btn-gradient" style="margin-left: auto" @click="openNew">
+        <button v-if="auth.can('manage_products')" class="btn-gradient" style="margin-left: auto" @click="openNew">
           <i class="pi pi-plus" /> {{ $t('products.addProduct') }}
         </button>
       </div>
@@ -209,7 +213,7 @@ function formatPrice(v: string) {
           </Column>
           <Column header="" :style="{ width: '90px' }">
             <template #body="{ data }">
-              <div class="row-actions">
+              <div class="row-actions" v-if="auth.can('manage_products')">
                 <button class="ra-btn" :title="$t('common.edit')" @click="openEdit(data)">
                   <i class="pi pi-pencil" />
                 </button>
@@ -222,12 +226,8 @@ function formatPrice(v: string) {
         </DataTable>
       </div>
 
-      <Dialog
-        v-model:visible="dialogVisible"
-        modal
-        :header="editingId ? $t('products.editProduct') : $t('products.addProductTitle')"
-        :style="{ width: '480px' }"
-      >
+      <Dialog v-model:visible="dialogVisible" modal
+        :header="editingId ? $t('products.editProduct') : $t('products.addProductTitle')" :style="{ width: '480px' }">
         <div class="form">
           <div class="field">
             <label class="field-label">{{ $t('products.name') }}</label>
@@ -235,17 +235,13 @@ function formatPrice(v: string) {
           </div>
           <div class="field">
             <label class="field-label">{{ $t('products.category') }}</label>
-            <Select
-              v-model="form.categoryId"
-              :options="catalog.categories"
-              option-label="name"
-              option-value="id"
-              :placeholder="$t('products.selectCategory')"
-            />
+            <Select v-model="form.categoryId" :options="catalog.categories" option-label="name" option-value="id"
+              :placeholder="$t('products.selectCategory')" />
           </div>
           <div class="field">
             <label class="field-label">{{ $t('products.tanNarxi') }}</label>
-            <InputNumber v-model="form.tanNarxiNum" :min="0" mode="decimal" :min-fraction-digits="0" :max-fraction-digits="2" fluid />
+            <InputNumber v-model="form.tanNarxiNum" :min="0" mode="decimal" :min-fraction-digits="0"
+              :max-fraction-digits="2" fluid />
           </div>
 
           <!-- MXIK combobox -->
@@ -255,20 +251,11 @@ function formatPrice(v: string) {
             </label>
             <div class="mxik-wrap">
               <div class="mxik-input-row">
-                <InputText
-                  v-model="form.mxikCode"
-                  class="font-mono mxik-input"
-                  :placeholder="$t('products.mxikPlaceholder')"
-                  @input="onMxikInput"
-                  @blur="onMxikBlur"
-                  @keydown.enter.prevent="triggerLookupFromForm"
-                />
-                <button
-                  v-if="form.mxikCode && !mxikLookupLoading"
-                  class="mxik-search-btn"
-                  type="button"
-                  @click="triggerLookupFromForm"
-                >
+                <InputText v-model="form.mxikCode" class="font-mono mxik-input"
+                  :placeholder="$t('products.mxikPlaceholder')" @input="onMxikInput" @blur="onMxikBlur"
+                  @keydown.enter.prevent="triggerLookupFromForm" />
+                <button v-if="form.mxikCode && !mxikLookupLoading" class="mxik-search-btn" type="button"
+                  @click="triggerLookupFromForm">
                   <i class="pi pi-search" />
                 </button>
                 <span v-if="mxikLookupLoading || mxikSearchLoading" class="mxik-spinner">
@@ -278,12 +265,8 @@ function formatPrice(v: string) {
 
               <!-- Suggestions dropdown -->
               <ul v-if="mxikSuggestions.length" class="mxik-suggestions">
-                <li
-                  v-for="s in mxikSuggestions"
-                  :key="s.mxikCode"
-                  class="mxik-suggestion-item"
-                  @mousedown.prevent="selectMxikSuggestion(s)"
-                >
+                <li v-for="s in mxikSuggestions" :key="s.mxikCode" class="mxik-suggestion-item"
+                  @mousedown.prevent="selectMxikSuggestion(s)">
                   <span class="sug-code">{{ s.mxikCode }}</span>
                   <span class="sug-name">{{ s.mxikName }}</span>
                 </li>
@@ -300,14 +283,9 @@ function formatPrice(v: string) {
                 </div>
                 <div v-if="mxikData.packages?.length" class="field" style="margin-top: 0.75rem; margin-bottom: 0">
                   <label class="field-label">{{ $t('products.packageCode') }}</label>
-                  <Select
-                    :model-value="form.packageCode"
-                    :options="mxikData.packages"
-                    option-label="name"
-                    option-value="code"
-                    :placeholder="$t('products.selectPackage')"
-                    @update:model-value="(code) => { const pkg = mxikData!.packages!.find((p: MxikPackage) => p.code === code); if (pkg) onPackageSelect(pkg as MxikPackage) }"
-                  />
+                  <Select :model-value="form.packageCode" :options="mxikData.packages" option-label="name"
+                    option-value="code" :placeholder="$t('products.selectPackage')"
+                    @update:model-value="(code) => { const pkg = mxikData!.packages!.find((p: MxikPackage) => p.code === code); if (pkg) onPackageSelect(pkg as MxikPackage) }" />
                 </div>
               </div>
 
@@ -329,10 +307,28 @@ function formatPrice(v: string) {
 </template>
 
 <style scoped>
-.admin-page { display: flex; flex-direction: column; gap: 1.3rem; }
-.page-actions { display: flex; justify-content: flex-end; }
-.btn-gradient { display: inline-flex; align-items: center; gap: 0.5rem; }
-.table-wrap { padding: 0; overflow: hidden; }
+.admin-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.3rem;
+}
+
+.page-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-gradient {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.table-wrap {
+  padding: 0;
+  overflow: hidden;
+}
+
 .cat-chip {
   background: var(--bg-surface);
   padding: 0.25rem 0.65rem;
@@ -340,32 +336,98 @@ function formatPrice(v: string) {
   font-size: 0.78rem;
   font-weight: 700;
 }
-.muted { color: var(--text-secondary); }
-.row-actions { display: flex; gap: 0.4rem; }
-.ra-btn {
-  width: 32px; height: 32px; border-radius: 8px;
-  border: 1px solid var(--border-subtle); background: var(--bg-surface);
-  color: var(--text-secondary); cursor: pointer; display: grid;
-  place-items: center; transition: all 0.15s ease;
-}
-.ra-btn:hover { color: var(--accent-2); border-color: var(--accent-2); }
-.ra-btn.danger:hover { color: var(--danger); border-color: var(--danger); }
-.form { display: flex; flex-direction: column; gap: 1rem; padding-top: 0.4rem; }
-.form :deep(.p-inputnumber), .form :deep(.p-select) { width: 100%; }
-.optional { font-size: 0.78rem; color: var(--text-secondary); font-weight: 400; }
 
-/* MXIK combobox */
-.mxik-wrap { position: relative; display: flex; flex-direction: column; gap: 0; }
-.mxik-input-row { display: flex; align-items: center; gap: 0.5rem; }
-.mxik-input { flex: 1; }
-.mxik-search-btn {
-  flex-shrink: 0; width: 36px; height: 36px; border-radius: 8px;
-  border: 1px solid var(--border-subtle); background: var(--bg-surface);
-  color: var(--text-secondary); cursor: pointer; display: grid; place-items: center;
+.muted {
+  color: var(--text-secondary);
+}
+
+.row-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.ra-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
   transition: all 0.15s ease;
 }
-.mxik-search-btn:hover { color: var(--accent-2); border-color: var(--accent-2); }
-.mxik-spinner { color: var(--text-secondary); font-size: 1rem; }
+
+.ra-btn:hover {
+  color: var(--accent-2);
+  border-color: var(--accent-2);
+}
+
+.ra-btn.danger:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 0.4rem;
+}
+
+.form :deep(.p-inputnumber),
+.form :deep(.p-select) {
+  width: 100%;
+}
+
+.optional {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+/* MXIK combobox */
+.mxik-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.mxik-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mxik-input {
+  flex: 1;
+}
+
+.mxik-search-btn {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: all 0.15s ease;
+}
+
+.mxik-search-btn:hover {
+  color: var(--accent-2);
+  border-color: var(--accent-2);
+}
+
+.mxik-spinner {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
 
 .mxik-suggestions {
   position: absolute;
@@ -383,13 +445,29 @@ function formatPrice(v: string) {
   margin: 4px 0 0;
   padding: 4px 0;
 }
+
 .mxik-suggestion-item {
-  display: flex; flex-direction: column; gap: 2px;
-  padding: 8px 12px; cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  cursor: pointer;
 }
-.mxik-suggestion-item:hover { background: var(--bg-surface); }
-.sug-code { font-family: monospace; font-size: 11px; color: var(--text-secondary); }
-.sug-name { font-size: 13px; color: var(--text-primary); }
+
+.mxik-suggestion-item:hover {
+  background: var(--bg-surface);
+}
+
+.sug-code {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.sug-name {
+  font-size: 13px;
+  color: var(--text-primary);
+}
 
 .mxik-result {
   margin-top: 0.5rem;
@@ -398,18 +476,48 @@ function formatPrice(v: string) {
   border-radius: 8px;
   background: var(--bg-surface);
 }
-.mxik-result-header { display: flex; align-items: center; gap: 0.5rem; }
-.mxik-result-name { font-size: 0.85rem; font-weight: 600; flex: 1; }
-.mxik-label-badge {
-  font-size: 0.7rem; font-weight: 700; padding: 2px 8px;
-  border-radius: 20px; background: var(--accent-2); color: #fff;
+
+.mxik-result-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
+
+.mxik-result-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  flex: 1;
+}
+
+.mxik-label-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--accent-2);
+  color: #fff;
+}
+
 .mxik-clear-btn {
-  width: 24px; height: 24px; border-radius: 4px; border: none;
-  background: transparent; color: var(--text-secondary);
-  cursor: pointer; display: grid; place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
   font-size: 0.75rem;
 }
-.mxik-clear-btn:hover { color: var(--danger); }
-.mxik-hint { font-size: 0.75rem; color: var(--text-secondary); margin: 4px 0 0; }
+
+.mxik-clear-btn:hover {
+  color: var(--danger);
+}
+
+.mxik-hint {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin: 4px 0 0;
+}
 </style>

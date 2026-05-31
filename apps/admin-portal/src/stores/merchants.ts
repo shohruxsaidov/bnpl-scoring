@@ -169,6 +169,13 @@ export const useMerchantsStore = defineStore('merchants', {
       return body.employee
     },
 
+    async changeEmployeePassword(employeeId: string, password: string): Promise<void> {
+      await api(`/admin/employees/${employeeId}/change-password`, {
+        method: 'POST',
+        body: JSON.stringify({ password }),
+      })
+    },
+
     async fetchCategories(merchantId: string): Promise<void> {
       const body = await api<{ categories: Category[] }>(
         `/admin/merchants/${merchantId}/categories`,
