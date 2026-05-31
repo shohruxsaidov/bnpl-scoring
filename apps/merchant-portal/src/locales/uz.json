@@ -71,7 +71,8 @@
     "categories": "Kategoriyalar",
     "tariffs": "Tariflar",
     "employees": "Xodimlar",
-    "branches": "Filiallar"
+    "branches": "Filiallar",
+    "changePassword": "Parolni o'zgartirish"
   },
   "breadcrumb": {
     "dashboard": "Bosh sahifa",
@@ -601,5 +602,20 @@
     "added": "Filial qo'shildi",
     "updated": "Filial yangilandi",
     "missingFields": "Barcha maydonlarni to'ldiring"
+  },
+  "changePassword": {
+    "title": "Parolni o'zgartirish",
+    "subtitle": "Xavfsizlik uchun birinchi kirishda parolni o'zgartirishingiz shart.",
+    "current": "Joriy parol",
+    "new": "Yangi parol",
+    "confirm": "Yangi parolni tasdiqlang",
+    "save": "Saqlash",
+    "saving": "Saqlanmoqda...",
+    "currentRequired": "Joriy parolni kiriting",
+    "newMin": "Parol kamida 8 ta belgidan iborat bo'lishi kerak",
+    "confirmRequired": "Parolni tasdiqlang",
+    "mismatch": "Parollar mos kelmadi",
+    "invalidCurrent": "Joriy parol noto'g'ri",
+    "error": "Xatolik yuz berdi. Qayta urinib ko'ring"
   }
 }

@@ -5,6 +5,7 @@ import { env } from '../../../env';
 import type { Db } from '../../../db/index';
 import { findRoleByKey, listRoleFeatures } from '../../../rbac/service';
 import {
+  changeMerchantPassword,
   createMerchantSession,
   findMerchantUserByEmail,
   findMerchantUserById,
@@ -87,6 +88,7 @@ function serializeEmployee(
     email: string;
     merchantId: bigint;
     branchId: bigint;
+    mustChangePassword: boolean;
   },
   role: string,
   roleId: bigint,
@@ -101,6 +103,7 @@ function serializeEmployee(
     merchantId: employee.merchantId.toString(),
     branchId: employee.branchId.toString(),
     permissions,
+    mustChangePassword: employee.mustChangePassword,
   };
 }
 
@@ -252,6 +255,31 @@ export default async function merchantAuthRoutes(app: FastifyInstance) {
     if (!resolved) return reply.code(500).send({ code: 'role_not_configured' });
     return { user: serializeEmployee(employee, payload.role, resolved.role.id, resolved.permissions) };
   });
+
+  /* ── Change password ────────────────────────────────────────────────────── */
+
+  const ChangePasswordBody = Type.Object({
+    currentPassword: Type.String({ minLength: 1 }),
+    newPassword: Type.String({ minLength: 8 }),
+  });
+
+  fastify.post(
+    '/change-password',
+    { schema: { body: ChangePasswordBody }, preHandler: app.verifyMerchantJwt },
+    async (request, reply) => {
+      const payload = request.user as { sub: string };
+      const employee = await findMerchantUserById(db, BigInt(payload.sub));
+      if (!employee || !employee.active) {
+        return reply.code(401).send({ code: 'unauthorized' });
+      }
+      const ok = await verifyPassword(employee.passwordHash, request.body.currentPassword);
+      if (!ok) {
+        return reply.code(400).send({ code: 'invalid_current_password' });
+      }
+      await changeMerchantPassword(db, employee.id, request.body.newPassword);
+      return { ok: true };
+    },
+  );
 
   fastify.post('/logout', async (request, reply) => {
     const sessionToken = request.cookies[SESSION_COOKIE];

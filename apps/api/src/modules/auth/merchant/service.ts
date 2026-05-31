@@ -97,6 +97,18 @@ export async function verifyMerchantSession(db: Db, sessionToken: string) {
   return { session, employee };
 }
 
+export async function changeMerchantPassword(
+  db: Db,
+  id: bigint,
+  newPassword: string,
+): Promise<void> {
+  const passwordHash = await hashPassword(newPassword);
+  await db
+    .update(merchantUsers)
+    .set({ passwordHash, mustChangePassword: false })
+    .where(eq(merchantUsers.id, id));
+}
+
 export async function revokeMerchantSession(
   db: Db,
   sessionToken: string,

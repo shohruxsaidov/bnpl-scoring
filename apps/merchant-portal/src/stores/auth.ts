@@ -12,6 +12,7 @@ export interface AuthEmployee {
   email: string;
   merchantId: string;
   branchId: string;
+  mustChangePassword: boolean;
 }
 
 interface RolePickerState {
@@ -120,6 +121,22 @@ export const useAuthStore = defineStore("auth", {
         credentials: "include",
       });
       if (refreshRes.ok) await tryMe();
+    },
+
+    async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+      const res = await fetch(`${API}/auth/merchant/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.code ?? 'error');
+      }
+      if (this.employee) {
+        this.employee.mustChangePassword = false;
+      }
     },
 
     async logout(): Promise<void> {
