@@ -19,13 +19,12 @@ name: scoring
 # Every value has a local default, so it also boots with no .env file.
 
 services:
-
   api:
     build:
       context: .
       dockerfile: Dockerfile.api
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - 'host.docker.internal:host-gateway'
     restart: unless-stopped
     # Loads MyID / PlumGate / KATM / MinIO / OTEL settings if the file exists.
     # Infra values below override anything in it so they point at the compose network.
@@ -37,10 +36,9 @@ services:
       HOST: 0.0.0.0
       PORT: 4000
       DATABASE_URL: postgresql://${POSTGRES_USER:-scoring}:${POSTGRES_PASSWORD:-scoring}@postgres:5432/${POSTGRES_DB:-scoring}
-      REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-change-me-please-at-least-32-characters}
     ports:
-      - "${API_PORT:-4000}:4000"
+      - '${API_PORT:-4000}:4000'
     healthcheck:
       test:
         - CMD
@@ -59,7 +57,7 @@ services:
       args:
         APP_DIR: apps/admin-portal
         VITE_API_URL: /api/v1
-    restart: "no"
+    restart: 'no'
     volumes:
       - ./dist/admin-portal:/dist
 
@@ -70,7 +68,7 @@ services:
       args:
         APP_DIR: apps/merchant-portal
         VITE_API_URL: /api/v1
-    restart: "no"
+    restart: 'no'
     volumes:
       - ./dist/merchant-portal:/dist
 
@@ -81,8 +79,6 @@ services:
       args:
         APP_DIR: apps/client-portal
         VITE_API_URL: /api/v1
-    restart: "no"
+    restart: 'no'
     volumes:
       - ./dist/client-portal:/dist
-
-
