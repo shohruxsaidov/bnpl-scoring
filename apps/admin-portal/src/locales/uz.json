@@ -305,7 +305,7 @@
     "emailRequired": "Email kiritilishi shart",
     "emailInvalid": "Email noto'g'ri",
     "passwordRequired": "Parol kiritilishi shart",
-    "invalidCredentials": "Noto'g'ri ma'lumotlar. platform@scoring.uz / admin123 ni sinab ko'ring",
+    "invalidCredentials": "Noto'g'ri ma'lumotlar. Qayta urinib ko'ring",
     "footer": "Kredit skoring va POS kreditlash platformasi · Faqat ichki foydalanish uchun"
   },
   "theme": {
