@@ -167,6 +167,7 @@ function finish() {
 
 <template>
   <div class="wizard-page">
+    <!-- Page header -->
     <div class="wizard-header">
       <div>
         <h1 class="wizard-title">{{ t('onboarding.title') }}</h1>
@@ -178,23 +179,24 @@ function finish() {
     </div>
 
     <!-- Step indicator -->
-    <div class="step-bar">
+    <div class="stepper surface-card">
       <div
         v-for="(label, i) in STEPS"
         :key="i"
-        class="step-item"
-        :class="{ active: step === i + 1, done: step > i + 1 }"
+        class="step"
+        :class="{ current: step === i + 1, done: step > i + 1 }"
       >
-        <div class="step-dot">
+        <div class="step-icon">
           <i v-if="step > i + 1" class="pi pi-check" />
           <span v-else>{{ i + 1 }}</span>
         </div>
         <span class="step-label">{{ label }}</span>
-        <div v-if="i < TOTAL_STEPS - 1" class="step-line" />
+        <div v-if="i < TOTAL_STEPS - 1" class="connector" />
       </div>
     </div>
 
-    <div class="wizard-card">
+    <!-- Step body -->
+    <div class="step-body surface-card">
       <!-- Step 1: Merchant -->
       <template v-if="step === 1">
         <h2 class="section-title">{{ t('onboarding.merchantSection') }}</h2>
@@ -227,7 +229,9 @@ function finish() {
         </div>
         <div class="actions">
           <button class="btn-primary" :disabled="saving" @click="submitStep1">
+            <i v-if="saving" class="pi pi-spin pi-spinner" />
             {{ saving ? t('onboarding.saving') : t('onboarding.next') }}
+            <i v-if="!saving" class="pi pi-arrow-right" />
           </button>
         </div>
       </template>
@@ -254,7 +258,9 @@ function finish() {
         </div>
         <div class="actions">
           <button class="btn-primary" :disabled="saving" @click="submitStep2">
+            <i v-if="saving" class="pi pi-spin pi-spinner" />
             {{ saving ? t('onboarding.saving') : t('onboarding.next') }}
+            <i v-if="!saving" class="pi pi-arrow-right" />
           </button>
         </div>
       </template>
@@ -298,7 +304,9 @@ function finish() {
         <div class="actions">
           <button class="btn-secondary" @click="skip">{{ t('onboarding.skip') }}</button>
           <button class="btn-primary" :disabled="saving" @click="submitStep3">
+            <i v-if="saving" class="pi pi-spin pi-spinner" />
             {{ saving ? t('onboarding.saving') : t('onboarding.next') }}
+            <i v-if="!saving" class="pi pi-arrow-right" />
           </button>
         </div>
       </template>
@@ -321,7 +329,9 @@ function finish() {
         <div class="actions">
           <button class="btn-secondary" @click="skip">{{ t('onboarding.skip') }}</button>
           <button class="btn-primary" :disabled="saving" @click="submitStep4">
+            <i v-if="saving" class="pi pi-spin pi-spinner" />
             {{ saving ? t('onboarding.saving') : t('onboarding.next') }}
+            <i v-if="!saving" class="pi pi-arrow-right" />
           </button>
         </div>
       </template>
@@ -364,7 +374,9 @@ function finish() {
         <div class="actions">
           <button class="btn-secondary" @click="finish">{{ t('onboarding.skip') }}</button>
           <button class="btn-primary" :disabled="saving || !categoryOptions.length" @click="submitStep5">
+            <i v-if="saving" class="pi pi-spin pi-spinner" />
             {{ saving ? t('onboarding.saving') : t('onboarding.finish') }}
+            <i v-if="!saving" class="pi pi-check" />
           </button>
         </div>
       </template>
@@ -374,14 +386,12 @@ function finish() {
 
 <style scoped>
 .wizard-page {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 2rem 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.6rem;
 }
 
+/* ── Page header ─────────────────────────────────────────────────────────────*/
 .wizard-header {
   display: flex;
   align-items: flex-start;
@@ -419,80 +429,87 @@ function finish() {
   color: var(--accent);
 }
 
-/* Step bar */
-.step-bar {
+/* ── Stepper ─────────────────────────────────────────────────────────────────*/
+.stepper {
   display: flex;
-  align-items: center;
-  gap: 0;
-  overflow-x: auto;
-  padding: 0.25rem 0;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1.5rem 1.8rem;
 }
 
-.step-item {
+.step {
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  flex-shrink: 0;
+  position: relative;
+  flex: 1;
 }
 
-.step-dot {
-  width: 28px;
-  height: 28px;
+.step-icon {
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  border: 2px solid var(--border-subtle);
-  background: var(--bg-base);
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  font-weight: 700;
   display: grid;
   place-items: center;
-  flex-shrink: 0;
-  transition: all 0.2s;
+  background: var(--bg-surface);
+  border: 2px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 1rem;
+  font-weight: 700;
+  z-index: 2;
+  transition: all 0.2s ease;
 }
 
-.step-item.active .step-dot {
-  border-color: var(--accent);
-  background: var(--accent);
+.step.current .step-icon {
+  background: var(--gradient-hero);
+  border-color: transparent;
   color: #fff;
+  box-shadow: var(--accent-glow);
 }
 
-.step-item.done .step-dot {
-  border-color: var(--success, #00d4aa);
-  background: var(--success, #00d4aa);
+.step.done .step-icon {
+  background: var(--success);
+  border-color: transparent;
   color: #fff;
 }
 
 .step-label {
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-secondary);
-  white-space: nowrap;
+  text-align: center;
 }
 
-.step-item.active .step-label {
-  color: var(--text-primary);
+.step.current .step-label {
+  color: var(--accent-2);
 }
 
-.step-item.done .step-label {
-  color: var(--success, #00d4aa);
+.step.done .step-label {
+  color: var(--success);
 }
 
-.step-line {
-  width: 40px;
+.connector {
+  position: absolute;
+  top: 21px;
+  left: calc(50% + 28px);
+  right: calc(-50% + 28px);
   height: 2px;
   background: var(--border-subtle);
-  margin: 0 0.35rem;
+  z-index: 1;
 }
 
-/* Wizard card */
-.wizard-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: 14px;
-  padding: 1.75rem;
+.step.done .connector {
+  background: var(--success);
+}
+
+/* ── Step body ───────────────────────────────────────────────────────────────*/
+.step-body {
+  padding: 2rem 2rem 1.5rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
+  min-height: 320px;
 }
 
 .section-title {
@@ -502,17 +519,17 @@ function finish() {
   margin: 0;
 }
 
-/* Form */
+/* ── Form ────────────────────────────────────────────────────────────────────*/
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.25rem;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.4rem;
 }
 
 .field.col-span-2 {
@@ -523,6 +540,8 @@ function finish() {
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .w-full {
@@ -534,17 +553,18 @@ function finish() {
   color: var(--danger);
 }
 
-/* Repeatable rows */
+/* ── Repeatable rows ─────────────────────────────────────────────────────────*/
 .repeatable-row {
   display: flex;
   align-items: flex-start;
   gap: 0.75rem;
-  padding-bottom: 1rem;
+  padding-bottom: 1.25rem;
   border-bottom: 1px solid var(--border-subtle);
 }
 
 .repeatable-row:last-of-type {
   border-bottom: none;
+  padding-bottom: 0;
 }
 
 .repeatable-row .form-grid {
@@ -556,10 +576,10 @@ function finish() {
 }
 
 .remove-btn {
-  margin-top: 1.6rem;
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
+  margin-top: 1.8rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   border: 1px solid var(--border-subtle);
   background: transparent;
   color: var(--text-secondary);
@@ -572,13 +592,14 @@ function finish() {
 .remove-btn:hover {
   border-color: var(--danger);
   color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
 }
 
 .add-another-btn {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.4rem 0.75rem;
+  padding: 0.5rem 1rem;
   border-radius: 8px;
   border: 1px dashed var(--border-subtle);
   background: transparent;
@@ -592,62 +613,87 @@ function finish() {
 .add-another-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
 .info-msg {
   font-size: 0.84rem;
   color: var(--text-secondary);
-  padding: 1rem;
+  padding: 1.25rem 1.5rem;
   background: var(--bg-base);
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid var(--border-subtle);
 }
 
-/* Actions */
+/* ── Actions ─────────────────────────────────────────────────────────────────*/
 .actions {
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
-  padding-top: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-subtle);
+  margin-top: auto;
 }
 
 .btn-primary {
-  padding: 0.55rem 1.5rem;
-  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.6rem;
+  border-radius: 10px;
   border: none;
-  background: var(--gradient-accent);
+  background: var(--gradient-hero);
   color: #fff;
   font-weight: 700;
-  font-size: 0.86rem;
+  font-size: 0.875rem;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s, box-shadow 0.15s;
+  box-shadow: var(--accent-glow);
+}
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
 }
 .btn-primary:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .btn-secondary {
-  padding: 0.55rem 1.25rem;
-  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.4rem;
+  border-radius: 10px;
   border: 1px solid var(--border-subtle);
   background: var(--bg-base);
   color: var(--text-secondary);
   font-weight: 600;
-  font-size: 0.86rem;
+  font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.15s;
 }
 .btn-secondary:hover {
   border-color: var(--text-secondary);
+  color: var(--text-primary);
 }
 
-@media (max-width: 560px) {
+/* ── Responsive ──────────────────────────────────────────────────────────────*/
+@media (max-width: 700px) {
   .form-grid {
     grid-template-columns: 1fr;
   }
   .field.col-span-2 {
     grid-column: span 1;
+  }
+  .stepper {
+    padding: 1rem;
+  }
+  .step-label {
+    display: none;
+  }
+  .step-body {
+    padding: 1.25rem;
   }
 }
 </style>
