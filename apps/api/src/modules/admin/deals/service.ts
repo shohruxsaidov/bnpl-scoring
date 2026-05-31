@@ -1,8 +1,7 @@
-import { and, desc, eq, inArray } from 'drizzle-orm'
+import { desc, eq, inArray } from 'drizzle-orm'
 import type { Db } from '../../../db'
 import { deals, dealItems, dealPaymentSchedules, clientScorings } from '../../deals/db/schema'
 import { clients, tariffs, merchantUsers, merchants } from '../../id/db/schema'
-import { notifyPaymentReceived } from '../../notifications/service'
 
 // ---------------------------------------------------------------------------
 // Criteria → human-readable label map
@@ -142,105 +141,6 @@ export async function listAdminDeals(
       factors,
     }
   })
-}
-
-// ---------------------------------------------------------------------------
-// Manually mark a payment schedule item as paid (test / admin use)
-// Updates deal status: all paid → 'closed', any overdue unpaid → 'overdue'
-// ---------------------------------------------------------------------------
-
-export type ScheduleRow = {
-  index: number
-  dueDate: string
-  amount: number
-  paidAmount: number
-  paid: boolean
-  paidAt: string | null
-}
-
-export async function payScheduleItem(
-  db: Db,
-  dealId: string,
-  scheduleIndex: number,
-  payAmount: bigint,
-): Promise<{ schedule: ScheduleRow[] }> {
-  // Load current row
-  const [row] = await db
-    .select()
-    .from(dealPaymentSchedules)
-    .where(
-      and(
-        eq(dealPaymentSchedules.dealId, dealId),
-        eq(dealPaymentSchedules.index, scheduleIndex),
-      ),
-    )
-    .limit(1)
-
-  if (!row) throw Object.assign(new Error('Schedule item not found'), { statusCode: 404 })
-  if (row.paid) throw Object.assign(new Error('Already fully paid'), { statusCode: 409 })
-
-  const newPaidAmount = (row.paidAmount ?? 0n) + payAmount
-  const fullyPaid = newPaidAmount >= row.amount
-
-  await db
-    .update(dealPaymentSchedules)
-    .set({
-      paidAmount: newPaidAmount,
-      paid: fullyPaid,
-      paidAt: fullyPaid ? new Date() : row.paidAt,
-    })
-    .where(
-      and(
-        eq(dealPaymentSchedules.dealId, dealId),
-        eq(dealPaymentSchedules.index, scheduleIndex),
-      ),
-    )
-
-  // Reload all rows, recalculate deal status
-  const rows = await db
-    .select()
-    .from(dealPaymentSchedules)
-    .where(eq(dealPaymentSchedules.dealId, dealId))
-    .orderBy(dealPaymentSchedules.index)
-
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
-  const allPaid = rows.every((r) => r.paid)
-  const hasOverdue = rows.some((r) => !r.paid && new Date(r.dueDate) < today)
-  const newStatus = allPaid ? 'closed' : hasOverdue ? 'overdue' : 'active'
-
-  await db.update(deals).set({ status: newStatus }).where(eq(deals.id, dealId))
-
-  // Notify merchant admins — fire-and-forget
-  db.select({ merchantId: deals.merchantId, branchId: deals.branchId, clientId: deals.clientId })
-    .from(deals)
-    .where(eq(deals.id, dealId))
-    .limit(1)
-    .then(([deal]) => {
-      if (!deal?.clientId) return
-      notifyPaymentReceived(db, {
-        dealId,
-        merchantId: deal.merchantId,
-        branchId: deal.branchId,
-        clientId: deal.clientId,
-        paidTiyin: payAmount,
-        scheduleIndex,
-        fullyPaid,
-      }).catch(() => {})
-    })
-    .catch(() => {})
-
-  return {
-    schedule: rows.map((r) => ({
-      index: r.index,
-      dueDate: r.dueDate,
-      amount: Number(r.amount),
-      paidAmount: Number(r.paidAmount ?? 0n),
-      paid: r.paid,
-      paidAt: r.paidAt?.toISOString() ?? null,
-    })),
-  }
 }
 
 // ---------------------------------------------------------------------------

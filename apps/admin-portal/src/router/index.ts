@@ -114,13 +114,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/SendNotificationView.vue'),
         meta: { titleKey: 'routeTitle.sendNotification', breadcrumbKeys: ['breadcrumb.notifications'], feature: 'send_notifications' },
       },
-      {
-        path: 'test-payment',
-        name: 'test-payment',
-        component: () => import('@/views/TestPaymentView.vue'),
-        meta: { titleKey: 'routeTitle.testPayment', breadcrumbKeys: ['breadcrumb.testPayment'], superadmin: true },
-      },
-      {
+{
         path: 'permissions',
         name: 'permissions',
         component: () => import('@/views/PermissionsView.vue'),
