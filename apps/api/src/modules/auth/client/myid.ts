@@ -46,6 +46,7 @@ async function getClientToken(db: Db, redis: Redis): Promise<string> {
     grant_type: 'client_credentials',
   };
 
+  const requestTimestamp = new Date();
   try {
     const data = await myidClient()
       .post('api/v1/oauth2/access-token', {
@@ -63,6 +64,8 @@ async function getClientToken(db: Db, redis: Redis): Promise<string> {
       response: data,
       status: 200,
       errorMessage: null,
+      requestTimestamp,
+      responseTimestamp: new Date(),
     });
 
     return data.access_token;
@@ -75,6 +78,8 @@ async function getClientToken(db: Db, redis: Redis): Promise<string> {
       response: null,
       status: err instanceof IntegrationError ? err.statusCode : null,
       errorMessage: err instanceof Error ? err.message : String(err),
+      requestTimestamp,
+      responseTimestamp: new Date(),
     });
     return handleHttpError(err, 'myid.clientToken');
   }
@@ -100,6 +105,7 @@ export async function createMyidSession(
     max_retries: 3,
   };
 
+  const requestTimestamp = new Date();
   try {
     const data = await myidClient()
       .post('api/v1/web/sessions', {
@@ -116,6 +122,8 @@ export async function createMyidSession(
       response: data,
       status: 200,
       errorMessage: null,
+      requestTimestamp,
+      responseTimestamp: new Date(),
     });
 
     const redirectUrl = `${env.MYID_WEB_IFRAME_URL}?session_id=${data.session_id}&pinfl=${pinfl}&birth_date=${birthDate}&theme=dark&redirect_uri=${redirectUri}`;
@@ -133,6 +141,8 @@ export async function createMyidSession(
       response: null,
       status: err instanceof IntegrationError ? err.statusCode : null,
       errorMessage: err instanceof Error ? err.message : String(err),
+      requestTimestamp,
+      responseTimestamp: new Date(),
     });
     return handleHttpError(err, 'myid.createSession');
   }
@@ -151,6 +161,7 @@ export async function exchangeMyidCode(db: Db, redis: Redis, code: string): Prom
   };
 
   let access_token: string;
+  const tokenRequestTimestamp = new Date();
   try {
     const tokenData = await client
       .post('api/v1/oauth2//access-token', {
@@ -167,6 +178,8 @@ export async function exchangeMyidCode(db: Db, redis: Redis, code: string): Prom
       response: tokenData,
       status: 200,
       errorMessage: null,
+      requestTimestamp: tokenRequestTimestamp,
+      responseTimestamp: new Date(),
     });
 
     access_token = tokenData.access_token;
@@ -179,10 +192,13 @@ export async function exchangeMyidCode(db: Db, redis: Redis, code: string): Prom
       response: null,
       status: err instanceof IntegrationError ? err.statusCode : null,
       errorMessage: err instanceof Error ? err.message : String(err),
+      requestTimestamp: tokenRequestTimestamp,
+      responseTimestamp: new Date(),
     });
     return handleHttpError(err, 'myid.token');
   }
 
+  const meRequestTimestamp = new Date();
   try {
     const me = await client
       .get('api/v1/users/me', {
@@ -214,6 +230,8 @@ export async function exchangeMyidCode(db: Db, redis: Redis, code: string): Prom
       response: me,
       status: 200,
       errorMessage: null,
+      requestTimestamp: meRequestTimestamp,
+      responseTimestamp: new Date(),
     });
 
     const { common_data, doc_data } = me.profile;
@@ -246,6 +264,8 @@ export async function exchangeMyidCode(db: Db, redis: Redis, code: string): Prom
       response: null,
       status: err instanceof IntegrationError ? err.statusCode : null,
       errorMessage: err instanceof Error ? err.message : String(err),
+      requestTimestamp: meRequestTimestamp,
+      responseTimestamp: new Date(),
     });
     return handleHttpError(err, 'myid.me');
   }
@@ -256,6 +276,7 @@ export function buildMockUser(pinfl: string): MyidUserData {
     pinfl,
     firstName: 'Test',
     lastName: 'User',
+    middleName: null,
     birthDate: parsePinflBirthDate(pinfl),
     gender: parsePinflGender(pinfl),
     nationality: 'UZB',

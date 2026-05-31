@@ -50,6 +50,7 @@ export async function lookupMxik(db: Db, code: string): Promise<MxikEntry> {
 
   const reqParams = { mxikCode: code, lang: "uz_cyrl" }
 
+  const requestTimestamp = new Date();
   try {
     const data = await mxikClient()
       .get("data/by-mxik", { searchParams: reqParams })
@@ -63,6 +64,8 @@ export async function lookupMxik(db: Db, code: string): Promise<MxikEntry> {
       response: data,
       status: 200,
       errorMessage: null,
+      requestTimestamp,
+      responseTimestamp: new Date(),
     })
 
     const entry = {
@@ -111,6 +114,8 @@ export async function lookupMxik(db: Db, code: string): Promise<MxikEntry> {
       response: null,
       status: err instanceof IntegrationError ? err.statusCode : null,
       errorMessage: err instanceof Error ? err.message : String(err),
+      requestTimestamp,
+      responseTimestamp: new Date(),
     })
     return handleHttpError(err, "mxik.lookup")
   }
