@@ -5,8 +5,8 @@ name: scoring
 #   postgres        PostgreSQL 16 (Drizzle target)
 #   redis           Redis 7 (ioredis client in the API)
 #   api             Fastify + Drizzle backend (apps/api), listens on :4000
-#   platform-admin  Vue + Vite SPA (apps/platform-admin)  -> nginx
-#   merchant-app    Vue + Vite SPA (apps/merchant-app)    -> nginx
+#   admin-portal    Vue + Vite SPA (apps/admin-portal)    -> nginx
+#   merchant-portal Vue + Vite SPA (apps/merchant-portal) -> nginx
 #   client-portal   Vue + Vite SPA (apps/client-portal)   -> nginx
 #
 # Each SPA's nginx serves the static build AND reverse-proxies /api/v1 to the
@@ -85,30 +85,30 @@ services:
       retries: 5
       start_period: 20s
 
-  platform-admin:
+  admin-portal:
     build:
       context: .
       dockerfile: Dockerfile.web
       args:
-        APP_DIR: apps/platform-admin
+        APP_DIR: apps/admin-portal
         VITE_API_URL: /api/v1
     restart: unless-stopped
     ports:
-      - "${PLATFORM_ADMIN_PORT:-4001}:80"
+      - "${ADMIN_PORTAL_PORT:-4001}:80"
     depends_on:
       api:
         condition: service_healthy
 
-  merchant-app:
+  merchant-portal:
     build:
       context: .
       dockerfile: Dockerfile.web
       args:
-        APP_DIR: apps/merchant-app
+        APP_DIR: apps/merchant-portal
         VITE_API_URL: /api/v1
     restart: unless-stopped
     ports:
-      - "${MERCHANT_APP_PORT:-4002}:80"
+      - "${MERCHANT_PORTAL_PORT:-4002}:80"
     depends_on:
       api:
         condition: service_healthy
