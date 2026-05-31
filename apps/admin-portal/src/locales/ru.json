@@ -28,7 +28,7 @@
     "sendNotification": "Уведомления",
     "buyout": "Выкуп",
     "permissions": "Разрешения",
-    "collectionBoard": "Инкассо",
+    "collectionBoard": "Коллекшн Борд",
     "scoringHistory": "История скоринга",
     "payments": "Платежи",
     "changePassword": "Смена пароля"
@@ -47,7 +47,7 @@
     "notifications": "Уведомления",
     "buyout": "Выкуп",
     "permissions": "Разрешения",
-    "collectionBoard": "Инкассо",
+    "collectionBoard": "Коллекшн Борд",
     "scoringHistory": "История скоринга",
     "payments": "Платежи"
   },
@@ -69,7 +69,7 @@
     "notifications": "Уведомления",
     "buyout": "Выкуп",
     "permissions": "Разрешения",
-    "collectionBoard": "Инкассо",
+    "collectionBoard": "Коллекшн Борд",
     "scoringHistory": "История скоринга",
     "payments": "Платежи",
     "platformAdmin": "Админ платформы",
