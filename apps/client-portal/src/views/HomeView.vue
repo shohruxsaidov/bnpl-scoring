@@ -1,20 +1,16 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { useToast } from 'primevue/usetoast'
 import { useAuthStore } from '@/stores/auth'
 import { useDealsStore } from '@/stores/deals'
+import type { Deal } from '@/types'
 import StatusBadge from '@/components/StatusBadge.vue'
 import MonoAmount from '@/components/MonoAmount.vue'
 import { formatDateLong, formatDealNumber } from '@/utils/money'
-import type { Deal } from '@/types'
 
 const auth = useAuthStore()
 const deals = useDealsStore()
 const router = useRouter()
-const toast = useToast()
-const { t } = useI18n()
 
 const firstName = computed(() => auth.user?.firstName ?? '')
 
@@ -29,7 +25,7 @@ function openDeal(id: string) {
   router.push({ name: 'deal-detail', params: { id } })
 }
 
-function pay(deal: Deal) {
+function pay(_deal: Deal) {
 
 }
 </script>

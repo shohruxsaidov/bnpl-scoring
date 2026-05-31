@@ -19,41 +19,13 @@ name: scoring
 # Every value has a local default, so it also boots with no .env file.
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-scoring}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-scoring}
-      POSTGRES_DB: ${POSTGRES_DB:-scoring}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-scoring} -d ${POSTGRES_DB:-scoring}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    volumes:
-      - redis-data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   api:
     build:
       context: .
       dockerfile: Dockerfile.api
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
     # Loads MyID / PlumGate / KATM / MinIO / OTEL settings if the file exists.
     # Infra values below override anything in it so they point at the compose network.
@@ -69,11 +41,6 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change-me-please-at-least-32-characters}
     ports:
       - "${API_PORT:-4000}:4000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     healthcheck:
       test:
         - CMD
@@ -92,12 +59,9 @@ services:
       args:
         APP_DIR: apps/admin-portal
         VITE_API_URL: /api/v1
-    restart: unless-stopped
-    ports:
-      - "${ADMIN_PORTAL_PORT:-4001}:80"
-    depends_on:
-      api:
-        condition: service_healthy
+    restart: "no"
+    volumes:
+      - ./dist/admin-portal:/dist
 
   merchant-portal:
     build:
@@ -106,12 +70,9 @@ services:
       args:
         APP_DIR: apps/merchant-portal
         VITE_API_URL: /api/v1
-    restart: unless-stopped
-    ports:
-      - "${MERCHANT_PORTAL_PORT:-4002}:80"
-    depends_on:
-      api:
-        condition: service_healthy
+    restart: "no"
+    volumes:
+      - ./dist/merchant-portal:/dist
 
   client-portal:
     build:
@@ -120,13 +81,8 @@ services:
       args:
         APP_DIR: apps/client-portal
         VITE_API_URL: /api/v1
-    restart: unless-stopped
-    ports:
-      - "${CLIENT_PORTAL_PORT:-4003}:80"
-    depends_on:
-      api:
-        condition: service_healthy
+    restart: "no"
+    volumes:
+      - ./dist/client-portal:/dist
 
-volumes:
-  postgres-data:
-  redis-data:
+

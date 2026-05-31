@@ -1,10 +1,11 @@
 import postgres from 'postgres'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import { env } from '../env'
+import * as schema from '../db/schema'
 import { broadcastPush } from '../modules/push/service'
 
 const client = postgres(env.DATABASE_URL)
-const db = drizzle(client)
+const db = drizzle(client, { schema })
 
 await broadcastPush(db, {
   type: 'admin_message',

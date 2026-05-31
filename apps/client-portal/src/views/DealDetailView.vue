@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { useToast } from 'primevue/usetoast'
 import { useDealsStore } from '@/stores/deals'
 import StatusBadge from '@/components/StatusBadge.vue'
 import MonoAmount from '@/components/MonoAmount.vue'
@@ -11,8 +9,6 @@ import { formatDateLong, formatSomShort, formatDealNumber } from '@/utils/money'
 const route = useRoute()
 const router = useRouter()
 const deals = useDealsStore()
-const toast = useToast()
-const { t } = useI18n()
 
 const loading = ref(false)
 const deal = computed(() => deals.byId(route.params.id as string))

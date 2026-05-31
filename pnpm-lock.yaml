@@ -246,64 +246,6 @@ importers:
         specifier: ^2.0.0
         version: 2.2.12(typescript@5.9.3)
 
-  apps/merchant-app:
-    dependencies:
-      '@primeuix/themes':
-        specifier: ^2.0.0
-        version: 2.0.3
-      '@tanstack/vue-query':
-        specifier: ^5.0.0
-        version: 5.100.10(vue@3.5.34(typescript@5.9.3))
-      '@vee-validate/zod':
-        specifier: ^4.0.0
-        version: 4.15.1(vue@3.5.34(typescript@5.9.3))(zod@3.25.76)
-      pinia:
-        specifier: ^3.0.4
-        version: 3.0.4(typescript@5.9.3)(vue@3.5.34(typescript@5.9.3))
-      pinia-plugin-persistedstate:
-        specifier: ^4.7.1
-        version: 4.7.1(pinia@3.0.4(typescript@5.9.3)(vue@3.5.34(typescript@5.9.3)))
-      primeicons:
-        specifier: ^7.0.0
-        version: 7.0.0
-      primevue:
-        specifier: ^4.5.0
-        version: 4.5.5(vue@3.5.34(typescript@5.9.3))
-      vee-validate:
-        specifier: ^4.0.0
-        version: 4.15.1(vue@3.5.34(typescript@5.9.3))
-      vue:
-        specifier: ^3.5.0
-        version: 3.5.34(typescript@5.9.3)
-      vue-i18n:
-        specifier: ^9.0.0
-        version: 9.14.5(vue@3.5.34(typescript@5.9.3))
-      vue-router:
-        specifier: ^4.0.0
-        version: 4.6.4(vue@3.5.34(typescript@5.9.3))
-      zod:
-        specifier: ^3.24.0
-        version: 3.25.76
-    devDependencies:
-      '@tailwindcss/vite':
-        specifier: ^4.0.0
-        version: 4.3.0(vite@6.4.2(@types/node@22.19.19)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.0)(yaml@2.9.0))
-      '@vitejs/plugin-vue':
-        specifier: ^5.0.0
-        version: 5.2.4(vite@6.4.2(@types/node@22.19.19)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.0)(yaml@2.9.0))(vue@3.5.34(typescript@5.9.3))
-      tailwindcss:
-        specifier: ^4.0.0
-        version: 4.3.0
-      typescript:
-        specifier: ^5.7.0
-        version: 5.9.3
-      vite:
-        specifier: ^6.0.0
-        version: 6.4.2(@types/node@22.19.19)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.0)(yaml@2.9.0)
-      vue-tsc:
-        specifier: ^2.0.0
-        version: 2.2.12(typescript@5.9.3)
-
   apps/merchant-portal:
     dependencies:
       '@primeuix/themes':
@@ -321,61 +263,6 @@ importers:
       pinia-plugin-persistedstate:
         specifier: ^4.7.1
         version: 4.7.1(pinia@3.0.4(typescript@5.9.3)(vue@3.5.34(typescript@5.9.3)))
-      primeicons:
-        specifier: ^7.0.0
-        version: 7.0.0
-      primevue:
-        specifier: ^4.5.0
-        version: 4.5.5(vue@3.5.34(typescript@5.9.3))
-      vee-validate:
-        specifier: ^4.0.0
-        version: 4.15.1(vue@3.5.34(typescript@5.9.3))
-      vue:
-        specifier: ^3.5.0
-        version: 3.5.34(typescript@5.9.3)
-      vue-i18n:
-        specifier: ^9.0.0
-        version: 9.14.5(vue@3.5.34(typescript@5.9.3))
-      vue-router:
-        specifier: ^4.0.0
-        version: 4.6.4(vue@3.5.34(typescript@5.9.3))
-      zod:
-        specifier: ^3.24.0
-        version: 3.25.76
-    devDependencies:
-      '@tailwindcss/vite':
-        specifier: ^4.0.0
-        version: 4.3.0(vite@6.4.2(@types/node@22.19.19)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.0)(yaml@2.9.0))
-      '@vitejs/plugin-vue':
-        specifier: ^5.0.0
-        version: 5.2.4(vite@6.4.2(@types/node@22.19.19)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.0)(yaml@2.9.0))(vue@3.5.34(typescript@5.9.3))
-      tailwindcss:
-        specifier: ^4.0.0
-        version: 4.3.0
-      typescript:
-        specifier: ^5.7.0
-        version: 5.9.3
-      vite:
-        specifier: ^6.0.0
-        version: 6.4.2(@types/node@22.19.19)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.0)(yaml@2.9.0)
-      vue-tsc:
-        specifier: ^2.0.0
-        version: 2.2.12(typescript@5.9.3)
-
-  apps/platform-admin:
-    dependencies:
-      '@primeuix/themes':
-        specifier: ^2.0.0
-        version: 2.0.3
-      '@tanstack/vue-query':
-        specifier: ^5.0.0
-        version: 5.100.10(vue@3.5.34(typescript@5.9.3))
-      '@vee-validate/zod':
-        specifier: ^4.0.0
-        version: 4.15.1(vue@3.5.34(typescript@5.9.3))(zod@3.25.76)
-      pinia:
-        specifier: ^2.3.0
-        version: 2.3.1(typescript@5.9.3)(vue@3.5.34(typescript@5.9.3))
       primeicons:
         specifier: ^7.0.0
         version: 7.0.0

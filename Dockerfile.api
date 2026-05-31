@@ -13,8 +13,8 @@ FROM base AS deps
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.base.json turbo.json ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/client-portal/package.json apps/client-portal/package.json
-COPY apps/merchant-app/package.json apps/merchant-app/package.json
-COPY apps/platform-admin/package.json apps/platform-admin/package.json
+COPY apps/merchant-portal/package.json apps/merchant-portal/package.json
+COPY apps/admin-portal/package.json apps/admin-portal/package.json
 COPY packages/types/package.json packages/types/package.json
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm install --frozen-lockfile

@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
 import MonoAmount from '@/components/MonoAmount.vue'
 import { useScoringStore } from '@/stores/scoring'
 import { API_URL } from '@/stores/auth'
 
 useI18n()
 const scoring = useScoringStore()
-const router = useRouter()
 
 // ---------------------------------------------------------------------------
 // Wizard state

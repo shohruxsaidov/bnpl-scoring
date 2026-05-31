@@ -20,8 +20,8 @@ const { t } = useI18n()
 // ── Sort ──────────────────────────────────────────────────────────────────────
 const sort = ref<{ field: DealSortField; order: DealSortOrder } | null>(null)
 
-function onSort(e: { sortField: string; sortOrder: number }) {
-  if (!e.sortField) { sort.value = null; return }
+function onSort(e: { sortField?: string | ((item: any) => string); sortOrder?: number | null }) {
+  if (!e.sortField || typeof e.sortField !== 'string') { sort.value = null; return }
   sort.value = {
     field: e.sortField as DealSortField,
     order: e.sortOrder === 1 ? 'asc' : 'desc',
