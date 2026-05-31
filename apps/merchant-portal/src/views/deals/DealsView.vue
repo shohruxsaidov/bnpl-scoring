@@ -11,15 +11,26 @@ import MonoAmount from '@/components/MonoAmount.vue'
 import SkeletonStatCards from '@/components/SkeletonStatCards.vue'
 import SkeletonTable from '@/components/SkeletonTable.vue'
 import { formatDate } from '@/utils/money'
-import { useDealsQuery, type DealListItem } from '@/composables/useDealsApi'
+import { useDealsQuery, type DealListItem, type DealSortField, type DealSortOrder } from '@/composables/useDealsApi'
 import type { DealStatus } from '@/types'
 
 const auth = useAuthStore()
 const router = useRouter()
 const { t } = useI18n()
 
+// ── Sort ──────────────────────────────────────────────────────────────────────
+const sort = ref<{ field: DealSortField; order: DealSortOrder } | null>(null)
+
+function onSort(e: { sortField: string; sortOrder: number }) {
+  if (!e.sortField) { sort.value = null; return }
+  sort.value = {
+    field: e.sortField as DealSortField,
+    order: e.sortOrder === 1 ? 'asc' : 'desc',
+  }
+}
+
 // ── Data ─────────────────────────────────────────────────────────────────────
-const { data: dealsData, isLoading, isError, refetch } = useDealsQuery()
+const { data: dealsData, isLoading, isError, refetch } = useDealsQuery(sort)
 const allDeals = computed<DealListItem[]>(() => dealsData.value ?? [])
 
 // ── Filters ─────────────────────────────────────────────────────────────────
