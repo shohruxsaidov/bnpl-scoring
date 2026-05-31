@@ -32,10 +32,8 @@ services:
       - path: ./apps/api/.env
         required: false
     environment:
-      NODE_ENV: production
       HOST: 0.0.0.0
       PORT: 4000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-scoring}:${POSTGRES_PASSWORD:-scoring}@postgres:5432/${POSTGRES_DB:-scoring}
       JWT_SECRET: ${JWT_SECRET:-change-me-please-at-least-32-characters}
     ports:
       - '${API_PORT:-4000}:4000'
