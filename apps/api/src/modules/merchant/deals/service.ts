@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq } from 'drizzle-orm'
 import type { Client as MinioClient } from 'minio'
 import type { Db } from '../../../db'
 import { deals, dealItems, dealPaymentSchedules, clientScorings } from '../../deals/db/schema'
@@ -247,10 +247,21 @@ export async function createDeal(db: Db, input: CreateDealInput) {
 // List deals
 // ---------------------------------------------------------------------------
 
-export async function listDeals(db: Db, merchantId: bigint, agentId?: bigint) {
+export async function listDeals(
+  db: Db,
+  merchantId: bigint,
+  agentId?: bigint,
+  sort?: { sortBy?: string; sortOrder?: string },
+) {
   const filter = agentId
     ? and(eq(deals.merchantId, merchantId), eq(deals.agentId, agentId))
     : eq(deals.merchantId, merchantId)
+
+  const dir = sort?.sortOrder === 'asc' ? asc : desc
+  const orderCol =
+    sort?.sortBy === 'status' ? deals.status :
+    sort?.sortBy === 'amount' ? deals.totalPayable :
+    deals.createdAt
 
   const rows = await db
     .select({
@@ -264,7 +275,7 @@ export async function listDeals(db: Db, merchantId: bigint, agentId?: bigint) {
     .leftJoin(tariffs, eq(deals.tariffId, tariffs.id))
     .leftJoin(merchantUsers, eq(deals.agentId, merchantUsers.id))
     .where(filter)
-    .orderBy(desc(deals.createdAt))
+    .orderBy(dir(orderCol))
 
   return rows
     .filter((r) => r.deal.status !== 'draft')

@@ -25,6 +25,12 @@ const routes: RouteRecordRaw[] = [
         meta: { titleKey: 'routeTitle.merchants', breadcrumbKeys: ['breadcrumb.merchants'], feature: 'view_merchants' },
       },
       {
+        path: 'onboarding/new',
+        name: 'onboarding-new',
+        component: () => import('@/views/OnboardingWizardView.vue'),
+        meta: { titleKey: 'routeTitle.onboarding', breadcrumbKeys: ['breadcrumb.onboarding'], feature: 'onboard_merchants' },
+      },
+      {
         path: 'merchants/:id',
         name: 'merchant-detail',
         component: () => import('@/views/MerchantDetailView.vue'),

@@ -21,6 +21,7 @@ export const ADMIN_FEATURES = [
   'view_overview',
   'view_merchants',
   'manage_merchants',
+  'onboard_merchants',
   'view_deals',
   'manage_employees',
   'view_tariffs',

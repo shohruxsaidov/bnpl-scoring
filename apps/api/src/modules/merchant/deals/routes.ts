@@ -43,6 +43,15 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
 
   const IdParams = Type.Object({ id: Type.String() })
 
+  const ListDealsQuery = Type.Object({
+    sortBy: Type.Optional(Type.Union([
+      Type.Literal('status'),
+      Type.Literal('amount'),
+      Type.Literal('createdAt'),
+    ])),
+    sortOrder: Type.Optional(Type.Union([Type.Literal('asc'), Type.Literal('desc')])),
+  })
+
   /* ── POST / — create deal ─────────────────────────────────────────────── */
 
   fastify.post(
@@ -120,12 +129,13 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
 
   fastify.get(
     '/',
-    { preHandler: app.verifyMerchantJwt },
+    { schema: { querystring: ListDealsQuery }, preHandler: app.verifyMerchantJwt },
     async (request) => {
       const p = payload(request)
       const merchantId = BigInt(p.merchantId)
       const agentId = p.role === 'agent' ? BigInt(p.sub) : undefined
-      const list = await listDeals(db, merchantId, agentId)
+      const { sortBy, sortOrder } = request.query as { sortBy?: string; sortOrder?: string }
+      const list = await listDeals(db, merchantId, agentId, { sortBy, sortOrder })
       return { deals: list }
     },
   )

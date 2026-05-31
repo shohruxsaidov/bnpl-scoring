@@ -23,6 +23,7 @@ interface NavItem {
 const allNav = computed<NavItem[]>(() => [
   { label: t('nav.overview'), icon: 'pi pi-th-large', to: '/' },
   { label: t('nav.merchants'), icon: 'pi pi-building', to: '/merchants', feature: 'view_merchants' },
+  { label: t('nav.onboarding'), icon: 'pi pi-user-plus', to: '/onboarding/new', feature: 'onboard_merchants' },
   { label: t('nav.allDeals'), icon: 'pi pi-credit-card', to: '/deals', feature: 'view_deals' },
   { label: t('nav.tariffs'), icon: 'pi pi-percentage', to: '/tariffs', feature: 'view_tariffs' },
   { label: t('nav.employees'), icon: 'pi pi-users', to: '/employees', feature: 'manage_employees' },

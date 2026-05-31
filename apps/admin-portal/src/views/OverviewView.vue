@@ -1,25 +1,37 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { useTenantsStore } from '@/stores/tenants'
 import { useDealsStore } from '@/stores/deals'
+import { useOverviewApi } from '@/composables/useOverviewApi'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { formatSomCompact, formatSomShort, formatDate } from '@/utils/money'
 import type { IntegrationStatus } from '@/types'
 
-const tenants = useTenantsStore()
 const deals = useDealsStore()
+const overview = useOverviewApi()
 const router = useRouter()
 const { t } = useI18n()
+
+onMounted(() => {
+  deals.fetchDeals()
+  overview.fetch()
+})
+
+const overdueCount = computed(() => deals.deals.filter((d) => d.status === 'overdue').length)
+
+const merchantCount = computed(() => overview.merchantHealth.value.length)
+const activeMerchantCount = computed(
+  () => overview.merchantHealth.value.filter((m) => m.active).length,
+)
 
 // ---- KPI strip ----
 const kpis = computed(() => [
   {
     key: 'tenants',
     label: t('overview.totalTenants'),
-    value: String(tenants.total),
-    delta: `${tenants.activeCount} ${t('overview.activeTenants').toLowerCase()}`,
+    value: String(merchantCount.value),
+    delta: `${activeMerchantCount.value} ${t('overview.activeTenants').toLowerCase()}`,
     tone: 'neutral' as const,
     sparkPath: 'M0,28 L25,24 L50,20 L75,22 L100,16 L125,14 L150,10 L175,8 L200,6',
     sparkColor: '#7b68ee',
@@ -38,8 +50,8 @@ const kpis = computed(() => [
   {
     key: 'volume',
     label: t('overview.platformVolume'),
-    value: formatSomCompact(8_420_000_000_00),
-    delta: '↑ 12.4% vs last 30d',
+    value: formatSomCompact(deals.platformVolume),
+    delta: `${deals.deals.length} ${t('overview.totalDeals').toLowerCase()}`,
     tone: 'up' as const,
     sparkPath: 'M0,32 L25,28 L50,24 L75,20 L100,14 L125,12 L150,8 L175,6 L200,4',
     sparkColor: '#c77dff',
@@ -49,15 +61,13 @@ const kpis = computed(() => [
     key: 'overdue',
     label: t('overview.overdueDeals'),
     value: String(overdueCount.value),
-    delta: overdueCount.value === 0 ? 'All clear' : `↓ 2 vs yesterday`,
+    delta: overdueCount.value === 0 ? 'All clear' : `${overdueCount.value} ${t('overview.overdue')}`,
     tone: overdueCount.value === 0 ? ('up' as const) : ('down' as const),
     sparkPath: 'M0,10 L25,14 L50,12 L75,18 L100,16 L125,22 L150,18 L175,26 L200,24',
     sparkColor: '#ff5c5c',
     icon: 'pi pi-exclamation-triangle',
   },
 ])
-
-const overdueCount = computed(() => deals.deals.filter((d) => d.status === 'overdue').length)
 
 // ---- Deals over time chart ----
 const chartRange = ref<'30' | '90' | 'YTD'>('30')
@@ -130,23 +140,25 @@ const dominantSegment = computed(() =>
 )
 
 // ---- Activity feed ----
+const merchantNameMap = computed(
+  () => new Map(overview.merchantHealth.value.map((m) => [m.id, m.name])),
+)
+
 const activityItems = computed(() =>
   deals.recent(6).map((d, i) => ({
     id: d.id,
     initials: d.clientName?.slice(0, 2).toUpperCase() ?? '??',
     avClass: `av-${(i % 6) + 1}`,
     name: d.clientName,
-    tenant: tenants.byId(d.tenantId)?.name ?? '—',
+    tenant: merchantNameMap.value.get(d.tenantId) ?? '—',
     status: d.status,
     amount: formatSomShort(d.amount),
     time: formatDate(d.createdAt),
   })),
 )
 
-// ---- Tenant health ----
-const tenantHealth = computed(() =>
-  [...tenants.tenants].sort((a, b) => b.dealCount - a.dealCount).slice(0, 8),
-)
+// ---- Merchant health ----
+const tenantHealth = computed(() => overview.merchantHealth.value.slice(0, 8))
 
 // ---- Integrations ----
 const integrations = computed<IntegrationStatus[]>(() => [
@@ -323,7 +335,7 @@ function healthColor(h: string) {
       <section class="surface-card panel">
         <header class="panel-head">
           <h3 class="section-title">{{ $t('overview.tenantHealth') }}</h3>
-          <button class="btn-ghost sm" @click="router.push('/tenants')">
+          <button class="btn-ghost sm" @click="router.push('/merchants')">
             {{ $t('overview.viewAll') }} <i class="pi pi-arrow-right" />
           </button>
         </header>
@@ -332,7 +344,7 @@ function healthColor(h: string) {
             v-for="(tenant, idx) in tenantHealth"
             :key="tenant.id"
             class="health-row"
-            @click="router.push(`/tenants/${tenant.id}`)"
+            @click="router.push(`/merchants/${tenant.id}`)"
           >
             <div class="h-av" :class="`av-${(idx % 6) + 1}`">
               {{ tenant.name.slice(0, 2).toUpperCase() }}
@@ -340,8 +352,8 @@ function healthColor(h: string) {
             <span
               class="status-dot"
               :style="{
-                background: tenant.status === 'active' ? 'var(--success)' : 'var(--danger)',
-                boxShadow: `0 0 6px ${tenant.status === 'active' ? 'var(--success)' : 'var(--danger)'}`,
+                background: tenant.active ? 'var(--success)' : 'var(--danger)',
+                boxShadow: `0 0 6px ${tenant.active ? 'var(--success)' : 'var(--danger)'}`,
               }"
             />
             <span class="health-name">{{ tenant.name }}</span>

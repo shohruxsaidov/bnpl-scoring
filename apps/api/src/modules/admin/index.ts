@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyPluginAsync } from "fastify"
+import adminOverviewRoutes from "./overview/routes"
 import adminMerchantRoutes from "./merchants/routes"
 import adminBranchRoutes from "./branches/routes"
 import adminEmployeeRoutes from "./employees/routes"
@@ -32,6 +33,7 @@ function guarded(routes: FastifyPluginAsync, map: FeatureMap): FastifyPluginAsyn
 }
 
 export default async function adminModule(app: FastifyInstance) {
+  await app.register(adminOverviewRoutes, { prefix: "/admin/overview", preHandler: app.verifyAdminJwt })
   await app.register(guarded(adminMerchantRoutes, { read: "view_merchants", write: "manage_merchants" }), { prefix: "/admin/merchants" })
   await app.register(guarded(adminBranchRoutes, { read: "view_merchants", write: "manage_merchants" }), { prefix: "/admin/branches" })
   await app.register(guarded(adminEmployeeRoutes, { read: "manage_employees", write: "manage_employees" }), { prefix: "/admin/employees" })

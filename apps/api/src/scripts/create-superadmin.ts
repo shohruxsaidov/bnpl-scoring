@@ -16,6 +16,10 @@ const MERCHANT_ROLE_GRANTS: Record<string, string[]> = {
   merchant_admin: [...MERCHANT_FEATURES],
 };
 
+const ADMIN_ROLE_GRANTS: Record<string, string[]> = {
+  sales_manager: ["view_overview", "view_merchants", "manage_merchants", "onboard_merchants"],
+};
+
 const client = postgres(process.env["DATABASE_URL"]!);
 const db = drizzle(client);
 
@@ -25,6 +29,7 @@ async function main() {
     .insert(roles)
     .values([
       { key: "superadmin", name: "Superadmin", platform: "admin", isSuperadmin: true, isSystem: true },
+      { key: "sales_manager", name: "Sales Manager", platform: "admin", isSystem: true },
       { key: "agent", name: "Agent", platform: "merchant", isSystem: true },
       { key: "merchant_admin", name: "Merchant Admin", platform: "merchant", isSystem: true },
     ])
@@ -40,6 +45,14 @@ async function main() {
       .values(features.map((feature) => ({ roleId: roleId("merchant", key), feature })))
       .onConflictDoNothing();
   }
+
+  for (const [key, features] of Object.entries(ADMIN_ROLE_GRANTS)) {
+    await db
+      .insert(rolePermissions)
+      .values(features.map((feature) => ({ roleId: roleId("admin", key), feature })))
+      .onConflictDoNothing();
+  }
+  console.log("✓ Seeded admin roles: sales_manager");
 
   const superRoleId = roleId("admin", "superadmin");
   const passwordHash = await hashPassword(password);

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/vue-query'
 import { apiFetch } from '@/utils/apiFetch'
 import { computed, type Ref } from 'vue'
 
@@ -85,6 +85,7 @@ export function useDealsQuery(sort?: Ref<{ field: DealSortField; order: DealSort
       return apiFetch<{ deals: DealListItem[] }>(`/merchant/deals${qs}`).then((r) => r.deals)
     },
     staleTime: 30_000,
+    placeholderData: keepPreviousData,
   })
 }
 
