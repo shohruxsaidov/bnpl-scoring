@@ -104,9 +104,25 @@ export const dealItems = pgTable('deal_items', {
 })
 
 // ---------------------------------------------------------------------------
+// manual_payments
+// A single Platform Admin payment event that settles one or more instalments
+// FIFO by dueDate. Amount stored in tiyin.
+// ---------------------------------------------------------------------------
+export const manualPayments = pgTable('manual_payments', {
+  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+  dealId: uuid('deal_id').notNull().references(() => deals.id, { onDelete: 'cascade' }),
+  adminUserId: bigint('admin_user_id', { mode: 'bigint' }).references(() => adminUsers.id),
+  amount: bigint('amount', { mode: 'bigint' }).notNull(),
+  paymentType: text('payment_type').notNull().default('mib'),
+  note: text('note'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+// ---------------------------------------------------------------------------
 // deal_payment_schedules
 // One row per instalment. Used by the Collection Board / Aging Bucket queries.
 // Aging: dueDate <= today AND paid = false → determines Days Overdue.
+// manualPaymentId is set when the row was settled by a Manual Payment event.
 // ---------------------------------------------------------------------------
 export const dealPaymentSchedules = pgTable('deal_payment_schedules', {
   id: bigserial('id', { mode: 'bigint' }).primaryKey(),
@@ -118,6 +134,7 @@ export const dealPaymentSchedules = pgTable('deal_payment_schedules', {
   paidAmount: bigint('paid_amount', { mode: 'bigint' }).notNull().$defaultFn(() => 0n),
   paid: boolean('paid').notNull().default(false),
   paidAt: timestamp('paid_at', { withTimezone: true }),
+  manualPaymentId: bigint('manual_payment_id', { mode: 'bigint' }).references(() => manualPayments.id),
 })
 
 // ---------------------------------------------------------------------------

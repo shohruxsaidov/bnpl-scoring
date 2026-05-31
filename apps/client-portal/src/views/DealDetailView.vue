@@ -36,7 +36,7 @@ const tabs: { key: Tab; labelKey: string; icon: string }[] = [
 ]
 
 const paidEntries = computed(() =>
-  deal.value?.schedule?.filter((e) => e.paid) ?? [],
+  deal.value?.schedule?.filter((e) => e.paid || e.paidAmount > 0) ?? [],
 )
 
 function back() {
@@ -44,13 +44,6 @@ function back() {
 }
 
 function pay() {
-  if (!deal.value) return
-  toast.add({
-    severity: 'success',
-    summary: t('dealDetail.paymentStarted'),
-    detail: t('dealDetail.payDetail', { merchant: deal.value.merchant }),
-    life: 3000,
-  })
 }
 </script>
 
@@ -82,31 +75,18 @@ function pay() {
       </div>
       <div class="dh-progress">
         <div class="dh-track">
-          <div
-            class="dh-fill"
-            :style="{ width: `${(deal.paymentsMade / deal.paymentsTotal) * 100}%` }"
-          />
+          <div class="dh-fill" :style="{ width: `${(deal.paymentsMade / deal.paymentsTotal) * 100}%` }" />
         </div>
         <span class="dh-progress-label font-mono">{{ deal.paymentsMade }}/{{ deal.paymentsTotal }}</span>
       </div>
-      <button
-        v-if="deal.status !== 'closed'"
-        class="btn-gradient dh-pay"
-        @click="pay"
-      >
+      <button v-if="deal.status !== 'closed'" class="btn-gradient dh-pay" @click="pay">
         {{ $t('dealDetail.payInstalment') }}
       </button>
     </header>
 
     <!-- tabs -->
     <nav class="tabs">
-      <button
-        v-for="t in tabs"
-        :key="t.key"
-        class="tab"
-        :class="{ active: tab === t.key }"
-        @click="tab = t.key"
-      >
+      <button v-for="t in tabs" :key="t.key" class="tab" :class="{ active: tab === t.key }" @click="tab = t.key">
         <i class="pi" :class="t.icon" />
         {{ $t(t.labelKey) }}
       </button>
@@ -120,12 +100,8 @@ function pay() {
         <span class="col-amt">{{ $t('dealDetail.colAmt') }}</span>
         <span class="col-st">{{ $t('dealDetail.colStatus') }}</span>
       </div>
-      <div
-        v-for="row in deal.schedule"
-        :key="row.no"
-        class="sched-row"
-        :class="{ overdue: !row.paid && deal.status === 'overdue' && row.no === deal.paymentsMade + 1 }"
-      >
+      <div v-for="row in deal.schedule" :key="row.no" class="sched-row"
+        :class="{ overdue: !row.paid && deal.status === 'overdue' && row.no === deal.paymentsMade + 1 }">
         <span class="col-no font-mono">{{ row.no }}</span>
         <span class="col-date font-mono">{{ formatDateLong(row.dueDate) }}</span>
         <span class="col-amt font-mono">{{ formatSomShort(row.amount) }}</span>
@@ -133,7 +109,11 @@ function pay() {
           <span v-if="row.paid" class="pill paid">
             <i class="pi pi-check" /> {{ $t('dealDetail.statusPaid') }}
           </span>
-          <span v-else-if="!row.paid && deal.status === 'overdue' && row.no === deal.paymentsMade + 1" class="pill overdue">
+          <span v-else-if="row.paidAmount > 0" class="pill partial">
+            <i class="pi pi-circle-fill" /> {{ $t('dealDetail.statusPartial') }}
+          </span>
+          <span v-else-if="!row.paid && deal.status === 'overdue' && row.no === deal.paymentsMade + 1"
+            class="pill overdue">
             <i class="pi pi-exclamation-triangle" /> {{ $t('dealDetail.statusOverdue') }}
           </span>
           <span v-else class="pill upcoming">
@@ -149,15 +129,18 @@ function pay() {
         {{ $t('dealDetail.noPayments') }}
       </div>
       <div v-for="p in paidEntries" :key="p.no" class="pay-row">
-        <div class="pay-icon">
-          <i class="pi pi-check-circle" />
+        <div class="pay-icon" :class="{ partial: !p.paid && p.paidAmount > 0 }">
+          <i :class="p.paid ? 'pi pi-check-circle' : 'pi pi-circle-fill'" />
         </div>
         <div class="pay-mid">
           <span class="pay-date font-mono">{{ formatDateLong(p.paidAt ?? p.dueDate) }}</span>
           <span class="pay-label">{{ $t('dealDetail.instalmentNo', { no: p.no }) }}</span>
         </div>
         <div class="pay-right">
-          <span class="pay-amt font-mono">{{ formatSomShort(p.amount) }} {{ $t('common.som') }}</span>
+          <span class="pay-amt font-mono">{{ formatSomShort(p.paid ? p.amount : p.paidAmount) }} {{ $t('common.som') }}</span>
+          <span v-if="!p.paid && p.paidAmount > 0" class="pay-partial-label">
+            {{ $t('dealDetail.statusPartial') }}
+          </span>
         </div>
       </div>
     </section>
@@ -181,11 +164,13 @@ function pay() {
   font-size: 2rem;
   color: var(--accent-1);
 }
+
 .detail {
   display: flex;
   flex-direction: column;
   gap: 1.1rem;
 }
+
 .back-btn {
   display: inline-flex;
   align-items: center;
@@ -199,6 +184,7 @@ function pay() {
   padding: 0;
   align-self: flex-start;
 }
+
 .back-btn:hover {
   color: var(--accent-2);
 }
@@ -209,21 +195,25 @@ function pay() {
   flex-direction: column;
   gap: 1rem;
 }
+
 .dh-top {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
 }
+
 .dh-merchant {
   font-size: 1.2rem;
   font-weight: 800;
 }
+
 .dh-id {
   font-size: 0.78rem;
   color: var(--text-secondary);
   margin-top: 0.25rem;
 }
+
 .dh-meta {
   display: flex;
   flex-wrap: wrap;
@@ -232,14 +222,17 @@ function pay() {
   color: var(--text-secondary);
   font-weight: 600;
 }
+
 .dh-meta .dot {
   opacity: 0.5;
 }
+
 .dh-progress {
   display: flex;
   align-items: center;
   gap: 0.75rem;
 }
+
 .dh-track {
   flex: 1;
   height: 8px;
@@ -247,16 +240,19 @@ function pay() {
   border-radius: 999px;
   overflow: hidden;
 }
+
 .dh-fill {
   height: 100%;
   background: var(--gradient-hero);
   border-radius: 999px;
 }
+
 .dh-progress-label {
   font-size: 0.85rem;
   font-weight: 700;
   color: var(--accent-2);
 }
+
 .dh-pay {
   width: 100%;
   margin-top: 0.3rem;
@@ -270,6 +266,7 @@ function pay() {
   border-radius: 14px;
   padding: 0.35rem;
 }
+
 .tab {
   flex: 1;
   display: flex;
@@ -286,10 +283,12 @@ function pay() {
   cursor: pointer;
   transition: all 0.15s ease;
 }
+
 .tab.active {
   background: var(--gradient-hero);
   color: #fff;
 }
+
 .tab i {
   font-size: 0.85rem;
 }
@@ -297,6 +296,7 @@ function pay() {
 .panel {
   padding: 1.25rem;
 }
+
 .empty {
   color: var(--text-secondary);
   font-size: 0.9rem;
@@ -316,6 +316,7 @@ function pay() {
   letter-spacing: 0.05em;
   color: var(--text-secondary);
 }
+
 .sched-row {
   display: grid;
   grid-template-columns: 32px 1fr auto auto;
@@ -325,22 +326,28 @@ function pay() {
   border-bottom: 1px solid var(--border-subtle);
   font-size: 0.85rem;
 }
+
 .sched-row:last-child {
   border-bottom: none;
 }
+
 .sched-row.overdue {
   color: var(--danger);
 }
+
 .col-no {
   color: var(--text-secondary);
 }
+
 .col-amt {
   font-weight: 700;
   text-align: right;
 }
+
 .col-st {
   text-align: right;
 }
+
 .pill {
   display: inline-flex;
   align-items: center;
@@ -351,14 +358,22 @@ function pay() {
   font-weight: 700;
   white-space: nowrap;
 }
+
 .pill.paid {
   background: var(--success-bg);
   color: var(--success);
 }
+
+.pill.partial {
+  background: color-mix(in srgb, var(--accent-2) 12%, transparent);
+  color: var(--accent-2);
+}
+
 .pill.upcoming {
   background: var(--bg-surface);
   color: var(--text-secondary);
 }
+
 .pill.overdue {
   background: var(--danger-bg);
   color: var(--danger);
@@ -371,13 +386,16 @@ function pay() {
   padding: 0.95rem 0;
   border-bottom: 1px solid var(--border-subtle);
 }
+
 .pay-row:first-child {
   padding-top: 0;
 }
+
 .pay-row:last-child {
   border-bottom: none;
   padding-bottom: 0;
 }
+
 .pay-icon {
   width: 38px;
   height: 38px;
@@ -388,6 +406,12 @@ function pay() {
   place-items: center;
   flex-shrink: 0;
 }
+
+.pay-icon.partial {
+  background: color-mix(in srgb, var(--accent-2) 12%, transparent);
+  color: var(--accent-2);
+}
+
 .pay-mid {
   display: flex;
   flex-direction: column;
@@ -395,21 +419,33 @@ function pay() {
   flex: 1;
   min-width: 0;
 }
+
 .pay-date {
   font-size: 0.88rem;
   font-weight: 700;
 }
+
 .pay-label {
   font-size: 0.72rem;
   color: var(--text-secondary);
 }
+
 .pay-right {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.3rem;
+  gap: 0.2rem;
   flex-shrink: 0;
 }
+
+.pay-partial-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--accent-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .pay-amt {
   font-size: 0.88rem;
   font-weight: 800;
@@ -424,6 +460,7 @@ function pay() {
   text-align: center;
   color: var(--text-secondary);
 }
+
 .missing i {
   font-size: 2.2rem;
   color: var(--danger);

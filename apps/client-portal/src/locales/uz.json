@@ -135,6 +135,7 @@
     "colAmt": "Summa",
     "colStatus": "Holat",
     "statusPaid": "To'langan",
+    "statusPartial": "Qisman to'langan",
     "statusOverdue": "Muddati o'tgan",
     "statusUpcoming": "Kelasi",
     "noPayments": "Hali to'lovlar qayd etilmagan.",

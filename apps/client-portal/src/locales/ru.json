@@ -137,6 +137,7 @@
     "colAmt": "Сумма",
     "colStatus": "Статус",
     "statusPaid": "Оплачено",
+    "statusPartial": "Частично оплачено",
     "statusOverdue": "Просрочен",
     "statusUpcoming": "Предстоящий",
     "noPayments": "Платежей пока нет.",

@@ -170,6 +170,20 @@ _Avoid_: Bucket, tier, aging group
 The number of calendar days between today and the most recent unpaid InstallmentScheduleRow's `dueDate` (where `dueDate` ≤ today and `paid = false`). Determines which Aging Bucket a Deal appears in. Computed on demand — not stored.
 _Avoid_: Overdue days, days past due, delinquency period
 
+### Manual Payments
+
+**Manual Payment** (ru: Ручной платёж):
+A payment event entered by a Platform Admin to settle one or more InstallmentScheduleRows on a Deal outside of the automated payment channel. Stored as a single `manual_payments` row capturing: deal, admin actor, amount (tiyin), payment type (`mib` | `transfer`), optional note, and timestamp. The entered amount is applied FIFO by `dueDate` across unpaid instalments — each instalment is fully settled before the next receives any remainder; a partially covered instalment has `paidAmount` updated but `paid` remains `false`. Overpayment (amount > total remaining balance) is rejected. If the note is non-empty, a `deal_comments` row is auto-created. If all instalments become fully paid, the Deal status is set to `closed`.
+_Avoid_: Cash payment, offline payment, admin payment
+
+**InstallmentScheduleRow**:
+One row in `deal_payment_schedules` — a single instalment in a Deal's repayment schedule. Has a `dueDate`, a full `amount` (tiyin), a running `paidAmount` (tiyin), a `paid` boolean (true only when `paidAmount >= amount`), and a nullable `manual_payment_id` FK pointing to the Manual Payment event that last touched it (null = settled via automated channel or not yet paid).
+_Avoid_: Payment schedule row, instalment row, payment row
+
+**Payment Type**:
+The channel through which a Manual Payment was physically received. Two fixed values: `mib` (МИБ — bank transfer via Microcredit Investment Bank) and `transfer` (Перевод — generic bank transfer). Stored as a text enum on the `manual_payments` row.
+_Avoid_: Payment method, payment channel
+
 ### Payouts
 
 **Payout**:
@@ -213,6 +227,10 @@ _Avoid_: Notification kind, notification category
 - A **Scoring Session** belongs to one `users` row and produces exactly two **Scoring Pipelines** (`katm`, `card_scoring`)
 - A **Scoring Pipeline** belongs to exactly one **Scoring Session**
 - A **Deal** carries one **DealPaymentSchedule** — set when the Deal is confirmed
+- A **Deal** has zero or more **Manual Payments** entered by Platform Admins
+- A **Manual Payment** touches one or more **InstallmentScheduleRows** (FIFO by due date); each row carries a nullable `manual_payment_id` back to the event
+- A **Manual Payment** auto-creates a **deal_comments** row when its note is non-empty
+- A **Manual Payment** that fully settles all **InstallmentScheduleRows** sets the **Deal** status to `closed`
 - A **Basket** is persisted as one or more **DealItems** on the Deal
 - A **Notification** belongs to exactly one actor; fan-out creates one **Notification** row per recipient at write time
 

@@ -106,6 +106,7 @@ export default async function clientDealRoutes(app: FastifyInstance) {
           no: s.index,
           dueDate: s.dueDate,
           amount: Number(s.amount),
+          paidAmount: Number(s.paidAmount ?? 0n),
           paid: s.paid,
           paidAt: s.paidAt?.toISOString() ?? null,
         })),

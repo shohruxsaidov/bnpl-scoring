@@ -10,8 +10,10 @@ export interface Payment {
   contractId: string
   /** tiyin */
   amount: number
+  /** tiyin — amount paid so far */
+  paidAmount: number
   type: 'cash' | 'card' | 'transfer'
-  status: 'confirmed' | 'pending' | 'cancelled'
+  status: 'confirmed' | 'pending' | 'partial' | 'cancelled'
   /** ISO date string */
   date: string
 }

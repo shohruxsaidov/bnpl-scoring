@@ -30,12 +30,7 @@ function openDeal(id: string) {
 }
 
 function pay(deal: Deal) {
-  toast.add({
-    severity: 'success',
-    summary: t('home.payStarted'),
-    detail: t('home.payDetail', { merchant: deal.merchant }),
-    life: 3000,
-  })
+
 }
 </script>
 
@@ -49,10 +44,7 @@ function pay(deal: Deal) {
 
     <!-- overdue alert banner -->
     <transition name="slide">
-      <div
-        v-if="overdueDeals.length && !bannerDismissed"
-        class="overdue-banner"
-      >
+      <div v-if="overdueDeals.length && !bannerDismissed" class="overdue-banner">
         <i class="pi pi-exclamation-triangle" />
         <div class="ob-text">
           <strong>{{ $t('home.overdueTitle') }}</strong>
@@ -72,11 +64,7 @@ function pay(deal: Deal) {
         {{ $t('home.noActive') }}
       </div>
 
-      <div
-        v-for="deal in activeDeals"
-        :key="deal.id"
-        class="deal-card surface-card"
-      >
+      <div v-for="deal in activeDeals" :key="deal.id" class="deal-card surface-card">
         <div class="dc-top">
           <div>
             <div class="dc-merchant">{{ deal.merchant }}</div>
@@ -102,10 +90,7 @@ function pay(deal: Deal) {
             </span>
           </div>
           <div class="dc-track">
-            <div
-              class="dc-fill"
-              :style="{ width: `${(deal.paymentsMade / deal.paymentsTotal) * 100}%` }"
-            />
+            <div class="dc-fill" :style="{ width: `${(deal.paymentsMade / deal.paymentsTotal) * 100}%` }" />
           </div>
         </div>
 
@@ -140,12 +125,7 @@ function pay(deal: Deal) {
 
       <transition name="slide">
         <div v-if="showClosed" class="closed-list">
-          <div
-            v-for="deal in closedDeals"
-            :key="deal.id"
-            class="closed-card surface-card"
-            @click="openDeal(deal.id)"
-          >
+          <div v-for="deal in closedDeals" :key="deal.id" class="closed-card surface-card" @click="openDeal(deal.id)">
             <div>
               <div class="dc-merchant">{{ deal.merchant }}</div>
               <div class="dc-id font-mono">{{ formatDealNumber(deal.dealNumber) }}</div>
@@ -174,9 +154,11 @@ function pay(deal: Deal) {
   font-weight: 800;
   letter-spacing: -0.01em;
 }
+
 .wave {
   display: inline-block;
 }
+
 .greet-sub {
   margin: 0.35rem 0 0;
   color: var(--text-secondary);
@@ -192,25 +174,30 @@ function pay(deal: Deal) {
   border-radius: 16px;
   padding: 1rem 1.1rem;
 }
-.overdue-banner > i {
+
+.overdue-banner>i {
   color: var(--danger);
   font-size: 1.1rem;
   margin-top: 0.1rem;
 }
+
 .ob-text {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
 }
+
 .ob-text strong {
   color: var(--danger);
   font-size: 0.92rem;
 }
+
 .ob-text span {
   font-size: 0.82rem;
   color: var(--text-secondary);
 }
+
 .ob-close {
   background: transparent;
   border: none;
@@ -226,10 +213,12 @@ function pay(deal: Deal) {
   font-size: 1.05rem;
   font-weight: 800;
 }
+
 .deals-section {
   display: flex;
   flex-direction: column;
 }
+
 .empty {
   color: var(--text-secondary);
   font-size: 0.9rem;
@@ -244,66 +233,79 @@ function pay(deal: Deal) {
   flex-direction: column;
   gap: 1.1rem;
 }
+
 .deal-card:last-child {
   margin-bottom: 0;
 }
+
 .dc-top {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
 }
+
 .dc-merchant {
   font-size: 1.05rem;
   font-weight: 800;
 }
+
 .dc-id {
   font-size: 0.75rem;
   color: var(--text-secondary);
   margin-top: 0.2rem;
 }
+
 .dc-amount {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
 }
+
 .dc-tariff {
   font-size: 0.8rem;
   color: var(--text-secondary);
   font-weight: 600;
 }
+
 .dc-progress {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
+
 .dc-progress-head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
 }
+
 .dc-progress-label {
   font-size: 0.8rem;
   color: var(--text-secondary);
   font-weight: 600;
 }
+
 .dc-progress-pct {
   font-size: 0.85rem;
   font-weight: 700;
   color: var(--accent-2);
 }
+
 .dc-track {
   height: 8px;
   background: var(--bg-surface);
   border-radius: 999px;
   overflow: hidden;
 }
+
 .dc-fill {
   height: 100%;
   background: var(--gradient-hero);
   border-radius: 999px;
   transition: width 0.3s ease;
 }
+
 .dc-next {
   display: flex;
   align-items: center;
@@ -314,34 +316,42 @@ function pay(deal: Deal) {
   padding: 0.85rem 1rem;
   font-size: 0.85rem;
 }
-.dc-next > i {
+
+.dc-next>i {
   color: var(--accent-2);
 }
+
 .dc-next-label {
   color: var(--text-secondary);
   font-weight: 600;
 }
+
 .dc-next-date {
   font-weight: 700;
 }
+
 .dc-next-amt {
   margin-left: auto;
   font-weight: 800;
   color: var(--accent-2);
 }
+
 .dc-next.overdue {
   background: var(--danger-bg);
 }
-.dc-next.overdue > i,
+
+.dc-next.overdue>i,
 .dc-next.overdue .dc-next-date,
 .dc-next.overdue .dc-next-amt {
   color: var(--danger);
 }
+
 .dc-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.7rem;
 }
+
 .dc-btn {
   width: 100%;
   padding: 0.8rem 1rem;
@@ -359,18 +369,22 @@ function pay(deal: Deal) {
   cursor: pointer;
   padding: 0.5rem 0;
 }
+
 .toggle-closed:hover {
   color: var(--accent-2);
 }
+
 .toggle-closed i {
   font-size: 0.75rem;
 }
+
 .closed-list {
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
   margin-top: 0.6rem;
 }
+
 .closed-card {
   display: flex;
   align-items: center;
@@ -380,9 +394,11 @@ function pay(deal: Deal) {
   cursor: pointer;
   transition: border-color 0.15s ease;
 }
+
 .closed-card:hover {
   border-color: var(--accent-2);
 }
+
 .closed-right {
   display: flex;
   flex-direction: column;
@@ -394,6 +410,7 @@ function pay(deal: Deal) {
 .slide-leave-active {
   transition: all 0.2s ease;
 }
+
 .slide-enter-from,
 .slide-leave-to {
   opacity: 0;

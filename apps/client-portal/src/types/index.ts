@@ -17,6 +17,7 @@ export interface ScheduleEntry {
   no: number
   dueDate: string
   amount: number
+  paidAmount: number
   paid: boolean
   paidAt: string | null
 }
