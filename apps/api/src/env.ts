@@ -20,6 +20,7 @@ const schema = z.object({
   MINIO_USE_SSL: z.coerce.boolean().default(false),
   MINIO_ACCESS_KEY: z.string().default('minioadmin'),
   MINIO_SECRET_KEY: z.string().default('minioadmin'),
+  MINIO_REGION: z.string().default('garage'),
   MINIO_BUCKET: z.string().default('scoring-documents'),
   MXIK_API_URL: z.string().url().default('https://utilities.thebetacompany.uz'),
   REDIS_URL: z.string().default('redis://localhost:6379'),
