@@ -17,7 +17,7 @@ export default fp(async function minioPlugin(app: FastifyInstance) {
     useSSL: false,
     accessKey: env.MINIO_ACCESS_KEY,
     secretKey: env.MINIO_SECRET_KEY,
-    region: env.MINIO_REGION,
+    // region: env.MINIO_REGION,
   });
 
   const bucket = env.MINIO_BUCKET;
