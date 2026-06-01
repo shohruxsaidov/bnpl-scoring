@@ -52,31 +52,43 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.web
+      target: serve
       args:
         APP_DIR: apps/admin-portal
         VITE_API_URL: /api/v1
-    restart: 'no'
-    volumes:
-      - ./dist/admin-portal:/dist
+    restart: unless-stopped
+    ports:
+      - '${ADMIN_PORT:-4001}:80'
+    depends_on:
+      api:
+        condition: service_healthy
 
   merchant-portal:
     build:
       context: .
       dockerfile: Dockerfile.web
+      target: serve
       args:
         APP_DIR: apps/merchant-portal
         VITE_API_URL: /api/v1
-    restart: 'no'
-    volumes:
-      - ./dist/merchant-portal:/dist
+    restart: unless-stopped
+    ports:
+      - '${MERCHANT_PORT:-4002}:80'
+    depends_on:
+      api:
+        condition: service_healthy
 
   client-portal:
     build:
       context: .
       dockerfile: Dockerfile.web
+      target: serve
       args:
         APP_DIR: apps/client-portal
         VITE_API_URL: /api/v1
-    restart: 'no'
-    volumes:
-      - ./dist/client-portal:/dist
+    restart: unless-stopped
+    ports:
+      - '${CLIENT_PORT:-4003}:80'
+    depends_on:
+      api:
+        condition: service_healthy
