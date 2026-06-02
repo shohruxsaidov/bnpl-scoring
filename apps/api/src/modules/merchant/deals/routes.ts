@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox'
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import type { FastifyInstance } from 'fastify'
 import { resolveAndCreateDeal, listDeals, getDealById, getContractPdfUrl } from './service'
-import { notifyDealCreated } from '../../notifications/service'
+import { notifyDealCreated, notifyDealDecision } from '../../notifications/service'
 
 type JwtPayload = {
   sub: string
@@ -120,6 +120,13 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
         clientId: BigInt(request.body.clientId),
         amountTiyin: deal.amount ?? BigInt(0),
       }).catch((err) => app.log.warn({ err }, 'notifyDealCreated failed'))
+
+      notifyDealDecision(db, {
+        dealId: deal.id,
+        clientId: BigInt(request.body.clientId),
+        scoringDecision: scoringDecision ?? null,
+        lang: lang ?? 'ru',
+      }).catch((err) => app.log.warn({ err }, 'notifyDealDecision failed'))
 
       return reply.code(201).send({ dealId: deal.id })
     },
