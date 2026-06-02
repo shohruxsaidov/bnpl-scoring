@@ -69,11 +69,11 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
           request.body.signingToken,
         )
       } catch {
-        return reply.code(400).send({ code: 'invalid_signing_token' })
+        return reply.code(400).sendError('invalid_signing_token')
       }
 
       if (signingPayload.purpose !== 'deal_signing') {
-        return reply.code(400).send({ code: 'invalid_signing_purpose' })
+        return reply.code(400).sendError('invalid_signing_purpose')
       }
 
       const {
@@ -107,8 +107,8 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
           lang: lang ?? 'ru',
         })
       } catch (err: any) {
-        if (err.code === 'tariff_not_found') return reply.code(400).send({ code: 'tariff_not_found' })
-        if (err.code === 'product_not_found') return reply.code(400).send({ code: 'product_not_found' })
+        if (err.code === 'tariff_not_found') return reply.code(400).sendError('tariff_not_found')
+        if (err.code === 'product_not_found') return reply.code(400).sendError('product_not_found')
         throw err
       }
 
@@ -149,7 +149,7 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
       const p = payload(request)
       const merchantId = BigInt(p.merchantId)
       const result = await getDealById(db, request.params.id, merchantId)
-      if (!result) return reply.code(404).send({ code: 'deal_not_found' })
+      if (!result) return reply.code(404).sendError('deal_not_found')
       const { schedule: _schedule, ...deal } = result
       return { deal }
     },
@@ -167,7 +167,7 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
         const url = await getContractPdfUrl(app.db, app.minio, request.params.id, merchantId)
         return { url }
       } catch (err: any) {
-        if (err.statusCode === 404) return reply.code(404).send({ code: 'deal_not_found' })
+        if (err.statusCode === 404) return reply.code(404).sendError('deal_not_found')
         throw err
       }
     },

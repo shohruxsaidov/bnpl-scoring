@@ -51,10 +51,10 @@ export default async function adminUsersRoutes(app: FastifyInstance) {
           createdById,
         })
         const user = await getAdminUser(db, created.id)
-        if (!user) return reply.code(500).send({ code: "internal_error" })
+        if (!user) return reply.code(500).sendError("internal_error")
         return reply.code(201).send({ user: serialize(user) })
       } catch (err: any) {
-        if (err?.code === "23505") return reply.code(409).send({ code: "email_taken" })
+        if (err?.code === "23505") return reply.code(409).sendError("email_taken")
         throw err
       }
     },
@@ -69,9 +69,9 @@ export default async function adminUsersRoutes(app: FastifyInstance) {
     { schema: { params: IdParams, body: UpdateBody } },
     async (request, reply) => {
       const updated = await updateAdminUser(db, BigInt(request.params.id), request.body)
-      if (!updated) return reply.code(404).send({ code: "not_found" })
+      if (!updated) return reply.code(404).sendError("not_found")
       const user = await getAdminUser(db, updated.id)
-      if (!user) return reply.code(404).send({ code: "not_found" })
+      if (!user) return reply.code(404).sendError("not_found")
       return { user: serialize(user) }
     },
   )

@@ -72,7 +72,7 @@ export default async function clientDealRoutes(app: FastifyInstance) {
       .limit(1)
 
     const row = rows[0]
-    if (!row) return reply.code(404).send({ code: 'deal_not_found' })
+    if (!row) return reply.code(404).sendError('deal_not_found')
 
     const schedule = await app.db
       .select()

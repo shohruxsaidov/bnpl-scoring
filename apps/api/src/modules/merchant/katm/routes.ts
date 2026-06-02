@@ -31,8 +31,8 @@ export default async function merchantKatmRoutes(app: FastifyInstance) {
         .where(eq(clients.id, BigInt(clientId)))
         .limit(1)
 
-      if (!client) return reply.code(404).send({ code: 'client_not_found' })
-      if (!client.pinfl) return reply.code(422).send({ code: 'client_pinfl_missing' })
+      if (!client) return reply.code(404).sendError('client_not_found')
+      if (!client.pinfl) return reply.code(422).sendError('client_pinfl_missing')
 
       // Generate short random IDs matching KATM's expected pattern
       const claimId = randomBytes(15).toString('base64url').slice(0, 20)

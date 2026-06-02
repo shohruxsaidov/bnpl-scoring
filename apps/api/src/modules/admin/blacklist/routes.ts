@@ -60,7 +60,7 @@ export default async function adminBlacklistRoutes(app: FastifyInstance) {
 
   fastify.delete('/:id', { schema: { params: IdParams }, preHandler }, async (request, reply) => {
     const entry = await removeBlacklistEntry(db, BigInt(request.params.id))
-    if (!entry) return reply.code(404).send({ code: 'not_found' })
+    if (!entry) return reply.code(404).sendError('not_found')
     return reply.code(204).send()
   })
 }

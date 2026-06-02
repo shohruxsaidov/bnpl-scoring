@@ -45,7 +45,7 @@ export default async function merchantScoringHistoryRoutes(app: FastifyInstance)
         })
         return reply.code(201).send(res)
       } catch (err: any) {
-        if (err.code === 'client_not_found') return reply.code(404).send({ code: 'client_not_found' })
+        if (err.code === 'client_not_found') return reply.code(404).sendError('client_not_found')
         throw err
       }
     },

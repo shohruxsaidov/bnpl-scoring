@@ -44,7 +44,7 @@ export default async function merchantBranchRoutes(app: FastifyInstance) {
 
   fastify.patch("/:id", { schema: { params: IdParams, body: UpdateBody }, preHandler: manage }, async (request, reply) => {
     const branch = await updateBranch(db, BigInt(request.params.id), merchantId(request), request.body)
-    if (!branch) return reply.code(404).send({ code: "not_found" })
+    if (!branch) return reply.code(404).sendError("not_found")
     return { branch: serialize(branch) }
   })
 }

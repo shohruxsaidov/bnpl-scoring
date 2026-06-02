@@ -24,7 +24,6 @@ export default fp(async function jwtPlugin(app: FastifyInstance) {
   await app.register(jwt, {
     secret: env.JWT_SECRET,
     sign: { expiresIn: env.JWT_EXPIRES_IN },
-    cookie: { cookieName: "access_token", signed: false },
   });
 
   app.decorate(

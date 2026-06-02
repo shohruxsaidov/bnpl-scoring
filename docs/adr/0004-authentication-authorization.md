@@ -1,6 +1,6 @@
 # ADR 0004: Authentication & Authorization
 
-**Status:** Accepted (authorization model amended 2026-05-30 — see "Authorization: RBAC")
+**Status:** Accepted (authorization model amended 2026-05-30 — see "Authorization: RBAC"; client token delivery amended 2026-06-02 — see "Short-lived access token" decision)
 
 ## Decisions
 
@@ -25,8 +25,8 @@ An Employee can hold multiple Roles. If more than one Role is assigned, a role p
 **Merchant JWT carries `merchant_id`, `branch_id`, and `role`.**
 All three values are known at login time (an Employee always belongs to exactly one Branch). Embedding them in the JWT eliminates a DB round-trip per request to resolve merchant scope. API route guards enforce `WHERE merchant_id = req.user.merchantId` at the middleware level. `branch_id` is included even for Merchant Admins (who oversee all branches) because the Employee record is always branch-scoped.
 
-**Short-lived access token (15–30 min) in `httpOnly` cookie; server-side refresh.**
-Access tokens are JWTs stored in `httpOnly` cookies — never in `localStorage`. Refresh tokens are never sent to the client; instead, a `session_id` is stored in a second `httpOnly` cookie. On `/auth/*/refresh`, the server looks up the session by `session_id`, rotates the stored refresh token, and issues a new access token. Rejected: refresh token in a client-readable cookie — server-side storage gives instant revocation when an account is deactivated.
+**Short-lived access token (15 min) delivery differs by actor type.**
+Admin and Merchant tokens are issued into `httpOnly` cookies (web portals, XSS-safe). Client tokens are returned in the response body as `{ accessToken, sessionToken }` — the Client Portal is a mobile app that cannot read `httpOnly` cookies. Mobile stores both values (e.g. secure device storage) and sends the access token as `Authorization: Bearer <token>` on every protected request. Refresh calls `POST /auth/client/refresh` with `{ sessionToken }` in the body. `session_id` cookies are not set for Client sessions. Rejected for Client: httpOnly cookie — a mobile HTTP client cannot read it; rejected: long-lived single token — loses instant revocation when an account is suspended.
 
 **Three separate session tables.**
 `admin_sessions`, `merchant_sessions`, and `client_sessions` each carry a proper FK to their respective user table. A single polymorphic sessions table was rejected: financial audit isolation requires per-actor separation, and proper FK constraints cannot be expressed on a polymorphic reference.
@@ -78,13 +78,14 @@ Platform Admins assign admin Roles to admin users and provision the elevated Mer
 | Platform Admin | `POST /auth/admin/refresh` | `session_id` cookie → new access token |
 | Merchant Employee | `POST /auth/merchant/login` | Email + password; returns role picker flag if multi-role |
 | Merchant Employee | `POST /auth/merchant/refresh` | `session_id` cookie → new access token |
-| Client (login) | `POST /auth/client/otp/request` | Phone → OTP sent |
-| Client (login) | `POST /auth/client/otp/verify` | OTP → access token |
+| Client (login) | `POST /auth/client/login/phone` | Phone → OTP sent |
+| Client (login) | `POST /auth/client/login/otp` | OTP → `{ accessToken, sessionToken, user }` in body |
 | Client (register) | `POST /auth/client/register/phone` | Phone → OTP sent |
-| Client (register) | `POST /auth/client/register/otp` | OTP verified |
+| Client (register) | `POST /auth/client/register/otp` | OTP verified → `regToken` in body |
 | Client (register) | `POST /auth/client/register/pinfl` | PINFL uniqueness check + MyID session |
-| Client (register) | `POST /auth/client/register/complete` | MyID callback → `users` row created |
-| Client | `POST /auth/client/refresh` | `session_id` cookie → new access token |
+| Client (register) | `POST /auth/client/register/complete` | MyID callback → `{ accessToken, sessionToken, user }` in body |
+| Client | `POST /auth/client/refresh` | `{ sessionToken }` body → `{ accessToken }` in body |
+| Client | `POST /auth/client/logout` | `{ sessionToken }` body → session revoked |
 
 ## Schema (auth tables)
 

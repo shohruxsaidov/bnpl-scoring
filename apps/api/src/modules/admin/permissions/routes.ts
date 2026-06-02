@@ -67,10 +67,10 @@ export default async function adminPermissionsRoutes(app: FastifyInstance) {
   fastify.post('/roles', { schema: { body: CreateRoleBody }, preHandler }, async (request, reply) => {
     const { platform, key, name } = request.body;
     if (key === 'superadmin') {
-      return reply.code(400).send({ code: 'reserved_key' });
+      return reply.code(400).sendError('reserved_key');
     }
     if (await keyExists(db, platform, key)) {
-      return reply.code(409).send({ code: 'key_taken' });
+      return reply.code(409).sendError('key_taken');
     }
     const role = await createRole(db, { platform, key, name });
     return reply.code(201).send({
@@ -94,8 +94,8 @@ export default async function adminPermissionsRoutes(app: FastifyInstance) {
     { schema: { params: IdParams, body: RenameBody }, preHandler },
     async (request, reply) => {
       const role = await findRoleRow(db, BigInt(request.params.id));
-      if (!role) return reply.code(404).send({ code: 'not_found' });
-      if (role.isSuperadmin) return reply.code(403).send({ code: 'immutable_role' });
+      if (!role) return reply.code(404).sendError('not_found');
+      if (role.isSuperadmin) return reply.code(403).sendError('immutable_role');
       const updated = await renameRole(db, role.id, request.body.name);
       return { role: { id: updated!.id.toString(), name: updated!.name } };
     },
@@ -103,12 +103,12 @@ export default async function adminPermissionsRoutes(app: FastifyInstance) {
 
   fastify.delete('/roles/:id', { schema: { params: IdParams }, preHandler }, async (request, reply) => {
     const role = await findRoleRow(db, BigInt(request.params.id));
-    if (!role) return reply.code(404).send({ code: 'not_found' });
+    if (!role) return reply.code(404).sendError('not_found');
     if (role.isSuperadmin || role.isSystem) {
-      return reply.code(403).send({ code: 'protected_role' });
+      return reply.code(403).sendError('protected_role');
     }
     if (await isRoleAssigned(db, role)) {
-      return reply.code(409).send({ code: 'role_in_use' });
+      return reply.code(409).sendError('role_in_use');
     }
     await deleteRole(db, role.id);
     app.invalidateRole(role.id);
@@ -124,19 +124,19 @@ export default async function adminPermissionsRoutes(app: FastifyInstance) {
     { schema: { params: IdParams, body: SetPermsBody }, preHandler },
     async (request, reply) => {
       const role = await findRoleRow(db, BigInt(request.params.id));
-      if (!role) return reply.code(404).send({ code: 'not_found' });
-      if (role.isSuperadmin) return reply.code(403).send({ code: 'immutable_role' });
+      if (!role) return reply.code(404).sendError('not_found');
+      if (role.isSuperadmin) return reply.code(403).sendError('immutable_role');
 
       const platform = role.platform as Platform;
       if (!PLATFORMS.includes(platform)) {
-        return reply.code(400).send({ code: 'invalid_platform' });
+        return reply.code(400).sendError('invalid_platform');
       }
 
       // De-dupe and validate every requested Feature against the role's platform catalog.
       const requested = [...new Set(request.body.features)];
       for (const f of requested) {
         if (!isValidFeature(platform, f)) {
-          return reply.code(400).send({ code: 'invalid_feature', feature: f });
+          return reply.code(400).sendError('invalid_feature', { feature: f });
         }
       }
 
@@ -146,7 +146,7 @@ export default async function adminPermissionsRoutes(app: FastifyInstance) {
         const held = await requesterFeatures(request);
         for (const f of requested) {
           if (PROTECTED_ADMIN_FEATURES.includes(f as never) || !held.has(f)) {
-            return reply.code(403).send({ code: 'escalation_blocked', feature: f });
+            return reply.code(403).sendError('escalation_blocked', { feature: f });
           }
         }
       }

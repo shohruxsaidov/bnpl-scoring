@@ -49,7 +49,7 @@ export default async function adminBranchRoutes(app: FastifyInstance) {
     { schema: { params: IdParams }, preHandler },
     async (request, reply) => {
       const branch = await getBranch(db, BigInt(request.params.id))
-      if (!branch) return reply.code(404).send({ code: "not_found" })
+      if (!branch) return reply.code(404).sendError("not_found")
       return { branch: serializeBranch(branch) }
     },
   )
@@ -59,7 +59,7 @@ export default async function adminBranchRoutes(app: FastifyInstance) {
     { schema: { params: IdParams, body: UpdateBranchBody }, preHandler },
     async (request, reply) => {
       const branch = await updateBranch(db, BigInt(request.params.id), request.body)
-      if (!branch) return reply.code(404).send({ code: "not_found" })
+      if (!branch) return reply.code(404).sendError("not_found")
       return { branch: serializeBranch(branch) }
     },
   )
@@ -80,7 +80,7 @@ export default async function adminBranchRoutes(app: FastifyInstance) {
     { schema: { params: IdParams, body: CreateEmployeeBody }, preHandler },
     async (request, reply) => {
       const branch = await getBranch(db, BigInt(request.params.id))
-      if (!branch) return reply.code(404).send({ code: "not_found" })
+      if (!branch) return reply.code(404).sendError("not_found")
       const employee = await createEmployee(db, {
         email: request.body.email,
         password: request.body.password,

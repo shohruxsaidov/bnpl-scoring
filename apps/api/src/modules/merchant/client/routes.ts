@@ -106,7 +106,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const phone = normalizePhone(request.body.phone);
       const ok = await verifyOtp(db, phone, request.body.code, 'client_registration');
-      if (!ok) return reply.code(400).send({ code: 'invalid_otp' });
+      if (!ok) return reply.code(400).sendError('invalid_otp');
 
       const regToken = app.jwt.sign({ phone, step: 'phone_verified' } satisfies RegTokenPhase1, {
         expiresIn: '15m',
@@ -125,10 +125,10 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
       try {
         phase1 = app.jwt.verify<RegTokenPhase1>(request.body.regToken);
       } catch {
-        return reply.code(400).send({ code: 'invalid_reg_token' });
+        return reply.code(400).sendError('invalid_reg_token');
       }
       if (phase1.step !== 'phone_verified' && !request.body.retry) {
-        return reply.code(400).send({ code: 'invalid_step' });
+        return reply.code(400).sendError('invalid_step');
       }
 
       const payload = request.user as {
@@ -138,7 +138,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
       const { pinfl } = request.body;
 
       const existing = await findClientByPinflAndMerchant(db, pinfl, BigInt(payload.merchantId));
-      if (existing) return reply.code(409).send({ code: 'client_already_registered' });
+      if (existing) return reply.code(409).sendError('client_already_registered');
       const redirectUrl = encodeURIComponent(env.MERCHANT_PORTAL_URL + '/myid/callback/registration');
 
       const myidResult = await createMyidSession(db, redis, pinfl, request.ip, redirectUrl);
@@ -169,15 +169,15 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
       try {
         phase2 = app.jwt.verify<RegTokenPhase2>(request.body.regToken);
       } catch {
-        return reply.code(400).send({ code: 'invalid_reg_token' });
+        return reply.code(400).sendError('invalid_reg_token');
       }
       if (phase2.step !== 'pinfl_verified') {
-        return reply.code(400).send({ code: 'invalid_step' });
+        return reply.code(400).sendError('invalid_step');
       }
 
       const myidUser = await exchangeMyidCode(db, redis, request.body.myidCode);
       if (myidUser.pinfl !== phase2.pinfl) {
-        return reply.code(400).send({ code: 'pinfl_mismatch' });
+        return reply.code(400).sendError('pinfl_mismatch');
       }
 
       const merchantId = BigInt(phase2.merchantId);
@@ -250,7 +250,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const phone = normalizePhone(request.body.phone);
       const ok = await verifyOtp(db, phone, request.body.code, 'deal_signing');
-      if (!ok) return reply.code(400).send({ code: 'invalid_otp' });
+      if (!ok) return reply.code(400).sendError('invalid_otp');
 
       // Short-lived token carried with the deal-creation call as proof of signing
       const signingToken = app.jwt.sign({ phone, purpose: 'deal_signing' }, { expiresIn: '10m' });
@@ -337,10 +337,10 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
           request.body.signingToken,
         );
       } catch {
-        return reply.code(400).send({ code: 'invalid_signing_token' });
+        return reply.code(400).sendError('invalid_signing_token');
       }
       if (signingPayload.purpose !== 'deal_signing') {
-        return reply.code(400).send({ code: 'invalid_signing_purpose' });
+        return reply.code(400).sendError('invalid_signing_purpose');
       }
 
       // ── 2. Verify MyID session token ───────────────────────────────────────
@@ -350,16 +350,16 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
           request.body.signingSessionToken,
         );
       } catch {
-        return reply.code(400).send({ code: 'invalid_signing_session' });
+        return reply.code(400).sendError('invalid_signing_session');
       }
       if (session.purpose !== 'deal_signing') {
-        return reply.code(400).send({ code: 'invalid_purpose' });
+        return reply.code(400).sendError('invalid_purpose');
       }
 
       // ── 3. Exchange MyID code & confirm PINFL ──────────────────────────────
       const myidUser = await exchangeMyidCode(db, redis, request.body.myidCode);
       if (myidUser.pinfl !== session.pinfl) {
-        return reply.code(400).send({ code: 'pinfl_mismatch' });
+        return reply.code(400).sendError('pinfl_mismatch');
       }
 
       // ── 4. Create deal atomically ──────────────────────────────────────────
@@ -381,9 +381,9 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
         });
       } catch (err: any) {
         if (err.code === 'tariff_not_found')
-          return reply.code(400).send({ code: 'tariff_not_found' });
+          return reply.code(400).sendError('tariff_not_found');
         if (err.code === 'product_not_found')
-          return reply.code(400).send({ code: 'product_not_found' });
+          return reply.code(400).sendError('product_not_found');
         throw err;
       }
 

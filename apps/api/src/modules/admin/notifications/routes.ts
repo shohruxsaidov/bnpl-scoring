@@ -92,17 +92,17 @@ export default async function adminNotificationRoutes(app: FastifyInstance) {
     let recipients: Recipient[] = []
 
     if (targetType === 'employee') {
-      if (!targetId) return reply.code(400).send({ code: 'target_id_required' })
+      if (!targetId) return reply.code(400).sendError('target_id_required')
       recipients = [{ actorType: 'employee', actorId: BigInt(targetId) }]
     } else if (targetType === 'merchant_employees') {
-      if (!targetId) return reply.code(400).send({ code: 'target_id_required' })
+      if (!targetId) return reply.code(400).sendError('target_id_required')
       const rows = await db
         .select({ id: merchantUsers.id })
         .from(merchantUsers)
         .where(eq(merchantUsers.merchantId, BigInt(targetId)))
       recipients = rows.map((r) => ({ actorType: 'employee' as const, actorId: r.id }))
     } else if (targetType === 'client') {
-      if (!targetId) return reply.code(400).send({ code: 'target_id_required' })
+      if (!targetId) return reply.code(400).sendError('target_id_required')
       recipients = [{ actorType: 'client', actorId: BigInt(targetId) }]
     } else {
       // all_clients
@@ -111,7 +111,7 @@ export default async function adminNotificationRoutes(app: FastifyInstance) {
     }
 
     if (recipients.length === 0) {
-      return reply.code(400).send({ code: 'no_recipients' })
+      return reply.code(400).sendError('no_recipients')
     }
 
     // Fan out — create one notification row per recipient

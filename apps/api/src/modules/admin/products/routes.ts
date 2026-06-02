@@ -32,7 +32,7 @@ export default async function adminProductRoutes(app: FastifyInstance) {
     { schema: { params: IdParams }, preHandler },
     async (request, reply) => {
       const product = await getProduct(db, BigInt(request.params.id))
-      if (!product) return reply.code(404).send({ code: "not_found" })
+      if (!product) return reply.code(404).sendError("not_found")
       return { product: serializeProduct(product) }
     },
   )
@@ -46,7 +46,7 @@ export default async function adminProductRoutes(app: FastifyInstance) {
         categoryId: request.body.categoryId ? BigInt(request.body.categoryId) : undefined,
       }
       const product = await updateProduct(db, BigInt(request.params.id), input)
-      if (!product) return reply.code(404).send({ code: "not_found" })
+      if (!product) return reply.code(404).sendError("not_found")
       return { product: serializeProduct(product) }
     },
   )

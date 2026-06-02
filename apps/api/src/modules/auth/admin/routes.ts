@@ -127,12 +127,12 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
     const admin = await findAdminByEmail(db, request.body.email);
 
     if (!admin || !admin.active) {
-      return reply.code(401).send({ code: "invalid_credentials" });
+      return reply.code(401).sendError("invalid_credentials");
     }
 
     const ok = await verifyPassword(admin.passwordHash, request.body.password);
     if (!ok) {
-      return reply.code(401).send({ code: "invalid_credentials" });
+      return reply.code(401).sendError("invalid_credentials");
     }
 
     const { sessionToken } = await createAdminSession(db, admin.id);
@@ -147,19 +147,19 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
     const payload = request.user as { sub: string; type: "admin" };
     const admin = await findAdminById(db, BigInt(payload.sub));
     if (!admin || !admin.active) {
-      return reply.code(401).send({ code: "unauthorized" });
+      return reply.code(401).sendError("unauthorized");
     }
     return { user: await serializeAdmin(db, admin) };
   });
 
   fastify.post("/refresh", async (request, reply) => {
     const sessionToken = request.cookies[SESSION_COOKIE];
-    if (!sessionToken) return reply.code(401).send({ code: "unauthorized" });
+    if (!sessionToken) return reply.code(401).sendError("unauthorized");
 
     const result = await verifyAdminSession(db, sessionToken);
     if (!result) {
       clearAuthCookies(reply);
-      return reply.code(401).send({ code: "unauthorized" });
+      return reply.code(401).sendError("unauthorized");
     }
 
     reply.setCookie(ACCESS_COOKIE, buildAccessToken(app, result.admin.id, result.admin.roleId), {
@@ -184,11 +184,11 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
       const payload = request.user as { sub: string };
       const admin = await findAdminById(db, BigInt(payload.sub));
       if (!admin || !admin.active) {
-        return reply.code(401).send({ code: "unauthorized" });
+        return reply.code(401).sendError("unauthorized");
       }
       const ok = await verifyPassword(admin.passwordHash, request.body.currentPassword);
       if (!ok) {
-        return reply.code(400).send({ code: "invalid_current_password" });
+        return reply.code(400).sendError("invalid_current_password");
       }
       await changeAdminPassword(db, admin.id, request.body.newPassword);
       return { ok: true };
@@ -230,17 +230,17 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
     },
     async (request, reply) => {
       const existing = await findAdminByEmail(db, request.body.email);
-      if (existing) return reply.code(409).send({ code: "email_taken" });
+      if (existing) return reply.code(409).sendError("email_taken");
 
       const role = await findRoleById(db, BigInt(request.body.roleId));
       if (!role || role.platform !== "admin") {
-        return reply.code(400).send({ code: "invalid_role" });
+        return reply.code(400).sendError("invalid_role");
       }
 
       // Only a Superadmin may mint another Superadmin.
       const requester = request.user as { sub: string; roleId: string | null };
       if (role.isSuperadmin && !(await requesterIsSuperadmin(requester.roleId))) {
-        return reply.code(403).send({ code: "forbidden" });
+        return reply.code(403).sendError("forbidden");
       }
 
       const admin = await createAdminUser(db, {
@@ -264,11 +264,11 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const targetId = BigInt(request.params.id);
       const target = await findAdminById(db, targetId);
-      if (!target) return reply.code(404).send({ code: "not_found" });
+      if (!target) return reply.code(404).sendError("not_found");
 
       const newRole = await findRoleById(db, BigInt(request.body.roleId));
       if (!newRole || newRole.platform !== "admin") {
-        return reply.code(400).send({ code: "invalid_role" });
+        return reply.code(400).sendError("invalid_role");
       }
 
       const requester = request.user as { roleId: string | null };
@@ -276,19 +276,19 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
 
       // Only a Superadmin may grant the Superadmin role.
       if (newRole.isSuperadmin && !requesterSuper) {
-        return reply.code(403).send({ code: "forbidden" });
+        return reply.code(403).sendError("forbidden");
       }
 
       // Never demote the last remaining Superadmin.
       if (target.roleId && !newRole.isSuperadmin) {
         const currentRole = await findRoleById(db, target.roleId);
         if (currentRole?.isSuperadmin && (await countActiveSuperadmins(db)) <= 1) {
-          return reply.code(409).send({ code: "last_superadmin" });
+          return reply.code(409).sendError("last_superadmin");
         }
       }
 
       const updated = await setAdminRole(db, targetId, newRole.id);
-      if (!updated) return reply.code(404).send({ code: "not_found" });
+      if (!updated) return reply.code(404).sendError("not_found");
       return { user: await serializeAdmin(db, updated) };
     },
   );

@@ -16,8 +16,16 @@ headers {
 
 body:json {
   {
-    "phone": "901234567",
-    "code": "123456"
+    "phone": "{{phoneNumber1}}",
+    "code": "{{otpCode}}"
+  }
+}
+
+script:post-response {
+  const data = res.getBody(); 
+  
+  if(data?.regToken) {
+    bru.setVar('regToken', data.regToken)
   }
 }
 

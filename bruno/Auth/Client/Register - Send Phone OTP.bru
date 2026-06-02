@@ -16,8 +16,17 @@ headers {
 
 body:json {
   {
-    "phone": "901234567"
+    "phone": "{{phoneNumber1}}"
   }
+}
+
+tests {
+  const data = res.getBody(); 
+  const otp = data?.devOtp
+  if(otp) {
+    bru.setVar('otpCode',otp)
+  }
+  
 }
 
 docs {

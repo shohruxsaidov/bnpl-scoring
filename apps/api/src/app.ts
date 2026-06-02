@@ -10,6 +10,7 @@ import jwtPlugin from "./plugins/jwt.js";
 import permissionsPlugin from "./plugins/permissions";
 import minioPlugin from "./plugins/minio";
 import redisPlugin from "./plugins/redis";
+import i18nPlugin from "./plugins/i18n";
 import healthRoutes from "./routes/health.js";
 import { authModule, merchantModule, adminModule, notificationsModule, clientModule, pushModule } from "./modules/index.js";
 import { env } from "./env.js";
@@ -78,6 +79,7 @@ export async function buildApp() {
   });
   await app.register(rateLimit, { max: 100, timeWindow: "1 minute" });
   await app.register(sensible);
+  await app.register(i18nPlugin);
   await app.register(cookiePlugin);
   await app.register(jwtPlugin);
   await app.register(dbPlugin);

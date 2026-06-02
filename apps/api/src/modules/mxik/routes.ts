@@ -16,7 +16,7 @@ export default async function mxikRoutes(app: FastifyInstance, opts: { preHandle
       const entry = await lookupMxik(db, request.query.code)
       return { mxik: entry }
     } catch {
-      return reply.code(404).send({ code: "mxik_not_found" })
+      return reply.code(404).sendError("mxik_not_found")
     }
   })
 

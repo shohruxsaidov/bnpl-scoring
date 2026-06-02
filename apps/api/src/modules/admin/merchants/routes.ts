@@ -115,7 +115,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     { schema: { params: IdParams }, preHandler },
     async (request, reply) => {
       const merchant = await getMerchant(db, BigInt(request.params.id))
-      if (!merchant) return reply.code(404).send({ code: "not_found" })
+      if (!merchant) return reply.code(404).sendError("not_found")
       return { merchant: serializeMerchant(merchant) }
     },
   )
@@ -125,7 +125,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     { schema: { params: IdParams, body: UpdateMerchantBody }, preHandler },
     async (request, reply) => {
       const merchant = await updateMerchant(db, BigInt(request.params.id), request.body)
-      if (!merchant) return reply.code(404).send({ code: "not_found" })
+      if (!merchant) return reply.code(404).sendError("not_found")
       return { merchant: serializeMerchant(merchant) }
     },
   )
@@ -146,7 +146,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     { schema: { params: IdParams, body: CreateBranchBody }, preHandler },
     async (request, reply) => {
       const merchant = await getMerchant(db, BigInt(request.params.id))
-      if (!merchant) return reply.code(404).send({ code: "not_found" })
+      if (!merchant) return reply.code(404).sendError("not_found")
       const branch = await createBranch(db, { merchantId: merchant.id, ...request.body })
       return reply.code(201).send({ branch: serializeBranch(branch) })
     },
@@ -168,7 +168,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     { schema: { params: IdParams, body: CreateCategoryBody }, preHandler },
     async (request, reply) => {
       const merchant = await getMerchant(db, BigInt(request.params.id))
-      if (!merchant) return reply.code(404).send({ code: "not_found" })
+      if (!merchant) return reply.code(404).sendError("not_found")
       const category = await createCategory(db, { merchantId: merchant.id, name: request.body.name })
       return reply.code(201).send({ category: serializeCategory(category) })
     },
@@ -190,7 +190,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     { schema: { params: IdParams, body: CreateProductBody }, preHandler },
     async (request, reply) => {
       const merchant = await getMerchant(db, BigInt(request.params.id))
-      if (!merchant) return reply.code(404).send({ code: "not_found" })
+      if (!merchant) return reply.code(404).sendError("not_found")
       const product = await createProduct(db, {
         merchantId: merchant.id,
         categoryId: BigInt(request.body.categoryId),

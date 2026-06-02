@@ -16,9 +16,13 @@ headers {
 
 body:json {
   {
-    "regToken": "<regToken from /register/otp>",
-    "pinfl": "12345678901234"
+    "regToken": "{{regToken}}",
+    "pinfl": "{{pinfl}}"
   }
+}
+
+tests {
+  const data = res.getBody(); 
 }
 
 docs {

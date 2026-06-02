@@ -25,11 +25,11 @@ export default async function adminScoringHistoryRoutes(app: FastifyInstance) {
     try {
       scoringId = BigInt(request.params.id)
     } catch {
-      return reply.code(400).send({ code: 'invalid_id' })
+      return reply.code(400).sendError('invalid_id')
     }
 
     const scoring = await getScoring(db, scoringId)
-    if (!scoring) return reply.code(404).send({ code: 'scoring_not_found' })
+    if (!scoring) return reply.code(404).sendError('scoring_not_found')
     return { scoring }
   })
 }

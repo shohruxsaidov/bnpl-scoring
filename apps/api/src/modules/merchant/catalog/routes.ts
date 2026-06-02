@@ -64,7 +64,7 @@ export default async function merchantCatalogRoutes(app: FastifyInstance) {
 
   fastify.patch("/categories/:id", { schema: { params: IdParams, body: UpdateCategoryBody }, preHandler: manageCategories }, async (request, reply) => {
     const category = await updateCategory(db, BigInt(request.params.id), merchantId(request), request.body)
-    if (!category) return reply.code(404).send({ code: "not_found" })
+    if (!category) return reply.code(404).sendError("not_found")
     return { category: serializeCategory(category) }
   })
 
@@ -94,7 +94,7 @@ export default async function merchantCatalogRoutes(app: FastifyInstance) {
       categoryId: request.body.categoryId ? BigInt(request.body.categoryId) : undefined,
     }
     const product = await updateProduct(db, BigInt(request.params.id), merchantId(request), input)
-    if (!product) return reply.code(404).send({ code: "not_found" })
+    if (!product) return reply.code(404).sendError("not_found")
     return { product: serializeProduct(product) }
   })
 }

@@ -27,7 +27,7 @@ export default async function adminCategoryRoutes(app: FastifyInstance) {
     { schema: { params: IdParams }, preHandler },
     async (request, reply) => {
       const category = await getCategory(db, BigInt(request.params.id))
-      if (!category) return reply.code(404).send({ code: "not_found" })
+      if (!category) return reply.code(404).sendError("not_found")
       return { category: serializeCategory(category) }
     },
   )
@@ -37,7 +37,7 @@ export default async function adminCategoryRoutes(app: FastifyInstance) {
     { schema: { params: IdParams, body: UpdateCategoryBody }, preHandler },
     async (request, reply) => {
       const category = await updateCategory(db, BigInt(request.params.id), request.body)
-      if (!category) return reply.code(404).send({ code: "not_found" })
+      if (!category) return reply.code(404).sendError("not_found")
       return { category: serializeCategory(category) }
     },
   )

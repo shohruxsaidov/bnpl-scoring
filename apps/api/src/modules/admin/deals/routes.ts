@@ -32,7 +32,7 @@ export default async function adminDealRoutes(app: FastifyInstance) {
   /* GET /admin/deals/:id */
   fastify.get('/:id', { schema: { params: IdParams }, preHandler }, async (request, reply) => {
     const deal = await getAdminDeal(db, request.params.id)
-    if (!deal) return reply.code(404).send({ code: 'not_found' })
+    if (!deal) return reply.code(404).sendError('not_found')
     return { deal }
   })
 

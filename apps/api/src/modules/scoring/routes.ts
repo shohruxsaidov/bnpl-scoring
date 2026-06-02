@@ -80,9 +80,9 @@ export default async function scoringRoutes(app: FastifyInstance) {
         })
         return reply.send(result)
       } catch (err: any) {
-        if (err.statusCode === 404) return reply.code(404).send({ code: 'session_not_found' })
-        if (err.message === 'session_not_running') return reply.code(409).send({ code: 'session_not_running' })
-        if (err.message === 'katm_not_completed') return reply.code(409).send({ code: 'katm_not_completed' })
+        if (err.statusCode === 404) return reply.code(404).sendError('session_not_found')
+        if (err.message === 'session_not_running') return reply.code(409).sendError('session_not_running')
+        if (err.message === 'katm_not_completed') return reply.code(409).sendError('katm_not_completed')
         throw err
       }
     },
@@ -113,8 +113,8 @@ export default async function scoringRoutes(app: FastifyInstance) {
         })
         return reply.send(result)
       } catch (err: any) {
-        if (err.statusCode === 404) return reply.code(404).send({ code: 'session_not_found' })
-        if (err.message === 'session_not_running') return reply.code(409).send({ code: 'session_not_running' })
+        if (err.statusCode === 404) return reply.code(404).sendError('session_not_found')
+        if (err.message === 'session_not_running') return reply.code(409).sendError('session_not_running')
         throw err
       }
     },
@@ -146,10 +146,10 @@ export default async function scoringRoutes(app: FastifyInstance) {
         })
         return reply.send(result)
       } catch (err: any) {
-        if (err.statusCode === 404) return reply.code(404).send({ code: 'session_not_found' })
-        if (err.message === 'session_not_running') return reply.code(409).send({ code: 'session_not_running' })
-        if (err.message === 'katm_not_completed') return reply.code(409).send({ code: 'katm_not_completed' })
-        if (err.message === 'card_scoring_already_started') return reply.code(409).send({ code: 'card_scoring_already_started' })
+        if (err.statusCode === 404) return reply.code(404).sendError('session_not_found')
+        if (err.message === 'session_not_running') return reply.code(409).sendError('session_not_running')
+        if (err.message === 'katm_not_completed') return reply.code(409).sendError('katm_not_completed')
+        if (err.message === 'card_scoring_already_started') return reply.code(409).sendError('card_scoring_already_started')
         throw err
       }
     },

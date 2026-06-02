@@ -57,13 +57,13 @@ export default async function adminTariffRoutes(app: FastifyInstance) {
       ...(markupPercent !== undefined && { markupPercent: markupPercent.toFixed(2) }),
     }
     const tariff = await updateTariff(db, BigInt(request.params.id), input)
-    if (!tariff) return reply.code(404).send({ code: 'not_found' })
+    if (!tariff) return reply.code(404).sendError('not_found')
     return { tariff: serialize(tariff) }
   })
 
   fastify.delete('/:id', { schema: { params: IdParams }, preHandler }, async (request, reply) => {
     const tariff = await updateTariff(db, BigInt(request.params.id), { active: false })
-    if (!tariff) return reply.code(404).send({ code: 'not_found' })
+    if (!tariff) return reply.code(404).sendError('not_found')
     return { tariff: serialize(tariff) }
   })
 }

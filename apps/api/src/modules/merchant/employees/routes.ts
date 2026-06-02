@@ -61,7 +61,7 @@ export default async function merchantEmployeeRoutes(app: FastifyInstance) {
       branchId: request.body.branchId ? BigInt(request.body.branchId) : undefined,
     }
     const employee = await updateEmployee(db, BigInt(request.params.id), merchantId(request), input)
-    if (!employee) return reply.code(404).send({ code: "not_found" })
+    if (!employee) return reply.code(404).sendError("not_found")
     return { employee: serialize(employee) }
   })
 }
