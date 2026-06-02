@@ -1,0 +1,36 @@
+meta {
+  name: Create Deal
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/merchant/deals
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "clientId": "1",
+    "tariffId": "1",
+    "basket": [
+      { "productId": "1", "quantity": 2 },
+      { "productId": "2", "quantity": 1 }
+    ],
+    "paymentDay": 15,
+    "signingToken": "<signingToken from /client/sign-otp/verify>",
+    "scoreSum": 75,
+    "scoringDecision": "approved",
+    "lang": "ru"
+  }
+}
+
+docs {
+  Requires create_deal permission. signingToken is proof of client OTP consent (10 min TTL).
+  paymentDay: 1-28. lang: "ru" | "uz".
+}

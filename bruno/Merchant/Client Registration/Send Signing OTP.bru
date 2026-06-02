@@ -1,0 +1,25 @@
+meta {
+  name: Send Signing OTP
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/v1/merchant/client/sign-otp
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "phone": "901234567"
+  }
+}
+
+docs {
+  Sends a deal_signing OTP — the client reads this code back to the agent as consent to the Kontrakt terms.
+}

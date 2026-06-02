@@ -1,0 +1,26 @@
+meta {
+  name: Verify OTP
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/v1/merchant/client/otp/verify
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "phone": "901234567",
+    "code": "123456"
+  }
+}
+
+docs {
+  Returns regToken (phase 1 — phone_verified, 15 min TTL).
+}

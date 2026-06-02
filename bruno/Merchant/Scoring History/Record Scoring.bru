@@ -1,0 +1,34 @@
+meta {
+  name: Record Scoring
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/merchant/scoring-history
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "clientId": "1",
+    "scoreSum": 75.5,
+    "coefficient": 1.2,
+    "decision": "approved",
+    "platformCreditLimit": 5000000,
+    "criteriaScores": {
+      "income": 80,
+      "debt_ratio": 70
+    }
+  }
+}
+
+docs {
+  Records a scoring run before any deal is created. Returns the scoring record with its id.
+  Pass the returned id as scoringId when creating the deal.
+}

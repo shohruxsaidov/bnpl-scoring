@@ -1,0 +1,27 @@
+meta {
+  name: Add Blacklist Entry
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/admin/blacklist
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "type": "pinfl",
+    "value": "12345678901234",
+    "reason": "Fraud suspected"
+  }
+}
+
+docs {
+  type: "pinfl" | "inn". reason is optional.
+}

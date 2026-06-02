@@ -1,0 +1,30 @@
+meta {
+  name: Update Merchant
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/admin/merchants/:id
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Updated Name",
+    "active": true
+  }
+}
+
+docs {
+  Requires manage_merchants permission. All fields are optional.
+}

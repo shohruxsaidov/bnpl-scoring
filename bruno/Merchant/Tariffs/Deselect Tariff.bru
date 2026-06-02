@@ -1,0 +1,19 @@
+meta {
+  name: Deselect Tariff
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/merchant/tariffs/:id
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+docs {
+  Requires manage_tariffs permission. Disables this tariff for the merchant. Returns 204 No Content.
+}

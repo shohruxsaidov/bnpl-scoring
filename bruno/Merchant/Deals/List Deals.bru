@@ -1,0 +1,21 @@
+meta {
+  name: List Deals
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/merchant/deals
+  body: none
+  auth: none
+}
+
+params:query {
+  sortBy:
+  sortOrder:
+}
+
+docs {
+  Agents see only their own deals; merchant_admins see all deals for the merchant.
+  sortBy: "status" | "amount" | "createdAt". sortOrder: "asc" | "desc".
+}

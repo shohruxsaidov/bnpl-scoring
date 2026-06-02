@@ -1,0 +1,16 @@
+meta {
+  name: Stream (SSE)
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/v1/notifications/stream
+  body: none
+  auth: none
+}
+
+docs {
+  Server-Sent Events stream for real-time notifications. Available only for admin and merchant actors (clients use Web Push instead).
+  Content-Type: text/event-stream. Sends a heartbeat comment every 25 seconds.
+}

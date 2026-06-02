@@ -1,0 +1,27 @@
+meta {
+  name: Update Employee
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/admin/employees/:id
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "fullName": "Updated Name",
+    "roles": ["agent", "merchant_admin"],
+    "active": true
+  }
+}

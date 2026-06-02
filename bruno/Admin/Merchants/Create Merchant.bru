@@ -1,0 +1,31 @@
+meta {
+  name: Create Merchant
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/admin/merchants
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Merchant Name",
+    "legalName": "Merchant LLC",
+    "inn": "123456789",
+    "phone": "+998901234567",
+    "address": "Tashkent, Uzbekistan",
+    "logoUrl": "https://example.com/logo.png",
+    "contractNumber": "CN-001"
+  }
+}
+
+docs {
+  Requires manage_merchants permission.
+}

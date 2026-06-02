@@ -1,0 +1,15 @@
+meta {
+  name: List Deals
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/client/deals
+  body: none
+  auth: none
+}
+
+docs {
+  Requires access_token cookie. Returns all non-draft deals for the authenticated client.
+}

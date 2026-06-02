@@ -1,0 +1,27 @@
+meta {
+  name: Create Tariff
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/admin/tariffs
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "12 months 20%",
+    "termMonths": 12,
+    "markupPercent": 20
+  }
+}
+
+docs {
+  Requires manage_tariffs permission. termMonths: 1-120. markupPercent: 0-100.
+}

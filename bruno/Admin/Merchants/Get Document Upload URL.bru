@@ -1,0 +1,19 @@
+meta {
+  name: Get Document Upload URL
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/api/v1/admin/merchants/:id/documents/upload-url
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+docs {
+  Returns a presigned MinIO PUT URL and objectName. Upload the file to the URL, then call /documents with the objectName as fileUrl.
+}

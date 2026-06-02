@@ -1,0 +1,30 @@
+meta {
+  name: Confirm Card
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/v1/client/scoring/:sessionId/card/confirm
+  body: json
+  auth: none
+}
+
+params:path {
+  sessionId: session-id-here
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "plumgateSessionId": "<sessionId from /card/add>",
+    "otp": "123456"
+  }
+}
+
+docs {
+  Confirms the OTP to complete card registration. Returns the registered card details (plumCardId, maskedPan, bank, pcType).
+}

@@ -1,0 +1,26 @@
+meta {
+  name: Create MyID Sign Session
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/v1/merchant/client/myid-sign-session
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "pinfl": "12345678901234"
+  }
+}
+
+docs {
+  Creates a MyID session for Kontrakt signing (client already known at this point).
+  Returns signingSessionToken + redirectUrl for MyID iframe.
+}

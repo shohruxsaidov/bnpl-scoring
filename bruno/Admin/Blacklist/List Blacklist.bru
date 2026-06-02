@@ -1,0 +1,15 @@
+meta {
+  name: List Blacklist
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/admin/blacklist
+  body: none
+  auth: none
+}
+
+docs {
+  Requires manage_blacklist permission.
+}

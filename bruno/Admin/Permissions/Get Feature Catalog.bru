@@ -1,0 +1,15 @@
+meta {
+  name: Get Feature Catalog
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/admin/permissions/catalog
+  body: none
+  auth: none
+}
+
+docs {
+  Requires manage_roles permission. Returns all available features grouped by platform.
+}

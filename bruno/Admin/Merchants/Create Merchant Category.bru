@@ -1,0 +1,25 @@
+meta {
+  name: Create Merchant Category
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/api/v1/admin/merchants/:id/categories
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Electronics"
+  }
+}

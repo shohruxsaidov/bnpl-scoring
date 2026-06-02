@@ -1,0 +1,27 @@
+meta {
+  name: Complete MyID Registration
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/v1/merchant/client/myid-complete
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "regToken": "<regToken from /myid-session>",
+    "myidCode": "<auth_code from MyID callback>"
+  }
+}
+
+docs {
+  Exchanges MyID code, verifies PINFL match, creates Client record.
+  Returns { client, isNew } — isNew: false if client already existed.
+}

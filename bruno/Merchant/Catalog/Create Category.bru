@@ -1,0 +1,25 @@
+meta {
+  name: Create Category
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/merchant/catalog/categories
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Electronics"
+  }
+}
+
+docs {
+  Requires manage_categories permission.
+}

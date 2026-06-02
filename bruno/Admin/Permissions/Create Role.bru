@@ -1,0 +1,27 @@
+meta {
+  name: Create Role
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/v1/admin/permissions/roles
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "platform": "merchant",
+    "key": "senior_agent",
+    "name": "Senior Agent"
+  }
+}
+
+docs {
+  Requires manage_roles permission. key must match ^[a-z][a-z0-9_]* (max 50 chars). "superadmin" is reserved.
+}

@@ -1,0 +1,26 @@
+meta {
+  name: Register - PINFL + MyID
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/client/register/pinfl
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "regToken": "<regToken from /register/otp>",
+    "pinfl": "12345678901234"
+  }
+}
+
+docs {
+  PINFL must be exactly 14 digits. Creates a MyID session and returns a new regToken (phase 2 — pinfl_verified) + redirectUrl for MyID iframe.
+}

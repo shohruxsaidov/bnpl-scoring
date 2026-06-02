@@ -1,0 +1,31 @@
+meta {
+  name: Add Card
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/v1/client/scoring/:sessionId/card/add
+  body: json
+  auth: none
+}
+
+params:path {
+  sessionId: session-id-here
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "cardNumber": "8600123456789012",
+    "expiry": "0126"
+  }
+}
+
+docs {
+  Registers the card in PlumGate. PlumGate sends an OTP to the client's phone.
+  Returns { sessionId: plumgateSessionId, maskedPhone }.
+}

@@ -1,0 +1,15 @@
+meta {
+  name: Lookup MXIK
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/merchant/mxik/lookup
+  body: none
+  auth: none
+}
+
+params:query {
+  code: 01111000000000000
+}

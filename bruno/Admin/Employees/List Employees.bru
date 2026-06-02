@@ -1,0 +1,15 @@
+meta {
+  name: List Employees
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/admin/employees
+  body: none
+  auth: none
+}
+
+params:query {
+  merchantId: 1
+}

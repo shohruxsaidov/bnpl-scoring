@@ -1,0 +1,15 @@
+meta {
+  name: List Merchants
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/admin/merchants
+  body: none
+  auth: none
+}
+
+docs {
+  Requires view_merchants permission.
+}

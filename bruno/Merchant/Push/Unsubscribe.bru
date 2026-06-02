@@ -1,0 +1,21 @@
+meta {
+  name: Unsubscribe
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/merchant/push/subscribe
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "endpoint": "https://fcm.googleapis.com/fcm/send/..."
+  }
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Lookup MXIK
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/admin/mxik/lookup
+  body: none
+  auth: none
+}
+
+params:query {
+  code: 01111000000000000
+}
+
+docs {
+  code must be exactly 17 characters. Returns the MXIK entry or 404.
+}

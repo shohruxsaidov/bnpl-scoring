@@ -1,0 +1,19 @@
+meta {
+  name: Get Contract PDF
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/api/v1/merchant/deals/:id/contract-pdf
+  body: none
+  auth: none
+}
+
+params:path {
+  id: uuid-here
+}
+
+docs {
+  Returns a presigned MinIO URL to the Kontrakt PDF. Generates it on first call.
+}

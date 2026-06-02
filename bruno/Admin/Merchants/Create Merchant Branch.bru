@@ -1,0 +1,27 @@
+meta {
+  name: Create Merchant Branch
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/v1/admin/merchants/:id/branches
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Main Branch",
+    "address": "Amir Temur str, 1",
+    "phone": "+998901234567"
+  }
+}

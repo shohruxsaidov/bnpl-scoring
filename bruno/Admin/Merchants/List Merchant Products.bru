@@ -1,0 +1,15 @@
+meta {
+  name: List Merchant Products
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/api/v1/admin/merchants/:id/products
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 1
+}

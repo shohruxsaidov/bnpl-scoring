@@ -1,0 +1,30 @@
+meta {
+  name: Update Branch
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/merchant/branches/:id
+  body: json
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "name": "Updated Branch",
+    "active": true
+  }
+}
+
+docs {
+  Requires manage_branches permission.
+}

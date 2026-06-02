@@ -1,0 +1,19 @@
+meta {
+  name: Remove Blacklist Entry
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/api/v1/admin/blacklist/:id
+  body: none
+  auth: none
+}
+
+params:path {
+  id: 1
+}
+
+docs {
+  Returns 204 No Content on success.
+}

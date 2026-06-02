@@ -1,0 +1,29 @@
+meta {
+  name: Add Deal Comment
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/v1/admin/deals/:id/comments
+  body: json
+  auth: none
+}
+
+params:path {
+  id: uuid-here
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "text": "Comment text here (max 2000 chars)"
+  }
+}
+
+docs {
+  Requires manage_payments permission.
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Search Clients
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/merchant/client/search
+  body: none
+  auth: none
+}
+
+params:query {
+  q: John
+}
+
+docs {
+  Requires merchant_access_token cookie. Searches clients registered under this merchant.
+}

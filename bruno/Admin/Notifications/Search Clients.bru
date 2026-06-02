@@ -1,0 +1,19 @@
+meta {
+  name: Search Clients
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/admin/notifications/clients/search
+  body: none
+  auth: none
+}
+
+params:query {
+  q: John
+}
+
+docs {
+  Requires send_notifications permission. Searches by PINFL, first name, or last name. Returns up to 20 results.
+}

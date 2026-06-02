@@ -1,0 +1,32 @@
+meta {
+  name: Score Card
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/v1/client/scoring/:sessionId/card/score
+  body: json
+  auth: none
+}
+
+params:path {
+  sessionId: session-id-here
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "plumCardId": "<plumCardId from /card/confirm>",
+    "pcType": "uzcard"
+  }
+}
+
+docs {
+  Runs PlumGate scoring for the confirmed card. Finalizes the session: writes user_limits + scoring_histories.
+  Returns { scoreSum, coefficient, decision, platformCreditLimit, criteriaScores }.
+  pcType: "uzcard" | "humo".
+}

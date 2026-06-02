@@ -95,19 +95,19 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
   const redis = app.redis;
 
   const PhoneBody = Type.Object({
-    phone: Type.String({ minLength: 1 }),
+    phone: Type.String({ minLength: 12, maxLength: 12 }),
   });
   const OtpBody = Type.Object({
-    phone: Type.String({ minLength: 1 }),
+    phone: Type.String({ minLength: 12, maxLength: 12 }),
     code: Type.String({ minLength: 1 }),
   });
   const RegisterOtpBody = Type.Object({
-    phone: Type.String({ minLength: 1 }),
+    phone: Type.String({ minLength: 12, maxLength: 12 }),
     code: Type.String({ minLength: 1 }),
   });
   const PinflBody = Type.Object({
     regToken: Type.String({ minLength: 1 }),
-    pinfl: Type.String({ minLength: 1 }),
+    pinfl: Type.String({ minLength: 14, maxLength: 14 }),
   });
   const CompleteBody = Type.Object({
     regToken: Type.String({ minLength: 1 }),
