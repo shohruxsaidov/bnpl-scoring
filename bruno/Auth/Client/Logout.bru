@@ -6,6 +6,21 @@ meta {
 
 post {
   url: {{baseUrl}}/api/v1/auth/client/logout
-  body: none
+  body: json
   auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "sessionToken": "{{sessionToken}}",
+    "deviceId": "test-device-001"
+  }
+}
+
+docs {
+  Revokes the session and nulls out the FCM token for the device. deviceId is optional.
 }

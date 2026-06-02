@@ -31,11 +31,11 @@ export async function deleteSubscription(db: Db, endpoint: string) {
   await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint))
 }
 
-async function sendPush(db: Db, actorType: 'client' | 'employee', userId: bigint, payload: unknown) {
+async function sendPush(db: Db, employeeId: bigint, payload: unknown) {
   const subs = await db
     .select()
     .from(pushSubscriptions)
-    .where(and(eq(pushSubscriptions.actorType, actorType), eq(pushSubscriptions.userId, userId)))
+    .where(and(eq(pushSubscriptions.actorType, 'employee'), eq(pushSubscriptions.userId, employeeId)))
 
   if (!subs.length) return
 
@@ -54,16 +54,12 @@ async function sendPush(db: Db, actorType: 'client' | 'employee', userId: bigint
   )
 }
 
-export function sendPushToUser(db: Db, userId: bigint, payload: unknown) {
-  return sendPush(db, 'client', userId, payload)
-}
-
 export function sendPushToEmployee(db: Db, employeeId: bigint, payload: unknown) {
-  return sendPush(db, 'employee', employeeId, payload)
+  return sendPush(db, employeeId, payload)
 }
 
 export async function broadcastPush(db: Db, payload: unknown) {
-  const subs = await db.select().from(pushSubscriptions)
+  const subs = await db.select().from(pushSubscriptions).where(eq(pushSubscriptions.actorType, 'employee'))
   if (!subs.length) return
 
   const json = JSON.stringify(payload)

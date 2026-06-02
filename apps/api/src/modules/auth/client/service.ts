@@ -2,6 +2,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { and, eq, gt, ilike, isNull, or } from "drizzle-orm";
 import type { Db } from "../../../db/index.js";
 import {
+  clientDevices,
   clientSessions,
   otpVerifications,
   users,
@@ -205,6 +206,32 @@ export async function verifySession(db: Db, sessionToken: string) {
   if (!user) return undefined;
 
   return { session, user };
+}
+
+export async function upsertDevice(
+  db: Db,
+  input: { userId: bigint; deviceId: string; fcmToken: string; platform: 'ios' | 'android'; appVersion: string },
+): Promise<void> {
+  await db
+    .insert(clientDevices)
+    .values(input)
+    .onConflictDoUpdate({
+      target: clientDevices.deviceId,
+      set: {
+        userId: input.userId,
+        fcmToken: input.fcmToken,
+        platform: input.platform,
+        appVersion: input.appVersion,
+        updatedAt: new Date(),
+      },
+    });
+}
+
+export async function clearDeviceFcmToken(db: Db, deviceId: string): Promise<void> {
+  await db
+    .update(clientDevices)
+    .set({ fcmToken: null, updatedAt: new Date() })
+    .where(eq(clientDevices.deviceId, deviceId));
 }
 
 /** Revoke the session matching the given raw token, if any. */

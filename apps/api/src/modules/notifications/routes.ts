@@ -40,7 +40,9 @@ export default async function notificationRoutes(app: FastifyInstance) {
     }
     if (c.merchant_access_token && tryVerify(c.merchant_access_token, 'merchant')) return
     if (c.admin_access_token && tryVerify(c.admin_access_token, 'admin')) return
-    if (c.access_token && tryVerify(c.access_token, 'client')) return
+    // Client uses Bearer header (mobile app)
+    const authHeader = request.headers.authorization
+    if (authHeader?.startsWith('Bearer ') && tryVerify(authHeader.slice(7), 'client')) return
     await reply.code(401).sendError('unauthorized')
   }
 
@@ -86,10 +88,6 @@ export default async function notificationRoutes(app: FastifyInstance) {
 
   fastify.get('/stream', { preHandler: verifyAny }, (request, reply) => {
     const { actorType, actorId } = actorFrom(request.user as AnyPayload)
-    if (actorType === 'client') {
-      reply.code(403).sendError('client_uses_push')
-      return
-    }
     const raw = reply.raw
 
     reply.hijack()

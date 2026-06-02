@@ -6,10 +6,25 @@ meta {
 
 post {
   url: {{baseUrl}}/api/v1/auth/client/refresh
-  body: none
+  body: json
   auth: none
 }
 
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "sessionToken": "{{sessionToken}}"
+  }
+}
+
+tests {
+  const data = res.getBody();
+  if (data?.accessToken) bru.setVar('accessToken', data.accessToken);
+}
+
 docs {
-  Reads session_id cookie. Issues a new access_token cookie (15 min TTL).
+  Send sessionToken in body. Returns { accessToken } with a fresh 15-min JWT.
 }

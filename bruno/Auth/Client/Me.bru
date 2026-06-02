@@ -10,6 +10,15 @@ get {
   auth: none
 }
 
+headers {
+  Authorization: Bearer {{accessToken}}
+}
+
+script:pre-request {
+  const cookie = req.getHeaders()
+  console.log(cookie)
+}
+
 docs {
-  Requires access_token cookie.
+  Requires Authorization: Bearer <accessToken> header. Returns the authenticated user's profile.
 }

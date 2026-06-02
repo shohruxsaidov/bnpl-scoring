@@ -60,9 +60,6 @@ export const uz: Record<string, string> = {
   // tariffs
   tariff_not_found: "Tarif topilmadi",
 
-  // push notifications
-  client_uses_push: "Mijoz allaqachon push-bildirishnomalardan foydalanmoqda",
-
   // mxik
   mxik_not_found: "MXIK kodi topilmadi",
 

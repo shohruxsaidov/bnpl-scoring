@@ -3,7 +3,7 @@ import type { Db } from '../../db'
 import { notifications } from './db/schema'
 import { clients, merchantUsers } from '../id/db/schema'
 import { ssePush } from '../../lib/sse'
-import { sendPushToEmployee, sendPushToUser } from '../push/service'
+import { sendPushToEmployee } from '../push/service'
 
 export type ActorType = 'employee' | 'client' | 'admin'
 
@@ -36,9 +36,7 @@ export async function createNotification(db: Db, input: CreateNotificationInput)
     .returning()
 
   if (row) {
-    if (input.actorType === 'client') {
-      sendPushToUser(db, input.actorId, toDto(row)).catch(() => {})
-    } else if (input.actorType === 'employee') {
+    if (input.actorType === 'employee') {
       sendPushToEmployee(db, input.actorId, toDto(row)).catch(() => {})
       ssePush(input.actorType, input.actorId.toString(), 'notification', toDto(row))
     }

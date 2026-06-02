@@ -4,6 +4,7 @@ import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import type { users } from '../../id/db/schema.js';
 import {
+  clearDeviceFcmToken,
   createOtp,
   createSession,
   createUser,
@@ -11,6 +12,7 @@ import {
   findUserByPhone,
   findUserByPinfl,
   revokeSession,
+  upsertDevice,
   verifyOtp,
   verifySession,
 } from './service.js';
@@ -68,12 +70,22 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
   const db = app.db;
   const redis = app.redis;
 
+  const DeviceInput = Type.Optional(
+    Type.Object({
+      deviceId: Type.String({ minLength: 1 }),
+      fcmToken: Type.String({ minLength: 1 }),
+      platform: Type.Union([Type.Literal('ios'), Type.Literal('android')]),
+      appVersion: Type.String({ minLength: 1 }),
+    }),
+  );
+
   const PhoneBody = Type.Object({
     phone: Type.String({ minLength: 12, maxLength: 12 }),
   });
   const OtpBody = Type.Object({
     phone: Type.String({ minLength: 12, maxLength: 12 }),
     code: Type.String({ minLength: 1 }),
+    device: DeviceInput,
   });
   const RegisterOtpBody = Type.Object({
     phone: Type.String({ minLength: 12, maxLength: 12 }),
@@ -86,6 +98,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
   const CompleteBody = Type.Object({
     regToken: Type.String({ minLength: 1 }),
     myidCode: Type.String({ minLength: 1 }),
+    device: DeviceInput,
   });
 
   /* ── Registration ───────────────────────────────────────────────────────── */
@@ -198,6 +211,9 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
     });
 
     const { sessionToken } = await createSession(db, user.id);
+    if (request.body.device) {
+      await upsertDevice(db, { userId: user.id, ...request.body.device });
+    }
 
     return { ...makeTokens(app, user.id, sessionToken), user: toUserDto(user) };
   });
@@ -226,6 +242,9 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
     if (!user) return reply.code(404).sendError('no_account');
 
     const { sessionToken } = await createSession(db, user.id);
+    if (request.body.device) {
+      await upsertDevice(db, { userId: user.id, ...request.body.device });
+    }
 
     return { ...makeTokens(app, user.id, sessionToken), user: toUserDto(user) };
   });
@@ -241,6 +260,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
 
   const SessionBody = Type.Object({
     sessionToken: Type.String({ minLength: 1 }),
+    deviceId: Type.Optional(Type.String({ minLength: 1 })),
   });
 
   fastify.post('/refresh', { schema: { body: SessionBody } }, async (request, reply) => {
@@ -259,6 +279,9 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
 
   fastify.post('/logout', { schema: { body: SessionBody } }, async (request) => {
     await revokeSession(db, request.body.sessionToken);
+    if (request.body.deviceId) {
+      await clearDeviceFcmToken(db, request.body.deviceId);
+    }
     return { ok: true };
   });
 }

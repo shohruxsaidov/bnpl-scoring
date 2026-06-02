@@ -17,10 +17,22 @@ headers {
 body:json {
   {
     "phone": "{{phoneNumber1}}",
-    "code": "{{otpCode}}"
+    "code": "{{otpCode}}",
+    "device": {
+      "deviceId": "test-device-001",
+      "fcmToken": "fcm-token-placeholder",
+      "platform": "android",
+      "appVersion": "1.0.0"
+    }
   }
 }
 
+tests {
+  const data = res.getBody();
+  if (data?.accessToken) bru.setVar('accessToken', data.accessToken);
+  if (data?.sessionToken) bru.setVar('sessionToken', data.sessionToken);
+}
+
 docs {
-  Sets access_token + session_id cookies on success.
+  Returns { accessToken, sessionToken, user }. device is optional but should always be sent from the app.
 }

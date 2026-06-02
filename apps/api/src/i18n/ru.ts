@@ -60,9 +60,6 @@ export const ru: Record<string, string> = {
   // tariffs
   tariff_not_found: "Тариф не найден",
 
-  // push notifications
-  client_uses_push: "Клиент уже использует push-уведомления",
-
   // mxik
   mxik_not_found: "Код MXIK не найден",
 

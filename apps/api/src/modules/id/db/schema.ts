@@ -72,6 +72,17 @@ export const clientSessions = pgTable('client_sessions', {
   revokedAt: timestamp('revoked_at', { withTimezone: true }),
 });
 
+export const clientDevices = pgTable('client_devices', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: bigint('user_id', { mode: 'bigint' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  deviceId: varchar('device_id', { length: 255 }).notNull().unique(),
+  fcmToken: text('fcm_token'),
+  platform: varchar('platform', { length: 10 }).notNull().$type<'ios' | 'android'>(),
+  appVersion: varchar('app_version', { length: 50 }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const otpVerifications = pgTable('otp_verifications', {
   id: uuid('id').primaryKey().defaultRandom(),
   phone: varchar('phone', { length: 20 }).notNull(),
