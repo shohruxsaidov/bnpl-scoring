@@ -41,10 +41,10 @@ const schema = z.object({
   VAPID_PUBLIC_KEY: z.string().min(1),
   VAPID_PRIVATE_KEY: z.string().min(1),
   VAPID_SUBJECT: z.string().default('mailto:admin@finsum.uz'),
-  // Firebase Cloud Messaging — client mobile app
-  FIREBASE_PROJECT_ID: z.string().min(1),
-  FIREBASE_CLIENT_EMAIL: z.string().min(1),
-  FIREBASE_PRIVATE_KEY: z.string().min(1),
+  // Firebase Cloud Messaging — client mobile app (disabled)
+  FIREBASE_PROJECT_ID: z.string().min(1).optional(),
+  FIREBASE_CLIENT_EMAIL: z.string().min(1).optional(),
+  FIREBASE_PRIVATE_KEY: z.string().min(1).optional(),
   LOKI_URL: z.string().url().optional(),
   OTEL_TRACES_ENDPOINT: z.string().url().optional(),
   OTEL_METRICS_ENDPOINT: z.string().url().optional(),
