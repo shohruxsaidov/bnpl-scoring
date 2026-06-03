@@ -56,6 +56,7 @@ services:
       args:
         APP_DIR: apps/admin-portal
         VITE_API_URL: /api/v1
+        NGINX_CONF: nginx.admin.conf
     restart: unless-stopped
     ports:
       - '${ADMIN_PORT:-4001}:80'

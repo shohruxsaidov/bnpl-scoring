@@ -37,7 +37,8 @@ CMD ["sh", "-c", "cp -rp /app-dist/. /dist/"]
 # ---- serve: nginx serving the SPA + /api/ proxy ----
 FROM nginx:1.27-alpine AS serve
 ARG APP_DIR
+ARG NGINX_CONF=nginx.conf
 COPY --from=build /app/${APP_DIR}/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY ${NGINX_CONF} /etc/nginx/conf.d/default.conf
 EXPOSE 80
 
