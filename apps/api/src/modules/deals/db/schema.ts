@@ -13,6 +13,7 @@ import {
   varchar,
 } from 'drizzle-orm/pg-core'
 import { clients, merchantUsers, merchants, branches, tariffs, products, adminUsers } from '../../id/db/schema'
+import { files } from '../../../lib/file-storage/schema'
 
 // ---------------------------------------------------------------------------
 // deals
@@ -48,8 +49,8 @@ export const deals = pgTable('deals', {
   scoringDecision: varchar('scoring_decision', { length: 20 }),
   // Kontrakt language selected at Wizard verification step
   lang: varchar('lang', { length: 5 }).notNull().default('ru'),
-  // MinIO object key for the cached Kontrakt PDF; null until first generation
-  pdfUrl: text('pdf_url'),
+  // FK to files table for the cached Kontrakt PDF; null until first generation
+  pdfFileId: bigint('pdf_file_id', { mode: 'bigint' }).references(() => files.id),
   // Human-readable sequential identifier, formatted as CN-0000001 at the app layer
   dealNumber: bigserial('deal_number', { mode: 'bigint' }).notNull().unique(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
