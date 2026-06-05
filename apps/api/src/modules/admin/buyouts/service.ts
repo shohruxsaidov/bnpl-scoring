@@ -1,8 +1,14 @@
-import { desc, eq } from 'drizzle-orm'
+import { desc, eq, inArray } from 'drizzle-orm'
 import type { Db } from '../../../db'
-import { buyouts } from '../../deals/db/schema'
+import { buyouts, deals, dealItems } from '../../deals/db/schema'
 import { merchants, branches, merchantUsers, clients } from '../../id/db/schema'
-import { deals } from '../../deals/db/schema'
+
+export interface BuyoutItemDto {
+  productName: string
+  price: number
+  qty: number
+  amount: number
+}
 
 export interface BuyoutDto {
   id: string
@@ -17,6 +23,7 @@ export interface BuyoutDto {
   amount: number
   status: string
   createdAt: string
+  items: BuyoutItemDto[]
 }
 
 function formatDealNumber(n: bigint | null | undefined): string {
@@ -54,6 +61,18 @@ export async function listBuyouts(
 
   const rows = await query
 
+  const dealIds = rows.map((r) => r.buyout.dealId)
+  const itemRows = dealIds.length > 0
+    ? await db.select().from(dealItems).where(inArray(dealItems.dealId, dealIds))
+    : []
+
+  const itemsByDeal = new Map<string, typeof itemRows>()
+  for (const item of itemRows) {
+    const arr = itemsByDeal.get(item.dealId) ?? []
+    arr.push(item)
+    itemsByDeal.set(item.dealId, arr)
+  }
+
   return rows.map((r) => ({
     id: String(r.buyout.id),
     dealId: r.buyout.dealId,
@@ -67,6 +86,10 @@ export async function listBuyouts(
     amount: Number(r.buyout.amount),
     status: r.buyout.status,
     createdAt: r.buyout.createdAt.toISOString(),
+    items: (itemsByDeal.get(r.buyout.dealId) ?? []).map((i) => {
+      const price = Math.round(parseFloat(i.price) * 100)
+      return { productName: i.productName, price, qty: i.quantity, amount: price * i.quantity }
+    }),
   }))
 }
 
@@ -100,6 +123,8 @@ export async function markBuyoutPaid(db: Db, id: bigint): Promise<BuyoutDto | nu
   const r = rows[0]
   if (!r) return null
 
+  const itemRows = await db.select().from(dealItems).where(eq(dealItems.dealId, r.buyout.dealId))
+
   return {
     id: String(r.buyout.id),
     dealId: r.buyout.dealId,
@@ -113,5 +138,9 @@ export async function markBuyoutPaid(db: Db, id: bigint): Promise<BuyoutDto | nu
     amount: Number(r.buyout.amount),
     status: r.buyout.status,
     createdAt: r.buyout.createdAt.toISOString(),
+    items: itemRows.map((i) => {
+      const price = Math.round(parseFloat(i.price) * 100)
+      return { productName: i.productName, price, qty: i.quantity, amount: price * i.quantity }
+    }),
   }
 }

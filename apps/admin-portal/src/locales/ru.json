@@ -799,14 +799,18 @@
     "allMerchants": "Все мерчанты",
     "id": "ID",
     "agent": "АГЕНТ",
-    "branch": "ФИЛИАЛ",
+    "merchant": "МЕРЧАНТ",
     "client": "КЛИЕНТ",
     "prepayment": "ПРЕДОПЛАТА",
     "amount": "СУММА",
     "status": "СТАТУС",
     "date": "ДАТА",
     "som": "сум",
-    "noData": "Нет данных"
+    "noData": "Нет данных",
+    "productName": "ТОВАР",
+    "price": "ЦЕНА",
+    "qty": "КОЛ-ВО",
+    "itemAmount": "СУММА"
   },
   "changePassword": {
     "title": "Смена пароля",

@@ -786,14 +786,18 @@
     "allMerchants": "Barcha merchantlar",
     "id": "ID",
     "agent": "AGENT",
-    "branch": "FILIAL",
+    "merchant": "MERCHANT",
     "client": "MIJOZ",
     "prepayment": "OLDINDAN TO'LOV",
     "amount": "SUMMA",
     "status": "HOLAT",
     "date": "SANA",
     "som": "so'm",
-    "noData": "Ma'lumot yo'q"
+    "noData": "Ma'lumot yo'q",
+    "productName": "MAHSULOT",
+    "price": "NARX",
+    "qty": "MIQDOR",
+    "itemAmount": "SUMMA"
   },
   "changePassword": {
     "title": "Parolni o'zgartirish",

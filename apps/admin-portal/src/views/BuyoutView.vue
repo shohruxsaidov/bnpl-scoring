@@ -9,6 +9,12 @@ const store = useBuyoutsStore()
 const search = ref('')
 const statusFilter = ref<'all' | 'pending' | 'paid'>('all')
 const merchantFilter = ref('all')
+const expandedRows = ref(new Set<string>())
+
+function toggleRow(id: string) {
+  if (expandedRows.value.has(id)) expandedRows.value.delete(id)
+  else expandedRows.value.add(id)
+}
 
 onMounted(() => store.fetch())
 
@@ -138,9 +144,10 @@ async function markPaid(id: string) {
           <table class="buyout-table">
             <thead>
               <tr>
+                <th style="width:32px" />
                 <th>{{ $t('buyout.id') }}</th>
                 <th>{{ $t('buyout.agent') }}</th>
-                <th>{{ $t('buyout.branch') }}</th>
+                <th>{{ $t('buyout.merchant') }}</th>
                 <th>{{ $t('buyout.client') }}</th>
                 <th>{{ $t('buyout.amount') }}</th>
                 <th>{{ $t('buyout.status') }}</th>
@@ -149,42 +156,85 @@ async function markPaid(id: string) {
               </tr>
             </thead>
             <tbody>
-              <tr v-for="row in filtered" :key="row.id">
-                <td class="id-cell">{{ row.dealNumber }}</td>
-                <td>
-                  <div class="person-cell">
+              <template v-for="row in filtered" :key="row.id">
+                <tr :class="{ 'row-expanded': expandedRows.has(row.id) }">
+                  <td class="expand-cell">
+                    <button
+                      class="expand-btn"
+                      :class="{ open: expandedRows.has(row.id) }"
+                      @click="toggleRow(row.id)"
+                    >
+                      <i class="pi pi-chevron-right" />
+                    </button>
+                  </td>
+                  <td class="id-cell">
+                    <RouterLink :to="`/deals/${row.dealId}`" class="deal-link">{{ row.dealNumber }}</RouterLink>
+                  </td>
+                  <td>
                     <span class="person-name">{{ row.agentName }}</span>
-                    <span class="person-phone">{{ row.merchantName }}</span>
-                  </div>
-                </td>
-                <td class="branch-cell">{{ row.branchName }}</td>
-                <td>
-                  <div class="person-cell">
-                    <span class="person-name">{{ row.clientName }}</span>
-                    <span class="person-phone">{{ row.clientPhone }}</span>
-                  </div>
-                </td>
-                <td class="amount-cell">
-                  <span class="amount-num">{{ fmtAmount(row.amount) }}</span>
-                  <span class="amount-unit">{{ $t('buyout.som') }}</span>
-                </td>
-                <td>
-                  <span class="status-badge" :class="row.status">
-                    {{ row.status === 'paid' ? $t('buyout.statusPaid') : $t('buyout.statusPending') }}
-                  </span>
-                </td>
-                <td class="date-cell">{{ fmtDate(row.createdAt) }}</td>
-                <td class="action-cell">
-                  <button v-if="row.status === 'pending'" class="btn-pay" @click="markPaid(row.id)">
-                    <i class="pi pi-check-circle" /> {{ $t('buyout.statusPaid') }}
-                  </button>
-                  <button v-else class="btn-paid" disabled>
-                    <i class="pi pi-check-circle" /> {{ $t('buyout.statusPaid') }}
-                  </button>
-                </td>
-              </tr>
+                  </td>
+                  <td>
+                    <RouterLink :to="`/merchants/${row.merchantId}`" class="deal-link">{{ row.merchantName }}</RouterLink>
+                  </td>
+                  <td>
+                    <div class="person-cell">
+                      <span class="person-name">{{ row.clientName }}</span>
+                      <span class="person-phone">{{ row.clientPhone }}</span>
+                    </div>
+                  </td>
+                  <td class="amount-cell">
+                    <span class="amount-num">{{ fmtAmount(row.amount) }}</span>
+                    <span class="amount-unit">{{ $t('buyout.som') }}</span>
+                  </td>
+                  <td>
+                    <span class="status-badge" :class="row.status">
+                      {{ row.status === 'paid' ? $t('buyout.statusPaid') : $t('buyout.statusPending') }}
+                    </span>
+                  </td>
+                  <td class="date-cell">{{ fmtDate(row.createdAt) }}</td>
+                  <td class="action-cell">
+                    <button v-if="row.status === 'pending'" class="btn-pay" @click="markPaid(row.id)">
+                      <i class="pi pi-check-circle" /> {{ $t('buyout.statusPaid') }}
+                    </button>
+                    <button v-else class="btn-paid" disabled>
+                      <i class="pi pi-check-circle" /> {{ $t('buyout.statusPaid') }}
+                    </button>
+                  </td>
+                </tr>
+                <tr v-if="expandedRows.has(row.id)" class="expansion-row">
+                  <td colspan="9" class="expansion-cell">
+                    <table class="items-table">
+                      <thead>
+                        <tr>
+                          <th>{{ $t('buyout.productName') }}</th>
+                          <th>{{ $t('buyout.price') }}</th>
+                          <th>{{ $t('buyout.qty') }}</th>
+                          <th>{{ $t('buyout.itemAmount') }}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(item, i) in row.items" :key="i">
+                          <td class="item-name">{{ item.productName }}</td>
+                          <td class="item-num">
+                            {{ fmtAmount(item.price) }}
+                            <span class="amount-unit">{{ $t('buyout.som') }}</span>
+                          </td>
+                          <td class="item-num">{{ item.qty }}</td>
+                          <td class="item-num">
+                            {{ fmtAmount(item.amount) }}
+                            <span class="amount-unit">{{ $t('buyout.som') }}</span>
+                          </td>
+                        </tr>
+                        <tr v-if="row.items.length === 0">
+                          <td colspan="4" class="items-empty">—</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </td>
+                </tr>
+              </template>
               <tr v-if="filtered.length === 0">
-                <td colspan="8" class="empty-row">{{ $t('buyout.noData') }}</td>
+                <td colspan="9" class="empty-row">{{ $t('buyout.noData') }}</td>
               </tr>
             </tbody>
           </table>
@@ -252,6 +302,8 @@ async function markPaid(id: string) {
 
 /* ── Cells ────────────────────────────────────────────────────────────────── */
 .id-cell { color: var(--text-secondary); font-weight: 600; font-size: 0.82rem; }
+.deal-link { color: var(--accent-2); text-decoration: none; font-weight: 700; }
+.deal-link:hover { text-decoration: underline; }
 .person-cell { display: flex; flex-direction: column; gap: 0.1rem; }
 .person-name { font-weight: 700; font-size: 0.88rem; }
 .person-phone { font-size: 0.76rem; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; }
@@ -273,4 +325,33 @@ async function markPaid(id: string) {
 
 .date-cell { font-size: 0.82rem; color: var(--text-secondary); white-space: nowrap; }
 .empty-row { text-align: center; padding: 3rem 1rem; color: var(--text-secondary); font-size: 0.9rem; }
+
+/* ── Expand button ────────────────────────────────────────────────────────── */
+.expand-cell { padding: 0.75rem 0.5rem 0.75rem 1rem; }
+.expand-btn {
+  width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--border-subtle);
+  background: var(--bg-base); color: var(--text-secondary); cursor: pointer;
+  display: grid; place-items: center; font-size: 0.65rem;
+  transition: all 0.15s ease;
+}
+.expand-btn:hover { color: var(--accent-2); border-color: var(--accent-2); }
+.expand-btn i { transition: transform 0.15s ease; }
+.expand-btn.open i { transform: rotate(90deg); }
+
+.row-expanded td { background: var(--bg-base); }
+
+/* ── Expansion row ────────────────────────────────────────────────────────── */
+.expansion-row td { padding: 0; border-bottom: 2px solid var(--border-subtle); }
+.expansion-cell { padding: 0.75rem 1rem 0.75rem 3rem !important; background: var(--bg-base); }
+
+.items-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+.items-table thead th {
+  padding: 0.4rem 0.75rem; text-align: left; font-size: 0.68rem; font-weight: 800;
+  letter-spacing: 0.05em; color: var(--text-secondary); border-bottom: 1px solid var(--border-subtle);
+}
+.items-table tbody tr:last-child td { border-bottom: none; }
+.items-table td { padding: 0.45rem 0.75rem; border-bottom: 1px solid var(--border-subtle); }
+.item-name { font-weight: 600; }
+.item-num { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
+.items-empty { color: var(--text-secondary); text-align: center; padding: 0.5rem; }
 </style>

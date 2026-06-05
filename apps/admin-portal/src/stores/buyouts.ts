@@ -1,6 +1,13 @@
 import { defineStore } from 'pinia'
 import { apiFetch } from '@/utils/apiFetch'
 
+export interface BuyoutItem {
+  productName: string
+  price: number
+  qty: number
+  amount: number
+}
+
 export interface Buyout {
   id: string
   dealId: string
@@ -14,6 +21,7 @@ export interface Buyout {
   amount: number
   status: 'pending' | 'paid'
   createdAt: string
+  items: BuyoutItem[]
 }
 
 interface State {
