@@ -134,7 +134,7 @@ const STRINGS = {
 // Public interface
 // ---------------------------------------------------------------------------
 
-export interface KontraktData {
+export interface ContractData {
   dealId: string;
   createdAt: Date;
   clientFullName: string;
@@ -359,7 +359,7 @@ function drawInfoRow(
 // Main generator
 // ---------------------------------------------------------------------------
 
-export async function generateKontrakt(data: KontraktData, lang: 'ru' | 'uz'): Promise<Buffer> {
+export async function generateContract(data: ContractData, lang: 'ru' | 'uz'): Promise<Buffer> {
   const t = STRINGS[lang];
   const co = COMPANY[lang];
 

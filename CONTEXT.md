@@ -50,16 +50,16 @@ _Avoid_: Customer, buyer, borrower
 A single instalment credit issued to a Client for a Basket of goods. A Deal belongs to one Merchant and one Branch.
 _Avoid_: Order, loan
 
-**Kontrakt**:
-The legal document generated from a Deal. In v1 the only type is Murabaha — a cost-plus-profit structure where Finsum Nasiya acquires goods from the Merchant at tan narxi (cost price) and resells to the Client at tan narxi + Ustama. One Deal produces one Kontrakt. Upon signing, Finsum records a Buyout obligation to the Merchant for the tan narxi amount. The Kontrakt is generated as a PDF (stored in MinIO, key cached on the Deal row) in the language selected by the Agent at the Верификация step (`ru` or `uz`).
-_Avoid_: Contract (use Kontrakt to distinguish from the overarching Deal/Договор)
+**Contract**:
+The legal document generated from a Deal. In v1 the only type is Murabaha — a cost-plus-profit structure where Finsum Nasiya acquires goods from the Merchant at tan narxi (cost price) and resells to the Client at tan narxi + Ustama. One Deal produces one Contract. Upon signing, Finsum records a Buyout obligation to the Merchant for the tan narxi amount. The Contract is generated as a PDF (stored in MinIO via the file-storage lib) in the language selected by the Agent at the Верификация step (`ru` or `uz`).
+_Avoid_: Contract
 
-**Kontrakt Language**:
-The language (`ru` or `uz`) in which the Kontrakt PDF is rendered. Selected by the Agent at the Верификация step of the Wizard before deal creation. Stored as `lang` on the Deal row. Determines which template variant is used by the PDF generator.
+**Contract Language**:
+The language (`ru` or `uz`) in which the Contract PDF is rendered. Selected by the Agent at the Верификация step of the Wizard before deal creation. Stored as `lang` on the Deal row. Determines which template variant is used by the PDF generator.
 _Avoid_: Document language, PDF language
 
 **Deal Signing OTP**:
-A one-time code sent to the Client's phone at the Верификация step, used as the Client's digital consent to the Kontrakt terms. Distinct from the Registration OTP (purpose `client_registration`) — uses purpose `deal_signing` so codes never collide. The Agent sends the OTP, the Client reads it aloud, the Agent enters it. A `signingToken` (short-lived JWT) is returned on success and carried with the deal-creation call as proof of consent.
+A one-time code sent to the Client's phone at the Верификация step, used as the Client's digital consent to the Contract terms. Distinct from the Registration OTP (purpose `client_registration`) — uses purpose `deal_signing` so codes never collide. The Agent sends the OTP, the Client reads it aloud, the Agent enters it. A `signingToken` (short-lived JWT) is returned on success and carried with the deal-creation call as proof of consent.
 _Avoid_: Signing password, PIN, authentication code
 
 **Wizard**:
@@ -85,7 +85,7 @@ The integer identifier of the unit-of-measure packaging option selected for a Pr
 _Avoid_: Unit code, packaging type, container code
 
 **Tan Narxi**:
-The Merchant's cost price for a Product — the amount Finsum Nasiya pays the Merchant per item upon Kontrakt signing.
+The Merchant's cost price for a Product — the amount Finsum Nasiya pays the Merchant per item upon Contract signing.
 _Avoid_: Base price, cost, merchant price
 
 **Category**:
@@ -187,7 +187,7 @@ _Avoid_: Payment method, payment channel
 ### Buyouts
 
 **Buyout** (ru: Выкуп):
-The obligation Finsum Nasiya records toward a Merchant when a Kontrakt is signed — the amount Finsum owes the Merchant for acquiring the goods. Amount = sum of (tan narxi × quantity) across all DealItems in the Basket. Created atomically with the Deal; processed manually by the Platform Admin. Two statuses: `pending` (obligation recorded, not yet paid) and `paid` (Merchant has been paid).
+The obligation Finsum Nasiya records toward a Merchant when a Contract is signed — the amount Finsum owes the Merchant for acquiring the goods. Amount = sum of (tan narxi × quantity) across all DealItems in the Basket. Created atomically with the Deal; processed manually by the Platform Admin. Two statuses: `pending` (obligation recorded, not yet paid) and `paid` (Merchant has been paid).
 _Avoid_: Payout, payment to merchant, disbursement
 
 **Buyout Ledger** (ru: Выкупы):
@@ -220,8 +220,8 @@ _Avoid_: Notification kind, notification category
 - A **Basket** contains one or more **Products** with quantities; total must fall within the Tariff's **Credit Range** and must not exceed the Client's **Available Balance**
 - A **Product** belongs to exactly one **Category**; a **Category** is owned by a **Merchant**
 - A **Client** has one **Platform Credit Limit** and an **Available Balance** derived from it
-- A **Deal** produces exactly one **Kontrakt**
-- A **Kontrakt** produces exactly one **Buyout** obligation toward the Merchant
+- A **Deal** produces exactly one **Contract**
+- A **Contract** produces exactly one **Buyout** obligation toward the Merchant
 - A **Deal** carries one **Score** result (stored in `client_scorings`) — set during the Tarif step
 - A `users` row has at most one **User Limit** (upserted from self-service Scoring Sessions)
 - A **Scoring Session** belongs to one `users` row and produces exactly two **Scoring Pipelines** (`katm`, `card_scoring`)
@@ -250,7 +250,7 @@ Three separate tables back the three auth flows:
 
 - "Soft skip" appeared in the Card Score definition — resolved: **Card Score is required**. The Wizard blocks at the Karta step until PlumGate scoring returns a result. There is no skip path.
 
-- "Договор", "Сделка", and "Контракт" all appeared in the UI — resolved: **Договор = Deal** (the financing record), **Сделка** is a synonym for Deal used in tab labels only, **Контракт = Kontrakt** (the generated legal document). Never use "Contract" for the Deal itself.
+- "Договор", "Сделка", and "Контракт" all appeared in the UI — resolved: **Договор = Deal** (the financing record), **Сделка** is a synonym for Deal used in tab labels only, **Контракт = Contract** (the generated legal document). Never use "Contract" for the Deal itself.
 - "Tenant" was used throughout the codebase — resolved: replaced by **Merchant** (business entity) and **Branch** (single location). `tenant_id` → `merchant_id`; `branch_id` added to Deals and Employees.
 - "Комиссия" (Commission) appeared as a Deal field — removed from scope for v1. Not a domain concept.
 - `kind` appeared in `client-portal/src/stores/notifications.ts` as the discriminator field on a Notification — resolved: canonical term is **`type`**, matching `merchant-app` and the backend schema. `kind` to be renamed.

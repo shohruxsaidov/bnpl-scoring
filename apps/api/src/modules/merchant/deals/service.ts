@@ -1,9 +1,9 @@
 import { and, asc, desc, eq } from 'drizzle-orm'
 import type { Client as MinioClient } from 'minio'
 import type { Db } from '../../../db'
-import { deals, dealItems, dealPaymentSchedules, scoringHistories, buyouts } from '../../deals/db/schema'
+import { deals, dealItems, dealPaymentSchedules, scoringHistories, buyouts, dealDocuments } from '../../deals/db/schema'
 import { clients, tariffs, merchantUsers, merchants, branches, products } from '../../id/db/schema'
-import { generateKontrakt, type KontraktData } from './pdf'
+import { generateContract, type ContractData } from './pdf'
 import { env } from '../../../env'
 import { recordFile, deleteFile } from '../../../lib/file-storage'
 import { files } from '../../../lib/file-storage/schema'
@@ -345,7 +345,6 @@ export async function getDealById(db: Db, id: string, merchantId: bigint) {
     ...base,
     branchName: row.branch?.name ?? null,
     merchantInn: row.merchant?.inn ?? null,
-    pdfFileId: row.deal.pdfFileId ?? null,
     basket: items.map((item) => ({
       productId: serializeBigInt(item.productId),
       productName: item.productName,
@@ -381,20 +380,29 @@ export async function getContractPdfUrl(
   const bucket = env.MINIO_BUCKET
 
   // Return cached presigned URL if the file still exists in MinIO
-  if (deal.pdfFileId) {
-    const [fileRow] = await db.select().from(files).where(eq(files.id, deal.pdfFileId)).limit(1)
+  const [existingDoc] = await db
+    .select({ fileId: dealDocuments.fileId })
+    .from(dealDocuments)
+    .where(and(eq(dealDocuments.dealId, dealId), eq(dealDocuments.documentType, 'contract')))
+    .limit(1)
+
+  if (existingDoc) {
+    const [fileRow] = await db.select().from(files).where(eq(files.id, existingDoc.fileId)).limit(1)
     if (fileRow) {
       try {
         await minio.statObject(fileRow.bucket, fileRow.objectKey)
         return minio.presignedGetObject(fileRow.bucket, fileRow.objectKey, 86400)
       } catch {
         // File gone from MinIO — delete stale record and regenerate
-        await deleteFile(db, minio, deal.pdfFileId)
+        await deleteFile(db, minio, existingDoc.fileId)
+        await db
+          .delete(dealDocuments)
+          .where(and(eq(dealDocuments.dealId, dealId), eq(dealDocuments.documentType, 'contract')))
       }
     }
   }
 
-  const kontraktData: KontraktData = {
+  const contractData: ContractData = {
     dealId: deal.id,
     createdAt: new Date(deal.createdAt),
     clientFullName: deal.clientName ?? '—',
@@ -422,7 +430,7 @@ export async function getContractPdfUrl(
     })),
   }
 
-  const pdfBuffer = await generateKontrakt(kontraktData, deal.lang)
+  const pdfBuffer = await generateContract(contractData, deal.lang)
 
   const objectKey = `contracts/${dealId}.pdf`
   await minio.putObject(bucket, objectKey, pdfBuffer, pdfBuffer.length, {
@@ -436,7 +444,9 @@ export async function getContractPdfUrl(
     uploadedByType: 'system',
   })
 
-  await db.update(deals).set({ pdfFileId: fileRecord.id }).where(eq(deals.id, dealId))
+  await db
+    .insert(dealDocuments)
+    .values({ dealId, fileId: fileRecord.id, documentType: 'contract' })
 
   return minio.presignedGetObject(bucket, objectKey, 86400)
 }

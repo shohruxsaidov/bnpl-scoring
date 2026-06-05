@@ -9,6 +9,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
@@ -49,8 +50,6 @@ export const deals = pgTable('deals', {
   scoringDecision: varchar('scoring_decision', { length: 20 }),
   // Kontrakt language selected at Wizard verification step
   lang: varchar('lang', { length: 5 }).notNull().default('ru'),
-  // FK to files table for the cached Kontrakt PDF; null until first generation
-  pdfFileId: bigint('pdf_file_id', { mode: 'bigint' }).references(() => files.id),
   // Human-readable sequential identifier, formatted as CN-0000001 at the app layer
   dealNumber: bigserial('deal_number', { mode: 'bigint' }).notNull().unique(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -166,3 +165,20 @@ export const buyouts = pgTable('buyouts', {
   status: varchar('status', { length: 10 }).notNull().default('pending'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
+
+// ---------------------------------------------------------------------------
+// deal_documents
+// One row per document type per Deal. Currently only 'contract' (PDF).
+// Unique constraint ensures one Contract per Deal; upsert replaces on regeneration.
+// ---------------------------------------------------------------------------
+export const dealDocuments = pgTable(
+  'deal_documents',
+  {
+    id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+    dealId: uuid('deal_id').notNull().references(() => deals.id, { onDelete: 'cascade' }),
+    fileId: bigint('file_id', { mode: 'bigint' }).notNull().references(() => files.id),
+    documentType: varchar('document_type', { length: 50 }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [unique().on(t.dealId, t.documentType)],
+)
