@@ -54,7 +54,7 @@ const visibleDeals = computed<DealListItem[]>(() => {
       const q = search.value.toLowerCase()
       return (
         (d.clientName ?? '').toLowerCase().includes(q) ||
-        d.id.toLowerCase().includes(q) ||
+        d.dealNumber.toLowerCase().includes(q) ||
         (d.clientPhone ?? '').includes(q)
       )
     }
@@ -112,9 +112,9 @@ function openDeal(deal: DealListItem) {
           paginator-template="FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown"
           :empty-message="t('dashboard.noDeals')" class="deals-table"
           @row-click="openDeal($event.data)" @sort="onSort">
-          <Column field="id" :header="t('dashboard.dealId')" style="width: 140px">
+          <Column field="dealNumber" :header="t('dashboard.dealId')" style="width: 140px">
             <template #body="{ data }">
-              <span class="font-mono deal-id">{{ data.id }}</span>
+              <span class="font-mono deal-id">{{ data.dealNumber }}</span>
             </template>
           </Column>
 

@@ -1,4 +1,8 @@
 import { and, asc, desc, eq } from 'drizzle-orm'
+
+function formatDealNumber(n: bigint | null | undefined): string {
+  return n != null ? `CN-${String(n).padStart(7, '0')}` : '—'
+}
 import type { Client as MinioClient } from 'minio'
 import type { Db } from '../../../db'
 import { deals, dealItems, dealPaymentSchedules, scoringHistories, buyouts, dealDocuments } from '../../deals/db/schema'
@@ -62,6 +66,7 @@ function toDealDto(
 ) {
   return {
     id: d.id,
+    dealNumber: formatDealNumber(d.dealNumber),
     status: d.status,
     createdAt: d.createdAt.toISOString(),
     paymentDay: d.paymentDay,

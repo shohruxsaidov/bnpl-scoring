@@ -8,6 +8,7 @@ import { computed, type Ref } from 'vue'
 
 export interface DealListItem {
   id: string
+  dealNumber: string
   status: string
   createdAt: string
   paymentDay: number | null

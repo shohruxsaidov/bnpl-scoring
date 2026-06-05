@@ -82,7 +82,7 @@ function basketTotal(item: { price: string; quantity: number }): number {
           <i class="pi pi-arrow-left" /> {{ $t('dealDetail.contracts') }}
         </button>
         <span class="bc-sep">/</span>
-        <span class="bc-current font-mono">{{ deal.id }}</span>
+        <span class="bc-current font-mono">{{ deal.dealNumber }}</span>
       </div>
       <div class="hdr-actions">
         <button class="btn-ghost btn-sm" :disabled="pdfLoading" @click="openContractPdf">
@@ -106,7 +106,7 @@ function basketTotal(item: { price: string; quantity: number }): number {
           </div>
           <div class="field-row">
             <span class="fl">{{ $t('dealDetail.dealNumber') }}</span>
-            <span class="fv font-mono">{{ deal.id }}</span>
+            <span class="fv font-mono">{{ deal.dealNumber }}</span>
             <span class="fl">{{ $t('dealDetail.status') }}</span>
             <span class="fv">
               <StatusBadge :status="(deal.status as any)" />
@@ -200,7 +200,7 @@ function basketTotal(item: { price: string; quantity: number }): number {
           </thead>
           <tbody>
             <tr>
-              <td class="font-mono">{{ deal.id }}</td>
+              <td class="font-mono">{{ deal.dealNumber }}</td>
               <td>{{ $t('dealDetail.murabaha') }}</td>
               <td>{{ deal.clientName }}</td>
               <td>{{ deal.termMonths }} {{ $t('dealDetail.month') }}</td>
