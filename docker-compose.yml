@@ -1,35 +1,14 @@
 name: scoring
-
-# Production stack for the scoring turborepo.
-#
-#   postgres        PostgreSQL 16 (Drizzle target)
-#   redis           Redis 7 (ioredis client in the API)
-#   api             Fastify + Drizzle backend (apps/api), listens on :4000
-#   admin-portal    Vue + Vite SPA (apps/admin-portal)    -> nginx
-#   merchant-portal Vue + Vite SPA (apps/merchant-portal) -> nginx
-#   client-portal   Vue + Vite SPA (apps/client-portal)   -> nginx
-#
-# Each SPA's nginx serves the static build AND reverse-proxies /api/v1 to the
-# api service, matching the apps' VITE_API_URL=/api/v1 convention.
-#
-# Quick start:
-#   cp .env.docker.example .env   # then fill in JWT_SECRET, integration creds
-#   docker compose up -d --build
-#
-# Every value has a local default, so it also boots with no .env file.
-
 services:
   api:
     build:
-      context: .
-      dockerfile: Dockerfile.api
+      context: ./apps/api
+      dockerfile: ./Dockerfile
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     restart: unless-stopped
-    # Loads MyID / PlumGate / KATM / MinIO / OTEL settings if the file exists.
-    # Infra values below override anything in it so they point at the compose network.
     env_file:
-      - path: ./apps/api/.env
+      - path: ./.env
         required: false
     environment:
       HOST: 0.0.0.0
@@ -50,8 +29,8 @@ services:
 
   admin-portal:
     build:
-      context: .
-      dockerfile: Dockerfile.web
+      context: ./apps/admin-portal
+      dockerfile: ./Dockerfile
       target: serve
       args:
         APP_DIR: apps/admin-portal
@@ -66,8 +45,8 @@ services:
 
   merchant-portal:
     build:
-      context: .
-      dockerfile: Dockerfile.web
+      context: ./apps/merchant-portal
+      dockerfile: ./Dockerfile
       target: serve
       args:
         APP_DIR: apps/merchant-portal
@@ -75,21 +54,6 @@ services:
     restart: unless-stopped
     ports:
       - '${MERCHANT_PORT:-4002}:80'
-    depends_on:
-      api:
-        condition: service_healthy
-
-  client-portal:
-    build:
-      context: .
-      dockerfile: Dockerfile.web
-      target: serve
-      args:
-        APP_DIR: apps/client-portal
-        VITE_API_URL: /api/v1
-    restart: unless-stopped
-    ports:
-      - '${CLIENT_PORT:-4003}:80'
     depends_on:
       api:
         condition: service_healthy
