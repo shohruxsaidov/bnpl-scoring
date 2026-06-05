@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import sensible from "@fastify/sensible";
 import rateLimit from "@fastify/rate-limit";
+import fastifyOtel from "@fastify/otel";
 import { trace } from "@opentelemetry/api";
 import dbPlugin from "./plugins/db.js";
 import cookiePlugin from "./plugins/cookie.js";
@@ -72,6 +73,7 @@ const logger = {
 export async function buildApp() {
   const app = Fastify({ logger });
 
+  await app.register(new fastifyOtel().plugin());
   await app.register(helmet);
   await app.register(cors, {
     origin: true,

@@ -94,8 +94,8 @@ async function main() {
       .returning({ id: deals.id })
 
     await db.insert(dealPaymentSchedules).values([
-      { dealId: deal!.id, index: 1, dueDate: overdueDate, amount: installment, paidAmount: 0n, paid: false },
-      { dealId: deal!.id, index: 2, dueDate: futureDate,  amount: installment, paidAmount: 0n, paid: false },
+      { dealId: deal!.id, index: 1, dueDate: overdueDate, amount: installment },
+      { dealId: deal!.id, index: 2, dueDate: futureDate,  amount: installment },
     ])
 
     console.log(`  ✓ Deal ${deal!.id} — ${daysOverdue}d overdue (due ${overdueDate})`)
