@@ -26,9 +26,14 @@ const merchants = useMerchantsStore()
 const merchantId = computed(() => route.params.id as string)
 const merchant = computed(() => merchants.byId(merchantId.value))
 
-const tabs = ['Branches', 'Employees', 'Products', 'Categories', 'Documents'] as const
+const tabs = ['Branches', 'Employees', 'Products', 'Categories', 'Documents', 'Tariffs'] as const
 type Tab = (typeof tabs)[number]
-const activeTab = ref<Tab>('Branches')
+
+function tabFromQuery(): Tab {
+  const q = (route.query.tab as string)?.toLowerCase()
+  return tabs.find((t) => t.toLowerCase() === q) ?? 'Branches'
+}
+const activeTab = ref<Tab>(tabFromQuery())
 
 const TAB_LABEL_KEYS: Record<Tab, string> = {
   Branches: 'merchantDetail.tabBranches',
@@ -36,6 +41,7 @@ const TAB_LABEL_KEYS: Record<Tab, string> = {
   Products: 'merchantDetail.tabProducts',
   Categories: 'merchantDetail.tabCategories',
   Documents: 'merchantDetail.tabDocuments',
+  Tariffs: 'merchantDetail.tabTariffs',
 }
 
 function tabLabel(tab: Tab): string {
@@ -48,6 +54,7 @@ const branches = computed(() => merchants.branchesFor(merchantId.value))
 const categories = computed(() => merchants.categoriesFor(merchantId.value))
 const products = computed(() => merchants.productsFor(merchantId.value))
 const documents = computed(() => merchants.documentsFor(merchantId.value))
+const merchantTariffs = computed(() => merchants.tariffsFor(merchantId.value))
 
 // All employees across this merchant's branches, flattened.
 const allEmployees = computed<MerchantEmployee[]>(() =>
@@ -79,6 +86,7 @@ onMounted(async () => {
       merchants.fetchCategories(merchantId.value),
       merchants.fetchProducts(merchantId.value),
       merchants.fetchDocuments(merchantId.value),
+      merchants.fetchMerchantTariffs(merchantId.value),
     ])
   } catch {
     notifyError('merchantDetail.loadFailed')
@@ -317,6 +325,18 @@ const {
   clearSearch,
 } = useMxik('/admin/mxik')
 
+watch(activeTab, (tab) => {
+  router.replace({ query: { ...route.query, tab: tab.toLowerCase() } })
+})
+
+watch(
+  () => route.query.tab,
+  (q) => {
+    const matched = tabs.find((t) => t.toLowerCase() === (q as string)?.toLowerCase())
+    if (matched && matched !== activeTab.value) activeTab.value = matched
+  },
+)
+
 watch(mxikLookupError, (isError) => {
   if (isError) toast.add({ severity: 'warn', summary: t('merchantDetail.mxikNotFound'), life: 2500 })
 })
@@ -403,6 +423,25 @@ async function submitDocument() {
 
 function truncate(value: string, max = 48): string {
   return value.length > max ? value.slice(0, max) + '…' : value
+}
+
+// --- Tariffs -----------------------------------------------------------------
+const tariffToggling = ref<Set<string>>(new Set())
+
+async function toggleTariff(tariffId: string, currentlySelected: boolean) {
+  if (tariffToggling.value.has(tariffId)) return
+  tariffToggling.value.add(tariffId)
+  try {
+    if (currentlySelected) {
+      await merchants.removeTariff(merchantId.value, tariffId)
+    } else {
+      await merchants.assignTariff(merchantId.value, tariffId)
+    }
+  } catch {
+    notifyError('merchantDetail.updateFailed')
+  } finally {
+    tariffToggling.value.delete(tariffId)
+  }
 }
 </script>
 
@@ -625,7 +664,7 @@ function truncate(value: string, max = 48): string {
     </section>
 
     <!-- Documents -->
-    <section v-else class="tab-body">
+    <section v-else-if="activeTab === 'Documents'" class="tab-body">
       <div class="tab-head">
         <h3 class="section-title">{{ $t('merchantDetail.documents') }}</h3>
         <button class="btn-gradient" @click="openDocument">
@@ -649,6 +688,41 @@ function truncate(value: string, max = 48): string {
           <Column :header="$t('merchantDetail.uploadedAt')">
             <template #body="{ data }">
               <span class="font-mono muted">{{ formatDateTime(data.uploadedAt) }}</span>
+            </template>
+          </Column>
+        </DataTable>
+      </div>
+    </section>
+
+    <!-- Tariffs -->
+    <section v-else class="tab-body">
+      <div class="tab-head">
+        <h3 class="section-title">{{ $t('merchantDetail.tariffs') }}</h3>
+      </div>
+      <div class="surface-card table-wrap">
+        <DataTable :value="merchantTariffs" data-key="id" size="small" :empty-message="$t('merchantDetail.noTariffs')">
+          <Column field="name" :header="$t('merchantDetail.name')" sortable>
+            <template #body="{ data }">
+              <span class="t-name-sm">{{ data.name }}</span>
+            </template>
+          </Column>
+          <Column :header="$t('merchantDetail.termMonths')" style="width: 120px">
+            <template #body="{ data }">
+              <span class="font-mono">{{ data.termMonths }} {{ $t('merchantDetail.mo') }}</span>
+            </template>
+          </Column>
+          <Column :header="$t('merchantDetail.markupPercent')" style="width: 120px">
+            <template #body="{ data }">
+              <span class="font-mono markup">{{ data.markupPercent }}%</span>
+            </template>
+          </Column>
+          <Column :header="$t('merchantDetail.attached')" style="width: 110px">
+            <template #body="{ data }">
+              <ToggleSwitch
+                :model-value="data.selected"
+                :disabled="tariffToggling.has(data.id)"
+                @update:model-value="toggleTariff(data.id, data.selected)"
+              />
             </template>
           </Column>
         </DataTable>
@@ -1123,6 +1197,11 @@ function truncate(value: string, max = 48): string {
 }
 .mxik-clear-btn:hover { color: var(--danger); }
 .mxik-hint { font-size: 0.75rem; color: var(--text-secondary); margin: 4px 0 0; }
+
+.markup {
+  color: var(--accent-2);
+  font-weight: 700;
+}
 
 .icon-btn {
   width: 28px; height: 28px; border-radius: 7px;

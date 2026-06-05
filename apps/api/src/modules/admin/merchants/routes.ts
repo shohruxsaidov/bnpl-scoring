@@ -2,6 +2,7 @@ import { Type } from "@sinclair/typebox"
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
 import type { FastifyInstance } from "fastify"
 import { randomUUID } from "node:crypto"
+import { and, eq } from "drizzle-orm"
 import {
   listMerchants,
   getMerchant,
@@ -13,6 +14,7 @@ import {
 import { listBranches, createBranch } from "../branches/service"
 import { listCategories, createCategory } from "../categories/service"
 import { listProducts, createProduct } from "../products/service"
+import { tariffs, merchantTariffs } from "../../id/db/schema"
 
 function serializeMerchant(m: NonNullable<Awaited<ReturnType<typeof getMerchant>>>) {
   return { ...m, id: m.id.toString() }
@@ -201,6 +203,61 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
         packageName: request.body.packageName,
       })
       return reply.code(201).send({ product: serializeProduct(product) })
+    },
+  )
+
+  /* ── Merchant tariffs ──────────────────────────────────────────────────── */
+
+  const TariffIdParams = Type.Object({ id: Type.String(), tariffId: Type.String() })
+
+  fastify.get(
+    "/:id/tariffs",
+    { schema: { params: IdParams }, preHandler },
+    async (request) => {
+      const merchantId = BigInt(request.params.id)
+      const [all, selected] = await Promise.all([
+        db.select().from(tariffs).where(eq(tariffs.active, true)).orderBy(tariffs.name),
+        db.select().from(merchantTariffs).where(eq(merchantTariffs.merchantId, merchantId)),
+      ])
+      const selectedIds = new Set(selected.map((s) => s.tariffId.toString()))
+      return {
+        tariffs: all.map((t) => ({
+          id: t.id.toString(),
+          name: t.name,
+          termMonths: t.termMonths,
+          markupPercent: parseFloat(t.markupPercent),
+          active: t.active,
+          selected: selectedIds.has(t.id.toString()),
+        })),
+      }
+    },
+  )
+
+  fastify.post(
+    "/:id/tariffs/:tariffId",
+    { schema: { params: TariffIdParams }, preHandler },
+    async (request, reply) => {
+      await db
+        .insert(merchantTariffs)
+        .values({ merchantId: BigInt(request.params.id), tariffId: BigInt(request.params.tariffId) })
+        .onConflictDoNothing()
+      return reply.code(204).send()
+    },
+  )
+
+  fastify.delete(
+    "/:id/tariffs/:tariffId",
+    { schema: { params: TariffIdParams }, preHandler },
+    async (request, reply) => {
+      await db
+        .delete(merchantTariffs)
+        .where(
+          and(
+            eq(merchantTariffs.merchantId, BigInt(request.params.id)),
+            eq(merchantTariffs.tariffId, BigInt(request.params.tariffId)),
+          ),
+        )
+      return reply.code(204).send()
     },
   )
 

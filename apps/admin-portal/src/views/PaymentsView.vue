@@ -298,7 +298,7 @@ function hideDealDropdown() {
             data-key="id"
             row-hover
             removable-sort
-            paginator
+            :paginator="filtered.length > 15"
             :rows="15"
             :rows-per-page-options="[10, 15, 25, 50]"
             size="small"
@@ -373,7 +373,7 @@ function hideDealDropdown() {
             data-key="id"
             row-hover
             removable-sort
-            paginator
+            :paginator="manualStore.payments.length > 15"
             :rows="15"
             :rows-per-page-options="[10, 15, 25, 50]"
             size="small"

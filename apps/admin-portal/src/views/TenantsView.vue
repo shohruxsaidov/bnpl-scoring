@@ -129,7 +129,7 @@ function confirmDelete(tenant: Tenant) {
         v-model:filters="filters"
         v-model:selection="selectedRows"
         data-key="id"
-        paginator
+        :paginator="tenants.tenants.length > 10"
         :rows="10"
         size="small"
         filter-display="menu"

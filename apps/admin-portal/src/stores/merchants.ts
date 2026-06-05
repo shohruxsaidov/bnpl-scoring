@@ -6,6 +6,7 @@ import type {
   MerchantDocument,
   MerchantEmployee,
   Product,
+  Tariff,
 } from '@/types'
 
 import { apiFetch as api } from '@/utils/apiFetch'
@@ -17,6 +18,7 @@ interface MerchantsState {
   categories: Record<string, Category[]>
   products: Record<string, Product[]>
   documents: Record<string, MerchantDocument[]>
+  merchantTariffs: Record<string, Tariff[]>
   loading: boolean
   error: string | null
 }
@@ -29,6 +31,7 @@ export const useMerchantsStore = defineStore('merchants', {
     categories: {},
     products: {},
     documents: {},
+    merchantTariffs: {},
     loading: false,
     error: null,
   }),
@@ -41,6 +44,7 @@ export const useMerchantsStore = defineStore('merchants', {
     categoriesFor: (s) => (merchantId: string): Category[] => s.categories[merchantId] ?? [],
     productsFor: (s) => (merchantId: string): Product[] => s.products[merchantId] ?? [],
     documentsFor: (s) => (merchantId: string): MerchantDocument[] => s.documents[merchantId] ?? [],
+    tariffsFor: (s) => (merchantId: string): Tariff[] => s.merchantTariffs[merchantId] ?? [],
   },
 
   actions: {
@@ -279,6 +283,23 @@ export const useMerchantsStore = defineStore('merchants', {
       })
       if (!putRes.ok) throw new Error('upload_failed')
       return this.recordDocument(merchantId, { fileUrl: objectName, documentType })
+    },
+
+    async fetchMerchantTariffs(merchantId: string): Promise<void> {
+      const body = await api<{ tariffs: Tariff[] }>(`/admin/merchants/${merchantId}/tariffs`)
+      this.merchantTariffs[merchantId] = body.tariffs
+    },
+
+    async assignTariff(merchantId: string, tariffId: string): Promise<void> {
+      await api(`/admin/merchants/${merchantId}/tariffs/${tariffId}`, { method: 'POST' })
+      const t = this.merchantTariffs[merchantId]?.find((x) => x.id === tariffId)
+      if (t) t.selected = true
+    },
+
+    async removeTariff(merchantId: string, tariffId: string): Promise<void> {
+      await api(`/admin/merchants/${merchantId}/tariffs/${tariffId}`, { method: 'DELETE' })
+      const t = this.merchantTariffs[merchantId]?.find((x) => x.id === tariffId)
+      if (t) t.selected = false
     },
   },
 })

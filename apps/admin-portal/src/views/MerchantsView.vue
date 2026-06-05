@@ -117,7 +117,7 @@ async function toggleStatus(merchant: Merchant) {
         :value="merchants.merchants"
         data-key="id"
         :loading="merchants.loading"
-        paginator
+        :paginator="merchants.merchants.length > 10"
         :rows="10"
         size="small"
       >

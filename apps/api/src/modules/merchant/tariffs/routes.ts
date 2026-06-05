@@ -26,7 +26,7 @@ export default async function merchantTariffRoutes(app: FastifyInstance) {
         termMonths: t.termMonths,
         markupPercent: parseFloat(t.markupPercent),
         active: t.active,
-        selected: true,
+        selected: t.selected,
       })),
     };
   });

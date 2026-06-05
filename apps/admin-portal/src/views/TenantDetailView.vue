@@ -164,7 +164,7 @@ function toggleStatus() {
     <!-- Deals -->
     <section v-else-if="activeTab === 'Deals'" class="tab-body">
       <div class="surface-card table-wrap">
-        <DataTable :value="tenantDeals" data-key="id" paginator :rows="10" size="small">
+        <DataTable :value="tenantDeals" data-key="id" :paginator="tenantDeals.length > 10" :rows="10" size="small">
           <Column :header="$t('tenantDetail.dealId')">
             <template #body="{ data }">
               <span class="font-mono accent">{{ data.id }}</span>

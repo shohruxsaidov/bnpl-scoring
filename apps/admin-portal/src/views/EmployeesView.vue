@@ -120,7 +120,7 @@ function confirmBlock(u: AdminUser) {
         :value="employees.users"
         :loading="employees.loading"
         data-key="id"
-        paginator
+        :paginator="employees.users.length > 15"
         :rows="15"
         size="small"
       >
