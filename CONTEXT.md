@@ -51,7 +51,7 @@ A single instalment credit issued to a Client for a Basket of goods. A Deal belo
 _Avoid_: Order, loan
 
 **Kontrakt**:
-The legal document generated from a Deal. In v1 the only type is Murabaha — a cost-plus-profit structure where Finsum Nasiya acquires goods from the Merchant at tan narxi (cost price) and resells to the Client at tan narxi + Ustama. One Deal produces one Kontrakt. Upon signing, Finsum records a payout obligation to the Merchant for the tan narxi amount. The Kontrakt is generated as a PDF (stored in MinIO, key cached on the Deal row) in the language selected by the Agent at the Верификация step (`ru` or `uz`).
+The legal document generated from a Deal. In v1 the only type is Murabaha — a cost-plus-profit structure where Finsum Nasiya acquires goods from the Merchant at tan narxi (cost price) and resells to the Client at tan narxi + Ustama. One Deal produces one Kontrakt. Upon signing, Finsum records a Buyout obligation to the Merchant for the tan narxi amount. The Kontrakt is generated as a PDF (stored in MinIO, key cached on the Deal row) in the language selected by the Agent at the Верификация step (`ru` or `uz`).
 _Avoid_: Contract (use Kontrakt to distinguish from the overarching Deal/Договор)
 
 **Kontrakt Language**:
@@ -184,15 +184,15 @@ _Avoid_: Payment schedule row, instalment row, payment row
 The channel through which a Manual Payment was physically received. Two fixed values: `mib` (МИБ — bank transfer via Microcredit Investment Bank) and `transfer` (Перевод — generic bank transfer). Stored as a text enum on the `manual_payments` row.
 _Avoid_: Payment method, payment channel
 
-### Payouts
+### Buyouts
 
-**Payout**:
-The obligation Finsum Nasiya records toward a Merchant when a Kontrakt is signed. Amount = sum of tan narxi across all Products in the Basket. Created at signing; processed manually by the Finsum platform admin in v1.
-_Avoid_: Payment to merchant, merchant transfer, disbursement
+**Buyout** (ru: Выкуп):
+The obligation Finsum Nasiya records toward a Merchant when a Kontrakt is signed — the amount Finsum owes the Merchant for acquiring the goods. Amount = sum of (tan narxi × quantity) across all DealItems in the Basket. Created atomically with the Deal; processed manually by the Platform Admin. Two statuses: `pending` (obligation recorded, not yet paid) and `paid` (Merchant has been paid).
+_Avoid_: Payout, payment to merchant, disbursement
 
-**Payout Ledger**:
-The structured record of all Payout obligations per Merchant and per Branch, visible to the Finsum platform admin. Shows status (pending / paid), amount, date, and linked Deal.
-_Avoid_: Settlement log, payout history
+**Buyout Ledger** (ru: Выкупы):
+The structured record of all Buyout obligations across all Merchants and Branches, visible to the Platform Admin. Shows status, amount, linked Deal, Agent, Client, Branch, and date.
+_Avoid_: Payout ledger, settlement log
 
 ### Notifications
 
@@ -221,7 +221,7 @@ _Avoid_: Notification kind, notification category
 - A **Product** belongs to exactly one **Category**; a **Category** is owned by a **Merchant**
 - A **Client** has one **Platform Credit Limit** and an **Available Balance** derived from it
 - A **Deal** produces exactly one **Kontrakt**
-- A **Kontrakt** produces exactly one **Payout** obligation toward the Merchant
+- A **Kontrakt** produces exactly one **Buyout** obligation toward the Merchant
 - A **Deal** carries one **Score** result (stored in `client_scorings`) — set during the Tarif step
 - A `users` row has at most one **User Limit** (upserted from self-service Scoring Sessions)
 - A **Scoring Session** belongs to one `users` row and produces exactly two **Scoring Pipelines** (`katm`, `card_scoring`)

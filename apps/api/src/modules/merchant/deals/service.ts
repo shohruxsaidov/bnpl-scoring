@@ -1,7 +1,7 @@
 import { and, asc, desc, eq } from 'drizzle-orm'
 import type { Client as MinioClient } from 'minio'
 import type { Db } from '../../../db'
-import { deals, dealItems, dealPaymentSchedules, scoringHistories } from '../../deals/db/schema'
+import { deals, dealItems, dealPaymentSchedules, scoringHistories, buyouts } from '../../deals/db/schema'
 import { clients, tariffs, merchantUsers, merchants, branches, products } from '../../id/db/schema'
 import { generateKontrakt, type KontraktData } from './pdf'
 import { env } from '../../../env'
@@ -251,6 +251,13 @@ export async function createDeal(db: Db, input: CreateDealInput) {
         platformCreditLimit: input.platformCreditLimit,
       })
     }
+
+    await tx.insert(buyouts).values({
+      dealId: deal.id,
+      merchantId: input.merchantId,
+      branchId: input.branchId,
+      amount: input.amount,
+    })
 
     return deal
   })

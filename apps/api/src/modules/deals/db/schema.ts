@@ -148,3 +148,20 @@ export const dealComments = pgTable('deal_comments', {
   text: text('text').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
+
+// ---------------------------------------------------------------------------
+// buyouts
+// One row per Deal, created atomically with the Deal when a Kontrakt is signed.
+// Records the obligation Finsum Nasiya owes the Merchant (tan narxi sum).
+// Processed manually by the Platform Admin — status flips pending → paid.
+// ---------------------------------------------------------------------------
+export const buyouts = pgTable('buyouts', {
+  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+  dealId: uuid('deal_id').notNull().references(() => deals.id),
+  merchantId: bigint('merchant_id', { mode: 'bigint' }).notNull().references(() => merchants.id),
+  branchId: bigint('branch_id', { mode: 'bigint' }).notNull().references(() => branches.id),
+  amount: bigint('amount', { mode: 'bigint' }).notNull(),
+  // 'pending' | 'paid'
+  status: varchar('status', { length: 10 }).notNull().default('pending'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})

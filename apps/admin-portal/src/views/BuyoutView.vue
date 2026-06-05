@@ -1,29 +1,16 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { usePageLoad } from '@/composables/usePageLoad'
-
-type BuyoutStatus = 'pending' | 'paid'
-
-interface BuyoutRecord {
-  id: number
-  agentName: string
-  agentPhone: string
-  branch: string
-  clientName: string
-  clientPhone: string
-  prepayment: number
-  amount: number
-  status: BuyoutStatus
-  date: string
-}
+import { useBuyoutsStore } from '@/stores/buyouts'
 
 const { t } = useI18n()
-const { loading } = usePageLoad()
+const store = useBuyoutsStore()
 
 const search = ref('')
 const statusFilter = ref<'all' | 'pending' | 'paid'>('all')
 const merchantFilter = ref('all')
+
+onMounted(() => store.fetch())
 
 const statusOptions = computed(() => [
   { label: t('buyout.allStatuses'), value: 'all' },
@@ -31,45 +18,40 @@ const statusOptions = computed(() => [
   { label: t('buyout.statusPaid'), value: 'paid' },
 ])
 
-const merchantOptions = computed(() => [
-  { label: t('buyout.allMerchants'), value: 'all' },
-  { label: 'DISKONT', value: 'DISKONT' },
-  { label: 'Kiyim Olami', value: 'Kiyim Olami' },
-])
-
-const records = ref<BuyoutRecord[]>([
-  { id: 9, agentName: 'Jasurbek Jumanazarov', agentPhone: '+998937444222', branch: 'DISKONT', clientName: 'SHOHRUH SAIDOV', clientPhone: '+998934244724', prepayment: 0, amount: 11000000, status: 'pending', date: '16/05/2026' },
-  { id: 8, agentName: 'Jasurbek Jumanazarov', agentPhone: '+998937444222', branch: 'DISKONT', clientName: 'SHOHRUH SAIDOV', clientPhone: '+998934244724', prepayment: 0, amount: 11000000, status: 'pending', date: '16/05/2026' },
-  { id: 7, agentName: 'Jasurbek Jumanazarov', agentPhone: '+998937444222', branch: 'DISKONT', clientName: 'SHOHRUH SAIDOV', clientPhone: '+998934244724', prepayment: 0, amount: 11500000, status: 'pending', date: '16/05/2026' },
-  { id: 6, agentName: 'Nurbek Khaydarov', agentPhone: '+998773088888', branch: 'Kiyim Olami', clientName: 'NURBEK HAYDAROV', clientPhone: '+998957708789', prepayment: 0, amount: 575000000, status: 'pending', date: '16/05/2026' },
-  { id: 5, agentName: 'Nurbek Khaydarov', agentPhone: '+998773088888', branch: 'Kiyim Olami', clientName: 'NURBEK HAYDAROV', clientPhone: '+998957708789', prepayment: 0, amount: 590000000, status: 'paid', date: '16/05/2026' },
-  { id: 4, agentName: 'Jasurbek Jumanazarov', agentPhone: '+998937444222', branch: 'DISKONT', clientName: 'NURILLA ABDIYEV', clientPhone: '+998909690608', prepayment: 0, amount: 44000000, status: 'pending', date: '14/05/2026' },
-  { id: 3, agentName: 'Jasurbek Jumanazarov', agentPhone: '+998937444222', branch: 'DISKONT', clientName: 'SHOHRUH SAIDOV', clientPhone: '+998934244724', prepayment: 0, amount: 11000000, status: 'pending', date: '14/05/2026' },
-  { id: 2, agentName: 'Jasurbek Jumanazarov', agentPhone: '+998937444222', branch: 'DISKONT', clientName: 'SHOHRUH SAIDOV', clientPhone: '+998934244724', prepayment: 0, amount: 13500000, status: 'pending', date: '14/05/2026' },
-  { id: 1, agentName: 'Jasurbek Jumanazarov', agentPhone: '+998937444222', branch: 'DISKONT', clientName: 'SHOHRUH SAIDOV', clientPhone: '+998934244724', prepayment: 0, amount: 22000000, status: 'paid', date: '13/05/2026' },
-])
+const merchantOptions = computed(() => {
+  const seen = new Set<string>()
+  const opts = [{ label: t('buyout.allMerchants'), value: 'all' }]
+  for (const b of store.buyouts) {
+    if (!seen.has(b.merchantId)) {
+      seen.add(b.merchantId)
+      opts.push({ label: b.merchantName, value: b.merchantId })
+    }
+  }
+  return opts
+})
 
 const stats = computed(() => ({
-  total: records.value.length,
-  pending: records.value.filter((r) => r.status === 'pending').length,
-  paid: records.value.filter((r) => r.status === 'paid').length,
+  total: store.buyouts.length,
+  pending: store.buyouts.filter((b) => b.status === 'pending').length,
+  paid: store.buyouts.filter((b) => b.status === 'paid').length,
 }))
 
 const filtered = computed(() => {
-  let list = records.value
+  let list = store.buyouts
   if (search.value.trim()) {
     const q = search.value.toLowerCase()
     list = list.filter(
-      (r) =>
-        r.agentName.toLowerCase().includes(q) ||
-        r.clientName.toLowerCase().includes(q) ||
-        r.branch.toLowerCase().includes(q) ||
-        r.agentPhone.includes(q) ||
-        r.clientPhone.includes(q),
+      (b) =>
+        b.agentName.toLowerCase().includes(q) ||
+        b.clientName.toLowerCase().includes(q) ||
+        b.merchantName.toLowerCase().includes(q) ||
+        b.branchName.toLowerCase().includes(q) ||
+        b.clientPhone.includes(q) ||
+        b.dealNumber.toLowerCase().includes(q),
     )
   }
-  if (statusFilter.value !== 'all') list = list.filter((r) => r.status === statusFilter.value)
-  if (merchantFilter.value !== 'all') list = list.filter((r) => r.branch === merchantFilter.value)
+  if (statusFilter.value !== 'all') list = list.filter((b) => b.status === statusFilter.value)
+  if (merchantFilter.value !== 'all') list = list.filter((b) => b.merchantId === merchantFilter.value)
   return list
 })
 
@@ -77,9 +59,12 @@ function fmtAmount(tiyin: number) {
   return (tiyin / 100).toLocaleString('ru-RU')
 }
 
-function markPaid(id: number) {
-  const rec = records.value.find((r) => r.id === id)
-  if (rec) rec.status = 'paid'
+function fmtDate(iso: string) {
+  return new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+async function markPaid(id: string) {
+  await store.markPaid(id)
 }
 </script>
 
@@ -87,7 +72,7 @@ function markPaid(id: number) {
   <div class="buyout-page">
 
     <!-- ── Loading ─────────────────────────────────────────────────────── -->
-    <template v-if="loading">
+    <template v-if="store.loading">
       <div class="stat-grid">
         <div v-for="i in 3" :key="i" class="stat-card skeleton" />
       </div>
@@ -157,7 +142,6 @@ function markPaid(id: number) {
                 <th>{{ $t('buyout.agent') }}</th>
                 <th>{{ $t('buyout.branch') }}</th>
                 <th>{{ $t('buyout.client') }}</th>
-                <th>{{ $t('buyout.prepayment') }}</th>
                 <th>{{ $t('buyout.amount') }}</th>
                 <th>{{ $t('buyout.status') }}</th>
                 <th>{{ $t('buyout.date') }}</th>
@@ -166,21 +150,20 @@ function markPaid(id: number) {
             </thead>
             <tbody>
               <tr v-for="row in filtered" :key="row.id">
-                <td class="id-cell">{{ row.id }}</td>
+                <td class="id-cell">{{ row.dealNumber }}</td>
                 <td>
                   <div class="person-cell">
                     <span class="person-name">{{ row.agentName }}</span>
-                    <span class="person-phone">{{ row.agentPhone }}</span>
+                    <span class="person-phone">{{ row.merchantName }}</span>
                   </div>
                 </td>
-                <td class="branch-cell">{{ row.branch }}</td>
+                <td class="branch-cell">{{ row.branchName }}</td>
                 <td>
                   <div class="person-cell">
                     <span class="person-name">{{ row.clientName }}</span>
                     <span class="person-phone">{{ row.clientPhone }}</span>
                   </div>
                 </td>
-                <td class="mono-cell">{{ row.prepayment }}</td>
                 <td class="amount-cell">
                   <span class="amount-num">{{ fmtAmount(row.amount) }}</span>
                   <span class="amount-unit">{{ $t('buyout.som') }}</span>
@@ -190,7 +173,7 @@ function markPaid(id: number) {
                     {{ row.status === 'paid' ? $t('buyout.statusPaid') : $t('buyout.statusPending') }}
                   </span>
                 </td>
-                <td class="date-cell">{{ row.date }}</td>
+                <td class="date-cell">{{ fmtDate(row.createdAt) }}</td>
                 <td class="action-cell">
                   <button v-if="row.status === 'pending'" class="btn-pay" @click="markPaid(row.id)">
                     <i class="pi pi-check-circle" /> {{ $t('buyout.statusPaid') }}
@@ -201,7 +184,7 @@ function markPaid(id: number) {
                 </td>
               </tr>
               <tr v-if="filtered.length === 0">
-                <td colspan="9" class="empty-row">{{ $t('buyout.noData') }}</td>
+                <td colspan="8" class="empty-row">{{ $t('buyout.noData') }}</td>
               </tr>
             </tbody>
           </table>
@@ -273,7 +256,6 @@ function markPaid(id: number) {
 .person-name { font-weight: 700; font-size: 0.88rem; }
 .person-phone { font-size: 0.76rem; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; }
 .branch-cell { font-weight: 600; }
-.mono-cell { font-family: 'JetBrains Mono', monospace; color: var(--text-secondary); }
 .amount-cell { white-space: nowrap; }
 .amount-num { font-weight: 800; font-size: 0.92rem; }
 .amount-unit { font-size: 0.76rem; color: var(--text-secondary); margin-left: 0.25rem; font-weight: 600; }
