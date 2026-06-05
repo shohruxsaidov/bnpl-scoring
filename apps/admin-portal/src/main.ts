@@ -12,7 +12,7 @@ import 'primeicons/primeicons.css';
 
 import App from './App.vue';
 import router from './router';
-// import { useAuthStore } from '@/stores/auth';
+import { useAuthStore } from '@/stores/auth';
 import uz from './locales/uz.json';
 import ru from './locales/ru.json';
 import './styles/main.css';
@@ -30,7 +30,7 @@ const pinia = createPinia();
 app.use(pinia);
 
 async function bootstrap() {
-  // await useAuthStore().restoreSession();
+  await useAuthStore().restoreSession();
 
   app.use(VueQueryPlugin);
   app.use(router);
