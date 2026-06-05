@@ -59,7 +59,7 @@ const filtered = computed<Payment[]>(() => {
       (p) =>
         p.clientName.toLowerCase().includes(q) ||
         p.clientPhone.includes(q) ||
-        p.contractId.toLowerCase().includes(q),
+        p.dealNumber.toLowerCase().includes(q),
     )
   }
   return list
@@ -306,7 +306,7 @@ function hideDealDropdown() {
           >
             <Column :header="$t('payments.merchant')" field="merchantName" sortable>
               <template #body="{ data }">
-                <span class="muted">{{ data.merchantName }}</span>
+                <RouterLink :to="`/merchants/${data.merchantId}`" class="table-link">{{ data.merchantName }}</RouterLink>
               </template>
             </Column>
             <Column :header="$t('payments.client')" field="clientName" sortable>
@@ -317,9 +317,9 @@ function hideDealDropdown() {
                 </div>
               </template>
             </Column>
-            <Column :header="$t('payments.contract')" field="contractId" style="width:280px">
+            <Column :header="$t('payments.contract')" field="dealNumber" style="width:200px">
               <template #body="{ data }">
-                <span class="font-mono deal-id">{{ data.contractId }}</span>
+                <RouterLink :to="`/deals/${data.contractId}`" class="font-mono deal-id">{{ data.dealNumber }}</RouterLink>
               </template>
             </Column>
             <Column :header="$t('payments.amount')" field="amount" sortable style="width:200px">
@@ -621,7 +621,10 @@ function hideDealDropdown() {
 .client-cell { display: flex; flex-direction: column; gap: 0.15rem; }
 .client-name { font-weight: 700; }
 .client-phone { font-size: 0.78rem; }
-.deal-id { font-size: 0.78rem; font-weight: 700; color: var(--accent-2); }
+.deal-id { font-size: 0.78rem; font-weight: 700; color: var(--accent-2); text-decoration: none; }
+.deal-id:hover { text-decoration: underline; }
+.table-link { color: var(--accent-2); text-decoration: none; font-weight: 600; }
+.table-link:hover { text-decoration: underline; }
 .muted { color: var(--text-secondary); }
 .pill {
   display: inline-flex; align-items: center; padding: 0.18rem 0.55rem; border-radius: 999px;

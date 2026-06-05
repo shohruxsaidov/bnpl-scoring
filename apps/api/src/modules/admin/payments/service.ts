@@ -14,6 +14,7 @@ export interface Payment {
   clientName: string
   clientPhone: string
   contractId: string
+  dealNumber: string
   /** tiyin */
   amount: number
   /** tiyin — amount paid so far (> 0 and < amount when partial) */
@@ -63,6 +64,7 @@ export async function listPayments(
     .select({
       id: dealPaymentSchedules.id,
       contractId: deals.id,
+      dealNumber: deals.dealNumber,
       merchantId: deals.merchantId,
       merchantName: merchants.name,
       firstName: clients.firstName,
@@ -94,6 +96,7 @@ export async function listPayments(
     clientName: `${r.firstName} ${r.lastName}`,
     clientPhone: r.clientPhone,
     contractId: r.contractId,
+    dealNumber: `CN-${String(r.dealNumber ?? 0).padStart(7, '0')}`,
     amount: Number(r.amount),
     paidAmount: Number(r.paidAmount ?? 0n),
     type: 'transfer' as const,

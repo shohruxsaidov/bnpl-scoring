@@ -147,6 +147,7 @@ const merchantNameMap = computed(
 const activityItems = computed(() =>
   deals.recent(6).map((d, i) => ({
     id: d.id,
+    dealNumber: d.dealNumber,
     initials: d.clientName?.slice(0, 2).toUpperCase() ?? '??',
     avClass: `av-${(i % 6) + 1}`,
     name: d.clientName,
@@ -380,7 +381,7 @@ function healthColor(h: string) {
               <strong>{{ item.name }}</strong>
               &nbsp;<span style="opacity:.6">via</span>&nbsp;
               <strong>{{ item.tenant }}</strong>
-              &nbsp;·&nbsp;<span class="act-txn">{{ item.id }}</span>
+              &nbsp;·&nbsp;<span class="act-txn">{{ item.dealNumber }}</span>
               &nbsp;<span class="act-amt">{{ item.amount }}</span>
             </div>
             <StatusBadge :status="item.status" style="flex-shrink:0" />

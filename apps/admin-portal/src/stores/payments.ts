@@ -8,6 +8,7 @@ export interface Payment {
   clientName: string
   clientPhone: string
   contractId: string
+  dealNumber: string
   /** tiyin */
   amount: number
   /** tiyin — amount paid so far */
