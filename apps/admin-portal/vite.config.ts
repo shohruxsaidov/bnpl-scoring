@@ -5,6 +5,9 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   plugins: [vue(), tailwindcss()],
+  build: {
+    assetsDir: 'admin/assets',
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
