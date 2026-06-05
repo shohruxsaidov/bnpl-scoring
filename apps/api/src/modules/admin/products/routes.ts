@@ -17,7 +17,7 @@ export default async function adminProductRoutes(app: FastifyInstance) {
     Type.Object({
       categoryId: Type.String(),
       name: Type.String({ minLength: 1 }),
-      tanNarxi: Type.String({ pattern: "^\\d+(\\.\\d{1,2})?$" }),
+      price: Type.String({ pattern: "^\\d+(\\.\\d{1,2})?$" }),
       mxikCode: Type.String(),
       packageCode: Type.Integer(),
       packageName: Type.String(),

@@ -81,7 +81,7 @@ export const useCatalogStore = defineStore('catalog', {
     },
 
     // -- Products --
-    async addProduct(input: { name: string; categoryId: string; tanNarxi: string; mxikCode?: string; packageCode?: number; packageName?: string }) {
+    async addProduct(input: { name: string; categoryId: string; price: string; mxikCode?: string; packageCode?: number; packageName?: string }) {
       const body = await api<{ product: Product }>('/merchant/catalog/products', {
         method: 'POST',
         body: JSON.stringify(input),
@@ -89,7 +89,7 @@ export const useCatalogStore = defineStore('catalog', {
       this.products.push(body.product)
     },
 
-    async updateProduct(id: string, patch: Partial<{ name: string; categoryId: string; tanNarxi: string; mxikCode: string; packageCode: number; packageName: string; active: boolean }>) {
+    async updateProduct(id: string, patch: Partial<{ name: string; categoryId: string; price: string; mxikCode: string; packageCode: number; packageName: string; active: boolean }>) {
       const body = await api<{ product: Product }>(`/merchant/catalog/products/${id}`, {
         method: 'PATCH',
         body: JSON.stringify(patch),

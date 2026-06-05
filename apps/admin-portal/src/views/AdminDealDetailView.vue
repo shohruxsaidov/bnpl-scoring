@@ -46,8 +46,8 @@ const ustama = computed(() => {
   return (((deal.value.totalPayable - deal.value.amount) / deal.value.amount) * 100).toFixed(2) + '%'
 })
 
-function basketItemTotal(item: { tanNarxi: string; quantity: number }): number {
-  return Math.round(parseFloat(item.tanNarxi) * 100) * item.quantity
+function basketItemTotal(item: { price: string; quantity: number }): number {
+  return Math.round(parseFloat(item.price) * 100) * item.quantity
 }
 
 // ── Payment schedule ───────────────────────────────────────────────────────
@@ -368,7 +368,7 @@ function formatDateShort(iso: string): string {
               <td>{{ item.productName }}</td>
               <td class="font-mono muted">{{ item.mxikCode ?? '—' }}</td>
               <td class="font-mono">{{ item.quantity }}</td>
-              <td class="font-mono">{{ formatSomShort(Math.round(parseFloat(item.tanNarxi) * 100)) }}</td>
+              <td class="font-mono">{{ formatSomShort(Math.round(parseFloat(item.price) * 100)) }}</td>
               <td class="font-mono">{{ formatSomShort(basketItemTotal(item)) }}</td>
             </tr>
           </tbody>
@@ -518,7 +518,7 @@ function formatDateShort(iso: string): string {
               <td>{{ item.productName }}</td>
               <td class="font-mono muted">{{ item.mxikCode ?? '—' }}</td>
               <td class="font-mono">{{ item.quantity }}</td>
-              <td class="font-mono">{{ formatSomShort(Math.round(parseFloat(item.tanNarxi) * 100)) }}</td>
+              <td class="font-mono">{{ formatSomShort(Math.round(parseFloat(item.price) * 100)) }}</td>
               <td class="font-mono">{{ formatSomShort(basketItemTotal(item)) }}</td>
             </tr>
           </tbody>

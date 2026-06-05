@@ -9,7 +9,7 @@ import type { Ref } from 'vue'
 
 export interface AdminDealBasketItem {
   productName: string
-  tanNarxi: string   // decimal string e.g. "15000.00"
+  price: string   // decimal string e.g. "15000.00"
   mxikCode: string | null
   quantity: number
 }

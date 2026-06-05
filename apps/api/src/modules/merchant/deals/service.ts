@@ -21,7 +21,7 @@ export interface CreateDealInput {
   basket: Array<{
     productId: bigint
     productName: string
-    tanNarxi: string // decimal string e.g. "1500000.00"
+    price: string // decimal string e.g. "1500000.00"
     mxikCode: string | null
     packageCode: number | null
     packageName: string | null
@@ -122,12 +122,12 @@ export async function resolveAndCreateDeal(db: Db, input: ResolveAndCreateDealIn
   const resolvedBasket = input.basket.map((item, idx) => {
     const p = productRows[idx]?.[0]
     if (!p) throw Object.assign(new Error(`product_not_found:${item.productId}`), { code: 'product_not_found' })
-    const itemTotal = BigInt(Math.round(parseFloat(p.tanNarxi) * 100)) * BigInt(item.quantity)
+    const itemTotal = BigInt(Math.round(parseFloat(p.price) * 100)) * BigInt(item.quantity)
     amount += itemTotal
     return {
       productId: p.id,
       productName: p.name,
-      tanNarxi: p.tanNarxi,
+      price: p.price,
       mxikCode: p.mxikCode ?? null,
       packageCode: p.packageCode ?? null,
       packageName: p.packageName ?? null,
@@ -193,7 +193,7 @@ export async function createDeal(db: Db, input: CreateDealInput) {
           dealId: deal.id,
           productId: item.productId,
           productName: item.productName,
-          tanNarxi: item.tanNarxi,
+          price: item.price,
           mxikCode: item.mxikCode,
           packageCode: item.packageCode,
           packageName: item.packageName,
@@ -348,7 +348,7 @@ export async function getDealById(db: Db, id: string, merchantId: bigint) {
     basket: items.map((item) => ({
       productId: serializeBigInt(item.productId),
       productName: item.productName,
-      tanNarxi: item.tanNarxi,
+      price: item.price,
       mxikCode: item.mxikCode,
       packageCode: item.packageCode,
       packageName: item.packageName,
@@ -421,7 +421,7 @@ export async function getContractPdfUrl(
     basket: deal.basket.map((item) => ({
       productName: item.productName,
       quantity: item.quantity,
-      tanNarxi: Math.round(parseFloat(item.tanNarxi) * 100),
+      price: Math.round(parseFloat(item.price) * 100),
     })),
     schedule: deal.schedule.map((s) => ({
       index: s.index,

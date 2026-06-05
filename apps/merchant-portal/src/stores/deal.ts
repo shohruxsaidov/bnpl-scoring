@@ -110,7 +110,7 @@ export const useDealStore = defineStore('deal', {
 
     basketTotal: (s): number =>
       s.sessionData.basket.reduce(
-        (sum, i) => sum + Math.round(parseFloat(i.product.tanNarxi) * 100) * i.quantity,
+        (sum, i) => sum + Math.round(parseFloat(i.product.price) * 100) * i.quantity,
         0,
       ),
 

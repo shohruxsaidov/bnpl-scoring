@@ -17,7 +17,7 @@ export async function createProduct(
     merchantId: bigint
     categoryId: bigint
     name: string
-    tanNarxi: string
+    price: string
     mxikCode?: string
     packageCode?: number
     packageName?: string
@@ -33,7 +33,7 @@ export async function updateProduct(
   input: Partial<{
     categoryId: bigint
     name: string
-    tanNarxi: string
+    price: string
     mxikCode: string
     packageCode: number
     packageName: string

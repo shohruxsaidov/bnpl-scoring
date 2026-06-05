@@ -212,7 +212,7 @@ export const useMerchantsStore = defineStore('merchants', {
 
     async createProduct(
       merchantId: string,
-      input: { categoryId: string; name: string; tanNarxi: string; mxikCode?: string; packageCode?: number; packageName?: string },
+      input: { categoryId: string; name: string; price: string; mxikCode?: string; packageCode?: number; packageName?: string },
     ): Promise<Product> {
       const body = await api<{ product: Product }>(`/admin/merchants/${merchantId}/products`, {
         method: 'POST',

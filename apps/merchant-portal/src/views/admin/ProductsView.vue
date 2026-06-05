@@ -38,7 +38,7 @@ const editingId = ref<string | null>(null)
 const form = reactive({
   name: '',
   mxikCode: '',
-  tanNarxiNum: 0,
+  priceNum: 0,
   categoryId: '',
   packageCode: null as number | null,
   packageName: '',
@@ -103,7 +103,7 @@ async function openNew() {
   editingId.value = null
   form.name = ''
   form.mxikCode = ''
-  form.tanNarxiNum = 0
+  form.priceNum = 0
   form.categoryId = catalog.categories[0]?.id ?? ''
   form.packageCode = null
   form.packageName = ''
@@ -116,7 +116,7 @@ async function openEdit(p: Product) {
   editingId.value = p.id
   form.name = p.name
   form.mxikCode = p.mxikCode ?? ''
-  form.tanNarxiNum = parseFloat(p.tanNarxi)
+  form.priceNum = parseFloat(p.price)
   form.categoryId = p.categoryId
   form.packageCode = p.packageCode ?? null
   form.packageName = p.packageName ?? ''
@@ -125,17 +125,17 @@ async function openEdit(p: Product) {
 }
 
 async function save() {
-  if (!form.name || !form.categoryId || form.tanNarxiNum <= 0) {
+  if (!form.name || !form.categoryId || form.priceNum <= 0) {
     toast.add({ severity: 'warn', summary: t('products.missingFields'), detail: t('products.fillAllFields'), life: 2500 })
     return
   }
-  const tanNarxi = form.tanNarxiNum.toFixed(2)
+  const price = form.priceNum.toFixed(2)
   try {
     if (editingId.value) {
       await catalog.updateProduct(editingId.value, {
         name: form.name,
         categoryId: form.categoryId,
-        tanNarxi,
+        price,
         mxikCode: form.mxikCode || undefined,
         packageCode: form.packageCode ?? undefined,
         packageName: form.packageName || undefined,
@@ -145,7 +145,7 @@ async function save() {
       await catalog.addProduct({
         name: form.name,
         categoryId: form.categoryId,
-        tanNarxi,
+        price,
         mxikCode: form.mxikCode || undefined,
         packageCode: form.packageCode ?? undefined,
         packageName: form.packageName || undefined,
@@ -201,9 +201,9 @@ function formatPrice(v: string) {
               <span class="cat-chip">{{ catalog.categoryName(data.categoryId) }}</span>
             </template>
           </Column>
-          <Column field="tanNarxi" :header="$t('products.tanNarxi')" sortable :style="{ width: '180px' }">
+          <Column field="price" :header="$t('products.price')" sortable :style="{ width: '180px' }">
             <template #body="{ data }">
-              <span class="font-mono">{{ formatPrice(data.tanNarxi) }} {{ $t('common.som') }}</span>
+              <span class="font-mono">{{ formatPrice(data.price) }} {{ $t('common.som') }}</span>
             </template>
           </Column>
           <Column :header="$t('products.mxikCode')" :style="{ width: '140px' }">
@@ -239,8 +239,8 @@ function formatPrice(v: string) {
               :placeholder="$t('products.selectCategory')" />
           </div>
           <div class="field">
-            <label class="field-label">{{ $t('products.tanNarxi') }}</label>
-            <InputNumber v-model="form.tanNarxiNum" :min="0" mode="decimal" :min-fraction-digits="0"
+            <label class="field-label">{{ $t('products.price') }}</label>
+            <InputNumber v-model="form.priceNum" :min="0" mode="decimal" :min-fraction-digits="0"
               :max-fraction-digits="2" fluid />
           </div>
 

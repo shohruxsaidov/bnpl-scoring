@@ -153,7 +153,7 @@ export interface ContractData {
     productName: string;
     quantity: number;
     /** tiyin per unit */
-    tanNarxi: number;
+    price: number;
   }>;
   schedule: Array<{
     index: number;
@@ -462,7 +462,7 @@ export async function generateContract(data: ContractData, lang: 'ru' | 'uz'): P
   const pHeaders = [t.thNum, t.thShop, t.thProduct, t.thQty, t.thUnitPrice, t.thTotal];
   const markupRatio = data.amount > 0 ? data.totalPayable / data.amount : 1;
   const pRows = data.basket.map((item, i) => {
-    const unitWithMarkup = Math.round(item.tanNarxi * markupRatio);
+    const unitWithMarkup = Math.round(item.price * markupRatio);
     return [
       String(i + 1),
       data.branchName,
@@ -476,7 +476,7 @@ export async function generateContract(data: ContractData, lang: 'ru' | 'uz'): P
 
   const totalQty = data.basket.reduce((s, i) => s + i.quantity, 0);
   const grandTotal = data.basket.reduce(
-    (s, i) => s + Math.round(i.tanNarxi * markupRatio) * i.quantity,
+    (s, i) => s + Math.round(i.price * markupRatio) * i.quantity,
     0,
   );
   y = drawMergedTotalRow(

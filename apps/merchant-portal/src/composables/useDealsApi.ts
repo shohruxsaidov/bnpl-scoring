@@ -30,7 +30,7 @@ export interface DealListItem {
 export interface DealBasketItem {
   productId: string | null
   productName: string
-  tanNarxi: string
+  price: string
   mxikCode: string | null
   packageCode: number | null
   packageName: string | null

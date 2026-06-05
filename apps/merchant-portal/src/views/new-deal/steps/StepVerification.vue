@@ -24,8 +24,8 @@ const totalPayable = computed(() => {
   return Math.round(principal.value * (1 + t.markupPercent / 100))
 })
 
-function itemPrice(tanNarxi: string, quantity: number): number {
-  const base = Math.round(parseFloat(tanNarxi) * 100)
+function itemPrice(price: string, quantity: number): number {
+  const base = Math.round(parseFloat(price) * 100)
   const pct = sd.value.tariff?.markupPercent ?? 0
   return Math.round(base * (1 + pct / 100)) * quantity
 }
@@ -221,7 +221,7 @@ async function signSubmit() {
       <div v-for="item in sd.basket" :key="item.product.id" class="basket-line">
         <span>{{ item.product.name }}</span>
         <span class="font-mono qty">×{{ item.quantity }}</span>
-        <MonoAmount :value="itemPrice(item.product.tanNarxi, item.quantity)" size="sm" :gradient="false" />
+        <MonoAmount :value="itemPrice(item.product.price, item.quantity)" size="sm" :gradient="false" />
       </div>
     </section>
 

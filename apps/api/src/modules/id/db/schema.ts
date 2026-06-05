@@ -185,7 +185,7 @@ export const products = pgTable('products', {
     .notNull()
     .references(() => categories.id),
   name: varchar('name', { length: 200 }).notNull(),
-  tanNarxi: numeric('tan_narxi', { precision: 15, scale: 2 }).notNull(),
+  price: numeric('price', { precision: 15, scale: 2 }).notNull(),
   mxikCode: varchar('mxik_code', { length: 50 }),
   packageCode: integer('package_code'),
   packageName: varchar('package_name', { length: 200 }),

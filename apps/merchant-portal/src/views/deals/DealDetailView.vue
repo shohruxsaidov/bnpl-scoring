@@ -54,12 +54,12 @@ function markupRatio(): number {
   return d.totalPayable / d.amount
 }
 
-function itemUnitPrice(tanNarxi: string): number {
-  return Math.round(Math.round(parseFloat(tanNarxi) * 100) * markupRatio())
+function itemUnitPrice(price: string): number {
+  return Math.round(Math.round(parseFloat(price) * 100) * markupRatio())
 }
 
-function basketTotal(item: { tanNarxi: string; quantity: number }): number {
-  return itemUnitPrice(item.tanNarxi) * item.quantity
+function basketTotal(item: { price: string; quantity: number }): number {
+  return itemUnitPrice(item.price) * item.quantity
 }
 </script>
 
@@ -163,7 +163,7 @@ function basketTotal(item: { tanNarxi: string; quantity: number }): number {
               <td>{{ item.productName }}</td>
               <td class="font-mono muted">{{ item.mxikCode ?? '—' }}</td>
               <td class="font-mono">{{ item.quantity }}</td>
-              <td class="font-mono">{{ formatSomShort(itemUnitPrice(item.tanNarxi)) }}</td>
+              <td class="font-mono">{{ formatSomShort(itemUnitPrice(item.price)) }}</td>
               <td class="font-mono">{{ formatSomShort(basketTotal(item)) }}</td>
               <td class="muted">—</td>
             </tr>

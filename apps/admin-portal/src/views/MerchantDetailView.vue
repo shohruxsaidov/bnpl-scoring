@@ -267,28 +267,28 @@ const showProduct = ref(false)
 const productForm = ref<{
   categoryId: string | null
   name: string
-  tanNarxi: number | null
+  price: number | null
   mxikCode: string
   packageCode: number | null
   packageName: string
-}>({ categoryId: null, name: '', tanNarxi: null, mxikCode: '', packageCode: null, packageName: '' })
+}>({ categoryId: null, name: '', price: null, mxikCode: '', packageCode: null, packageName: '' })
 const productSaving = ref(false)
 
 function openProduct() {
-  productForm.value = { categoryId: null, name: '', tanNarxi: null, mxikCode: '', packageCode: null, packageName: '' }
+  productForm.value = { categoryId: null, name: '', price: null, mxikCode: '', packageCode: null, packageName: '' }
   _resetMxik()
   showProduct.value = true
 }
 
 async function submitProduct() {
   const f = productForm.value
-  if (!f.categoryId || !f.name || f.tanNarxi === null) return
+  if (!f.categoryId || !f.name || f.price === null) return
   productSaving.value = true
   try {
     await merchants.createProduct(merchantId.value, {
       categoryId: f.categoryId,
       name: f.name,
-      tanNarxi: String(f.tanNarxi),
+      price: String(f.price),
       mxikCode: f.mxikCode || undefined,
       packageCode: f.packageCode ?? undefined,
       packageName: f.packageName || undefined,
@@ -568,9 +568,9 @@ function truncate(value: string, max = 48): string {
           <Column :header="$t('merchantDetail.category')">
             <template #body="{ data }">{{ categoryName(data.categoryId) }}</template>
           </Column>
-          <Column :header="$t('merchantDetail.tanNarxi')">
+          <Column :header="$t('merchantDetail.price')">
             <template #body="{ data }">
-              <span class="font-mono">{{ formatTanNarxi(data.tanNarxi) }}</span>
+              <span class="font-mono">{{ formatTanNarxi(data.price) }}</span>
             </template>
           </Column>
           <Column :header="$t('merchantDetail.mxikCode')">
@@ -789,8 +789,8 @@ function truncate(value: string, max = 48): string {
         />
       </div>
       <div class="field">
-        <label class="field-label">{{ $t('merchantDetail.tanNarxi') }}</label>
-        <InputNumber v-model="productForm.tanNarxi" :min="0" :use-grouping="true" fluid />
+        <label class="field-label">{{ $t('merchantDetail.price') }}</label>
+        <InputNumber v-model="productForm.price" :min="0" :use-grouping="true" fluid />
       </div>
       <div class="field">
         <label class="field-label">

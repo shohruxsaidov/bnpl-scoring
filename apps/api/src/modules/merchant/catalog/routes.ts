@@ -35,7 +35,7 @@ export default async function merchantCatalogRoutes(app: FastifyInstance) {
   const CreateProductBody = Type.Object({
     categoryId: Type.String(),
     name: Type.String({ minLength: 1 }),
-    tanNarxi: Type.String({ pattern: "^\\d+(\\.\\d{1,2})?$" }),
+    price: Type.String({ pattern: "^\\d+(\\.\\d{1,2})?$" }),
     mxikCode: Type.Optional(Type.String()),
     packageCode: Type.Optional(Type.Integer()),
     packageName: Type.Optional(Type.String()),
@@ -43,7 +43,7 @@ export default async function merchantCatalogRoutes(app: FastifyInstance) {
   const UpdateProductBody = Type.Partial(Type.Object({
     categoryId: Type.String(),
     name: Type.String({ minLength: 1 }),
-    tanNarxi: Type.String({ pattern: "^\\d+(\\.\\d{1,2})?$" }),
+    price: Type.String({ pattern: "^\\d+(\\.\\d{1,2})?$" }),
     mxikCode: Type.String(),
     packageCode: Type.Integer(),
     packageName: Type.String(),
@@ -80,7 +80,7 @@ export default async function merchantCatalogRoutes(app: FastifyInstance) {
       merchantId: merchantId(request),
       categoryId: BigInt(request.body.categoryId),
       name: request.body.name,
-      tanNarxi: request.body.tanNarxi,
+      price: request.body.price,
       mxikCode: request.body.mxikCode,
       packageCode: request.body.packageCode,
       packageName: request.body.packageName,

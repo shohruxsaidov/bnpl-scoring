@@ -29,13 +29,13 @@ const tariff = computed(() => deal.sessionData.tariff)
 const total = computed(() => deal.basketTotal)
 
 /** Product base price in tiyin */
-function basePrice(tanNarxi: string): number {
-  return Math.round(parseFloat(tanNarxi) * 100)
+function basePrice(price: string): number {
+  return Math.round(parseFloat(price) * 100)
 }
 
 /** Price with tariff markup applied */
-function finalPrice(tanNarxi: string): number {
-  const base = basePrice(tanNarxi)
+function finalPrice(price: string): number {
+  const base = basePrice(price)
   const pct = tariff.value?.markupPercent ?? 0
   return Math.round(base * (1 + pct / 100))
 }
@@ -101,12 +101,12 @@ function next() {
           <div class="p-bottom">
             <div class="p-prices">
               <div class="p-price-row">
-                <MonoAmount :value="finalPrice(p.tanNarxi)" size="sm" />
+                <MonoAmount :value="finalPrice(p.price)" size="sm" />
                 <span v-if="tariff" class="p-markup">+{{ tariff.markupPercent }}%</span>
               </div>
               <span v-if="tariff && tariff.markupPercent > 0" class="p-base">
                 {{ $t('stepMahsulot.basePrice') }}
-                <MonoAmount :value="basePrice(p.tanNarxi)" size="sm" :gradient="false" />
+                <MonoAmount :value="basePrice(p.price)" size="sm" :gradient="false" />
               </span>
             </div>
             <button class="add-btn" @click="deal.addToBasket(p)">
@@ -146,7 +146,7 @@ function next() {
                 <i class="pi pi-plus" />
               </button>
             </div>
-            <MonoAmount :value="finalPrice(item.product.tanNarxi) * item.quantity" size="sm" :gradient="false" />
+            <MonoAmount :value="finalPrice(item.product.price) * item.quantity" size="sm" :gradient="false" />
           </div>
         </div>
       </div>

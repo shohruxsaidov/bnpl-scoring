@@ -74,7 +74,7 @@ export async function listAdminDeals(
     const basket = (basketByDeal.get(deal.id) ?? []).map((i) => ({
       name: i.productName,
       quantity: i.quantity,
-      price: Math.round(parseFloat(i.tanNarxi) * 100),
+      price: Math.round(parseFloat(i.price) * 100),
     }))
     const schedule = (scheduleByDeal.get(deal.id) ?? []).map((s) => ({
       index: s.index,
@@ -164,7 +164,7 @@ export async function getAdminDeal(db: Db, id: string) {
     lang: deal.lang ?? 'ru',
     basket: itemRows.map((i) => ({
       productName: i.productName,
-      tanNarxi: i.tanNarxi,
+      price: i.price,
       mxikCode: i.mxikCode ?? null,
       quantity: i.quantity,
     })),

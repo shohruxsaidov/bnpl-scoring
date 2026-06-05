@@ -128,7 +128,7 @@ async function submitStep4() {
 }
 
 // Step 5 – Products
-function emptyProd() { return { name: '', categoryId: '', tanNarxi: '' } }
+function emptyProd() { return { name: '', categoryId: '', price: '' } }
 const prods = ref([emptyProd()])
 
 const categoryOptions = computed(() =>
@@ -136,7 +136,7 @@ const categoryOptions = computed(() =>
 )
 
 async function submitStep5() {
-  const valid = prods.value.filter(p => p.name.trim() && p.categoryId && p.tanNarxi.trim())
+  const valid = prods.value.filter(p => p.name.trim() && p.categoryId && p.price.trim())
   if (!valid.length) { finish(); return }
   saving.value = true
   try {
@@ -144,7 +144,7 @@ async function submitStep5() {
       await store.createProduct(merchantId.value!, {
         categoryId: p.categoryId,
         name: p.name.trim(),
-        tanNarxi: p.tanNarxi.trim(),
+        price: p.price.trim(),
       })
     }
     finish()
@@ -359,8 +359,8 @@ function finish() {
                 />
               </div>
               <div class="field">
-                <label>{{ t('onboarding.tanNarxi') }}</label>
-                <InputText v-model="prod.tanNarxi" class="w-full" />
+                <label>{{ t('onboarding.price') }}</label>
+                <InputText v-model="prod.price" class="w-full" />
               </div>
             </div>
             <button v-if="prods.length > 1" class="remove-btn" @click="prods.splice(i, 1)">

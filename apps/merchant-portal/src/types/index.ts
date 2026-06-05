@@ -94,7 +94,7 @@ export interface Product {
   categoryId: string
   name: string
   /** Decimal string e.g. "1500000.00" — UZS */
-  tanNarxi: string
+  price: string
   mxikCode: string | null
   packageCode: number | null
   packageName: string | null
@@ -127,7 +127,7 @@ export interface Deal {
   tariffId: string
   tariffName: string
   termMonths: number
-  /** sum of tan_narxi × quantity across all DealItems, tiyin */
+  /** sum of price × quantity across all DealItems, tiyin */
   amount: number
   /** amount + Ustama, tiyin */
   totalPayable: number

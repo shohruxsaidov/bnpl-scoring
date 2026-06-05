@@ -188,7 +188,7 @@
     "deleted": "O'chirildi",
     "confirmDelete": "O'chirishni tasdiqlang",
     "deleteConfirm": "\"{name}\" o'chirilsinmi?",
-    "tanNarxi": "Narx (tan narhiy)",
+    "price": "Narx (tan narhiy)",
     "mxikCode": "MXIK kodi",
     "mxikPlaceholder": "Kod yoki nomini kiriting...",
     "mxikHint": "Yangi kod uchun to'liq 17 ta raqam kiriting va 🔍 bosing",

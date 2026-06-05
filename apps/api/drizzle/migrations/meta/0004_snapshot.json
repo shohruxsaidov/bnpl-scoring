@@ -1196,8 +1196,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "tan_narxi": {
-          "name": "tan_narxi",
+        "price": {
+          "name": "price",
           "type": "numeric(15, 2)",
           "primaryKey": false,
           "notNull": true
@@ -1911,8 +1911,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "tan_narxi": {
-          "name": "tan_narxi",
+        "price": {
+          "name": "price",
           "type": "numeric(15, 2)",
           "primaryKey": false,
           "notNull": true

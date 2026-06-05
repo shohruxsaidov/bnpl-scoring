@@ -200,7 +200,7 @@ export interface Product {
   merchantId: string
   categoryId: string
   name: string
-  tanNarxi: string
+  price: string
   mxikCode: string | null
   packageCode: number | null
   packageName: string | null

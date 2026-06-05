@@ -39,7 +39,7 @@ export const deals = pgTable('deals', {
   // 'draft' | 'scoring' | 'approved' | 'declined' | 'active' | 'closed' | 'overdue'
   status: varchar('status', { length: 20 }).notNull().default('draft'),
   // Denormalized financials — stored at creation so list queries need no heavy joins
-  /** Sum of dealItems.tanNarxi × quantity in tiyin */
+  /** Sum of dealItems.price × quantity in tiyin */
   amount: bigint('amount', { mode: 'bigint' }),
   /** amount × (1 + markupPercent / 100), tiyin */
   totalPayable: bigint('total_payable', { mode: 'bigint' }),
@@ -86,7 +86,7 @@ export const scoringHistories = pgTable('scoring_histories', {
 // ---------------------------------------------------------------------------
 // deal_items
 // Normalized Basket — one row per Product line in the Deal.
-// Snapshot fields (product_name, tan_narxi, mxik_code, package_*) are
+// Snapshot fields (product_name, price, mxik_code, package_*) are
 // denormalized at Deal creation time so Product edits don't alter past Deals.
 // ---------------------------------------------------------------------------
 export const dealItems = pgTable('deal_items', {
@@ -96,7 +96,7 @@ export const dealItems = pgTable('deal_items', {
   productId: bigint('product_id', { mode: 'bigint' }).references(() => products.id),
   // snapshot at time of Deal creation
   productName: varchar('product_name', { length: 200 }).notNull(),
-  tanNarxi: numeric('tan_narxi', { precision: 15, scale: 2 }).notNull(),
+  price: numeric('price', { precision: 15, scale: 2 }).notNull(),
   mxikCode: varchar('mxik_code', { length: 50 }),
   packageCode: integer('package_code'),
   packageName: varchar('package_name', { length: 200 }),
