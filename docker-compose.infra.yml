@@ -45,37 +45,26 @@ services:
       timeout: 5s
       retries: 5
 
-  garage:
-    image: dxflrs/garage:v2.2.0
-    restart: unless-stopped
-    volumes:
-      - ./garage.toml:/etc/garage.toml:ro
-      - garaga-meta:/var/lib/garage/meta
-      - garaga-data:/var/lib/garage/data
+  minio:
+    image: minio/minio:latest
+    container_name: minio
     ports:
-      - '${GARAGE_S3_PORT:-3900}:3900'
-      - '${GARAGE_ADMIN_PORT:-3903}:3903'
+      - '9000:9000'
+      - '9001:9001'
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:3903/health']
-      interval: 10s
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 30s
       timeout: 5s
       retries: 5
-      start_period: 10s
-
-  garage-webui:
-    image: khairul169/garage-webui:latest
-    restart: unless-stopped
-    depends_on:
-      garage:
-        condition: service_healthy
     environment:
-      GARAGE_ADMIN_ADDR: http://garage:3903
-      GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN:-garage-admin-token}
-    ports:
-      - '${GARAGE_UI_PORT:-3909}:3909'
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
 
 volumes:
   postgres-data:
   redis-data:
-  garage-meta:
-  garage-data:
+  minio_data:

@@ -1,3 +1,5 @@
+import { useAuthStore } from '@/stores/auth'
+
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
 
 let refreshPromise: Promise<boolean> | null = null
@@ -31,7 +33,6 @@ export async function apiFetch<T = any>(path: string, opts: RequestInit = {}): P
     if (refreshed) {
       res = await makeRequest()
     } else {
-      const { useAuthStore } = await import('@/stores/auth')
       await useAuthStore().logout()
       window.location.href = '/login'
       throw new Error('unauthorized')
