@@ -5,8 +5,9 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   plugins: [vue(), tailwindcss()],
+  base: '/admin/',
   build: {
-    assetsDir: 'admin/assets',
+    assetsDir: 'assets',
   },
   resolve: {
     alias: {
