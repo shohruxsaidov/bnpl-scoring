@@ -71,7 +71,7 @@ const logger = {
 };
 
 export async function buildApp() {
-  const app = Fastify({ logger });
+  const app = Fastify({ logger, trustProxy: true });
 
   await app.register(new fastifyOtel().plugin());
   await app.register(helmet);
