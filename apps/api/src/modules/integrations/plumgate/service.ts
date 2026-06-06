@@ -136,7 +136,10 @@ function formatExpiry(raw: string): string {
 
 /** "08/27" → "0827" */
 function normaliseExpiry(input: string): string {
-  return input.replace('/', '');
+  input = input.replace('/', '');
+  const month = input.slice(0, 2);
+  const year = input.slice(2);
+  return `${year}${month}`;
 }
 
 function normalisePcType(raw: string): 'uzcard' | 'humo' {
