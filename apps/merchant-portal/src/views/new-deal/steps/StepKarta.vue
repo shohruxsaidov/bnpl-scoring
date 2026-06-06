@@ -689,8 +689,25 @@ async function next() {
 }
 
 @media (max-width: 700px) {
+  .step-card {
+    padding: 1.2rem;
+  }
+
   .cards-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .add-form {
+    flex-direction: column;
+    align-items: stretch;
+
+    .field {
+      max-width: none !important;
+    }
+  }
+
+  .add-actions {
+    flex-direction: column;
   }
 }
 
