@@ -404,6 +404,7 @@ async function scoreUzcard(db: Db, userCardId: string): Promise<PlumScoreResult>
 
     scoringId = data.sessionId;
   } catch (err) {
+    console.error({ err: (err as any)?.data || err });
     const toThrow = await parsePlumError(err);
     logIntegration(db, {
       integration: 'plumgate',
