@@ -288,9 +288,8 @@ export async function confirmCard(
 
   const requestTimestamp = new Date();
   try {
-    const data = await client
-      .post('UserCard/confirmUserCardCreate', { json: reqBody })
-      .json<PlumConfirmCardResponse>();
+    // TODO adjust to actual response shape once tested against live API — currently based on docs and may be inaccurate
+    const data = await client.post('UserCard/confirmUserCardCreate', { json: reqBody }).json<any>();
 
     logIntegration(db, {
       integration: 'plumgate',
