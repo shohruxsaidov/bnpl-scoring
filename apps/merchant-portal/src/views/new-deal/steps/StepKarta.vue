@@ -97,7 +97,7 @@ function cancelAdd() {
 }
 
 async function requestAddCard() {
-  if (!/^\d{4} \d{4} \d{4} \d{4}$/.test(newPan.value)) return
+  if (!(/^\d{4}\d{4}\d{4}\d{4}$/).test(newPan.value)) return
   if (!newExpiry.value) return
 
   addLoading.value = true
@@ -302,19 +302,11 @@ async function next() {
 
     <!-- Card grid -->
     <div v-else class="cards-grid">
-      <button
-        v-for="card in cards"
-        :key="card.plumCardId"
-        class="bank-card"
-        :class="{ selected: selectedId === card.plumCardId }"
-        @click="selectCard(card.plumCardId)"
-      >
+      <button v-for="card in cards" :key="card.plumCardId" class="bank-card"
+        :class="{ selected: selectedId === card.plumCardId }" @click="selectCard(card.plumCardId)">
         <div class="bc-top">
           <span class="bc-bank">{{ card.bank }}</span>
-          <i
-            class="pi"
-            :class="selectedId === card.plumCardId ? 'pi-check-circle' : 'pi-circle'"
-          />
+          <i class="pi" :class="selectedId === card.plumCardId ? 'pi-check-circle' : 'pi-circle'" />
         </div>
         <div class="bc-pan font-mono">{{ card.maskedPan }}</div>
         <div class="bc-foot">
@@ -335,12 +327,7 @@ async function next() {
       <template v-if="!addSessionId">
         <div class="field">
           <label class="field-label">{{ $t('stepKarta.cardNumber') }}</label>
-          <InputText
-            v-model="newPan"
-            placeholder="8600 1234 5678 9012"
-            class="font-mono"
-            maxlength="19"
-          />
+          <InputText v-model="newPan" placeholder="8600 1234 5678 9012" class="font-mono" maxlength="19" />
         </div>
         <div class="field" style="max-width: 140px">
           <label class="field-label">{{ $t('stepKarta.expiry') }}</label>
@@ -365,12 +352,7 @@ async function next() {
         </div>
         <div class="field" style="max-width: 200px">
           <label class="field-label">{{ $t('stepKarta.otpCode') }}</label>
-          <InputText
-            v-model="otpCode"
-            placeholder="• • • • • •"
-            class="font-mono"
-            maxlength="8"
-          />
+          <InputText v-model="otpCode" placeholder="• • • • • •" class="font-mono" maxlength="8" />
         </div>
         <div class="add-actions">
           <button class="btn-ghost" :disabled="addLoading" @click="cancelAdd">
@@ -388,11 +370,7 @@ async function next() {
 
     <!-- Verify row -->
     <div class="verify-row">
-      <button
-        class="btn-ghost"
-        :disabled="!selectedId || scoring"
-        @click="verifyCard"
-      >
+      <button class="btn-ghost" :disabled="!selectedId || scoring" @click="verifyCard">
         <i v-if="scoring" class="pi pi-spin pi-spinner" />
         <i v-else class="pi pi-shield" />
         {{ scoring ? $t('stepKarta.scoringCard') : $t('stepKarta.verifyCard') }}
@@ -411,10 +389,7 @@ async function next() {
           <span class="sr-label">{{ $t('stepKarta.cardScore') }}</span>
           <span class="sr-value font-mono text-gradient">{{ result.score }}</span>
         </div>
-        <div
-          class="sr-decision"
-          :style="{ color: decisionMeta?.color, background: decisionMeta?.bg }"
-        >
+        <div class="sr-decision" :style="{ color: decisionMeta?.color, background: decisionMeta?.bg }">
           {{ decisionMeta?.label }}
         </div>
       </div>
@@ -451,11 +426,13 @@ async function next() {
 .step-card {
   padding: 2rem;
 }
+
 .sc-head h2 {
   margin: 0;
   font-size: 1.4rem;
   font-weight: 800;
 }
+
 .sc-head p {
   margin: 0.3rem 0 0;
   color: var(--text-secondary);
@@ -471,6 +448,7 @@ async function next() {
   color: var(--text-secondary);
   font-size: 0.9rem;
 }
+
 .state-error {
   color: var(--danger);
 }
@@ -482,6 +460,7 @@ async function next() {
   gap: 1.1rem;
   margin: 1.8rem 0;
 }
+
 .bank-card {
   text-align: left;
   border: 2px solid var(--border-subtle);
@@ -494,27 +473,33 @@ async function next() {
   gap: 1.4rem;
   transition: all 0.15s ease;
 }
+
 .bank-card.selected {
   border-color: var(--accent-2);
   box-shadow: var(--accent-glow);
 }
+
 .bc-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
+
 .bc-bank {
   font-weight: 800;
   font-size: 0.9rem;
 }
+
 .bc-top i {
   color: var(--accent-2);
 }
+
 .bc-pan {
   font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: 0.05em;
 }
+
 .bc-foot {
   display: flex;
   justify-content: space-between;
@@ -522,6 +507,7 @@ async function next() {
   color: var(--text-secondary);
   font-weight: 600;
 }
+
 .add-card {
   border: 2px dashed var(--border-subtle);
   background: transparent;
@@ -537,6 +523,7 @@ async function next() {
   transition: all 0.15s ease;
   min-height: 130px;
 }
+
 .add-card:hover {
   border-color: var(--accent-2);
   color: var(--accent-2);
@@ -553,13 +540,16 @@ async function next() {
   border-radius: 14px;
   margin-bottom: 1.4rem;
 }
+
 .add-form .field {
   flex: 1;
 }
+
 .add-actions {
   display: flex;
   gap: 0.6rem;
 }
+
 .otp-hint {
   width: 100%;
   display: flex;
@@ -568,6 +558,7 @@ async function next() {
   font-size: 0.88rem;
   color: var(--text-secondary);
 }
+
 .add-error {
   width: 100%;
   margin: 0;
@@ -581,12 +572,14 @@ async function next() {
   align-items: center;
   gap: 1.2rem;
 }
+
 .btn-ghost {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   white-space: nowrap;
 }
+
 .progress-track {
   flex: 1;
   position: relative;
@@ -595,11 +588,13 @@ async function next() {
   border-radius: 999px;
   overflow: hidden;
 }
+
 .progress-bar {
   height: 100%;
   background: var(--gradient-hero);
   transition: width 0.2s ease;
 }
+
 .progress-label {
   position: absolute;
   right: 0;
@@ -619,20 +614,24 @@ async function next() {
   padding: 1.3rem 1.6rem;
   border-radius: 16px;
 }
+
 .sr-score {
   display: flex;
   flex-direction: column;
 }
+
 .sr-label {
   font-size: 0.74rem;
   font-weight: 700;
   color: var(--text-secondary);
   text-transform: uppercase;
 }
+
 .sr-value {
   font-size: 2.2rem;
   font-weight: 800;
 }
+
 .sr-decision {
   padding: 0.4rem 1rem;
   border-radius: 999px;
@@ -654,11 +653,13 @@ async function next() {
   font-size: 0.88rem;
   font-weight: 600;
 }
+
 .score-error-actions {
   display: flex;
   gap: 0.6rem;
   margin-left: auto;
 }
+
 .btn-muted {
   opacity: 0.7;
 }
@@ -672,22 +673,30 @@ async function next() {
   padding-top: 1.4rem;
   border-top: 1px solid var(--border-subtle);
 }
+
 .btn-gradient {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
 }
+
 .fade-enter-active {
   transition: opacity 0.35s ease;
 }
+
 .fade-enter-from {
   opacity: 0;
 }
 
 @media (max-width: 700px) {
-  .cards-grid { grid-template-columns: repeat(2, 1fr); }
+  .cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
+
 @media (max-width: 480px) {
-  .cards-grid { grid-template-columns: 1fr; }
+  .cards-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
