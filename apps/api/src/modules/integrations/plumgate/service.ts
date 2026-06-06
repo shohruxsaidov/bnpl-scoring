@@ -245,9 +245,12 @@ export async function addCard(
 
   const requestTimestamp = new Date();
   try {
-    const data = await client
-      .post('UserCard/createUserCard', { json: reqBody })
-      .json<PlumAddCardResponse>();
+    const data = await client.post('UserCard/createUserCard', { json: reqBody }).json<{
+      result: {
+        session: string;
+        otpSentPhone: string;
+      };
+    }>();
 
     logIntegration(db, {
       integration: 'plumgate',
@@ -261,7 +264,7 @@ export async function addCard(
       responseTimestamp: new Date(),
     });
 
-    return { sessionId: data.sessionId, maskedPhone: data.phone };
+    return { sessionId: data.result.session, maskedPhone: data.result.otpSentPhone };
   } catch (err) {
     console.error({ err: (err as any).data, reqBody }, 'Error in createUserCard');
     const toThrow = await parsePlumError(err);

@@ -97,6 +97,7 @@ function cancelAdd() {
 }
 
 async function requestAddCard() {
+  debugger
   if (!(/^\d{4}\d{4}\d{4}\d{4}$/).test(newPan.value)) return
   if (!newExpiry.value) return
 
