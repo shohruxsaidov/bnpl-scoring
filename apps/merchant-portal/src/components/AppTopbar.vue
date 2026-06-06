@@ -2,7 +2,6 @@
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import ThemeToggle from './ThemeToggle.vue'
 import NotificationsPopup from './NotificationsPopup.vue'
 import { useNotificationsStore } from '@/stores/notifications'
 
@@ -10,7 +9,7 @@ defineProps<{ showMenuBtn?: boolean }>()
 const emit = defineEmits<{ (e: 'menu'): void; (e: 'search'): void }>()
 
 const route = useRoute()
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const notifStore = useNotificationsStore()
 
 const bellOpen = ref(false)
@@ -23,11 +22,6 @@ const breadcrumb = computed(() => {
   const keys = (route.meta.breadcrumbKeys as string[]) ?? []
   return keys.map((k) => t(k))
 })
-
-function setLang(lang: 'uz' | 'ru') {
-  locale.value = lang
-  localStorage.setItem('lang', lang)
-}
 
 const today = new Date().toLocaleDateString('uz-UZ', {
   weekday: 'short',
@@ -59,23 +53,6 @@ const today = new Date().toLocaleDateString('uz-UZ', {
     </button>
 
     <div class="right">
-      <div class="lang-switch">
-        <button
-          class="lang-btn"
-          :class="{ active: locale === 'uz' }"
-          @click="setLang('uz')"
-        >
-          uz
-        </button>
-        <span class="lang-sep">|</span>
-        <button
-          class="lang-btn"
-          :class="{ active: locale === 'ru' }"
-          @click="setLang('ru')"
-        >
-          ru
-        </button>
-      </div>
       <span class="date font-mono">{{ today }}</span>
       <div class="bell-wrap">
         <button
@@ -91,7 +68,6 @@ const today = new Date().toLocaleDateString('uz-UZ', {
         </button>
         <NotificationsPopup v-if="bellOpen" @close="bellOpen = false" />
       </div>
-      <ThemeToggle />
     </div>
   </header>
 </template>
@@ -140,37 +116,6 @@ const today = new Date().toLocaleDateString('uz-UZ', {
   font-size: 0.8rem;
   color: var(--text-secondary);
   font-weight: 600;
-}
-.lang-switch {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-surface);
-  border-radius: 10px;
-  padding: 0.25rem 0.5rem;
-}
-.lang-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  font-weight: 700;
-  font-size: 0.78rem;
-  text-transform: uppercase;
-  cursor: pointer;
-  padding: 0.15rem 0.3rem;
-  border-radius: 6px;
-  transition: color 0.15s ease;
-}
-.lang-btn:hover {
-  color: var(--text-primary);
-}
-.lang-btn.active {
-  color: var(--accent-2);
-}
-.lang-sep {
-  color: var(--border-subtle);
-  font-size: 0.78rem;
 }
 .bell {
   position: relative;

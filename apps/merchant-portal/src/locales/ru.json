@@ -72,7 +72,8 @@
     "tariffs": "Тарифы",
     "employees": "Сотрудники",
     "branches": "Филиалы",
-    "changePassword": "Смена пароля"
+    "changePassword": "Смена пароля",
+    "settings": "Настройки"
   },
   "breadcrumb": {
     "dashboard": "Главная",
@@ -85,7 +86,8 @@
     "categories": "Категории",
     "tariffs": "Тарифы",
     "employees": "Сотрудники",
-    "branches": "Филиалы"
+    "branches": "Филиалы",
+    "settings": "Настройки"
   },
   "nav": {
     "dashboard": "Главная",
@@ -99,7 +101,8 @@
     "notifications": "Уведомления",
     "logout": "Выйти",
     "toggleSidebar": "Переключить панель",
-    "branches": "Филиалы"
+    "branches": "Филиалы",
+    "settings": "Настройки"
   },
   "role": {
     "merchantAdmin": "Администратор торговца",
@@ -617,6 +620,17 @@
     "mismatch": "Пароли не совпадают",
     "invalidCurrent": "Неверный текущий пароль",
     "error": "Произошла ошибка. Попробуйте ещё раз"
+  },
+  "settings": {
+    "appearance": "Внешний вид",
+    "theme": "Тема",
+    "lightDesc": "Сейчас активна светлая тема",
+    "darkDesc": "Сейчас активна тёмная тема",
+    "light": "Светлая",
+    "dark": "Тёмная",
+    "language": "Язык",
+    "interfaceLang": "Язык интерфейса",
+    "interfaceLangDesc": "Весь текст в интерфейсе будет отображаться на выбранном языке"
   },
   "search": {
     "placeholder": "Поиск...",

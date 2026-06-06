@@ -72,7 +72,8 @@
     "tariffs": "Tariflar",
     "employees": "Xodimlar",
     "branches": "Filiallar",
-    "changePassword": "Parolni o'zgartirish"
+    "changePassword": "Parolni o'zgartirish",
+    "settings": "Sozlamalar"
   },
   "breadcrumb": {
     "dashboard": "Bosh sahifa",
@@ -85,7 +86,8 @@
     "categories": "Kategoriyalar",
     "tariffs": "Tariflar",
     "employees": "Xodimlar",
-    "branches": "Filiallar"
+    "branches": "Filiallar",
+    "settings": "Sozlamalar"
   },
   "nav": {
     "dashboard": "Bosh sahifa",
@@ -99,7 +101,8 @@
     "notifications": "Bildirishnomalar",
     "logout": "Chiqish",
     "toggleSidebar": "Yon panelni almashtirish",
-    "branches": "Filiallar"
+    "branches": "Filiallar",
+    "settings": "Sozlamalar"
   },
   "role": {
     "merchantAdmin": "Merchant Admin",
@@ -617,6 +620,17 @@
     "mismatch": "Parollar mos kelmadi",
     "invalidCurrent": "Joriy parol noto'g'ri",
     "error": "Xatolik yuz berdi. Qayta urinib ko'ring"
+  },
+  "settings": {
+    "appearance": "Ko'rinish",
+    "theme": "Mavzu",
+    "lightDesc": "Hozirda yorug' mavzu faol",
+    "darkDesc": "Hozirda qorong'i mavzu faol",
+    "light": "Yorug'",
+    "dark": "Qorong'i",
+    "language": "Til",
+    "interfaceLang": "Interfeys tili",
+    "interfaceLangDesc": "Sahifadagi barcha matnlar shu tilda ko'rsatiladi"
   },
   "search": {
     "placeholder": "Qidirish...",

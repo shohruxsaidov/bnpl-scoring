@@ -129,6 +129,15 @@ const routes: RouteRecordRaw[] = [
           breadcrumbKeys: ['breadcrumb.notifications', 'breadcrumb.detail'],
         },
       },
+      {
+        path: 'settings',
+        name: 'settings',
+        component: () => import('@/views/SettingsView.vue'),
+        meta: {
+          titleKey: 'routeTitle.settings',
+          breadcrumbKeys: ['breadcrumb.settings'],
+        },
+      },
     ],
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },
