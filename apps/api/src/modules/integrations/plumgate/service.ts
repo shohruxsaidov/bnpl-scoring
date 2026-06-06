@@ -538,7 +538,9 @@ async function parsePlumError(err: unknown): Promise<IntegrationError | Error> {
     let body: unknown = null;
     try {
       body = await err.response.json();
-    } catch {}
+    } catch {
+      body = await err.response.text().catch(() => null);
+    }
     return new IntegrationError('plumgate', err.response.status, body);
   }
   return err instanceof Error ? err : new Error(String(err));
