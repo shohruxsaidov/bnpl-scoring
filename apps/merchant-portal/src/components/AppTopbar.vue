@@ -34,16 +34,19 @@ const today = new Date().toLocaleDateString('uz-UZ', {
 <template>
   <header class="topbar">
     <div class="left">
+
       <button v-if="showMenuBtn" class="menu-btn" @click="emit('menu')">
         <i class="pi pi-bars" />
       </button>
-      <h1 class="page-title">{{ title }}</h1>
-      <nav v-if="breadcrumb.length" class="crumbs">
-        <template v-for="(c, i) in breadcrumb" :key="i">
-          <span :class="{ current: i === breadcrumb.length - 1 }">{{ c }}</span>
-          <i v-if="i < breadcrumb.length - 1" class="pi pi-angle-right sep" />
-        </template>
-      </nav>
+      <div>
+        <h1 class="page-title">{{ title }}</h1>
+        <nav v-if="breadcrumb.length" class="crumbs">
+          <template v-for="(c, i) in breadcrumb" :key="i">
+            <span :class="{ current: i === breadcrumb.length - 1 }">{{ c }}</span>
+            <i v-if="i < breadcrumb.length - 1" class="pi pi-angle-right sep" />
+          </template>
+        </nav>
+      </div>
     </div>
 
     <button class="search-trigger" @click="emit('search')">
@@ -55,12 +58,8 @@ const today = new Date().toLocaleDateString('uz-UZ', {
     <div class="right">
       <span class="date font-mono">{{ today }}</span>
       <div class="bell-wrap">
-        <button
-          class="bell"
-          :class="{ active: bellOpen }"
-          :title="$t('topbar.notifications')"
-          @click.stop="bellOpen = !bellOpen"
-        >
+        <button class="bell" :class="{ active: bellOpen }" :title="$t('topbar.notifications')"
+          @click.stop="bellOpen = !bellOpen">
           <i class="pi pi-bell" />
           <span v-if="notifStore.unreadCount > 0" class="badge">
             {{ notifStore.unreadCount > 9 ? '9+' : notifStore.unreadCount }}
@@ -85,12 +84,18 @@ const today = new Date().toLocaleDateString('uz-UZ', {
   top: 0;
   z-index: 10;
 }
+
+.topbar .left {
+  display: flex;
+}
+
 .page-title {
   font-size: 1.25rem;
   font-weight: 800;
   margin: 0;
   line-height: 1.1;
 }
+
 .crumbs {
   display: flex;
   align-items: center;
@@ -100,23 +105,28 @@ const today = new Date().toLocaleDateString('uz-UZ', {
   margin-top: 0.15rem;
   font-weight: 600;
 }
+
 .crumbs .current {
   color: var(--accent-2);
 }
+
 .sep {
   font-size: 0.65rem;
   opacity: 0.6;
 }
+
 .right {
   display: flex;
   align-items: center;
   gap: 0.9rem;
 }
+
 .date {
   font-size: 0.8rem;
   color: var(--text-secondary);
   font-weight: 600;
 }
+
 .bell {
   position: relative;
   width: 38px;
@@ -130,11 +140,13 @@ const today = new Date().toLocaleDateString('uz-UZ', {
   place-items: center;
   transition: all 0.15s ease;
 }
+
 .bell:hover,
 .bell.active {
   color: var(--accent-2);
   border-color: var(--accent-2);
 }
+
 .search-trigger {
   display: flex;
   align-items: center;
@@ -151,12 +163,22 @@ const today = new Date().toLocaleDateString('uz-UZ', {
   transition: all 0.15s ease;
   min-width: 180px;
 }
+
 .search-trigger:hover {
   border-color: var(--accent-1);
   color: var(--text-secondary);
 }
-.search-trigger .pi-search { font-size: 0.85rem; color: var(--accent-1); }
-.search-placeholder { flex: 1; text-align: left; }
+
+.search-trigger .pi-search {
+  font-size: 0.85rem;
+  color: var(--accent-1);
+}
+
+.search-placeholder {
+  flex: 1;
+  text-align: left;
+}
+
 .search-kbd {
   display: inline-flex;
   align-items: center;
@@ -174,7 +196,9 @@ const today = new Date().toLocaleDateString('uz-UZ', {
 .bell-wrap {
   position: relative;
 }
+
 .menu-btn {
+  margin-right: 1.2rem;
   width: 38px;
   height: 38px;
   border-radius: 10px;
@@ -188,12 +212,27 @@ const today = new Date().toLocaleDateString('uz-UZ', {
 }
 
 @media (max-width: 767px) {
-  .date { display: none; }
-  .topbar { padding: 0 1rem; }
-  .right { gap: 0.5rem; }
-  .search-trigger { min-width: unset; }
-  .search-placeholder, .search-kbd { display: none; }
+  .date {
+    display: none;
+  }
+
+  .topbar {
+    padding: 0 1rem;
+  }
+
+  .right {
+    gap: 0.5rem;
+  }
+
+  .search-trigger {
+    display: none;
+  }
+
+  .bell-wrap {
+    display: none;
+  }
 }
+
 .badge {
   position: absolute;
   top: -5px;

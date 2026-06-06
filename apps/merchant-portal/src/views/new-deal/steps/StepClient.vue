@@ -1092,6 +1092,27 @@ const clientFullName = computed(() =>
 }
 
 @media (max-width: 600px) {
-  .client-grid { grid-template-columns: 1fr; }
+  .client-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .search-row {
+    flex-direction: column;
+  }
+
+  .sc-head {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.8rem;
+  }
+
+  .step-card {
+    padding: 1rem;
+  }
+
+  .katm-box {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 </style>

@@ -180,7 +180,7 @@ async function signSubmit() {
             <dt>{{ $t('stepVerification.passport') }}</dt>
             <dd class="font-mono">{{ sd.client?.passportSerial }}{{ sd.client?.passportNumber }}</dd>
           </div>
-          
+
         </dl>
       </section>
 
@@ -688,9 +688,41 @@ async function signSubmit() {
 }
 
 @media (max-width: 700px) {
-  .summary-grid { grid-template-columns: repeat(2, 1fr); }
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .gate-row {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .gate-hint {
+    i {
+      display: none;
+    }
+  }
+
+  .otp-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.8rem;
+
+
+
+    .otp-input {
+      width: 100%;
+    }
+  }
 }
+
 @media (max-width: 480px) {
-  .summary-grid { grid-template-columns: 1fr; }
+  .step-card {
+    padding: 1.2rem;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
