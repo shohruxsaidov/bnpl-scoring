@@ -124,6 +124,23 @@ export interface PlumScoreResult {
   decision: 'approved' | 'manual_review' | 'declined';
 }
 
+interface PlumConfirmUserCardCreateResponse {
+  id: number;
+  userId: string;
+  cardId: number;
+  owner: string; // "SHOHRUH SAIDOV",
+  cardName: string; // "My new card",
+  number: string; // "561468******5330",
+  balance: number; // e.g. 48100.64
+  expireDate: string; // "YYMM" e.g. "3010"
+  isTrusted: boolean;
+  status: number;
+  errorCode: number;
+  errorMessage: string;
+  isOwn: boolean;
+  pcType: number; // 0 for Uzcard, 1 for Humo according to docs but needs confirmation against live API
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -298,7 +315,9 @@ export async function confirmCard(
   const requestTimestamp = new Date();
   try {
     // TODO adjust to actual response shape once tested against live API — currently based on docs and may be inaccurate
-    const data = await client.post('UserCard/confirmUserCardCreate', { json: reqBody }).json<any>();
+    const data = await client.post('UserCard/confirmUserCardCreate', { json: reqBody }).json<{
+      result: PlumConfirmUserCardCreateResponse;
+    }>();
 
     logIntegration(db, {
       integration: 'plumgate',
@@ -312,7 +331,16 @@ export async function confirmCard(
       responseTimestamp: new Date(),
     });
 
-    return toPlumCard(data);
+    return toPlumCard({
+      cardId: data.result.id.toString(),
+      number: data.result.number,
+      owner: data.result.owner,
+      expireDate: data.result.expireDate,
+      pcType: data.result.pcType === 1 ? 'humo' : 'uzcard',
+      status: data.result.status,
+      isTrusted: data.result.isTrusted,
+      isPrimary: data.result.isOwn,
+    });
   } catch (err) {
     const toThrow = await parsePlumError(err);
     logIntegration(db, {
