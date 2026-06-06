@@ -6,7 +6,6 @@ import { useDealsStore } from '@/stores/deals'
 import { useOverviewApi } from '@/composables/useOverviewApi'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { formatSomCompact, formatSomShort, formatDate } from '@/utils/money'
-import type { IntegrationStatus } from '@/types'
 
 const deals = useDealsStore()
 const overview = useOverviewApi()
@@ -161,18 +160,7 @@ const activityItems = computed(() =>
 // ---- Merchant health ----
 const tenantHealth = computed(() => overview.merchantHealth.value.slice(0, 8))
 
-// ---- Integrations ----
-const integrations = computed<IntegrationStatus[]>(() => [
-  { key: 'katm', label: 'KATM', health: 'operational', detail: t('overview.katmDetail') },
-  { key: 'myid', label: 'MyID', health: 'operational', detail: t('overview.myidDetail') },
-  { key: 'plumgate', label: 'PlumGate', health: 'degraded', detail: t('overview.plumgateDetail') },
-  { key: 'payme', label: 'Payme', health: 'operational', detail: t('overview.paymeDetail') },
-  { key: 'click', label: 'Click', health: 'operational', detail: t('overview.clickDetail') },
-])
 
-function healthColor(h: string) {
-  return h === 'operational' ? 'var(--success)' : h === 'degraded' ? 'var(--warning)' : 'var(--danger)'
-}
 </script>
 
 <template>
