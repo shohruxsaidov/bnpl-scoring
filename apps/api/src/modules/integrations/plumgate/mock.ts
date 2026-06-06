@@ -80,10 +80,13 @@ export async function mockScoreCard(params: {
   const seed = params.plumCardId.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
   const score = 700 + (seed % 250) // always approved range: 700–949
 
-  // Limit between 500 000 and 2 000 000 som (in tiyin: 50 000 000 – 200 000 000)
-  const MIN = 50_000_000
-  const MAX = 200_000_000
-  const limit = MIN + (seed % (MAX - MIN + 1))
+  // Scatter the small char-sum seed across the full range with a multiplicative hash
+  const mixed = Math.imul(seed, 2654435761) >>> 0
+
+  // Limit in round 100 000 som steps: 500 000 – 2 000 000 som (50 000 000 – 200 000 000 tiyin)
+  const STEP = 10_000_000 // 100 000 som in tiyin
+  const STEPS = 16        // 500 000, 600 000, … 2 000 000
+  const limit = 50_000_000 + (mixed % STEPS) * STEP
 
   return { score, limit, decision: 'approved' }
 }

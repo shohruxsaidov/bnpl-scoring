@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
+import InputMask from 'primevue/inputmask'
 import MultiSelect from 'primevue/multiselect'
 import Select from 'primevue/select'
 import { useToast } from 'primevue/usetoast'
@@ -42,8 +43,8 @@ const mErrors = ref({ name: false, legalName: false, inn: false, phone: false, a
 function validateMerchant(): boolean {
   mErrors.value.name = !m.value.name.trim()
   mErrors.value.legalName = !m.value.legalName.trim()
-  mErrors.value.inn = !m.value.inn.trim()
-  mErrors.value.phone = !m.value.phone.trim()
+  mErrors.value.inn = !m.value.inn || m.value.inn.includes('_') || m.value.inn.replace(/\D/g, '').length !== 9
+  mErrors.value.phone = !m.value.phone || m.value.phone.includes('_')
   mErrors.value.address = !m.value.address.trim()
   return !Object.values(mErrors.value).some(Boolean)
 }
@@ -69,7 +70,7 @@ const bErrors = ref({ name: false, address: false, phone: false })
 function validateBranch(): boolean {
   bErrors.value.name = !b.value.name.trim()
   bErrors.value.address = !b.value.address.trim()
-  bErrors.value.phone = !b.value.phone.trim()
+  bErrors.value.phone = !b.value.phone || b.value.phone.includes('_')
   return !Object.values(bErrors.value).some(Boolean)
 }
 
@@ -213,12 +214,12 @@ function finish() {
           </div>
           <div class="field">
             <label>{{ t('onboarding.inn') }}</label>
-            <InputText v-model="m.inn" :class="{ 'p-invalid': mErrors.inn }" class="w-full" />
+            <InputMask v-model="m.inn" mask="999999999" :class="{ 'p-invalid': mErrors.inn }" class="w-full" placeholder="000000000" />
             <small v-if="mErrors.inn" class="error-msg">{{ t('onboarding.innRequired') }}</small>
           </div>
           <div class="field">
             <label>{{ t('onboarding.phone') }}</label>
-            <InputText v-model="m.phone" :class="{ 'p-invalid': mErrors.phone }" class="w-full" />
+            <InputMask v-model="m.phone" mask="+999999999999" :class="{ 'p-invalid': mErrors.phone }" class="w-full" placeholder="+000000000000" />
             <small v-if="mErrors.phone" class="error-msg">{{ t('onboarding.phoneRequired') }}</small>
           </div>
           <div class="field col-span-2">
@@ -247,7 +248,7 @@ function finish() {
           </div>
           <div class="field">
             <label>{{ t('onboarding.phone') }}</label>
-            <InputText v-model="b.phone" :class="{ 'p-invalid': bErrors.phone }" class="w-full" />
+            <InputMask v-model="b.phone" mask="+999999999999" :class="{ 'p-invalid': bErrors.phone }" class="w-full" placeholder="+000000000000" />
             <small v-if="bErrors.phone" class="error-msg">{{ t('onboarding.phoneRequired') }}</small>
           </div>
           <div class="field col-span-2">

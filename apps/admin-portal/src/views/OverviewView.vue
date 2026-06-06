@@ -117,10 +117,10 @@ const statusSegments = computed(() => {
   const total = Math.max(deals.deals.length, 1)
 
   const config = [
-    { key: 'active',   color: '#00d4aa', label: t('status.active') },
-    { key: 'scoring',  color: '#ffb02e', label: t('status.scoring') },
-    { key: 'closed',   color: '#7b68ee', label: t('status.closed') },
-    { key: 'overdue',  color: '#ff5c5c', label: t('status.overdue') },
+    { key: 'active', color: '#00d4aa', label: t('status.active') },
+    { key: 'scoring', color: '#ffb02e', label: t('status.scoring') },
+    { key: 'closed', color: '#7b68ee', label: t('status.closed') },
+    { key: 'overdue', color: '#ff5c5c', label: t('status.overdue') },
     { key: 'declined', color: '#9898bb', label: t('status.declined') },
   ]
 
@@ -163,11 +163,11 @@ const tenantHealth = computed(() => overview.merchantHealth.value.slice(0, 8))
 
 // ---- Integrations ----
 const integrations = computed<IntegrationStatus[]>(() => [
-  { key: 'katm',     label: 'KATM',     health: 'operational', detail: t('overview.katmDetail') },
-  { key: 'myid',     label: 'MyID',     health: 'operational', detail: t('overview.myidDetail') },
-  { key: 'plumgate', label: 'PlumGate', health: 'degraded',    detail: t('overview.plumgateDetail') },
-  { key: 'payme',    label: 'Payme',    health: 'operational', detail: t('overview.paymeDetail') },
-  { key: 'click',    label: 'Click',    health: 'operational', detail: t('overview.clickDetail') },
+  { key: 'katm', label: 'KATM', health: 'operational', detail: t('overview.katmDetail') },
+  { key: 'myid', label: 'MyID', health: 'operational', detail: t('overview.myidDetail') },
+  { key: 'plumgate', label: 'PlumGate', health: 'degraded', detail: t('overview.plumgateDetail') },
+  { key: 'payme', label: 'Payme', health: 'operational', detail: t('overview.paymeDetail') },
+  { key: 'click', label: 'Click', health: 'operational', detail: t('overview.clickDetail') },
 ])
 
 function healthColor(h: string) {
@@ -187,12 +187,7 @@ function healthColor(h: string) {
         </div>
         <div class="kpi-value">{{ k.value }}</div>
         <div class="kpi-delta" :class="k.tone">{{ k.delta }}</div>
-        <svg
-          class="kpi-spark"
-          viewBox="0 0 200 44"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-        >
+        <svg class="kpi-spark" viewBox="0 0 200 44" preserveAspectRatio="none" aria-hidden="true">
           <defs>
             <linearGradient :id="`sg-${k.key}`" x1="0" x2="0" y1="0" y2="1">
               <stop offset="0" :stop-color="k.sparkColor" stop-opacity="0.30" />
@@ -200,14 +195,8 @@ function healthColor(h: string) {
             </linearGradient>
           </defs>
           <path :d="k.sparkPath + ' L200,44 L0,44 Z'" :fill="`url(#sg-${k.key})`" />
-          <path
-            :d="k.sparkPath"
-            :stroke="k.sparkColor"
-            stroke-width="2"
-            fill="none"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
+          <path :d="k.sparkPath" :stroke="k.sparkColor" stroke-width="2" fill="none" stroke-linecap="round"
+            stroke-linejoin="round" />
         </svg>
       </div>
     </div>
@@ -223,13 +212,8 @@ function healthColor(h: string) {
             <p class="chart-sub">Active & closed by period</p>
           </div>
           <div class="tabs">
-            <div
-              v-for="r in (['30', '90', 'YTD'] as const)"
-              :key="r"
-              class="tab"
-              :class="{ 'is-active': chartRange === r }"
-              @click="chartRange = r"
-            >
+            <div v-for="r in (['30', '90', 'YTD'] as const)" :key="r" class="tab"
+              :class="{ 'is-active': chartRange === r }" @click="chartRange = r">
               {{ r === '30' ? '30 d' : r === '90' ? '90 d' : 'YTD' }}
             </div>
           </div>
@@ -247,19 +231,13 @@ function healthColor(h: string) {
               </linearGradient>
             </defs>
             <g stroke="var(--border-subtle)" stroke-width="1">
-              <line x1="0" y1="32"  x2="540" y2="32" />
-              <line x1="0" y1="65"  x2="540" y2="65" />
-              <line x1="0" y1="98"  x2="540" y2="98" />
+              <line x1="0" y1="32" x2="540" y2="32" />
+              <line x1="0" y1="65" x2="540" y2="65" />
+              <line x1="0" y1="98" x2="540" y2="98" />
             </g>
             <path :d="dealsChartData.fill" fill="url(#g-df)" />
-            <path
-              :d="dealsChartData.line"
-              stroke="url(#g-dl)"
-              stroke-width="2.5"
-              fill="none"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
+            <path :d="dealsChartData.line" stroke="url(#g-dl)" stroke-width="2.5" fill="none" stroke-linecap="round"
+              stroke-linejoin="round" />
           </svg>
           <div class="chart-legend">
             <div class="legend-item">
@@ -280,40 +258,16 @@ function healthColor(h: string) {
         </div>
         <div class="chart-body donut-wrap">
           <svg viewBox="0 0 120 120" width="150" height="150" style="flex-shrink:0" aria-hidden="true">
-            <circle
-              cx="60" cy="60" r="48"
-              fill="none"
-              stroke="var(--border-subtle)"
-              stroke-width="16"
-            />
-            <circle
-              v-for="seg in statusSegments"
-              :key="seg.key"
-              cx="60" cy="60" r="48"
-              fill="none"
-              :stroke="seg.color"
-              stroke-width="16"
-              :stroke-dasharray="`${seg.dash} 301.6`"
-              :stroke-dashoffset="`${-seg.offset}`"
-              transform="rotate(-90 60 60)"
-            />
-            <text
-              x="60" y="56"
-              text-anchor="middle"
-              font-family="Plus Jakarta Sans"
-              font-weight="800"
-              font-size="17"
-              fill="var(--text-primary)"
-            >
+            <circle cx="60" cy="60" r="48" fill="none" stroke="var(--border-subtle)" stroke-width="16" />
+            <circle v-for="seg in statusSegments" :key="seg.key" cx="60" cy="60" r="48" fill="none" :stroke="seg.color"
+              stroke-width="16" :stroke-dasharray="`${seg.dash} 301.6`" :stroke-dashoffset="`${-seg.offset}`"
+              transform="rotate(-90 60 60)" />
+            <text x="60" y="56" text-anchor="middle" font-family="Plus Jakarta Sans" font-weight="800" font-size="17"
+              fill="var(--text-primary)">
               {{ dominantSegment.pct }}%
             </text>
-            <text
-              x="60" y="71"
-              text-anchor="middle"
-              font-family="JetBrains Mono"
-              font-size="8"
-              fill="var(--text-secondary)"
-            >
+            <text x="60" y="71" text-anchor="middle" font-family="JetBrains Mono" font-size="8"
+              fill="var(--text-secondary)">
               {{ dominantSegment.label }}
             </text>
           </svg>
@@ -341,22 +295,15 @@ function healthColor(h: string) {
           </button>
         </header>
         <ul class="health-list">
-          <li
-            v-for="(tenant, idx) in tenantHealth"
-            :key="tenant.id"
-            class="health-row"
-            @click="router.push(`/merchants/${tenant.id}`)"
-          >
+          <li v-for="(tenant, idx) in tenantHealth" :key="tenant.id" class="health-row"
+            @click="router.push(`/merchants/${tenant.id}`)">
             <div class="h-av" :class="`av-${(idx % 6) + 1}`">
               {{ tenant.name.slice(0, 2).toUpperCase() }}
             </div>
-            <span
-              class="status-dot"
-              :style="{
-                background: tenant.active ? 'var(--success)' : 'var(--danger)',
-                boxShadow: `0 0 6px ${tenant.active ? 'var(--success)' : 'var(--danger)'}`,
-              }"
-            />
+            <span class="status-dot" :style="{
+              background: tenant.active ? 'var(--success)' : 'var(--danger)',
+              boxShadow: `0 0 6px ${tenant.active ? 'var(--success)' : 'var(--danger)'}`,
+            }" />
             <span class="health-name">{{ tenant.name }}</span>
             <span class="health-meta font-mono">{{ tenant.dealCount }} {{ $t('overview.deals') }}</span>
             <span class="health-overdue font-mono" :class="{ zero: tenant.overdueCount === 0 }">
@@ -397,30 +344,6 @@ function healthColor(h: string) {
 
     </div>
 
-    <!-- ── Integration status ── -->
-    <section class="surface-card integ">
-      <header class="panel-head">
-        <h3 class="section-title">{{ $t('overview.integrationStatus') }}</h3>
-      </header>
-      <div class="integ-row">
-        <div v-for="i in integrations" :key="i.key" class="integ-item">
-          <span
-            class="status-dot"
-            :style="{
-              background: healthColor(i.health),
-              boxShadow: `0 0 8px ${healthColor(i.health)}`,
-            }"
-          />
-          <div class="integ-text">
-            <span class="integ-label">{{ i.label }}</span>
-            <span class="integ-state">
-              {{ i.health === 'operational' ? $t('overview.operational') : $t('overview.degraded') }}
-            </span>
-          </div>
-          <span class="integ-detail">{{ i.detail }}</span>
-        </div>
-      </div>
-    </section>
 
   </div>
 </template>
@@ -451,6 +374,7 @@ function healthColor(h: string) {
   padding: 0;
   overflow: hidden;
 }
+
 .panel-head {
   display: flex;
   align-items: center;
@@ -458,6 +382,7 @@ function healthColor(h: string) {
   padding: 0.85rem 1rem;
   border-bottom: 1px solid var(--border-subtle);
 }
+
 .btn-ghost.sm {
   padding: 0.3rem 0.65rem;
   font-size: 0.74rem;
@@ -471,6 +396,7 @@ function healthColor(h: string) {
   display: flex;
   flex-direction: column;
 }
+
 .health-row {
   display: flex;
   align-items: center;
@@ -480,9 +406,11 @@ function healthColor(h: string) {
   cursor: pointer;
   transition: background 0.12s ease;
 }
+
 .health-row:hover {
   background: color-mix(in srgb, var(--accent-1) 6%, transparent);
 }
+
 .h-av {
   width: 26px;
   height: 26px;
@@ -494,12 +422,14 @@ function healthColor(h: string) {
   color: #fff;
   flex-shrink: 0;
 }
+
 .status-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
 }
+
 .health-name {
   flex: 1;
   font-size: 0.82rem;
@@ -508,10 +438,12 @@ function healthColor(h: string) {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .health-meta {
   font-size: 0.74rem;
   color: var(--text-secondary);
 }
+
 .health-overdue {
   font-size: 0.74rem;
   font-weight: 700;
@@ -519,6 +451,7 @@ function healthColor(h: string) {
   min-width: 80px;
   text-align: right;
 }
+
 .health-overdue.zero {
   color: var(--text-secondary);
 }
@@ -527,10 +460,12 @@ function healthColor(h: string) {
 .integ {
   padding: 0;
 }
+
 .integ-row {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
 }
+
 .integ-item {
   display: flex;
   align-items: center;
@@ -538,23 +473,28 @@ function healthColor(h: string) {
   padding: 0.9rem 1rem;
   border-right: 1px solid var(--border-subtle);
 }
+
 .integ-item:last-child {
   border-right: none;
 }
+
 .integ-text {
   display: flex;
   flex-direction: column;
   line-height: 1.2;
 }
+
 .integ-label {
   font-size: 0.84rem;
   font-weight: 700;
 }
+
 .integ-state {
   font-size: 0.68rem;
   color: var(--text-secondary);
   font-weight: 600;
 }
+
 .integ-detail {
   margin-left: auto;
   font-size: 0.66rem;
@@ -563,15 +503,35 @@ function healthColor(h: string) {
 }
 
 @media (max-width: 900px) {
-  .charts-row { grid-template-columns: 1fr; }
-  .data-row { grid-template-columns: 1fr; }
-  .integ-row { grid-template-columns: repeat(3, 1fr); }
-  .integ-item { border-right: none; border-bottom: 1px solid var(--border-subtle); }
-  .integ-item:last-child { border-bottom: none; }
+  .charts-row {
+    grid-template-columns: 1fr;
+  }
+
+  .data-row {
+    grid-template-columns: 1fr;
+  }
+
+  .integ-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .integ-item {
+    border-right: none;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .integ-item:last-child {
+    border-bottom: none;
+  }
 }
 
 @media (max-width: 600px) {
-  .integ-row { grid-template-columns: 1fr 1fr; }
-  .integ-detail { display: none; }
+  .integ-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .integ-detail {
+    display: none;
+  }
 }
 </style>
