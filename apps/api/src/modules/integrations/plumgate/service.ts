@@ -237,7 +237,7 @@ export async function addCard(
   const client = makePlumClient();
   const reqBody = {
     userId: params.clientId,
-    phone: params.phone,
+    userPhone: params.phone,
     cardNumber: params.cardNumber.replace(/\s/g, ''),
     expireDate: normaliseExpiry(params.expiry),
     templateId: env.PLUM_TEMPLATE_ID,
