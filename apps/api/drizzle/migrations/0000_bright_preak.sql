@@ -48,6 +48,18 @@ CREATE TABLE "categories" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "client_devices" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"user_id" bigint NOT NULL,
+	"device_id" varchar(255) NOT NULL,
+	"fcm_token" text,
+	"platform" varchar(10) NOT NULL,
+	"app_version" varchar(50) NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "client_devices_device_id_unique" UNIQUE("device_id")
+);
+--> statement-breakpoint
 CREATE TABLE "client_sessions" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" bigserial NOT NULL,
@@ -158,7 +170,7 @@ CREATE TABLE "products" (
 	"merchant_id" bigint NOT NULL,
 	"category_id" bigint NOT NULL,
 	"name" varchar(200) NOT NULL,
-	"tan_narxi" numeric(15, 2) NOT NULL,
+	"price" numeric(15, 2) NOT NULL,
 	"mxik_code" varchar(50),
 	"package_code" integer,
 	"package_name" varchar(200),
@@ -226,6 +238,16 @@ CREATE TABLE "integration_logs" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "buyouts" (
+	"id" bigserial PRIMARY KEY NOT NULL,
+	"deal_id" uuid NOT NULL,
+	"merchant_id" bigint NOT NULL,
+	"branch_id" bigint NOT NULL,
+	"amount" bigint NOT NULL,
+	"status" varchar(10) DEFAULT 'pending' NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "deal_comments" (
 	"id" bigserial PRIMARY KEY NOT NULL,
 	"deal_id" uuid NOT NULL,
@@ -234,12 +256,21 @@ CREATE TABLE "deal_comments" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "deal_documents" (
+	"id" bigserial PRIMARY KEY NOT NULL,
+	"deal_id" uuid NOT NULL,
+	"file_id" bigint NOT NULL,
+	"document_type" varchar(50) NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "deal_documents_deal_id_document_type_unique" UNIQUE("deal_id","document_type")
+);
+--> statement-breakpoint
 CREATE TABLE "deal_items" (
 	"id" bigserial PRIMARY KEY NOT NULL,
 	"deal_id" uuid NOT NULL,
 	"product_id" bigint,
 	"product_name" varchar(200) NOT NULL,
-	"tan_narxi" numeric(15, 2) NOT NULL,
+	"price" numeric(15, 2) NOT NULL,
 	"mxik_code" varchar(50),
 	"package_code" integer,
 	"package_name" varchar(200),
@@ -277,7 +308,6 @@ CREATE TABLE "deals" (
 	"score_sum" numeric(10, 2),
 	"scoring_decision" varchar(20),
 	"lang" varchar(5) DEFAULT 'ru' NOT NULL,
-	"pdf_url" text,
 	"deal_number" bigserial NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "deals_deal_number_unique" UNIQUE("deal_number")
@@ -372,11 +402,23 @@ CREATE TABLE "push_subscriptions" (
 	CONSTRAINT "push_subscriptions_endpoint_unique" UNIQUE("endpoint")
 );
 --> statement-breakpoint
+CREATE TABLE "files" (
+	"id" bigserial PRIMARY KEY NOT NULL,
+	"object_key" text NOT NULL,
+	"bucket" varchar(100) NOT NULL,
+	"mime_type" varchar(100),
+	"original_name" varchar(255),
+	"uploaded_by_type" varchar(20) NOT NULL,
+	"uploaded_by_id" bigint,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 ALTER TABLE "admin_sessions" ADD CONSTRAINT "admin_sessions_admin_user_id_admin_users_id_fk" FOREIGN KEY ("admin_user_id") REFERENCES "public"."admin_users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "admin_users" ADD CONSTRAINT "admin_users_role_id_roles_id_fk" FOREIGN KEY ("role_id") REFERENCES "public"."roles"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "blacklist" ADD CONSTRAINT "blacklist_added_by_admin_id_admin_users_id_fk" FOREIGN KEY ("added_by_admin_id") REFERENCES "public"."admin_users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "branches" ADD CONSTRAINT "branches_merchant_id_merchants_id_fk" FOREIGN KEY ("merchant_id") REFERENCES "public"."merchants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "categories" ADD CONSTRAINT "categories_merchant_id_merchants_id_fk" FOREIGN KEY ("merchant_id") REFERENCES "public"."merchants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "client_devices" ADD CONSTRAINT "client_devices_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "client_sessions" ADD CONSTRAINT "client_sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "merchant_documents" ADD CONSTRAINT "merchant_documents_merchant_id_merchants_id_fk" FOREIGN KEY ("merchant_id") REFERENCES "public"."merchants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "merchant_documents" ADD CONSTRAINT "merchant_documents_uploaded_by_admin_id_admin_users_id_fk" FOREIGN KEY ("uploaded_by_admin_id") REFERENCES "public"."admin_users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -388,8 +430,13 @@ ALTER TABLE "merchant_users" ADD CONSTRAINT "merchant_users_branch_id_branches_i
 ALTER TABLE "products" ADD CONSTRAINT "products_merchant_id_merchants_id_fk" FOREIGN KEY ("merchant_id") REFERENCES "public"."merchants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "products" ADD CONSTRAINT "products_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "role_permissions" ADD CONSTRAINT "role_permissions_role_id_roles_id_fk" FOREIGN KEY ("role_id") REFERENCES "public"."roles"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "buyouts" ADD CONSTRAINT "buyouts_deal_id_deals_id_fk" FOREIGN KEY ("deal_id") REFERENCES "public"."deals"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "buyouts" ADD CONSTRAINT "buyouts_merchant_id_merchants_id_fk" FOREIGN KEY ("merchant_id") REFERENCES "public"."merchants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "buyouts" ADD CONSTRAINT "buyouts_branch_id_branches_id_fk" FOREIGN KEY ("branch_id") REFERENCES "public"."branches"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "deal_comments" ADD CONSTRAINT "deal_comments_deal_id_deals_id_fk" FOREIGN KEY ("deal_id") REFERENCES "public"."deals"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "deal_comments" ADD CONSTRAINT "deal_comments_admin_user_id_admin_users_id_fk" FOREIGN KEY ("admin_user_id") REFERENCES "public"."admin_users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "deal_documents" ADD CONSTRAINT "deal_documents_deal_id_deals_id_fk" FOREIGN KEY ("deal_id") REFERENCES "public"."deals"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "deal_documents" ADD CONSTRAINT "deal_documents_file_id_files_id_fk" FOREIGN KEY ("file_id") REFERENCES "public"."files"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "deal_items" ADD CONSTRAINT "deal_items_deal_id_deals_id_fk" FOREIGN KEY ("deal_id") REFERENCES "public"."deals"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "deal_items" ADD CONSTRAINT "deal_items_product_id_products_id_fk" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "deal_payment_schedules" ADD CONSTRAINT "deal_payment_schedules_deal_id_deals_id_fk" FOREIGN KEY ("deal_id") REFERENCES "public"."deals"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
