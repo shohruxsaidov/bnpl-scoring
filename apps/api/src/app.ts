@@ -5,6 +5,7 @@ import sensible from "@fastify/sensible";
 import rateLimit from "@fastify/rate-limit";
 import fastifyOtel from "@fastify/otel";
 import { trace } from "@opentelemetry/api";
+import pino from "pino";
 import dbPlugin from "./plugins/db.js";
 import cookiePlugin from "./plugins/cookie.js";
 import jwtPlugin from "./plugins/jwt.js";
@@ -55,6 +56,15 @@ const logger = {
     if (!span?.isRecording()) return {};
     const { traceId, spanId } = span.spanContext();
     return { traceId, spanId };
+  },
+  serializers: {
+    err: (err: Error & { body?: unknown; statusCode?: number }) => {
+      const base = pino.stdSerializers.err(err);
+      if (err.body !== undefined) {
+        return { ...base, body: err.body, statusCode: err.statusCode };
+      }
+      return base;
+    },
   },
   ...buildTransport(),
   redact: {
