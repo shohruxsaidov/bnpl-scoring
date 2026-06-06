@@ -1090,4 +1090,8 @@ const clientFullName = computed(() =>
 .fade-enter-from {
   opacity: 0;
 }
+
+@media (max-width: 600px) {
+  .client-grid { grid-template-columns: 1fr; }
+}
 </style>

@@ -790,11 +790,11 @@ function formatDateShort(iso: string): string {
 .panel-sub { font-size: 0.78rem; }
 
 /* ── Section ──────────────────────────────────────────────────────────────── */
-.section { padding: 1.2rem 1.4rem; border-top: 1px solid var(--border-subtle); }
+.section { padding: 1.2rem 1.4rem; border-top: 1px solid var(--border-subtle); overflow-x: auto; }
 .section-title { margin: 0 0 0.9rem; font-size: 0.92rem; font-weight: 800; }
 
 /* ── Data table ───────────────────────────────────────────────────────────── */
-.data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; min-width: 480px; }
 .data-table th {
   text-align: left; padding: 0.55rem 0.9rem;
   font-size: 0.72rem; font-weight: 700; color: var(--text-secondary);
@@ -914,4 +914,21 @@ function formatDateShort(iso: string): string {
 
 /* ── Utilities ────────────────────────────────────────────────────────────── */
 .muted { color: var(--text-secondary); }
+
+@media (max-width: 900px) {
+  .top-section { flex-direction: column; }
+  .side-panels { width: 100%; flex-direction: row; border-left: none; border-top: 1px solid var(--border-subtle); }
+  .side-panel + .side-panel { border-top: none; border-left: 1px solid var(--border-subtle); }
+  .field-row { grid-template-columns: 1fr 1fr; }
+  .k-parties { grid-template-columns: 1fr; }
+  .uchet-summary { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 600px) {
+  .field-row { grid-template-columns: 1fr; }
+  .side-panels { flex-direction: column; }
+  .side-panel + .side-panel { border-left: none; border-top: 1px solid var(--border-subtle); }
+  .uchet-summary { grid-template-columns: 1fr; }
+  .grafik-legend { flex-wrap: wrap; gap: 0.5rem; }
+}
 </style>

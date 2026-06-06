@@ -278,6 +278,7 @@ function openDeal(id: string) {
   padding: 0;
   overflow: hidden;
 }
+@media (max-width: 600px) { .table-card { overflow-x: auto; } }
 .table-toolbar {
   border-bottom: 1px solid var(--border-subtle);
   padding: 0.75rem 1rem;

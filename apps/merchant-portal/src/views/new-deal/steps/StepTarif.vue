@@ -210,4 +210,11 @@ function next() {
   align-items: center;
   gap: 0.5rem;
 }
+
+@media (max-width: 700px) {
+  .tariffs { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .tariffs { grid-template-columns: 1fr; }
+}
 </style>

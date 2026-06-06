@@ -686,4 +686,11 @@ async function signSubmit() {
 .mt-1 {
   margin-top: 0.4rem;
 }
+
+@media (max-width: 700px) {
+  .summary-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .summary-grid { grid-template-columns: 1fr; }
+}
 </style>

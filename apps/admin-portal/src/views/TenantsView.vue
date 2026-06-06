@@ -329,6 +329,7 @@ function confirmDelete(tenant: Tenant) {
   padding: 0;
   overflow: hidden;
 }
+@media (max-width: 600px) { .table-wrap { overflow-x: auto; } }
 .t-name {
   font-weight: 700;
   font-size: 0.86rem;

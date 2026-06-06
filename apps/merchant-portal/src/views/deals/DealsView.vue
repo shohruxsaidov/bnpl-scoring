@@ -255,6 +255,7 @@ function openDeal(deal: DealListItem) {
   padding: 0;
   overflow: hidden;
 }
+@media (max-width: 600px) { .table-card { overflow-x: auto; } }
 
 :deep(.deals-table) {
   font-size: 0.875rem;

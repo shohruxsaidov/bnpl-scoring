@@ -212,6 +212,7 @@ function remove(tariff: Tariff) {
 }
 .table-wrap {
   padding: 1.4rem;
+  overflow-x: auto;
 }
 .t-name {
   font-weight: 700;
@@ -271,5 +272,9 @@ function remove(tariff: Tariff) {
 }
 .form :deep(.p-inputnumber) {
   width: 100%;
+}
+
+@media (max-width: 600px) {
+  .grid2 { grid-template-columns: 1fr; }
 }
 </style>

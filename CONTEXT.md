@@ -264,7 +264,7 @@ Key decisions live in `docs/adr/` as thematic files:
 |---|---|
 | `0001-backend-stack-architecture.md` | Node.js 25 + Fastify 5, modular monolith, REST API, Drizzle ORM, pg-boss |
 | `0002-multi-tenancy-domain-model.md` | Shared DB + `merchant_id`, per-merchant product catalog, sub-resource endpoints, soft delete |
-| `0003-frontend-stack-ui.md` | Turborepo monorepo, Vue 3 + PrimeVue, ClickUp dual theme, responsive design, SSE wizard progress, lazy tab queries |
+| `0003-frontend-stack-ui.md` | Turborepo monorepo, Vue 3 + PrimeVue, ClickUp dual theme, responsive 450px minimum, SSE wizard progress, lazy tab queries |
 | `0004-authentication-authorization.md` | Three tables (`admin_users`, `merchant_users`, `users`), scoped JWTs, client phone+OTP+MyID registration, single-role session + login picker, server-side sessions |
 | `0005-integrations-infrastructure.md` | ky HTTP client factory, integration_logs table, fire-and-forget logging, PINFL/token redaction, MyID Bearer auth flow |
 | `0006deployment-strategy.md` | Docker + nginx, blue-green zero-downtime backend, atomic symlink frontend, expand/contract migrations |

@@ -257,6 +257,7 @@ function openDeal(deal: Deal) {
 
 /* ── Table ──────────────────────────────────────────────────────────────── */
 .table-card { padding: 0; overflow: hidden; }
+@media (max-width: 600px) { .table-card { overflow-x: auto; } }
 :deep(.deals-table .p-datatable-thead > tr > th) {
   background: var(--bg-surface); border-bottom: 1px solid var(--border-subtle);
   font-size: 0.72rem; font-weight: 700; color: var(--text-secondary);
@@ -293,4 +294,9 @@ function openDeal(deal: Deal) {
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 900px) { .kpi-strip { grid-template-columns: repeat(2,1fr); } }
 @media (max-width: 600px) { .kpi-strip { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 450px) {
+  .filters-bar { flex-direction: column; align-items: stretch; }
+  .search-wrap { min-width: 0; }
+  .status-select { width: 100%; }
+}
 </style>

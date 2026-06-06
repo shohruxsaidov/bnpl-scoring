@@ -218,4 +218,8 @@ function saveEdit(item: PlatformConfigItem) {
   color: var(--success);
   border-color: var(--success);
 }
+
+@media (max-width: 800px) {
+  .settings { grid-template-columns: 1fr; }
+}
 </style>

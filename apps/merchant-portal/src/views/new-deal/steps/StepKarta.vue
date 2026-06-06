@@ -683,4 +683,11 @@ async function next() {
 .fade-enter-from {
   opacity: 0;
 }
+
+@media (max-width: 700px) {
+  .cards-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .cards-grid { grid-template-columns: 1fr; }
+}
 </style>

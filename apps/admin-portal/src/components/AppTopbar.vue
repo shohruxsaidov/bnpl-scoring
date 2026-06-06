@@ -3,6 +3,9 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 
+defineProps<{ showMenuBtn?: boolean }>()
+const emit = defineEmits<{ (e: 'menu'): void }>()
+
 const route = useRoute()
 const { t, locale } = useI18n()
 
@@ -24,6 +27,9 @@ function setLang(lang: 'uz' | 'ru') {
 <template>
   <header class="topbar">
     <div class="left">
+      <button v-if="showMenuBtn" class="menu-btn" @click="emit('menu')">
+        <i class="pi pi-bars" />
+      </button>
       <h1 class="page-title">{{ title }}</h1>
       <nav v-if="breadcrumb.length" class="crumbs">
         <template v-for="(c, i) in breadcrumb" :key="i">
@@ -161,6 +167,25 @@ function setLang(lang: 'uz' | 'ru') {
 
 .search input::placeholder {
   color: var(--text-secondary);
+}
+
+.menu-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+@media (max-width: 767px) {
+  .topbar { padding: 0 1rem; }
+  .search { width: auto; flex: 1; min-width: 0; }
+  .right { gap: 0.5rem; }
 }
 
 .bell {

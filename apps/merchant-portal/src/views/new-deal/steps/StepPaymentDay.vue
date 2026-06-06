@@ -221,4 +221,10 @@ function fmtDate(iso: string) {
   align-items: center;
   gap: 0.5rem;
 }
+
+@media (max-width: 480px) {
+  .day-grid { grid-template-columns: repeat(7, 1fr); }
+  .sch-row { grid-template-columns: 40px 1fr 1fr; }
+  .sch-row > :nth-child(3) { display: none; }
+}
 </style>

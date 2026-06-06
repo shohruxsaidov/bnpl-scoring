@@ -544,4 +544,11 @@ function next() {
   align-items: center;
   gap: 0.4rem;
 }
+
+@media (max-width: 900px) {
+  .step-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .product-grid { grid-template-columns: 1fr; }
+}
 </style>

@@ -137,5 +137,12 @@ const STATUS_COLORS: Record<ScoringDetail['status'], { fg: string; bg: string }>
 .error-state i { font-size: 2.2rem; color: var(--danger); }
 .error-state p { margin: 0; font-weight: 600; color: var(--text-secondary); }
 
-@media (max-width: 800px) { .grid-2 { grid-template-columns: 1fr; } }
+@media (max-width: 800px) {
+  .grid-2 { grid-template-columns: 1fr; }
+  .header-card { flex-direction: column; align-items: flex-start; }
+  .hc-score { align-items: flex-start; }
+}
+@media (max-width: 600px) {
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
 </style>

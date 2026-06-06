@@ -269,6 +269,7 @@ async function markPaid(id: string) {
 
 /* ── Table card ───────────────────────────────────────────────────────────── */
 .table-card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 14px; overflow: hidden; }
+@media (max-width: 600px) { .table-card { overflow-x: auto; } }
 
 /* ── Toolbar ──────────────────────────────────────────────────────────────── */
 .toolbar { display: flex; align-items: center; gap: 0.8rem; padding: 0.9rem 1rem; border-bottom: 1px solid var(--border-subtle); flex-wrap: wrap; }
@@ -354,4 +355,11 @@ async function markPaid(id: string) {
 .item-name { font-weight: 600; }
 .item-num { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
 .items-empty { color: var(--text-secondary); text-align: center; padding: 0.5rem; }
+
+@media (max-width: 700px) {
+  .stat-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .stat-grid { grid-template-columns: 1fr; }
+}
 </style>

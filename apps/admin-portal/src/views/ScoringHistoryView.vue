@@ -225,6 +225,7 @@ function openDetail(row: ScoringListItem) {
 .filter-select { width: 200px; flex-shrink: 0; }
 
 .table-card { padding: 0; overflow: hidden; }
+@media (max-width: 600px) { .table-card { overflow-x: auto; } }
 :deep(.grid-table .p-datatable-thead > tr > th) {
   background: var(--bg-surface); border-bottom: 1px solid var(--border-subtle);
   font-size: 0.72rem; font-weight: 700; color: var(--text-secondary);
@@ -261,4 +262,11 @@ function openDetail(row: ScoringListItem) {
 .error-state p { margin: 0; font-weight: 600; color: var(--text-secondary); }
 
 @media (max-width: 900px) { .kpi-strip { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 480px) { .kpi-strip { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 450px) {
+  .filters-bar { flex-direction: column; align-items: stretch; }
+  .search-wrap { min-width: 0; }
+  .filter-select { width: 100%; }
+}
+@media (max-width: 600px) { .table-card { overflow-x: auto; } }
 </style>

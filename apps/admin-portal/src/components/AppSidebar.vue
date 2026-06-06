@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import ThemeToggle from './ThemeToggle.vue'
 
-const props = defineProps<{ collapsed: boolean }>()
+const props = defineProps<{ collapsed: boolean; mobileOpen?: boolean; isMobile?: boolean }>()
 const emit = defineEmits<{ (e: 'toggle'): void }>()
 
 const auth = useAuthStore()
@@ -52,7 +52,7 @@ async function logout() {
 </script>
 
 <template>
-  <aside class="sidebar" :class="{ collapsed: props.collapsed }">
+  <aside class="sidebar" :class="{ collapsed: props.collapsed, 'mobile-open': props.mobileOpen, 'is-mobile': props.isMobile }">
     <div class="brand">
       <div class="logo-mark">S</div>
       <div v-if="!props.collapsed" class="brand-text">
@@ -115,6 +115,23 @@ async function logout() {
 }
 .sidebar.collapsed {
   width: 64px;
+}
+
+.sidebar.is-mobile {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  height: 100dvh;
+  z-index: 50;
+  transform: translateX(-100%);
+  transition: transform 0.25s ease;
+  width: 240px;
+}
+
+.sidebar.is-mobile.mobile-open {
+  transform: translateX(0);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.18);
 }
 
 .brand {

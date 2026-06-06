@@ -561,4 +561,17 @@ function healthColor(h: string) {
   color: var(--text-secondary);
   text-align: right;
 }
+
+@media (max-width: 900px) {
+  .charts-row { grid-template-columns: 1fr; }
+  .data-row { grid-template-columns: 1fr; }
+  .integ-row { grid-template-columns: repeat(3, 1fr); }
+  .integ-item { border-right: none; border-bottom: 1px solid var(--border-subtle); }
+  .integ-item:last-child { border-bottom: none; }
+}
+
+@media (max-width: 600px) {
+  .integ-row { grid-template-columns: 1fr 1fr; }
+  .integ-detail { display: none; }
+}
 </style>

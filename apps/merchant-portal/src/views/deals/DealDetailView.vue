@@ -405,4 +405,17 @@ function basketTotal(item: { price: string; quantity: number }): number {
 }
 
 .not-found i { font-size: 2.4rem; color: var(--text-secondary); }
+
+@media (max-width: 900px) {
+  .top-section { flex-direction: column; }
+  .side-panels { width: 100%; flex-direction: row; border-left: none; border-top: 1px solid var(--border-subtle); }
+  .side-panel + .side-panel { border-top: none; border-left: 1px solid var(--border-subtle); }
+  .field-row { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 600px) {
+  .field-row { grid-template-columns: 1fr; }
+  .side-panels { flex-direction: column; }
+  .side-panel + .side-panel { border-left: none; border-top: 1px solid var(--border-subtle); }
+}
 </style>

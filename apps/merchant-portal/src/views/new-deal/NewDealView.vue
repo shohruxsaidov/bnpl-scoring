@@ -60,6 +60,12 @@ function stepLabel(key: string): string {
   return STEP_LABEL_KEYS[key] ? t(STEP_LABEL_KEYS[key]) : key
 }
 
+const mobileStepLabel = computed(() => {
+  const idx = deal.currentIndex
+  const label = stepLabel(deal.currentStep)
+  return `${idx + 1} / ${deal.steps.length} — ${label}`
+})
+
 onMounted(() => {
   const fromReg = sessionStorage.getItem('myid_callback_complete')
   if (fromReg) {
@@ -136,6 +142,7 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
         <span class="step-label">{{ stepLabel(step.key) }}</span>
         <div v-if="idx < deal.steps.length - 1" class="connector" />
       </div>
+      <div class="step-mobile-label">{{ mobileStepLabel }}</div>
     </div>
 
     <!-- ── Active step ───────────────────────────────────────────────────── -->
@@ -260,5 +267,32 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
   font-size: 0.85rem;
   color: var(--text-secondary);
   margin: 0;
+}
+
+.step-mobile-label {
+  display: none;
+}
+
+@media (max-width: 450px) {
+  .stepper {
+    flex-wrap: wrap;
+    padding: 0.85rem 1rem 0.7rem;
+    gap: 0;
+  }
+  .step { gap: 0.3rem; }
+  .step-label { display: none; }
+  .step-icon { width: 36px; height: 36px; font-size: 0.85rem; }
+  .connector { top: 18px; }
+  .step-mobile-label {
+    display: block;
+    width: 100%;
+    margin-top: 0.65rem;
+    padding-top: 0.65rem;
+    border-top: 1px solid var(--border-subtle);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--accent-2);
+    text-align: center;
+  }
 }
 </style>

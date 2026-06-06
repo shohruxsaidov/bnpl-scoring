@@ -274,7 +274,7 @@ function goAll() {
   font-size: 0.72rem;
 }
 
-@media (max-width: 420px) {
+@media (max-width: 500px) {
   .popup {
     width: calc(100vw - 2rem);
     right: -0.5rem;

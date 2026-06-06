@@ -526,4 +526,11 @@ function toggleStatus() {
   font-size: 2rem;
   color: var(--danger);
 }
+
+@media (max-width: 900px) {
+  .ov-stats { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+  .ov-stats { grid-template-columns: 1fr 1fr; }
+}
 </style>

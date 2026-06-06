@@ -329,4 +329,7 @@ function submitComment() {
   .board { grid-template-columns: 1fr; }
   .comment-panel { width: 100%; }
 }
+@media (max-width: 450px) {
+  .filter-select { width: 100%; }
+}
 </style>

@@ -146,7 +146,7 @@ body {
   background-attachment: fixed;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
-  min-width: 768px;
+  min-width: 0;
 }
 
 #app {
@@ -772,4 +772,8 @@ a {
 .p-column-filter-menu-button-active {
   color: var(--accent-1) !important;
   background: color-mix(in srgb, var(--accent-1) 12%, transparent) !important;
+}
+
+@media (max-width: 600px) {
+  .table-card, .table-wrap { overflow-x: auto; }
 }

@@ -738,4 +738,9 @@ function hideDealDropdown() {
 
 @media (max-width: 1100px) { .kpi-strip { grid-template-columns: repeat(3,1fr); } }
 @media (max-width: 700px) { .kpi-strip { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 450px) {
+  .filters-bar { flex-direction: column; align-items: stretch; }
+  .search-wrap { min-width: 0; }
+  .filter-select { width: 100%; }
+}
 </style>
