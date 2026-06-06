@@ -144,7 +144,7 @@ function normalisePcType(raw: string): 'uzcard' | 'humo' {
 }
 
 function toPlumCard(r: PlumCardItem): PlumCard {
-  const pcType = normalisePcType(r.pcType);
+  const pcType = normalisePcType(`${r.pcType}`);
   return {
     plumCardId: r.cardId,
     maskedPan: r.number,
