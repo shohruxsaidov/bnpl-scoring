@@ -230,7 +230,7 @@ export async function addCard(
     clientId: string;
     phone: string;
     cardNumber: string;
-    expiry: string; // accepts "MM/YY" or "MMYY"
+    expiry: string; // accepts "YYMM"
   },
 ): Promise<PlumAddCardResult> {
   if (env.PLUM_MOCK) return mockAddCard(params);
@@ -263,7 +263,7 @@ export async function addCard(
 
     return { sessionId: data.sessionId, maskedPhone: data.phone };
   } catch (err) {
-    console.error({ err, reqBody }, 'Error in createUserCard');
+    console.error({ err: (err as any).data, reqBody }, 'Error in createUserCard');
     const toThrow = await parsePlumError(err);
     logIntegration(db, {
       integration: 'plumgate',
