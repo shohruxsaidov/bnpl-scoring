@@ -572,7 +572,7 @@ async function parsePlumError(err: unknown): Promise<IntegrationError | Error> {
   if (err instanceof HTTPError) {
     let body: unknown = null;
     try {
-      body = await err.response.json();
+      body = err.data
     } catch {
       body = await err.response.text().catch(() => null);
     }
