@@ -57,6 +57,7 @@ const sidebarVisible = computed(() => isMobile.value ? mobileOpen.value : true)
       :mobile-open="sidebarVisible"
       :is-mobile="isMobile"
       @toggle="handleToggle"
+      @close="mobileOpen = false"
     />
     <div class="main">
       <AppTopbar :show-menu-btn="isMobile" @menu="handleToggle" @search="searchOpen = true" />

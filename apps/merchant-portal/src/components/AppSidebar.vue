@@ -6,7 +6,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useNotificationsStore } from '@/stores/notifications'
 
 const props = defineProps<{ collapsed: boolean; mobileOpen?: boolean; isMobile?: boolean }>()
-const emit = defineEmits<{ (e: 'toggle'): void }>()
+const emit = defineEmits<{ (e: 'toggle'): void; (e: 'close'): void }>()
 
 const auth = useAuthStore()
 const notificationsStore = useNotificationsStore()
@@ -61,7 +61,7 @@ async function logout() {
 
     <nav class="nav">
       <template v-for="item in mainNav" :key="item.to">
-        <RouterLink v-if="item.show" :to="item.to" class="nav-link" exact-active-class="active" :title="item.label">
+        <RouterLink v-if="item.show" :to="item.to" class="nav-link" exact-active-class="active" :title="item.label" @click="props.isMobile && emit('close')">
           <i :class="item.icon" />
           <span v-if="!props.collapsed">{{ item.label }}</span>
           <span v-if="item.to === '/notifications' && notificationsStore.unreadCount > 0" class="nav-badge"
@@ -78,7 +78,7 @@ async function logout() {
 
       <template v-if="canAdminSection">
         <template v-for="item in adminNav" :key="item.to">
-          <RouterLink v-if="item.show" :to="item.to" class="nav-link" exact-active-class="active" :title="item.label">
+          <RouterLink v-if="item.show" :to="item.to" class="nav-link" exact-active-class="active" :title="item.label" @click="props.isMobile && emit('close')">
             <i :class="item.icon" />
             <span v-if="!props.collapsed">{{ item.label }}</span>
           </RouterLink>
