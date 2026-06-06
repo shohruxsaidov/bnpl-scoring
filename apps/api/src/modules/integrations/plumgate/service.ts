@@ -263,6 +263,7 @@ export async function addCard(
 
     return { sessionId: data.sessionId, maskedPhone: data.phone };
   } catch (err) {
+    console.error({ err, reqBody }, 'Error in createUserCard');
     const toThrow = await parsePlumError(err);
     logIntegration(db, {
       integration: 'plumgate',
