@@ -293,7 +293,7 @@ export async function confirmCard(
 ): Promise<PlumCard> {
   if (env.PLUM_MOCK) return mockConfirmCard(params);
   const client = makePlumClient();
-  const reqBody = { sessionId: params.sessionId, smsCode: params.otp };
+  const reqBody = { session: params.sessionId, otp: params.otp, cardName: 'Default card name' };
 
   const requestTimestamp = new Date();
   try {
