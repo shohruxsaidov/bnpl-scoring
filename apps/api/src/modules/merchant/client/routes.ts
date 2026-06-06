@@ -53,11 +53,11 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
     q: Type.String({ minLength: 1, maxLength: 100 }),
   });
   const OtpBody = Type.Object({
-    phone: Type.String({ minLength: 1 }),
+    phone: Type.String({ minLength: 12, maxLength: 12 }),
   });
   const OtpVerifyBody = Type.Object({
-    phone: Type.String({ minLength: 1 }),
-    code: Type.String({ minLength: 1 }),
+    phone: Type.String({ minLength: 12, maxLength: 12 }),
+    code: Type.String({ minLength: 4, maxLength: 4 }),
   });
   const MyidSessionBody = Type.Object({
     regToken: Type.String({ minLength: 1 }),
@@ -83,7 +83,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
   );
 
   /* ── OTP ────────────────────────────────────────────────────────────────── */
-
+  // merchant/client/otp
   fastify.post(
     '/otp',
     { schema: { body: OtpBody }, preHandler: app.verifyMerchantJwt },
@@ -139,7 +139,9 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
 
       const existing = await findClientByPinflAndMerchant(db, pinfl, BigInt(payload.merchantId));
       if (existing) return reply.code(409).sendError('client_already_registered');
-      const redirectUrl = encodeURIComponent(env.MERCHANT_PORTAL_URL + '/myid/callback/registration');
+      const redirectUrl = encodeURIComponent(
+        env.MERCHANT_PORTAL_URL + '/myid/callback/registration',
+      );
 
       const myidResult = await createMyidSession(db, redis, pinfl, request.ip, redirectUrl);
 
@@ -297,7 +299,9 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
     { schema: { body: MyidSignSessionBody }, preHandler: app.verifyMerchantJwt },
     async (request) => {
       const { pinfl } = request.body;
-      const redirectUrl = encodeURIComponent(env.MERCHANT_PORTAL_URL + '/myid/callback/signing_deal');
+      const redirectUrl = encodeURIComponent(
+        env.MERCHANT_PORTAL_URL + '/myid/callback/signing_deal',
+      );
 
       const myidResult = await createMyidSession(db, redis, pinfl, request.ip, redirectUrl);
 
@@ -380,10 +384,8 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
           lang: 'ru',
         });
       } catch (err: any) {
-        if (err.code === 'tariff_not_found')
-          return reply.code(400).sendError('tariff_not_found');
-        if (err.code === 'product_not_found')
-          return reply.code(400).sendError('product_not_found');
+        if (err.code === 'tariff_not_found') return reply.code(400).sendError('tariff_not_found');
+        if (err.code === 'product_not_found') return reply.code(400).sendError('product_not_found');
         throw err;
       }
 

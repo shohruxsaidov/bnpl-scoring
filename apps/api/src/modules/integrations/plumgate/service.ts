@@ -9,7 +9,7 @@
  * logged with method_name so the full context is preserved.
  */
 
-import ky from 'ky';
+import ky, { HTTPError } from 'ky';
 import type { Db } from '../../../db';
 import { env } from '../../../env';
 import { IntegrationError } from '../../../lib/integrations';
@@ -204,18 +204,19 @@ export async function listCards(db: Db, clientId: string): Promise<PlumCard[]> {
 
     return (data.result?.cards ?? []).map(toPlumCard);
   } catch (err) {
+    const toThrow = await parsePlumError(err);
     logIntegration(db, {
       integration: 'plumgate',
       methodName: 'getAllUserCards',
       methodType: 'GET',
       request: reqParams,
-      response: null,
-      status: err instanceof IntegrationError ? err.statusCode : null,
-      errorMessage: err instanceof Error ? err.message : String(err),
+      response: toThrow instanceof IntegrationError ? toThrow.body : null,
+      status: toThrow instanceof IntegrationError ? toThrow.statusCode : null,
+      errorMessage: toThrow.message,
       requestTimestamp,
       responseTimestamp: new Date(),
     });
-    throw err;
+    throw toThrow;
   }
 }
 
@@ -262,18 +263,19 @@ export async function addCard(
 
     return { sessionId: data.sessionId, maskedPhone: data.phone };
   } catch (err) {
+    const toThrow = await parsePlumError(err);
     logIntegration(db, {
       integration: 'plumgate',
       methodName: 'createUserCard',
       methodType: 'POST',
       request: reqBody,
-      response: null,
-      status: err instanceof IntegrationError ? err.statusCode : null,
-      errorMessage: err instanceof Error ? err.message : String(err),
+      response: toThrow instanceof IntegrationError ? toThrow.body : null,
+      status: toThrow instanceof IntegrationError ? toThrow.statusCode : null,
+      errorMessage: toThrow.message,
       requestTimestamp,
       responseTimestamp: new Date(),
     });
-    throw err;
+    throw toThrow;
   }
 }
 
@@ -308,18 +310,19 @@ export async function confirmCard(
 
     return toPlumCard(data);
   } catch (err) {
+    const toThrow = await parsePlumError(err);
     logIntegration(db, {
       integration: 'plumgate',
       methodName: 'confirmUserCardCreate',
       methodType: 'POST',
       request: reqBody,
-      response: null,
-      status: err instanceof IntegrationError ? err.statusCode : null,
-      errorMessage: err instanceof Error ? err.message : String(err),
+      response: toThrow instanceof IntegrationError ? toThrow.body : null,
+      status: toThrow instanceof IntegrationError ? toThrow.statusCode : null,
+      errorMessage: toThrow.message,
       requestTimestamp,
       responseTimestamp: new Date(),
     });
-    throw err;
+    throw toThrow;
   }
 }
 
@@ -367,18 +370,19 @@ async function scoreUzcard(db: Db, userCardId: string): Promise<PlumScoreResult>
 
     scoringId = data.sessionId;
   } catch (err) {
+    const toThrow = await parsePlumError(err);
     logIntegration(db, {
       integration: 'plumgate',
       methodName: 'createScoringCard',
       methodType: 'POST',
       request: createBody,
-      response: null,
-      status: err instanceof IntegrationError ? err.statusCode : null,
-      errorMessage: err instanceof Error ? err.message : String(err),
+      response: toThrow instanceof IntegrationError ? toThrow.body : null,
+      status: toThrow instanceof IntegrationError ? toThrow.statusCode : null,
+      errorMessage: toThrow.message,
       requestTimestamp: createRequestTimestamp,
       responseTimestamp: new Date(),
     });
-    throw err;
+    throw toThrow;
   }
 
   // Step 2: poll scoringGetPoint until result arrives (max 10 attempts × 1 s)
@@ -411,15 +415,16 @@ async function scoreUzcard(db: Db, userCardId: string): Promise<PlumScoreResult>
         };
       }
     } catch (err) {
+      const toLog = await parsePlumError(err);
       // Log each failed poll attempt but keep looping
       logIntegration(db, {
         integration: 'plumgate',
         methodName: 'scoringGetPoint',
         methodType: 'GET',
         request: { ...pollParams, scoringId, attempt },
-        response: null,
-        status: err instanceof IntegrationError ? err.statusCode : null,
-        errorMessage: err instanceof Error ? err.message : String(err),
+        response: toLog instanceof IntegrationError ? toLog.body : null,
+        status: toLog instanceof IntegrationError ? toLog.statusCode : null,
+        errorMessage: toLog.message,
         requestTimestamp,
         responseTimestamp: new Date(),
       });
@@ -458,18 +463,19 @@ async function scoreHumo(db: Db, userCardId: string): Promise<PlumScoreResult> {
 
     sessionId = data.sessionId;
   } catch (err) {
+    const toThrow = await parsePlumError(err);
     logIntegration(db, {
       integration: 'plumgate',
       methodName: 'HumoScoring',
       methodType: 'POST',
       request: createBody,
-      response: null,
-      status: err instanceof IntegrationError ? err.statusCode : null,
-      errorMessage: err instanceof Error ? err.message : String(err),
+      response: toThrow instanceof IntegrationError ? toThrow.body : null,
+      status: toThrow instanceof IntegrationError ? toThrow.statusCode : null,
+      errorMessage: toThrow.message,
       requestTimestamp: createRequestTimestamp,
       responseTimestamp: new Date(),
     });
-    throw err;
+    throw toThrow;
   }
 
   // Step 2: HumoScoringAvg (poll, max 10 attempts × 1 s)
@@ -502,14 +508,15 @@ async function scoreHumo(db: Db, userCardId: string): Promise<PlumScoreResult> {
         };
       }
     } catch (err) {
+      const toLog = await parsePlumError(err);
       logIntegration(db, {
         integration: 'plumgate',
         methodName: 'HumoScoringAvg',
         methodType: 'POST',
         request: { ...avgBody, attempt },
-        response: null,
-        status: err instanceof IntegrationError ? err.statusCode : null,
-        errorMessage: err instanceof Error ? err.message : String(err),
+        response: toLog instanceof IntegrationError ? toLog.body : null,
+        status: toLog instanceof IntegrationError ? toLog.statusCode : null,
+        errorMessage: toLog.message,
         requestTimestamp,
         responseTimestamp: new Date(),
       });
@@ -523,4 +530,16 @@ async function scoreHumo(db: Db, userCardId: string): Promise<PlumScoreResult> {
 
 function delay(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+/** Extracts vendor body from an HTTPError and returns a ready-to-throw IntegrationError. */
+async function parsePlumError(err: unknown): Promise<IntegrationError | Error> {
+  if (err instanceof HTTPError) {
+    let body: unknown = null;
+    try {
+      body = await err.response.json();
+    } catch {}
+    return new IntegrationError('plumgate', err.response.status, body);
+  }
+  return err instanceof Error ? err : new Error(String(err));
 }

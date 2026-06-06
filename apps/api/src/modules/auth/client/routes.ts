@@ -165,7 +165,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
 
     const regToken = app.jwt.sign(
       {
-        phone: payload.phone,
+        phone: payload.phone.replace('+', ''),
         pinfl,
         myidSessionId: myidResult.sessionId,
         step: 'pinfl_verified',
