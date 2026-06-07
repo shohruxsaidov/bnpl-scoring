@@ -151,6 +151,7 @@ export const merchants = pgTable('merchants', {
   logoUrl: text('logo_url'),
   contractNumber: varchar('contract_number', { length: 100 }),
   active: boolean('active').notNull().default(true),
+  kybStatus: varchar('kyb_status', { length: 20 }).notNull().default('verified'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 

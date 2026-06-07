@@ -1,9 +1,12 @@
 import type { FastifyInstance } from 'fastify'
-import { getMerchantHealth } from './service'
+import { getMerchantHealth, getKybStats } from './service'
 
 export default async function adminOverviewRoutes(app: FastifyInstance) {
   app.get('/', async () => {
-    const merchantHealth = await getMerchantHealth(app.db)
-    return { merchantHealth }
+    const [merchantHealth, kybStats] = await Promise.all([
+      getMerchantHealth(app.db),
+      getKybStats(app.db),
+    ])
+    return { merchantHealth, kybStats }
   })
 }

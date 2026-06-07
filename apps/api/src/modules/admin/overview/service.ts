@@ -3,6 +3,20 @@ import type { Db } from '../../../db'
 import { deals } from '../../deals/db/schema'
 import { merchants } from '../../id/db/schema'
 
+export async function getKybStats(db: Db) {
+  const rows = await db
+    .select({ kybStatus: merchants.kybStatus, n: count() })
+    .from(merchants)
+    .groupBy(merchants.kybStatus)
+
+  const map = new Map(rows.map((r) => [r.kybStatus, Number(r.n)]))
+  return {
+    pending: map.get('pending') ?? 0,
+    verified: map.get('verified') ?? 0,
+    rejected: map.get('rejected') ?? 0,
+  }
+}
+
 export async function getMerchantHealth(db: Db) {
   const [dealCounts, overdueCounts, allMerchants] = await Promise.all([
     db

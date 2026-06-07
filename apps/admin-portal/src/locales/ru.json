@@ -354,7 +354,13 @@
     "myidDetail": "Идентификация OK",
     "plumgateDetail": "Высокая задержка 2.8s",
     "paymeDetail": "Платежи OK",
-    "clickDetail": "Платежи OK"
+    "clickDetail": "Платежи OK",
+    "kybPending": "KYB: На проверке",
+    "kybVerified": "KYB: Верифицированы",
+    "kybRejected": "KYB: Отклонены",
+    "kybPendingDelta": "ожидают проверки",
+    "kybVerifiedDelta": "проверено",
+    "kybRejectedDelta": "отклонено"
   },
   "tenants": {
     "summary": "{total} арендаторов · {active} активных",

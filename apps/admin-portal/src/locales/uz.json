@@ -346,7 +346,13 @@
     "myidDetail": "Identifikatsiya OK",
     "plumgateDetail": "Yuqori kechikish 2.8s",
     "paymeDetail": "To'lovlar OK",
-    "clickDetail": "To'lovlar OK"
+    "clickDetail": "To'lovlar OK",
+    "kybPending": "KYB: Ko'rib chiqilmoqda",
+    "kybVerified": "KYB: Tasdiqlangan",
+    "kybRejected": "KYB: Rad etilgan",
+    "kybPendingDelta": "tekshiruv kutmoqda",
+    "kybVerifiedDelta": "tasdiqlangan",
+    "kybRejectedDelta": "rad etilgan"
   },
   "tenants": {
     "summary": "{total} merchant · {active} faol",

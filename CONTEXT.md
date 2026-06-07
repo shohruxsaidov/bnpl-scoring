@@ -11,8 +11,12 @@ A Finsum Nasiya staff member who operates the admin platform. Identified by emai
 _Avoid_: system user, operator. (Note: **Superadmin** is a specific admin Role, not a synonym for Platform Admin.)
 
 **Merchant**:
-A business entity that operates on the platform with one or more Branches. Has its own product catalog and selects which Finsum-managed Tariffs to offer its clients.
+A business entity that operates on the platform with one or more Branches. Has its own product catalog and selects which Finsum-managed Tariffs to offer its clients. Carries a **KYB Status**.
 _Avoid_: Tenant, partner, store
+
+**KYB Status** (Know Your Business):
+The Finsum-managed verification state of a Merchant. Three values: `pending` (submitted, awaiting review), `verified` (approved — may issue Deals), `rejected` (not approved). Stored as `kyb_status` on the `merchants` row. All Merchants created before KYB was introduced are seeded as `verified`. Managed exclusively by Platform Admins.
+_Avoid_: verification status, approval status, merchant status
 
 **Branch**:
 A single physical location belonging to one Merchant. Agents are assigned to exactly one Branch. Deals and Employees are scoped to a Branch.

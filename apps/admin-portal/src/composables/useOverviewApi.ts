@@ -9,8 +9,15 @@ export interface OverviewMerchant {
   overdueCount: number
 }
 
+export interface KybStats {
+  pending: number
+  verified: number
+  rejected: number
+}
+
 export function useOverviewApi() {
   const merchantHealth = ref<OverviewMerchant[]>([])
+  const kybStats = ref<KybStats>({ pending: 0, verified: 0, rejected: 0 })
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -18,8 +25,9 @@ export function useOverviewApi() {
     loading.value = true
     error.value = null
     try {
-      const data = await apiFetch<{ merchantHealth: OverviewMerchant[] }>('/admin/overview')
+      const data = await apiFetch<{ merchantHealth: OverviewMerchant[]; kybStats: KybStats }>('/admin/overview')
       merchantHealth.value = data.merchantHealth
+      kybStats.value = data.kybStats
     } catch (e: any) {
       error.value = e?.message ?? 'error'
     } finally {
@@ -27,5 +35,5 @@ export function useOverviewApi() {
     }
   }
 
-  return { merchantHealth, loading, error, fetch }
+  return { merchantHealth, kybStats, loading, error, fetch }
 }

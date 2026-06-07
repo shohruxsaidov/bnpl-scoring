@@ -12,6 +12,36 @@ const overview = useOverviewApi()
 const router = useRouter()
 const { t } = useI18n()
 
+const kybKpis = computed(() => [
+  {
+    key: 'kyb-pending',
+    label: t('overview.kybPending'),
+    value: String(overview.kybStats.value.pending),
+    delta: `${overview.kybStats.value.pending} ${t('overview.kybPendingDelta')}`,
+    tone: overview.kybStats.value.pending > 0 ? ('down' as const) : ('up' as const),
+    sparkColor: '#ffb02e',
+    icon: 'pi pi-clock',
+  },
+  {
+    key: 'kyb-verified',
+    label: t('overview.kybVerified'),
+    value: String(overview.kybStats.value.verified),
+    delta: `${overview.kybStats.value.verified} ${t('overview.kybVerifiedDelta')}`,
+    tone: 'up' as const,
+    sparkColor: '#00d4aa',
+    icon: 'pi pi-verified',
+  },
+  {
+    key: 'kyb-rejected',
+    label: t('overview.kybRejected'),
+    value: String(overview.kybStats.value.rejected),
+    delta: `${overview.kybStats.value.rejected} ${t('overview.kybRejectedDelta')}`,
+    tone: overview.kybStats.value.rejected > 0 ? ('down' as const) : ('up' as const),
+    sparkColor: '#ff5c5c',
+    icon: 'pi pi-times-circle',
+  },
+])
+
 onMounted(() => {
   deals.fetchDeals()
   overview.fetch()
@@ -189,6 +219,18 @@ const tenantHealth = computed(() => overview.merchantHealth.value.slice(0, 8))
       </div>
     </div>
 
+    <!-- ── KYB KPI strip ── -->
+    <div class="kpi-strip kyb-strip">
+      <div v-for="k in kybKpis" :key="k.key" class="kpi-card">
+        <div class="kpi-label">
+          <i :class="k.icon" />
+          {{ k.label }}
+        </div>
+        <div class="kpi-value">{{ k.value }}</div>
+        <div class="kpi-delta" :class="k.tone">{{ k.delta }}</div>
+      </div>
+    </div>
+
     <!-- ── Charts row ── -->
     <div class="charts-row">
 
@@ -341,6 +383,10 @@ const tenantHealth = computed(() => overview.merchantHealth.value.slice(0, 8))
   display: flex;
   flex-direction: column;
   gap: 1rem;
+}
+
+.kyb-strip {
+  grid-template-columns: repeat(3, 1fr);
 }
 
 /* Charts row */
