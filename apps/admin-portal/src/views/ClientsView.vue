@@ -1,15 +1,19 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import { useClientsStore } from '@/stores/clients'
 import { formatDate } from '@/utils/money'
 
 const store = useClientsStore()
-const { t } = useI18n()
+const router = useRouter()
 
 onMounted(() => store.fetchAll())
+
+function openClient(event: { data: { id: string } }) {
+  router.push(`/clients/${event.data.id}`)
+}
 
 const search = ref('')
 
@@ -52,6 +56,9 @@ const filtered = computed(() => {
         size="small"
         sort-field="fullName"
         :sort-order="1"
+        selection-mode="single"
+        class="clickable-rows"
+        @row-click="openClient"
       >
         <Column :header="$t('clients.fullName')" sortable field="fullName">
           <template #body="{ data }">
@@ -132,6 +139,12 @@ const filtered = computed(() => {
 .table-wrap {
   padding: 0;
   overflow: hidden;
+}
+:deep(.clickable-rows .p-datatable-tbody > tr) {
+  cursor: pointer;
+}
+:deep(.clickable-rows .p-datatable-tbody > tr:hover td) {
+  background: var(--bg-surface);
 }
 .name {
   font-weight: 700;

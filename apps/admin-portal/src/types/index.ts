@@ -66,6 +66,47 @@ export interface Client {
   createdAt: string
 }
 
+export interface ClientOverview extends Client {
+  creditLimit: number | null
+  availableBalance: number | null
+  creditLimitSource: 'self-service' | 'wizard' | null
+  creditLimitScoredAt: string | null
+}
+
+export interface ClientDeal {
+  id: string
+  dealNumber: string
+  merchantName: string
+  branchName: string
+  status: string
+  amount: number
+  totalPayable: number
+  tariffName: string
+  termMonths: number
+  createdAt: string
+}
+
+export interface ClientScoringEntry {
+  id: string
+  source: 'wizard' | 'self-service'
+  decision: string
+  score: number
+  limit: number
+  scoredAt: string
+}
+
+export interface ClientPaymentRow {
+  id: string
+  dealId: string
+  dealNumber: string
+  merchantName: string
+  dueDate: string
+  amount: number
+  paidAmount: number
+  status: 'paid' | 'partial' | 'unpaid'
+  channel: 'manual' | 'automated'
+}
+
 export type DealStatus = 'active' | 'overdue' | 'closed' | 'declined' | 'scoring'
 
 export type ScoreDecision = 'approved' | 'declined' | 'partial' | 'manual_review'

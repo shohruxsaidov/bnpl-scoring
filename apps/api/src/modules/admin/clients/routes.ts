@@ -1,5 +1,11 @@
 import type { FastifyInstance } from "fastify";
-import { listUniqueClients } from "./service.js";
+import {
+  listUniqueClients,
+  getClientOverview,
+  listClientDeals,
+  listClientScoring,
+  listClientPayments,
+} from "./service.js";
 
 export default async function adminClientsRoutes(app: FastifyInstance) {
   const db = app.db;
@@ -17,5 +23,30 @@ export default async function adminClientsRoutes(app: FastifyInstance) {
         createdAt: r.created_at,
       })),
     };
+  });
+
+  app.get<{ Params: { id: string } }>("/:id", async (req, reply) => {
+    const id = BigInt(req.params.id);
+    const client = await getClientOverview(db, id);
+    if (!client) return reply.status(404).send({ error: "not_found" });
+    return client;
+  });
+
+  app.get<{ Params: { id: string } }>("/:id/deals", async (req) => {
+    const id = BigInt(req.params.id);
+    const dealsData = await listClientDeals(db, id);
+    return { deals: dealsData };
+  });
+
+  app.get<{ Params: { id: string } }>("/:id/scoring", async (req) => {
+    const id = BigInt(req.params.id);
+    const history = await listClientScoring(db, id);
+    return { history };
+  });
+
+  app.get<{ Params: { id: string } }>("/:id/payments", async (req) => {
+    const id = BigInt(req.params.id);
+    const payments = await listClientPayments(db, id);
+    return { payments };
   });
 }
