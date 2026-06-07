@@ -53,7 +53,11 @@ async function submitStep1() {
   if (!validateMerchant()) return
   saving.value = true
   try {
-    const merchant = await store.create(m.value)
+    const formData = {
+      ...m.value
+    }
+    formData.phone = '998' + formData.phone.replace(/\D/g, '')
+    const merchant = await store.create(formData)
     merchantId.value = merchant.id
     step.value = 2
   } catch {
@@ -78,7 +82,11 @@ async function submitStep2() {
   if (!validateBranch()) return
   saving.value = true
   try {
-    const branch = await store.createBranch(merchantId.value!, b.value)
+    const formData = {
+      ...b.value
+    }
+    formData.phone = '998' + formData.phone.replace(/\D/g, '')
+    const branch = await store.createBranch(merchantId.value!, formData)
     branchId.value = branch.id
     step.value = 3
   } catch {
@@ -181,12 +189,7 @@ function finish() {
 
     <!-- Step indicator -->
     <div class="stepper surface-card">
-      <div
-        v-for="(label, i) in STEPS"
-        :key="i"
-        class="step"
-        :class="{ current: step === i + 1, done: step > i + 1 }"
-      >
+      <div v-for="(label, i) in STEPS" :key="i" class="step" :class="{ current: step === i + 1, done: step > i + 1 }">
         <div class="step-icon">
           <i v-if="step > i + 1" class="pi pi-check" />
           <span v-else>{{ i + 1 }}</span>
@@ -214,12 +217,15 @@ function finish() {
           </div>
           <div class="field">
             <label>{{ t('onboarding.inn') }}</label>
-            <InputMask v-model="m.inn" mask="999999999" :class="{ 'p-invalid': mErrors.inn }" class="w-full" placeholder="000000000" />
+            <InputMask v-model="m.inn" mask="999999999" :class="{ 'p-invalid': mErrors.inn }" class="w-full"
+              placeholder="000000000" />
             <small v-if="mErrors.inn" class="error-msg">{{ t('onboarding.innRequired') }}</small>
           </div>
           <div class="field">
             <label>{{ t('onboarding.phone') }}</label>
-            <InputMask v-model="m.phone" mask="+999999999999" :class="{ 'p-invalid': mErrors.phone }" class="w-full" placeholder="+000000000000" />
+            <span class="p-inputgroup-addon">+998</span>
+            <InputMask v-model="m.phone" mask="999999999" :class="{ 'p-invalid': mErrors.phone }" class="w-full"
+              placeholder="" />
             <small v-if="mErrors.phone" class="error-msg">{{ t('onboarding.phoneRequired') }}</small>
           </div>
           <div class="field col-span-2">
@@ -248,7 +254,8 @@ function finish() {
           </div>
           <div class="field">
             <label>{{ t('onboarding.phone') }}</label>
-            <InputMask v-model="b.phone" mask="+999999999999" :class="{ 'p-invalid': bErrors.phone }" class="w-full" placeholder="+000000000000" />
+            <span class="p-inputgroup-addon">+998</span>
+            <InputMask v-model="b.phone" mask="999999999" :class="{ 'p-invalid': bErrors.phone }" class="w-full" />
             <small v-if="bErrors.phone" class="error-msg">{{ t('onboarding.phoneRequired') }}</small>
           </div>
           <div class="field col-span-2">
@@ -281,18 +288,13 @@ function finish() {
             </div>
             <div class="field">
               <label>{{ t('onboarding.password') }}</label>
-              <InputText v-model="emp.password" type="password" class="w-full" :placeholder="t('onboarding.passwordHint')" />
+              <InputText v-model="emp.password" type="password" class="w-full"
+                :placeholder="t('onboarding.passwordHint')" />
             </div>
             <div class="field">
               <label>{{ t('onboarding.roles') }}</label>
-              <MultiSelect
-                v-model="emp.roles"
-                :options="ROLE_OPTIONS"
-                option-label="label"
-                option-value="value"
-                :placeholder="t('onboarding.selectRoles')"
-                class="w-full"
-              />
+              <MultiSelect v-model="emp.roles" :options="ROLE_OPTIONS" option-label="label" option-value="value"
+                :placeholder="t('onboarding.selectRoles')" class="w-full" />
             </div>
           </div>
           <button v-if="emps.length > 1" class="remove-btn" @click="emps.splice(i, 1)">
@@ -350,14 +352,8 @@ function finish() {
               </div>
               <div class="field">
                 <label>{{ t('onboarding.category') }}</label>
-                <Select
-                  v-model="prod.categoryId"
-                  :options="categoryOptions"
-                  option-label="label"
-                  option-value="value"
-                  :placeholder="t('onboarding.selectCategory')"
-                  class="w-full"
-                />
+                <Select v-model="prod.categoryId" :options="categoryOptions" option-label="label" option-value="value"
+                  :placeholder="t('onboarding.selectCategory')" class="w-full" />
               </div>
               <div class="field">
                 <label>{{ t('onboarding.price') }}</label>
@@ -425,6 +421,7 @@ function finish() {
   white-space: nowrap;
   transition: all 0.15s;
 }
+
 .finish-early-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
@@ -531,6 +528,24 @@ function finish() {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  position: relative;
+}
+
+.p-inputgroup-addon {
+  color: var(--text-secondary);
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 40px;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  top: 26px;
+  left: 10px
+}
+
+.p-inputgroup-addon+.p-inputtext {
+  padding-left: 3.25rem;
 }
 
 .field.col-span-2 {
@@ -590,6 +605,7 @@ function finish() {
   flex-shrink: 0;
   transition: all 0.15s;
 }
+
 .remove-btn:hover {
   border-color: var(--danger);
   color: var(--danger);
@@ -611,6 +627,7 @@ function finish() {
   transition: all 0.15s;
   width: fit-content;
 }
+
 .add-another-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
@@ -651,9 +668,11 @@ function finish() {
   transition: opacity 0.15s, box-shadow 0.15s;
   box-shadow: var(--accent-glow);
 }
+
 .btn-primary:hover:not(:disabled) {
   opacity: 0.9;
 }
+
 .btn-primary:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -674,6 +693,7 @@ function finish() {
   cursor: pointer;
   transition: all 0.15s;
 }
+
 .btn-secondary:hover {
   border-color: var(--text-secondary);
   color: var(--text-primary);
@@ -684,15 +704,19 @@ function finish() {
   .form-grid {
     grid-template-columns: 1fr;
   }
+
   .field.col-span-2 {
     grid-column: span 1;
   }
+
   .stepper {
     padding: 1rem;
   }
+
   .step-label {
     display: none;
   }
+
   .step-body {
     padding: 1.25rem;
   }

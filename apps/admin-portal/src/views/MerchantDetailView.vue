@@ -460,33 +460,22 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
             {{ $t('merchantDetail.inn') }}: {{ merchant.inn }} · {{ merchant.phone }}
           </span>
         </div>
-        <span
-          class="t-status"
-          :style="{
-            color: merchant.active ? 'var(--success)' : 'var(--danger)',
-            background: merchant.active ? 'var(--success-bg)' : 'var(--danger-bg)',
-          }"
-        >
+        <span class="t-status" :style="{
+          color: merchant.active ? 'var(--success)' : 'var(--danger)',
+          background: merchant.active ? 'var(--success-bg)' : 'var(--danger-bg)',
+        }">
           {{ merchant.active ? $t('merchantDetail.active') : $t('merchantDetail.suspended') }}
         </span>
       </div>
-      <button
-        :class="merchant.active ? 'btn-ghost' : 'btn-gradient'"
-        @click="toggleMerchant"
-      >
+      <button :class="merchant.active ? 'btn-ghost' : 'btn-gradient'" @click="toggleMerchant">
         <i :class="merchant.active ? 'pi pi-ban' : 'pi pi-check'" />
         {{ merchant.active ? $t('merchantDetail.suspend') : $t('merchantDetail.activate') }}
       </button>
     </header>
 
     <nav class="tabs">
-      <button
-        v-for="tab in tabs"
-        :key="tab"
-        class="tab"
-        :class="{ active: activeTab === tab }"
-        @click="activeTab = tab"
-      >
+      <button v-for="tab in tabs" :key="tab" class="tab" :class="{ active: activeTab === tab }"
+        @click="activeTab = tab">
         {{ tabLabel(tab) }}
       </button>
     </nav>
@@ -558,29 +547,18 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
           </Column>
           <Column :header="$t('merchantDetail.mustChangePwd')">
             <template #body="{ data }">
-              <Tag
-                v-if="data.mustChangePassword"
-                :value="$t('merchantDetail.yes')"
-                severity="warn"
-              />
+              <Tag v-if="data.mustChangePassword" :value="$t('merchantDetail.yes')" severity="warn" />
               <span v-else class="muted">—</span>
             </template>
           </Column>
           <Column :header="$t('merchantDetail.active')">
             <template #body="{ data }">
-              <ToggleSwitch
-                :model-value="data.active"
-                @update:model-value="toggleEmployee(data)"
-              />
+              <ToggleSwitch :model-value="data.active" @update:model-value="toggleEmployee(data)" />
             </template>
           </Column>
           <Column style="width: 48px">
             <template #body="{ data }">
-              <button
-                class="icon-btn"
-                :title="$t('merchantDetail.changePassword')"
-                @click="openChangePwd(data)"
-              >
+              <button class="icon-btn" :title="$t('merchantDetail.changePassword')" @click="openChangePwd(data)">
                 <i class="pi pi-key" />
               </button>
             </template>
@@ -619,10 +597,7 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
           </Column>
           <Column :header="$t('merchantDetail.active')">
             <template #body="{ data }">
-              <ToggleSwitch
-                :model-value="data.active"
-                @update:model-value="toggleProduct(data)"
-              />
+              <ToggleSwitch :model-value="data.active" @update:model-value="toggleProduct(data)" />
             </template>
           </Column>
         </DataTable>
@@ -646,10 +621,7 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
           </Column>
           <Column :header="$t('merchantDetail.active')">
             <template #body="{ data }">
-              <ToggleSwitch
-                :model-value="data.active"
-                @update:model-value="toggleCategory(data)"
-              />
+              <ToggleSwitch :model-value="data.active" @update:model-value="toggleCategory(data)" />
             </template>
           </Column>
           <Column style="width: 48px">
@@ -718,11 +690,8 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
           </Column>
           <Column :header="$t('merchantDetail.attached')" style="width: 110px">
             <template #body="{ data }">
-              <ToggleSwitch
-                :model-value="data.selected"
-                :disabled="tariffToggling.has(data.id)"
-                @update:model-value="toggleTariff(data.id, data.selected)"
-              />
+              <ToggleSwitch :model-value="data.selected" :disabled="tariffToggling.has(data.id)"
+                @update:model-value="toggleTariff(data.id, data.selected)" />
             </template>
           </Column>
         </DataTable>
@@ -730,12 +699,7 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
     </section>
 
     <!-- Branch dialog -->
-    <Dialog
-      v-model:visible="showBranch"
-      modal
-      :header="$t('merchantDetail.addBranch')"
-      :style="{ width: '440px' }"
-    >
+    <Dialog v-model:visible="showBranch" modal :header="$t('merchantDetail.addBranch')" :style="{ width: '440px' }">
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.name') }}</label>
         <InputText v-model="branchForm.name" />
@@ -757,12 +721,7 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
     </Dialog>
 
     <!-- Employee dialog -->
-    <Dialog
-      v-model:visible="showEmployee"
-      modal
-      :header="$t('merchantDetail.addEmployee')"
-      :style="{ width: '460px' }"
-    >
+    <Dialog v-model:visible="showEmployee" modal :header="$t('merchantDetail.addEmployee')" :style="{ width: '460px' }">
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.fullName') }}</label>
         <InputText v-model="employeeForm.fullName" />
@@ -778,22 +737,13 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
       </div>
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.branch') }}</label>
-        <Select
-          v-model="employeeForm.branchId"
-          :options="branches"
-          option-label="name"
-          option-value="id"
-          :placeholder="$t('merchantDetail.selectBranch')"
-        />
+        <Select v-model="employeeForm.branchId" :options="branches" option-label="name" option-value="id"
+          :placeholder="$t('merchantDetail.selectBranch')" />
       </div>
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.roles') }}</label>
-        <MultiSelect
-          v-model="employeeForm.roles"
-          :options="ROLE_OPTIONS"
-          :placeholder="$t('merchantDetail.selectRoles')"
-          display="chip"
-        />
+        <MultiSelect v-model="employeeForm.roles" :options="ROLE_OPTIONS"
+          :placeholder="$t('merchantDetail.selectRoles')" display="chip" />
       </div>
       <template #footer>
         <button class="btn-ghost" @click="showEmployee = false">{{ $t('common.cancel') }}</button>
@@ -804,12 +754,7 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
     </Dialog>
 
     <!-- Category create dialog -->
-    <Dialog
-      v-model:visible="showCategory"
-      modal
-      :header="$t('merchantDetail.addCategory')"
-      :style="{ width: '420px' }"
-    >
+    <Dialog v-model:visible="showCategory" modal :header="$t('merchantDetail.addCategory')" :style="{ width: '420px' }">
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.name') }}</label>
         <InputText v-model="categoryForm.name" class="w-full" autofocus />
@@ -823,12 +768,8 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
     </Dialog>
 
     <!-- Category edit dialog -->
-    <Dialog
-      v-model:visible="showEditCategory"
-      modal
-      :header="$t('merchantDetail.editCategory')"
-      :style="{ width: '420px' }"
-    >
+    <Dialog v-model:visible="showEditCategory" modal :header="$t('merchantDetail.editCategory')"
+      :style="{ width: '420px' }">
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.name') }}</label>
         <InputText v-model="editCategoryForm.name" class="w-full" autofocus />
@@ -842,25 +783,15 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
     </Dialog>
 
     <!-- Product dialog -->
-    <Dialog
-      v-model:visible="showProduct"
-      modal
-      :header="$t('merchantDetail.addProduct')"
-      :style="{ width: '460px' }"
-    >
+    <Dialog v-model:visible="showProduct" modal :header="$t('merchantDetail.addProduct')" :style="{ width: '460px' }">
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.name') }}</label>
         <InputText v-model="productForm.name" />
       </div>
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.category') }}</label>
-        <Select
-          v-model="productForm.categoryId"
-          :options="categories"
-          option-label="name"
-          option-value="id"
-          :placeholder="$t('merchantDetail.selectCategory')"
-        />
+        <Select v-model="productForm.categoryId" :options="categories" option-label="name" option-value="id"
+          :placeholder="$t('merchantDetail.selectCategory')" />
       </div>
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.price') }}</label>
@@ -872,20 +803,11 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
         </label>
         <div class="mxik-wrap">
           <div class="mxik-input-row">
-            <InputText
-              v-model="productForm.mxikCode"
-              class="font-mono mxik-input"
-              :placeholder="$t('merchantDetail.mxikPlaceholder')"
-              @input="onMxikInputAdmin"
-              @blur="clearSearchDelayed"
-              @keydown.enter.prevent="triggerMxikLookup"
-            />
-            <button
-              v-if="productForm.mxikCode && !mxikLookupLoading"
-              class="mxik-search-btn"
-              type="button"
-              @click="triggerMxikLookup"
-            >
+            <InputText v-model="productForm.mxikCode" class="font-mono mxik-input"
+              :placeholder="$t('merchantDetail.mxikPlaceholder')" @input="onMxikInputAdmin" @blur="clearSearchDelayed"
+              @keydown.enter.prevent="triggerMxikLookup" />
+            <button v-if="productForm.mxikCode && !mxikLookupLoading" class="mxik-search-btn" type="button"
+              @click="triggerMxikLookup">
               <i class="pi pi-search" />
             </button>
             <span v-if="mxikLookupLoading || mxikSearchLoading" class="mxik-spinner">
@@ -894,12 +816,8 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
           </div>
 
           <ul v-if="mxikSuggestions.length" class="mxik-suggestions">
-            <li
-              v-for="s in mxikSuggestions"
-              :key="s.mxikCode"
-              class="mxik-suggestion-item"
-              @mousedown.prevent="selectMxikSuggestionAdmin(s)"
-            >
+            <li v-for="s in mxikSuggestions" :key="s.mxikCode" class="mxik-suggestion-item"
+              @mousedown.prevent="selectMxikSuggestionAdmin(s)">
               <span class="sug-code">{{ s.mxikCode }}</span>
               <span class="sug-name">{{ s.mxikName }}</span>
             </li>
@@ -915,14 +833,9 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
             </div>
             <div v-if="mxikData.packages?.length" class="field" style="margin-top: 0.75rem; margin-bottom: 0">
               <label class="field-label">{{ $t('merchantDetail.packageCode') }}</label>
-              <Select
-                :model-value="productForm.packageCode"
-                :options="mxikData.packages"
-                option-label="name"
-                option-value="code"
-                :placeholder="$t('merchantDetail.selectPackage')"
-                @update:model-value="onPackageSelectAdmin"
-              />
+              <Select :model-value="productForm.packageCode" :options="mxikData.packages" option-label="name"
+                option-value="code" :placeholder="$t('merchantDetail.selectPackage')"
+                @update:model-value="onPackageSelectAdmin" />
             </div>
           </div>
 
@@ -940,12 +853,8 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
     </Dialog>
 
     <!-- Change employee password dialog -->
-    <Dialog
-      v-model:visible="showChangePwd"
-      modal
-      :header="$t('merchantDetail.changePasswordTitle')"
-      :style="{ width: '400px' }"
-    >
+    <Dialog v-model:visible="showChangePwd" modal :header="$t('merchantDetail.changePasswordTitle')"
+      :style="{ width: '400px' }">
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.newPassword') }}</label>
         <InputText v-model="changePwdValue" type="password" autofocus />
@@ -953,23 +862,15 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
       </div>
       <template #footer>
         <button class="btn-ghost" @click="showChangePwd = false">{{ $t('common.cancel') }}</button>
-        <button
-          class="btn-gradient"
-          :disabled="changePwdSaving || changePwdValue.length < 8"
-          @click="submitChangePwd"
-        >
+        <button class="btn-gradient" :disabled="changePwdSaving || changePwdValue.length < 8" @click="submitChangePwd">
           {{ $t('merchantDetail.changePassword') }}
         </button>
       </template>
     </Dialog>
 
     <!-- Document dialog -->
-    <Dialog
-      v-model:visible="showDocument"
-      modal
-      :header="$t('merchantDetail.uploadDocument')"
-      :style="{ width: '460px' }"
-    >
+    <Dialog v-model:visible="showDocument" modal :header="$t('merchantDetail.uploadDocument')"
+      :style="{ width: '460px' }">
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.documentType') }}</label>
         <InputText v-model="documentType" placeholder="contract, license, …" />
@@ -980,11 +881,8 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
       </div>
       <template #footer>
         <button class="btn-ghost" @click="showDocument = false">{{ $t('common.cancel') }}</button>
-        <button
-          class="btn-gradient"
-          :disabled="documentUploading || !documentFile || !documentType"
-          @click="submitDocument"
-        >
+        <button class="btn-gradient" :disabled="documentUploading || !documentFile || !documentType"
+          @click="submitDocument">
           {{ documentUploading ? $t('merchantDetail.uploading') : $t('merchantDetail.upload') }}
         </button>
       </template>
@@ -1006,6 +904,7 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
   flex-direction: column;
   gap: 0.9rem;
 }
+
 .back {
   align-self: flex-start;
   background: transparent;
@@ -1019,20 +918,24 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
   gap: 0.4rem;
   font-family: inherit;
 }
+
 .back:hover {
   color: var(--accent-2);
 }
+
 .t-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 1rem 1.2rem;
 }
+
 .t-id {
   display: flex;
   align-items: center;
   gap: 0.85rem;
 }
+
 .t-avatar {
   width: 42px;
   height: 42px;
@@ -1044,15 +947,18 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
   place-items: center;
   font-size: 1.05rem;
 }
+
 .t-name {
   margin: 0;
   font-size: 1.15rem;
   font-weight: 800;
 }
+
 .t-slug {
   font-size: 0.76rem;
   color: var(--text-secondary);
 }
+
 .t-status {
   margin-left: 0.5rem;
   padding: 0.25rem 0.65rem;
@@ -1066,6 +972,7 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
   gap: 0.3rem;
   border-bottom: 1px solid var(--border-subtle);
 }
+
 .tab {
   background: transparent;
   border: none;
@@ -1078,9 +985,11 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
   cursor: pointer;
   transition: all 0.12s ease;
 }
+
 .tab:hover {
   color: var(--text-primary);
 }
+
 .tab.active {
   color: var(--accent-2);
   border-bottom-color: var(--accent-2);
@@ -1091,11 +1000,13 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
   flex-direction: column;
   gap: 1rem;
 }
+
 .tab-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
+
 .section-title {
   margin: 0;
   font-size: 0.95rem;
@@ -1106,10 +1017,12 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
   padding: 0;
   overflow: hidden;
 }
+
 .t-name-sm {
   font-weight: 700;
   font-size: 0.85rem;
 }
+
 .chip {
   display: inline-block;
   font-size: 0.68rem;
@@ -1120,11 +1033,13 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
   border-radius: 999px;
   margin-right: 0.3rem;
 }
+
 .doc-link {
   color: var(--accent-2);
   font-size: 0.8rem;
   text-decoration: none;
 }
+
 .doc-link:hover {
   text-decoration: underline;
 }
@@ -1135,9 +1050,11 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
   flex-direction: column;
   gap: 0.35rem;
 }
+
 .field-hint {
   font-size: 0.72rem;
 }
+
 .file-input {
   font-family: inherit;
   font-size: 0.82rem;
@@ -1152,51 +1069,145 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
   padding: 3rem;
   text-align: center;
 }
+
 .not-found i {
   font-size: 2rem;
   color: var(--danger);
 }
 
 /* MXIK combobox */
-.mxik-wrap { position: relative; display: flex; flex-direction: column; gap: 0; }
-.mxik-input-row { display: flex; align-items: center; gap: 0.5rem; }
-.mxik-input { flex: 1; }
+.mxik-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.mxik-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mxik-input {
+  flex: 1;
+}
+
 .mxik-search-btn {
-  flex-shrink: 0; width: 36px; height: 36px; border-radius: 8px;
-  border: 1px solid var(--border-subtle); background: var(--bg-surface);
-  color: var(--text-secondary); cursor: pointer; display: grid; place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
   transition: all 0.15s ease;
 }
-.mxik-search-btn:hover { color: var(--accent-2); border-color: var(--accent-2); }
-.mxik-spinner { color: var(--text-secondary); font-size: 1rem; }
+
+.mxik-search-btn:hover {
+  color: var(--accent-2);
+  border-color: var(--accent-2);
+}
+
+.mxik-spinner {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
 .mxik-suggestions {
-  position: absolute; top: 38px; left: 0; right: 0;
-  background: var(--bg-card, #fff); border: 1px solid var(--border-subtle);
-  border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.08);
-  z-index: 100; max-height: 220px; overflow-y: auto;
-  list-style: none; margin: 4px 0 0; padding: 4px 0;
+  position: absolute;
+  top: 38px;
+  left: 0;
+  right: 0;
+  background: var(--bg-card, #fff);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .08);
+  z-index: 100;
+  max-height: 220px;
+  overflow-y: auto;
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 4px 0;
 }
-.mxik-suggestion-item { display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; cursor: pointer; }
-.mxik-suggestion-item:hover { background: var(--bg-surface); }
-.sug-code { font-family: monospace; font-size: 11px; color: var(--text-secondary); }
-.sug-name { font-size: 13px; color: var(--text-primary); }
+
+.mxik-suggestion-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.mxik-suggestion-item:hover {
+  background: var(--bg-surface);
+}
+
+.sug-code {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.sug-name {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
 .mxik-result {
-  margin-top: 0.5rem; padding: 0.75rem;
-  border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--bg-surface);
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--bg-surface);
 }
-.mxik-result-header { display: flex; align-items: center; gap: 0.5rem; }
-.mxik-result-name { font-size: 0.85rem; font-weight: 600; flex: 1; }
+
+.mxik-result-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mxik-result-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  flex: 1;
+}
+
 .mxik-label-badge {
-  font-size: 0.7rem; font-weight: 700; padding: 2px 8px;
-  border-radius: 20px; background: var(--accent-2); color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--accent-2);
+  color: #fff;
 }
+
 .mxik-clear-btn {
-  width: 24px; height: 24px; border-radius: 4px; border: none;
-  background: transparent; color: var(--text-secondary);
-  cursor: pointer; display: grid; place-items: center; font-size: 0.75rem;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
 }
-.mxik-clear-btn:hover { color: var(--danger); }
-.mxik-hint { font-size: 0.75rem; color: var(--text-secondary); margin: 4px 0 0; }
+
+.mxik-clear-btn:hover {
+  color: var(--danger);
+}
+
+.mxik-hint {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin: 4px 0 0;
+}
 
 .markup {
   color: var(--accent-2);
@@ -1204,12 +1215,25 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
 }
 
 .icon-btn {
-  width: 28px; height: 28px; border-radius: 7px;
-  border: 1px solid var(--border-subtle); background: var(--bg-base);
-  color: var(--text-secondary); cursor: pointer;
-  display: grid; place-items: center; font-size: 0.78rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 0.78rem;
   transition: all 0.12s ease;
 }
-.icon-btn:hover { color: var(--accent-2); border-color: var(--accent-2); }
-.w-full { width: 100%; }
+
+.icon-btn:hover {
+  color: var(--accent-2);
+  border-color: var(--accent-2);
+}
+
+.w-full {
+  width: 100%;
+}
 </style>

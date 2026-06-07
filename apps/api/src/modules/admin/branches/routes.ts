@@ -28,7 +28,7 @@ export default async function adminBranchRoutes(app: FastifyInstance) {
   )
 
   const CreateEmployeeBody = Type.Object({
-    email: Type.String({ format: "email" }),
+    phone: Type.String({ minLength: 1 }),
     password: Type.String({ minLength: 8 }),
     fullName: Type.String({ minLength: 1 }),
     roles: Type.Array(
@@ -82,7 +82,7 @@ export default async function adminBranchRoutes(app: FastifyInstance) {
       const branch = await getBranch(db, BigInt(request.params.id))
       if (!branch) return reply.code(404).sendError("not_found")
       const employee = await createEmployee(db, {
-        email: request.body.email,
+        phone: request.body.phone,
         password: request.body.password,
         fullName: request.body.fullName,
         merchantId: branch.merchantId,
