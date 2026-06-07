@@ -65,6 +65,9 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
       logoUrl: Type.String(),
       contractNumber: Type.String(),
       active: Type.Boolean(),
+      mfo: Type.String({ pattern: "^\\d{5}$" }),
+      accountNumber: Type.String({ pattern: "^\\d{20}$" }),
+      bankName: Type.String({ minLength: 1 }),
     }),
   )
 

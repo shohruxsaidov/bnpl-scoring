@@ -39,6 +39,9 @@ export async function updateMerchant(
     logoUrl: string
     contractNumber: string
     active: boolean
+    mfo: string
+    accountNumber: string
+    bankName: string
   }>,
 ) {
   const [row] = await db.update(merchants).set(input).where(eq(merchants.id, id)).returning()

@@ -606,7 +606,18 @@
     "createFailed": "Yozuvni yaratib bo'lmadi",
     "updateFailed": "Yozuvni yangilab bo'lmadi",
     "uploadFailed": "Hujjatni yuklab bo'lmadi",
-    "notFound": "Merchant topilmadi."
+    "notFound": "Merchant topilmadi.",
+    "bankInfo": "Bank rekvizitlari",
+    "editBankInfo": "Rekvizitlarni tahrirlash",
+    "mfo": "MFO",
+    "mfoPlaceholder": "5 ta raqam kiriting",
+    "bankName": "Bank",
+    "bankNotFound": "Bu MFO bo'yicha bank topilmadi",
+    "accountNumber": "Hisob raqami",
+    "accountNumberPlaceholder": "20 ta raqam",
+    "bankInfoSaved": "Rekvizitlar saqlandi",
+    "bankInfoSaveFailed": "Rekvizitlarni saqlab bo'lmadi",
+    "noBankInfo": "Rekvizitlar ko'rsatilmagan"
   },
   "deals": {
     "status": "Holat",

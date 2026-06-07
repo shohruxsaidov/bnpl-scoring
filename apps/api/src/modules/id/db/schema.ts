@@ -150,9 +150,18 @@ export const merchants = pgTable('merchants', {
   address: text('address').notNull(),
   logoUrl: text('logo_url'),
   contractNumber: varchar('contract_number', { length: 100 }),
+  mfo: varchar('mfo', { length: 5 }),
+  accountNumber: varchar('account_number', { length: 20 }),
+  bankName: varchar('bank_name', { length: 200 }),
   active: boolean('active').notNull().default(true),
   kybStatus: varchar('kyb_status', { length: 20 }).notNull().default('verified'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const bankMfoCache = pgTable('bank_mfo_cache', {
+  mfo: varchar('mfo', { length: 5 }).primaryKey(),
+  bankName: text('bank_name').notNull(),
+  fetchedAt: timestamp('fetched_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const branches = pgTable('branches', {

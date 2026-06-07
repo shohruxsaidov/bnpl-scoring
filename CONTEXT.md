@@ -188,6 +188,24 @@ _Avoid_: Payment schedule row, instalment row, payment row
 The channel through which a Manual Payment was physically received. Two fixed values: `mib` (МИБ — bank transfer via Microcredit Investment Bank) and `transfer` (Перевод — generic bank transfer). Stored as a text enum on the `manual_payments` row.
 _Avoid_: Payment method, payment channel
 
+### Bank information
+
+**Merchant Bank Account**:
+The payment destination recorded for a Merchant, used to process Buyout disbursements. Consists of MFO, account number, and bank name. One per Merchant; optional at creation, added later. All three fields are stored directly on the `merchants` row — `bank_name` is denormalized from the CBU lookup result at save time.
+_Avoid_: Bank details, payment info, settlement account
+
+**MFO** (Межфилиальный оборот):
+The 5-digit Uzbekistan interbank routing code that identifies the Merchant's bank. Resolved to a human-readable bank name via the CBU (Central Bank of Uzbekistan) bank registry. Must be exactly 5 digits; validated at the API level.
+_Avoid_: Bank code, routing code, branch code
+
+**Account Number** (номер счета):
+The 20-digit Merchant bank account number. Must be exactly 20 digits; validated at the API level.
+_Avoid_: IBAN, account ID
+
+**CBU Bank Registry**:
+The Central Bank of Uzbekistan's published branch directory (dataset 4-009-0010, `https://cbu.uz/upload/open_data/0010/4-009-0010_uz.json`). Each entry has a `Filialkodi` (MFO) and `Filialnomi` (branch name). Fetched by the backend on first request and cached in `bank_mfo_cache`. Cache is on-demand only — no automatic refresh; a Platform Admin triggers a manual re-fetch if the list is stale.
+_Avoid_: Bank list, MFO directory
+
 ### Buyouts
 
 **Buyout** (ru: Выкуп):
@@ -237,6 +255,8 @@ _Avoid_: Notification kind, notification category
 - A **Manual Payment** that fully settles all **InstallmentScheduleRows** sets the **Deal** status to `closed`
 - A **Basket** is persisted as one or more **DealItems** on the Deal
 - A **Notification** belongs to exactly one actor; fan-out creates one **Notification** row per recipient at write time
+- A **Merchant** has at most one **Merchant Bank Account** (MFO + Account Number + bank name stored as columns on the `merchants` row)
+- An **MFO** resolves to a bank name via the **CBU Bank Registry** at edit time; the resolved name is stored on the `merchants` row
 
 ## Auth identity tables
 
@@ -282,6 +302,7 @@ Key decisions live in `docs/adr/` as thematic files:
 | `0014-notification-system.md` | One `notifications` table for all actor types; fan-out-at-write (one row per recipient); SSE delivery; `type`+`params` only stored (no rendered strings); 90-day TTL via pg-boss |
 | `0015-self-service-scoring-flow.md` | Self-service scoring keyed on `users.id`; `scoring_sessions` + `scoring_pipelines` + `user_limits`; KATM hard block; permanently separate from Wizard scoring |
 | `0016-client-web-push-notifications.md` | Web push replaces SSE for Clients; VAPID env vars; `push_subscriptions` table; manual SW; opt-in toggle in ProfileView; admin_message broadcast |
+| `0019-merchant-bank-account.md` | MFO + account number + bank name on `merchants`; CBU bank list fetched backend-side, cached on-demand in `bank_mfo_cache`; bank name denormalized at save time |
 
 ## Example dialogue
 

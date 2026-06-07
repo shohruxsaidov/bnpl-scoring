@@ -614,7 +614,18 @@
     "createFailed": "Не удалось создать запись",
     "updateFailed": "Не удалось обновить запись",
     "uploadFailed": "Не удалось загрузить документ",
-    "notFound": "Мерчант не найден."
+    "notFound": "Мерчант не найден.",
+    "bankInfo": "Банковские реквизиты",
+    "editBankInfo": "Изменить реквизиты",
+    "mfo": "МФО",
+    "mfoPlaceholder": "Введите 5 цифр",
+    "bankName": "Банк",
+    "bankNotFound": "Банк с таким МФО не найден",
+    "accountNumber": "Номер счёта",
+    "accountNumberPlaceholder": "20 цифр",
+    "bankInfoSaved": "Реквизиты сохранены",
+    "bankInfoSaveFailed": "Не удалось сохранить реквизиты",
+    "noBankInfo": "Реквизиты не указаны"
   },
   "deals": {
     "status": "Статус",

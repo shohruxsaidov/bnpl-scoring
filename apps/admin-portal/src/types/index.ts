@@ -213,8 +213,16 @@ export interface Merchant {
   address: string
   logoUrl: string | null
   contractNumber: string | null
+  mfo: string | null
+  accountNumber: string | null
+  bankName: string | null
   active: boolean
   createdAt: string
+}
+
+export interface BankEntry {
+  mfo: string
+  bankName: string
 }
 
 export interface Branch {

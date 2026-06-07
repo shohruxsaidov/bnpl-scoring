@@ -17,6 +17,7 @@ import adminCollectionBoardRoutes from "./collectionBoard/routes"
 import adminBuyoutRoutes from "./buyouts/routes"
 import adminClientsRoutes from "./clients/routes"
 import mxikRoutes from "../mxik/routes"
+import adminBankRoutes from "./banks/routes"
 
 interface FeatureMap {
   read?: string
@@ -55,4 +56,6 @@ export default async function adminModule(app: FastifyInstance) {
   await app.register(adminPermissionsRoutes, { prefix: "/admin/permissions" })
   // MXIK reference lookups: any authenticated admin.
   await app.register(mxikRoutes, { prefix: "/admin/mxik", preHandler: app.verifyAdminJwt })
+  // CBU bank registry: any authenticated admin.
+  await app.register(adminBankRoutes, { prefix: "/admin/banks" })
 }

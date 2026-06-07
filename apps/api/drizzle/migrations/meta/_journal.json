@@ -8,6 +8,13 @@
       "when": 1780829830134,
       "tag": "0000_flippant_screwball",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1780843290080,
+      "tag": "0001_open_landau",
+      "breakpoints": true
     }
   ]
 }

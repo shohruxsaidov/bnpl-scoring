@@ -454,6 +454,50 @@ function truncate(value: string, max = 48): string {
   return value.length > max ? value.slice(0, max) + '…' : value
 }
 
+// --- Bank info ---------------------------------------------------------------
+const showBankInfo = ref(false)
+const bankForm = ref({ mfo: '', bankName: '', accountNumber: '' })
+const bankSaving = ref(false)
+
+function openBankInfo() {
+  bankForm.value = {
+    mfo: merchant.value?.mfo ?? '',
+    bankName: merchant.value?.bankName ?? '',
+    accountNumber: merchant.value?.accountNumber ?? '',
+  }
+  merchants.fetchBankList()
+  showBankInfo.value = true
+}
+
+function onMfoInput() {
+  const mfo = bankForm.value.mfo.trim()
+  if (!/^\d{5}$/.test(mfo)) {
+    bankForm.value.bankName = ''
+    return
+  }
+  const found = merchants.bankList.find((b) => b.mfo === mfo)
+  bankForm.value.bankName = found?.bankName ?? ''
+}
+
+async function submitBankInfo() {
+  const f = bankForm.value
+  if (!/^\d{5}$/.test(f.mfo) || !/^\d{20}$/.test(f.accountNumber) || !f.bankName) return
+  bankSaving.value = true
+  try {
+    await merchants.update(merchantId.value, {
+      mfo: f.mfo,
+      accountNumber: f.accountNumber,
+      bankName: f.bankName,
+    })
+    toast.add({ severity: 'success', summary: t('merchantDetail.bankInfoSaved'), life: 2000 })
+    showBankInfo.value = false
+  } catch {
+    notifyError('merchantDetail.bankInfoSaveFailed')
+  } finally {
+    bankSaving.value = false
+  }
+}
+
 // --- Tariffs -----------------------------------------------------------------
 const tariffToggling = ref<Set<string>>(new Set())
 
@@ -501,6 +545,35 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
         {{ merchant.active ? $t('merchantDetail.suspend') : $t('merchantDetail.activate') }}
       </button>
     </header>
+
+    <!-- Bank info card -->
+    <div class="surface-card bank-card">
+      <div class="bank-card-inner">
+        <i class="pi pi-building-columns bank-icon" />
+        <div class="bank-fields">
+          <template v-if="merchant.mfo">
+            <span class="bank-field">
+              <span class="muted">{{ $t('merchantDetail.mfo') }}</span>
+              <span class="font-mono">{{ merchant.mfo }}</span>
+            </span>
+            <span class="bank-sep">·</span>
+            <span class="bank-field">
+              <span class="muted">{{ $t('merchantDetail.bankName') }}</span>
+              <span>{{ merchant.bankName }}</span>
+            </span>
+            <span class="bank-sep">·</span>
+            <span class="bank-field">
+              <span class="muted">{{ $t('merchantDetail.accountNumber') }}</span>
+              <span class="font-mono">{{ merchant.accountNumber }}</span>
+            </span>
+          </template>
+          <span v-else class="muted">{{ $t('merchantDetail.noBankInfo') }}</span>
+        </div>
+      </div>
+      <button class="icon-btn" :title="$t('merchantDetail.editBankInfo')" @click="openBankInfo">
+        <i class="pi pi-pencil" />
+      </button>
+    </div>
 
     <nav class="tabs">
       <button v-for="tab in tabs" :key="tab" class="tab" :class="{ active: activeTab === tab }"
@@ -923,6 +996,46 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
         </button>
       </template>
     </Dialog>
+
+    <!-- Bank info dialog -->
+    <Dialog v-model:visible="showBankInfo" modal :header="$t('merchantDetail.editBankInfo')" :style="{ width: '440px' }">
+      <div class="field">
+        <label class="field-label">{{ $t('merchantDetail.mfo') }}</label>
+        <InputText
+          v-model="bankForm.mfo"
+          :placeholder="$t('merchantDetail.mfoPlaceholder')"
+          maxlength="5"
+          class="font-mono"
+          @input="onMfoInput"
+        />
+        <span v-if="bankForm.mfo.length === 5 && !bankForm.bankName" class="field-error">
+          {{ $t('merchantDetail.bankNotFound') }}
+        </span>
+      </div>
+      <div class="field">
+        <label class="field-label">{{ $t('merchantDetail.bankName') }}</label>
+        <InputText :model-value="bankForm.bankName" disabled class="w-full" />
+      </div>
+      <div class="field">
+        <label class="field-label">{{ $t('merchantDetail.accountNumber') }}</label>
+        <InputText
+          v-model="bankForm.accountNumber"
+          :placeholder="$t('merchantDetail.accountNumberPlaceholder')"
+          maxlength="20"
+          class="font-mono"
+        />
+      </div>
+      <template #footer>
+        <button class="btn-ghost" @click="showBankInfo = false">{{ $t('common.cancel') }}</button>
+        <button
+          class="btn-gradient"
+          :disabled="bankSaving || !/^\d{5}$/.test(bankForm.mfo) || !bankForm.bankName || !/^\d{20}$/.test(bankForm.accountNumber)"
+          @click="submitBankInfo"
+        >
+          {{ $t('common.save') }}
+        </button>
+      </template>
+    </Dialog>
   </div>
 
   <div v-else class="not-found surface-card">
@@ -1047,6 +1160,46 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
   margin: 0;
   font-size: 0.95rem;
   font-weight: 800;
+}
+
+.bank-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.2rem;
+  gap: 1rem;
+}
+
+.bank-card-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.bank-icon {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.bank-fields {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+}
+
+.bank-field {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.bank-sep {
+  color: var(--border-subtle);
 }
 
 .table-wrap {

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import type {
+  BankEntry,
   Branch,
   Category,
   Merchant,
@@ -19,6 +20,7 @@ interface MerchantsState {
   products: Record<string, Product[]>
   documents: Record<string, MerchantDocument[]>
   merchantTariffs: Record<string, Tariff[]>
+  bankList: BankEntry[]
   loading: boolean
   error: string | null
 }
@@ -32,6 +34,7 @@ export const useMerchantsStore = defineStore('merchants', {
     products: {},
     documents: {},
     merchantTariffs: {},
+    bankList: [],
     loading: false,
     error: null,
   }),
@@ -300,6 +303,17 @@ export const useMerchantsStore = defineStore('merchants', {
       await api(`/admin/merchants/${merchantId}/tariffs/${tariffId}`, { method: 'DELETE' })
       const t = this.merchantTariffs[merchantId]?.find((x) => x.id === tariffId)
       if (t) t.selected = false
+    },
+
+    async fetchBankList(): Promise<void> {
+      if (this.bankList.length > 0) return
+      const body = await api<{ banks: BankEntry[] }>('/admin/banks')
+      this.bankList = body.banks
+    },
+
+    async refreshBankList(): Promise<void> {
+      const body = await api<{ banks: BankEntry[] }>('/admin/banks/refresh', { method: 'POST' })
+      this.bankList = body.banks
     },
   },
 })
