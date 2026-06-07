@@ -42,7 +42,7 @@ const onSubmit = handleSubmit(async (values) => {
   loginError.value = ''
   loading.value = true
   try {
-    await auth.login(values.phone, values.password)
+    await auth.login('998' + values.phone.replace(/\D/g, ''), values.password)
     if (!auth.requiresRolePicker) router.push('/')
   } catch {
     loginError.value = t('login.invalidCredentials')
@@ -180,6 +180,7 @@ async function pickRole(role: EmployeeRole) {
 
         <div class="field">
           <label class="field-label" for="phone">{{ $t('login.phone') }}</label>
+          <span class="p-inputgroup-addon">+998</span>
           <InputText id="phone" v-model="phone" v-bind="phoneAttrs" :invalid="!!errors.phone" autocomplete="tel" />
           <span v-if="errors.phone" class="field-error">{{ errors.phone }}</span>
         </div>
@@ -668,6 +669,22 @@ async function pickRole(role: EmployeeRole) {
 
 .field {
   margin-bottom: 1.1rem;
+  position: relative;
+}
+
+.p-inputgroup-addon {
+  color: var(--text-secondary);
+  position: absolute;
+  left: 10px;
+  top: 26px;
+  height: 40px;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+.p-inputgroup-addon + :deep(.p-inputtext) {
+  padding-left: 3.25rem;
 }
 
 .field :deep(.p-password) {
