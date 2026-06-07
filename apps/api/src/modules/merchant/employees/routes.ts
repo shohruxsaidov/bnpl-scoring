@@ -24,7 +24,7 @@ export default async function merchantEmployeeRoutes(app: FastifyInstance) {
   // A Merchant Admin may only create/manage Agents — elevated roles are
   // provisioned from the admin platform.
   const CreateBody = Type.Object({
-    email: Type.String({ format: "email" }),
+    phone: Type.String({ minLength: 7 }),
     password: Type.String({ minLength: 8 }),
     fullName: Type.String({ minLength: 1 }),
     branchId: Type.String(),
@@ -45,7 +45,7 @@ export default async function merchantEmployeeRoutes(app: FastifyInstance) {
 
   fastify.post("/", { schema: { body: CreateBody }, preHandler: manage }, async (request, reply) => {
     const employee = await createEmployee(db, {
-      email: request.body.email,
+      phone: request.body.phone,
       password: request.body.password,
       fullName: request.body.fullName,
       merchantId: merchantId(request),

@@ -9,7 +9,7 @@ export type Permission = string;
 export interface AuthEmployee {
   id: string;
   fullName: string;
-  email: string;
+  phone: string;
   merchantId: string;
   branchId: string;
   mustChangePassword: boolean;
@@ -18,7 +18,7 @@ export interface AuthEmployee {
 interface RolePickerState {
   token: string;
   roles: EmployeeRole[];
-  user: { id: string; fullName: string; email: string };
+  user: { id: string; fullName: string; phone: string };
 }
 
 interface AuthState {
@@ -54,12 +54,12 @@ export const useAuthStore = defineStore("auth", {
   },
 
   actions: {
-    async login(email: string, password: string): Promise<void> {
+    async login(phone: string, password: string): Promise<void> {
       const res = await fetch(`${API}/auth/merchant/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ phone, password }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));

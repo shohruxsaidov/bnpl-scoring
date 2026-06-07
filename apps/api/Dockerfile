@@ -25,4 +25,4 @@ WORKDIR /app
 EXPOSE 4000
 RUN npm i tsx -g
 # apps/api "start" script -> node dist/server.js
-CMD ["sh", "-c", "tsx /app/dist/server.js"]
+CMD ["sh", "-c", "npm run db:migrate && tsx /app/dist/server.js"]

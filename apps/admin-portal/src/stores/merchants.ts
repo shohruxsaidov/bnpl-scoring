@@ -144,7 +144,7 @@ export const useMerchantsStore = defineStore('merchants', {
 
     async createEmployee(
       branchId: string,
-      input: { email: string; password: string; fullName: string; roles: string[] },
+      input: { phone: string; password: string; fullName: string; roles: string[] },
     ): Promise<MerchantEmployee> {
       const body = await api<{ employee: MerchantEmployee }>(
         `/admin/branches/${branchId}/employees`,

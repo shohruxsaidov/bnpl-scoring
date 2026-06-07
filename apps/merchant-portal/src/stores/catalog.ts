@@ -125,7 +125,7 @@ export const useCatalogStore = defineStore('catalog', {
     },
 
     // -- Employees --
-    async addEmployee(input: { email: string; password: string; fullName: string; branchId: string; roles: string[] }) {
+    async addEmployee(input: { phone: string; password: string; fullName: string; branchId: string; roles: string[] }) {
       const body = await api<{ employee: Employee }>('/merchant/employees', {
         method: 'POST',
         body: JSON.stringify(input),

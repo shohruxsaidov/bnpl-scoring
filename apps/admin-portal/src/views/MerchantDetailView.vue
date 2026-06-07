@@ -148,26 +148,26 @@ function branchEmployeeCount(branchId: string): number {
 // --- Employees ---------------------------------------------------------------
 const showEmployee = ref(false)
 const employeeForm = ref<{
-  email: string
+  phone: string
   password: string
   fullName: string
   branchId: string | null
   roles: string[]
-}>({ email: '', password: '', fullName: '', branchId: null, roles: [] })
+}>({ phone: '', password: '', fullName: '', branchId: null, roles: [] })
 const employeeSaving = ref(false)
 
 function openEmployee() {
-  employeeForm.value = { email: '', password: '', fullName: '', branchId: null, roles: [] }
+  employeeForm.value = { phone: '', password: '', fullName: '', branchId: null, roles: [] }
   showEmployee.value = true
 }
 
 async function submitEmployee() {
   const f = employeeForm.value
-  if (!f.email || f.password.length < 8 || !f.fullName || !f.branchId || f.roles.length === 0) return
+  if (!f.phone || f.password.length < 8 || !f.fullName || !f.branchId || f.roles.length === 0) return
   employeeSaving.value = true
   try {
     await merchants.createEmployee(f.branchId, {
-      email: f.email,
+      phone: f.phone,
       password: f.password,
       fullName: f.fullName,
       roles: f.roles,
@@ -543,9 +543,9 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
               <span class="t-name-sm">{{ data.fullName }}</span>
             </template>
           </Column>
-          <Column :header="$t('merchantDetail.email')">
+          <Column :header="$t('merchantDetail.phone')">
             <template #body="{ data }">
-              <span class="font-mono muted">{{ data.email }}</span>
+              <span class="font-mono muted">{{ data.phone }}</span>
             </template>
           </Column>
           <Column :header="$t('merchantDetail.branch')">
@@ -768,8 +768,8 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
         <InputText v-model="employeeForm.fullName" />
       </div>
       <div class="field">
-        <label class="field-label">{{ $t('merchantDetail.email') }}</label>
-        <InputText v-model="employeeForm.email" />
+        <label class="field-label">{{ $t('merchantDetail.phone') }}</label>
+        <InputText v-model="employeeForm.phone" type="tel" />
       </div>
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.password') }}</label>

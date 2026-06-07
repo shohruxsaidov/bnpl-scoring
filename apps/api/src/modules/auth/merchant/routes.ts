@@ -7,7 +7,7 @@ import { findRoleByKey, listRoleFeatures } from '../../../rbac/service';
 import {
   changeMerchantPassword,
   createMerchantSession,
-  findMerchantUserByEmail,
+  findMerchantUserByPhone,
   findMerchantUserById,
   revokeMerchantSession,
   verifyMerchantSession,
@@ -85,7 +85,7 @@ function serializeEmployee(
   employee: {
     id: bigint;
     fullName: string;
-    email: string;
+    phone: string;
     merchantId: bigint;
     branchId: bigint;
     mustChangePassword: boolean;
@@ -97,7 +97,7 @@ function serializeEmployee(
   return {
     id: employee.id.toString(),
     fullName: employee.fullName,
-    email: employee.email,
+    phone: employee.phone,
     role,
     roleId: roleId.toString(),
     merchantId: employee.merchantId.toString(),
@@ -120,7 +120,7 @@ export default async function merchantAuthRoutes(app: FastifyInstance) {
   const db = app.db;
 
   const LoginBody = Type.Object({
-    email: Type.String({ minLength: 1 }),
+    phone: Type.String({ minLength: 1 }),
     password: Type.String({ minLength: 1 }),
   });
 
@@ -132,7 +132,7 @@ export default async function merchantAuthRoutes(app: FastifyInstance) {
   /* ── Login ──────────────────────────────────────────────────────────────── */
 
   fastify.post('/login', { schema: { body: LoginBody } }, async (request, reply) => {
-    const employee = await findMerchantUserByEmail(db, request.body.email);
+    const employee = await findMerchantUserByPhone(db, request.body.phone);
 
     if (!employee || !employee.active) {
       return reply.code(401).sendError('invalid_credentials');
@@ -174,7 +174,7 @@ export default async function merchantAuthRoutes(app: FastifyInstance) {
       user: {
         id: employee.id.toString(),
         fullName: employee.fullName,
-        email: employee.email,
+        phone: employee.phone,
       },
     };
   });

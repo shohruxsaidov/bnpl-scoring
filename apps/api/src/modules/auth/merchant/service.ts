@@ -37,11 +37,11 @@ export async function verifyPassword(
   return timingSafeEqual(derived, storedBuf);
 }
 
-export async function findMerchantUserByEmail(db: Db, email: string) {
+export async function findMerchantUserByPhone(db: Db, phone: string) {
   const [row] = await db
     .select()
     .from(merchantUsers)
-    .where(eq(merchantUsers.email, email.toLowerCase()))
+    .where(eq(merchantUsers.phone, phone))
     .limit(1);
   return row;
 }

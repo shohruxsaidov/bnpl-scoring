@@ -5,7 +5,7 @@ import { hashPassword } from "../../auth/admin/service"
 
 const safeSelect = {
   id: merchantUsers.id,
-  email: merchantUsers.email,
+  phone: merchantUsers.phone,
   fullName: merchantUsers.fullName,
   merchantId: merchantUsers.merchantId,
   branchId: merchantUsers.branchId,
@@ -21,7 +21,7 @@ export async function listEmployees(db: Db, merchantId: bigint) {
 
 export async function createEmployee(
   db: Db,
-  input: { email: string; password: string; fullName: string; merchantId: bigint; branchId: bigint; roles: string[] },
+  input: { phone: string; password: string; fullName: string; merchantId: bigint; branchId: bigint; roles: string[] },
 ) {
   const passwordHash = await hashPassword(input.password)
   const [row] = await db

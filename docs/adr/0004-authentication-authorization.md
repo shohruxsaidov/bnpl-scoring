@@ -5,7 +5,7 @@
 ## Decisions
 
 **Three separate auth flows, one per actor type.**
-Three distinct tables (`admin_users`, `merchant_users`, `users`) each have their own login endpoint and issue scoped JWTs. A shared auth flow was rejected: the three actor types have different credentials (email+password vs phone+OTP), different session scopes (platform-wide vs merchant-scoped vs client-scoped), and different security requirements. Mixing them would require type-conditional logic throughout every route guard.
+Three distinct tables (`admin_users`, `merchant_users`, `users`) each have their own login endpoint and issue scoped JWTs. A shared auth flow was rejected: the three actor types have different credentials (email+password for admins, phone+password for merchant employees, phone+OTP for clients), different session scopes (platform-wide vs merchant-scoped vs client-scoped), and different security requirements. Mixing them would require type-conditional logic throughout every route guard.
 
 **Client self-registration: phone → OTP → PINFL → MyID verification.**
 The `users` table is populated through a self-registration wizard:
@@ -76,7 +76,7 @@ Platform Admins assign admin Roles to admin users and provision the elevated Mer
 |---|---|---|
 | Platform Admin | `POST /auth/admin/login` | Email + password |
 | Platform Admin | `POST /auth/admin/refresh` | `session_id` cookie → new access token |
-| Merchant Employee | `POST /auth/merchant/login` | Email + password; returns role picker flag if multi-role |
+| Merchant Employee | `POST /auth/merchant/login` | Phone + password; returns role picker flag if multi-role |
 | Merchant Employee | `POST /auth/merchant/refresh` | `session_id` cookie → new access token |
 | Client (login) | `POST /auth/client/login/phone` | Phone → OTP sent |
 | Client (login) | `POST /auth/client/login/otp` | OTP → `{ accessToken, sessionToken, user }` in body |
@@ -91,7 +91,7 @@ Platform Admins assign admin Roles to admin users and provision the elevated Mer
 
 ```
 admin_users       — id, email, password_hash, full_name, role_id (FK roles), created_by, created_at
-merchant_users    — id, email, password_hash, full_name, merchant_id, branch_id, roles[] (role keys), active, created_at
+merchant_users    — id, phone, password_hash, full_name, merchant_id, branch_id, roles[] (role keys), active, created_at
 users             — id, phone, pinfl (unique), full_name, myid_verified_at, created_at
 
 admin_sessions    — id, admin_user_id (FK), refresh_token_hash, expires_at, created_at, revoked_at

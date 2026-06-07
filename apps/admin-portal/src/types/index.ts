@@ -56,6 +56,16 @@ export interface Employee {
   lastLogin: string | null
 }
 
+export interface Client {
+  id: string
+  pinfl: string
+  phone: string
+  fullName: string
+  middleName: string | null
+  birthDate: string
+  createdAt: string
+}
+
 export type DealStatus = 'active' | 'overdue' | 'closed' | 'declined' | 'scoring'
 
 export type ScoreDecision = 'approved' | 'declined' | 'partial' | 'manual_review'
@@ -178,7 +188,7 @@ export interface Branch {
 
 export interface MerchantEmployee {
   id: string
-  email: string
+  phone: string
   fullName: string
   merchantId: string
   branchId: string

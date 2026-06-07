@@ -55,6 +55,16 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'clients',
+        name: 'clients',
+        component: () => import('@/views/ClientsView.vue'),
+        meta: {
+          titleKey: 'routeTitle.clients',
+          breadcrumbKeys: ['breadcrumb.clients'],
+          feature: 'view_clients',
+        },
+      },
+      {
         path: 'deals',
         name: 'deals',
         component: () => import('@/views/DealsView.vue'),

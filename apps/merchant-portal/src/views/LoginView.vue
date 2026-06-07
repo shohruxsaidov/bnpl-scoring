@@ -17,17 +17,17 @@ const { t } = useI18n()
 
 const schema = toTypedSchema(
   z.object({
-    email: z.string().min(1, t('login.emailRequired')).email(t('login.emailInvalid')),
+    phone: z.string().min(1, t('login.phoneRequired')),
     password: z.string().min(1, t('login.passwordRequired')),
   }),
 )
 
 const { handleSubmit, errors, defineField } = useForm({
   validationSchema: schema,
-  initialValues: { email: '', password: '' },
+  initialValues: { phone: '', password: '' },
 })
 
-const [email, emailAttrs] = defineField('email')
+const [phone, phoneAttrs] = defineField('phone')
 const [password, passwordAttrs] = defineField('password')
 
 const loginError = ref('')
@@ -42,7 +42,7 @@ const onSubmit = handleSubmit(async (values) => {
   loginError.value = ''
   loading.value = true
   try {
-    await auth.login(values.email, values.password)
+    await auth.login(values.phone, values.password)
     if (!auth.requiresRolePicker) router.push('/')
   } catch {
     loginError.value = t('login.invalidCredentials')
@@ -179,9 +179,9 @@ async function pickRole(role: EmployeeRole) {
         <p class="sub">{{ $t('login.subtitle') }}</p>
 
         <div class="field">
-          <label class="field-label" for="email">{{ $t('login.email') }}</label>
-          <InputText id="email" v-model="email" v-bind="emailAttrs" :invalid="!!errors.email" autocomplete="username" />
-          <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
+          <label class="field-label" for="phone">{{ $t('login.phone') }}</label>
+          <InputText id="phone" v-model="phone" v-bind="phoneAttrs" :invalid="!!errors.phone" autocomplete="tel" />
+          <span v-if="errors.phone" class="field-error">{{ errors.phone }}</span>
         </div>
 
         <div class="field">

@@ -32,7 +32,8 @@
     "collectionBoard": "Inkasso",
     "scoringHistory": "Skoring tarixi",
     "payments": "To'lovlar",
-    "changePassword": "Parolni o'zgartirish"
+    "changePassword": "Parolni o'zgartirish",
+    "clients": "Mijozlar"
   },
   "breadcrumb": {
     "overview": "Umumiy ko'rinish",
@@ -50,7 +51,8 @@
     "permissions": "Ruxsatlar",
     "collectionBoard": "Inkasso",
     "scoringHistory": "Skoring tarixi",
-    "payments": "To'lovlar"
+    "payments": "To'lovlar",
+    "clients": "Mijozlar"
   },
   "topbar": {
     "scoring": "Skoring",
@@ -75,7 +77,17 @@
     "payments": "To'lovlar",
     "platformAdmin": "Platforma admin",
     "logout": "Chiqish",
-    "toggleSidebar": "Yon panelni almashtirish"
+    "toggleSidebar": "Yon panelni almashtirish",
+    "clients": "Mijozlar"
+  },
+  "clients": {
+    "searchPlaceholder": "Ism, telefon yoki PINFL bo'yicha qidirish…",
+    "count": "{count} ta mijoz",
+    "fullName": "Ism",
+    "phone": "Telefon",
+    "pinfl": "PINFL",
+    "birthDate": "Tug'ilgan sana",
+    "createdAt": "Qo'shilgan"
   },
   "collectionBoard": {
     "allMerchants": "Barcha merchantlar",

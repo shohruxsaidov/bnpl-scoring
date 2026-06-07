@@ -7,7 +7,7 @@ export async function listEmployees(db: Db, branchId: bigint) {
   return db
     .select({
       id: merchantUsers.id,
-      email: merchantUsers.email,
+      phone: merchantUsers.phone,
       fullName: merchantUsers.fullName,
       merchantId: merchantUsers.merchantId,
       branchId: merchantUsers.branchId,
@@ -26,7 +26,7 @@ export async function listEmployeesByMerchant(db: Db, merchantId: bigint) {
     .select({
       id: merchantUsers.id,
       fullName: merchantUsers.fullName,
-      email: merchantUsers.email,
+      phone: merchantUsers.phone,
       roles: merchantUsers.roles,
       active: merchantUsers.active,
     })
@@ -39,7 +39,7 @@ export async function getEmployee(db: Db, id: bigint) {
   const [row] = await db
     .select({
       id: merchantUsers.id,
-      email: merchantUsers.email,
+      phone: merchantUsers.phone,
       fullName: merchantUsers.fullName,
       merchantId: merchantUsers.merchantId,
       branchId: merchantUsers.branchId,
@@ -57,7 +57,7 @@ export async function getEmployee(db: Db, id: bigint) {
 export async function createEmployee(
   db: Db,
   input: {
-    email: string
+    phone: string
     password: string
     fullName: string
     merchantId: bigint
@@ -69,7 +69,7 @@ export async function createEmployee(
   const [row] = await db
     .insert(merchantUsers)
     .values({
-      email: input.email.toLowerCase(),
+      phone: input.phone,
       passwordHash,
       fullName: input.fullName,
       merchantId: input.merchantId,
@@ -79,7 +79,7 @@ export async function createEmployee(
     })
     .returning({
       id: merchantUsers.id,
-      email: merchantUsers.email,
+      phone: merchantUsers.phone,
       fullName: merchantUsers.fullName,
       merchantId: merchantUsers.merchantId,
       branchId: merchantUsers.branchId,
@@ -112,7 +112,7 @@ export async function updateEmployee(
     .where(eq(merchantUsers.id, id))
     .returning({
       id: merchantUsers.id,
-      email: merchantUsers.email,
+      phone: merchantUsers.phone,
       fullName: merchantUsers.fullName,
       merchantId: merchantUsers.merchantId,
       branchId: merchantUsers.branchId,

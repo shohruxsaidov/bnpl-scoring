@@ -12,8 +12,7 @@ export interface Tenant {
 export interface Employee {
   id: string
   fullName: string
-  email: string
-  phone?: string
+  phone: string
   merchantId: string
   branchId: string
   roles: EmployeeRole[]

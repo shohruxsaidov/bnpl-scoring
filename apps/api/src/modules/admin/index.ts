@@ -15,6 +15,7 @@ import adminScoringHistoryRoutes from "./scoringHistory/routes"
 import adminPaymentRoutes from "./payments/routes"
 import adminCollectionBoardRoutes from "./collectionBoard/routes"
 import adminBuyoutRoutes from "./buyouts/routes"
+import adminClientsRoutes from "./clients/routes"
 import mxikRoutes from "../mxik/routes"
 
 interface FeatureMap {
@@ -48,6 +49,7 @@ export default async function adminModule(app: FastifyInstance) {
   await app.register(guarded(adminPaymentRoutes, { read: "view_payments", write: "manage_payments" }), { prefix: "/admin/payments" })
   await app.register(guarded(adminCollectionBoardRoutes, { read: "view_collection_board" }), { prefix: "/admin/collection-board" })
   await app.register(guarded(adminBuyoutRoutes, { read: "manage_buyout", write: "manage_buyout" }), { prefix: "/admin/buyouts" })
+  await app.register(guarded(adminClientsRoutes, { read: "view_clients" }), { prefix: "/admin/clients" })
   await app.register(guarded(adminUsersRoutes, { read: "manage_admins", write: "manage_admins" }), { prefix: "/admin/users" })
   // Permissions module guards itself with manage_roles per-route.
   await app.register(adminPermissionsRoutes, { prefix: "/admin/permissions" })

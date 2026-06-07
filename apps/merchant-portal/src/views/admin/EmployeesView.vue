@@ -22,7 +22,7 @@ const filteredEmployees = computed(() => {
   if (!search.value.trim()) return catalog.employees
   const q = search.value.toLowerCase()
   return catalog.employees.filter(
-    (e) => e.fullName.toLowerCase().includes(q) || e.email.toLowerCase().includes(q),
+    (e) => e.fullName.toLowerCase().includes(q) || e.phone.toLowerCase().includes(q),
   )
 })
 
@@ -38,7 +38,7 @@ const editingId = ref<string | null>(null)
 const saving = ref(false)
 
 const form = reactive({
-  email: '',
+  phone: '',
   password: '',
   fullName: '',
   branchId: '',
@@ -47,7 +47,7 @@ const form = reactive({
 
 function openNew() {
   editingId.value = null
-  form.email = ''
+  form.phone = ''
   form.password = ''
   form.fullName = ''
   form.branchId = catalog.branches[0]?.id ?? ''
@@ -57,7 +57,7 @@ function openNew() {
 
 function openEdit(e: Employee) {
   editingId.value = e.id
-  form.email = e.email
+  form.phone = e.phone
   form.password = ''
   form.fullName = e.fullName
   form.branchId = e.branchId
@@ -76,11 +76,11 @@ async function save() {
       await catalog.updateEmployee(editingId.value, { fullName: form.fullName, branchId: form.branchId, roles: form.roles })
       toast.add({ severity: 'success', summary: t('employees.updated'), detail: form.fullName, life: 2000 })
     } else {
-      if (!form.email || form.password.length < 8) {
+      if (!form.phone || form.password.length < 8) {
         toast.add({ severity: 'warn', summary: t('employees.missingFields'), life: 2500 })
         return
       }
-      await catalog.addEmployee({ email: form.email, password: form.password, fullName: form.fullName, branchId: form.branchId, roles: form.roles })
+      await catalog.addEmployee({ phone: form.phone, password: form.password, fullName: form.fullName, branchId: form.branchId, roles: form.roles })
       toast.add({ severity: 'success', summary: t('employees.added'), detail: form.fullName, life: 2000 })
     }
     dialogVisible.value = false
@@ -124,7 +124,7 @@ function roleLabel(r: EmployeeRole): string {
                 <div class="emp-avatar">{{ data.fullName.charAt(0) }}</div>
                 <div>
                   <div class="emp-name">{{ data.fullName }}</div>
-                  <div class="emp-email">{{ data.email }}</div>
+                  <div class="emp-email">{{ data.phone }}</div>
                 </div>
               </div>
             </template>
@@ -171,8 +171,8 @@ function roleLabel(r: EmployeeRole): string {
           </div>
           <template v-if="!editingId">
             <div class="field">
-              <label class="field-label">{{ $t('employees.email') }}</label>
-              <InputText v-model="form.email" type="email" placeholder="agent@merchant.uz" />
+              <label class="field-label">{{ $t('employees.phone') }}</label>
+              <InputText v-model="form.phone" type="tel" placeholder="+998901234567" />
             </div>
             <div class="field">
               <label class="field-label">{{ $t('employees.password') }}</label>

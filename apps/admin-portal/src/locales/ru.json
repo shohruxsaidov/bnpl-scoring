@@ -32,7 +32,8 @@
     "collectionBoard": "Коллекшн Борд",
     "scoringHistory": "История скоринга",
     "payments": "Платежи",
-    "changePassword": "Смена пароля"
+    "changePassword": "Смена пароля",
+    "clients": "Клиенты"
   },
   "breadcrumb": {
     "overview": "Обзор",
@@ -50,7 +51,8 @@
     "permissions": "Разрешения",
     "collectionBoard": "Коллекшн Борд",
     "scoringHistory": "История скоринга",
-    "payments": "Платежи"
+    "payments": "Платежи",
+    "clients": "Клиенты"
   },
   "topbar": {
     "scoring": "Скоринг",
@@ -75,7 +77,17 @@
     "payments": "Платежи",
     "platformAdmin": "Админ платформы",
     "logout": "Выйти",
-    "toggleSidebar": "Переключить панель"
+    "toggleSidebar": "Переключить панель",
+    "clients": "Клиенты"
+  },
+  "clients": {
+    "searchPlaceholder": "Поиск по имени, телефону или ПИНФЛ…",
+    "count": "{count} клиентов",
+    "fullName": "Имя",
+    "phone": "Телефон",
+    "pinfl": "ПИНФЛ",
+    "birthDate": "Дата рождения",
+    "createdAt": "Добавлен"
   },
   "collectionBoard": {
     "allMerchants": "Все мерчанты",

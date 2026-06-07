@@ -244,7 +244,7 @@ export const merchantDocuments = pgTable('merchant_documents', {
 
 export const merchantUsers = pgTable('merchant_users', {
   id: bigserial('id', { mode: 'bigint' }).primaryKey(),
-  email: varchar('email', { length: 255 }).notNull().unique(),
+  phone: varchar('phone', { length: 20 }).notNull().unique(),
   passwordHash: varchar('password_hash', { length: 500 }).notNull(),
   fullName: varchar('full_name', { length: 200 }).notNull(),
   merchantId: bigint('merchant_id', { mode: 'bigint' })
