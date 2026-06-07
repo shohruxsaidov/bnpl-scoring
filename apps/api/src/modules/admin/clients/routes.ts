@@ -7,7 +7,7 @@ export default async function adminClientsRoutes(app: FastifyInstance) {
   app.get("/", async () => {
     const rows = await listUniqueClients(db);
     return {
-      clients: rows.rows.map((r) => ({
+      clients: rows.map((r) => ({
         id: r.id,
         pinfl: r.pinfl,
         phone: r.phone,

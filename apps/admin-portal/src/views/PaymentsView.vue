@@ -30,6 +30,8 @@ function switchTab(tab: Tab) {
 const merchantFilter = ref<string | null>(null)
 const statusFilter = ref<Payment['status'] | null>(null)
 const search = ref('')
+const dateFrom = ref('')
+const dateTo = ref('')
 
 onMounted(() => {
   store.fetchPayments()
@@ -53,6 +55,8 @@ const statusOptions = computed(() => [
 const filtered = computed<Payment[]>(() => {
   let list = store.payments
   if (statusFilter.value) list = list.filter((p) => p.status === statusFilter.value)
+  if (dateFrom.value) list = list.filter((p) => p.date.slice(0, 10) >= dateFrom.value)
+  if (dateTo.value) list = list.filter((p) => p.date.slice(0, 10) <= dateTo.value)
   if (search.value.trim()) {
     const q = search.value.toLowerCase()
     list = list.filter(
@@ -290,6 +294,12 @@ function hideDealDropdown() {
             :placeholder="$t('payments.allStatuses')"
             class="filter-select"
           />
+          <div class="date-range-wrap">
+            <i class="pi pi-calendar date-range-icon" />
+            <input v-model="dateFrom" type="date" class="date-input" :placeholder="$t('payments.dateFrom')" />
+            <span class="date-sep">—</span>
+            <input v-model="dateTo" type="date" class="date-input" :placeholder="$t('payments.dateTo')" />
+          </div>
         </div>
 
         <div class="surface-card table-card">
@@ -602,6 +612,16 @@ function hideDealDropdown() {
 }
 .search-input:focus { border-color: var(--accent-2); }
 .filter-select { width: 200px; flex-shrink: 0; }
+.date-range-wrap { display: flex; align-items: center; gap: 0.4rem; flex-shrink: 0; }
+.date-range-icon { color: var(--text-secondary); font-size: 0.88rem; }
+.date-input {
+  padding: 0.5rem 0.6rem; border: 1px solid var(--border-subtle); border-radius: 10px;
+  background: var(--bg-base); color: var(--text-primary);
+  font-size: 0.85rem; font-family: inherit; outline: none; transition: border-color 0.15s ease;
+  width: 138px;
+}
+.date-input:focus { border-color: var(--accent-2); }
+.date-sep { font-size: 0.88rem; color: var(--text-secondary); }
 
 /* Tables */
 .table-card { padding: 0; overflow: hidden; }

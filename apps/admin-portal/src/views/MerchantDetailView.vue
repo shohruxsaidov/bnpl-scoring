@@ -272,6 +272,7 @@ async function toggleCategory(category: Category) {
 
 // --- Products ----------------------------------------------------------------
 const showProduct = ref(false)
+const editingProductId = ref<string | null>(null)
 const productForm = ref<{
   categoryId: string | null
   name: string
@@ -283,8 +284,24 @@ const productForm = ref<{
 const productSaving = ref(false)
 
 function openProduct() {
+  editingProductId.value = null
   productForm.value = { categoryId: null, name: '', price: null, mxikCode: '', packageCode: null, packageName: '' }
   _resetMxik()
+  showProduct.value = true
+}
+
+function openEditProduct(product: Product) {
+  editingProductId.value = product.id
+  productForm.value = {
+    categoryId: product.categoryId,
+    name: product.name,
+    price: Number(product.price),
+    mxikCode: product.mxikCode ?? '',
+    packageCode: product.packageCode,
+    packageName: product.packageName ?? '',
+  }
+  _resetMxik()
+  if (product.mxikCode) selectedCode.value = product.mxikCode
   showProduct.value = true
 }
 
@@ -293,18 +310,30 @@ async function submitProduct() {
   if (!f.categoryId || !f.name || f.price === null) return
   productSaving.value = true
   try {
-    await merchants.createProduct(merchantId.value, {
-      categoryId: f.categoryId,
-      name: f.name,
-      price: String(f.price),
-      mxikCode: f.mxikCode || undefined,
-      packageCode: f.packageCode ?? undefined,
-      packageName: f.packageName || undefined,
-    })
-    toast.add({ severity: 'success', summary: t('merchantDetail.productCreated'), life: 2000 })
+    if (editingProductId.value) {
+      await merchants.updateProduct(editingProductId.value, {
+        categoryId: f.categoryId,
+        name: f.name,
+        price: String(f.price),
+        mxikCode: f.mxikCode || undefined,
+        packageCode: f.packageCode ?? undefined,
+        packageName: f.packageName || undefined,
+      })
+      toast.add({ severity: 'success', summary: t('merchantDetail.productSaved'), life: 2000 })
+    } else {
+      await merchants.createProduct(merchantId.value, {
+        categoryId: f.categoryId,
+        name: f.name,
+        price: String(f.price),
+        mxikCode: f.mxikCode || undefined,
+        packageCode: f.packageCode ?? undefined,
+        packageName: f.packageName || undefined,
+      })
+      toast.add({ severity: 'success', summary: t('merchantDetail.productCreated'), life: 2000 })
+    }
     showProduct.value = false
   } catch {
-    notifyError('merchantDetail.createFailed')
+    notifyError(editingProductId.value ? 'merchantDetail.updateFailed' : 'merchantDetail.createFailed')
   } finally {
     productSaving.value = false
   }
@@ -600,6 +629,13 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
               <ToggleSwitch :model-value="data.active" @update:model-value="toggleProduct(data)" />
             </template>
           </Column>
+          <Column style="width: 48px">
+            <template #body="{ data }">
+              <button class="icon-btn" :title="$t('common.edit')" @click="openEditProduct(data)">
+                <i class="pi pi-pencil" />
+              </button>
+            </template>
+          </Column>
         </DataTable>
       </div>
     </section>
@@ -782,8 +818,8 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
       </template>
     </Dialog>
 
-    <!-- Product dialog -->
-    <Dialog v-model:visible="showProduct" modal :header="$t('merchantDetail.addProduct')" :style="{ width: '460px' }">
+    <!-- Product dialog (create & edit) -->
+    <Dialog v-model:visible="showProduct" modal :header="editingProductId ? $t('merchantDetail.editProduct') : $t('merchantDetail.addProduct')" :style="{ width: '460px' }">
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.name') }}</label>
         <InputText v-model="productForm.name" />
@@ -847,7 +883,7 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
       <template #footer>
         <button class="btn-ghost" @click="showProduct = false">{{ $t('common.cancel') }}</button>
         <button class="btn-gradient" :disabled="productSaving" @click="submitProduct">
-          {{ $t('merchantDetail.create') }}
+          {{ editingProductId ? $t('common.save') : $t('merchantDetail.create') }}
         </button>
       </template>
     </Dialog>

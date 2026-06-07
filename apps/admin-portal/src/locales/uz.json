@@ -175,7 +175,9 @@
     "colNote": "Izoh",
     "colDate": "Sana",
     "errorOverpayment": "Summa shartnoma bo'yicha qoldiqdan oshib ketdi",
-    "successCreated": "To'lov kiritildi"
+    "successCreated": "To'lov kiritildi",
+    "dateFrom": "Dan",
+    "dateTo": "Gacha"
   },
   "permissions": {
     "title": "Rollar va ruxsatlar",
@@ -552,6 +554,8 @@
     "editCategory": "Kategoriyani tahrirlash",
     "categorySaved": "Kategoriya saqlandi",
     "productCreated": "Mahsulot yaratildi",
+    "editProduct": "Mahsulotni tahrirlash",
+    "productSaved": "Mahsulot saqlandi",
     "documentUploaded": "Hujjat yuklandi",
     "changePassword": "Parolni o'zgartirish",
     "changePasswordTitle": "Xodim parolini o'zgartirish",

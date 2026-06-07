@@ -183,7 +183,9 @@
     "colNote": "Примечание",
     "colDate": "Дата",
     "errorOverpayment": "Сумма превышает остаток по договору",
-    "successCreated": "Платёж внесён"
+    "successCreated": "Платёж внесён",
+    "dateFrom": "С",
+    "dateTo": "По"
   },
   "permissions": {
     "title": "Роли и разрешения",
@@ -560,6 +562,8 @@
     "editCategory": "Редактировать категорию",
     "categorySaved": "Категория сохранена",
     "productCreated": "Товар создан",
+    "editProduct": "Редактировать товар",
+    "productSaved": "Товар сохранён",
     "documentUploaded": "Документ загружен",
     "changePassword": "Сменить пароль",
     "changePasswordTitle": "Сменить пароль сотрудника",
