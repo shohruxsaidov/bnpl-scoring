@@ -117,7 +117,7 @@ CREATE TABLE "merchant_tariffs" (
 --> statement-breakpoint
 CREATE TABLE "merchant_users" (
 	"id" bigserial PRIMARY KEY NOT NULL,
-	"email" varchar(255) NOT NULL,
+	"phone" varchar(20) NOT NULL,
 	"password_hash" varchar(500) NOT NULL,
 	"full_name" varchar(200) NOT NULL,
 	"merchant_id" bigint NOT NULL,
@@ -126,7 +126,7 @@ CREATE TABLE "merchant_users" (
 	"must_change_password" boolean DEFAULT true NOT NULL,
 	"active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "merchant_users_email_unique" UNIQUE("email")
+	CONSTRAINT "merchant_users_phone_unique" UNIQUE("phone")
 );
 --> statement-breakpoint
 CREATE TABLE "merchants" (
@@ -139,6 +139,7 @@ CREATE TABLE "merchants" (
 	"logo_url" text,
 	"contract_number" varchar(100),
 	"active" boolean DEFAULT true NOT NULL,
+	"kyb_status" varchar(20) DEFAULT 'verified' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "merchants_inn_unique" UNIQUE("inn")
 );
@@ -286,7 +287,8 @@ CREATE TABLE "deal_payment_schedules" (
 	"paid_amount" bigint NOT NULL,
 	"paid" boolean DEFAULT false NOT NULL,
 	"paid_at" timestamp with time zone,
-	"manual_payment_id" bigint
+	"manual_payment_id" bigint,
+	"payment_provider" text[]
 );
 --> statement-breakpoint
 CREATE TABLE "deals" (

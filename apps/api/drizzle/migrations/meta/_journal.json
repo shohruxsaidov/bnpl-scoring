@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1780735447634,
-      "tag": "0000_bright_preak",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1749340800000,
-      "tag": "0001_merchant_kyb_status",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1780814619254,
-      "tag": "0002_left_madame_hydra",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1749340900000,
-      "tag": "0003_merchant_users_phone",
+      "when": 1780829830134,
+      "tag": "0000_flippant_screwball",
       "breakpoints": true
     }
   ]

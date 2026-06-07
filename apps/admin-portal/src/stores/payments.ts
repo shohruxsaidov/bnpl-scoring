@@ -17,6 +17,7 @@ export interface Payment {
   status: 'confirmed' | 'pending' | 'partial' | 'cancelled'
   /** ISO date string */
   date: string
+  paymentProvider: string[] | null
 }
 
 interface PaymentsState {

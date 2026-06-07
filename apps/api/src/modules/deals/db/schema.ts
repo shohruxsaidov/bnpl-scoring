@@ -135,6 +135,7 @@ export const dealPaymentSchedules = pgTable('deal_payment_schedules', {
   paid: boolean('paid').notNull().default(false),
   paidAt: timestamp('paid_at', { withTimezone: true }),
   manualPaymentId: bigint('manual_payment_id', { mode: 'bigint' }).references(() => manualPayments.id),
+  paymentProvider: text('payment_provider').array(),
 })
 
 // ---------------------------------------------------------------------------

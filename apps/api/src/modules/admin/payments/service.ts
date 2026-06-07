@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, or, sql } from 'drizzle-orm'
 import type { Db } from '../../../db'
 import { deals, dealPaymentSchedules, manualPayments, dealComments } from '../../deals/db/schema'
 import { clients, merchants, adminUsers } from '../../id/db/schema'
@@ -23,6 +23,7 @@ export interface Payment {
   status: 'confirmed' | 'pending' | 'partial' | 'cancelled'
   /** ISO date string — paid date if present, else due date */
   date: string
+  paymentProvider: string[] | null
 }
 
 export interface ManualPayment {
@@ -75,6 +76,7 @@ export async function listPayments(
       paid: dealPaymentSchedules.paid,
       paidAt: dealPaymentSchedules.paidAt,
       dueDate: dealPaymentSchedules.dueDate,
+      paymentProvider: dealPaymentSchedules.paymentProvider,
     })
     .from(dealPaymentSchedules)
     .innerJoin(deals, eq(dealPaymentSchedules.dealId, deals.id))
@@ -83,8 +85,12 @@ export async function listPayments(
     .orderBy(desc(dealPaymentSchedules.dueDate))
     .$dynamic()
 
+  const notPending = or(eq(dealPaymentSchedules.paid, true), gt(dealPaymentSchedules.paidAmount, 0n))!
+
   if (filters.merchantId) {
-    query = query.where(eq(deals.merchantId, filters.merchantId))
+    query = query.where(and(notPending, eq(deals.merchantId, filters.merchantId)))
+  } else {
+    query = query.where(notPending)
   }
 
   const rows = await query
@@ -106,6 +112,7 @@ export async function listPayments(
         ? ('partial' as const)
         : ('pending' as const),
     date: r.paidAt ? r.paidAt.toISOString() : new Date(`${r.dueDate}T00:00:00.000Z`).toISOString(),
+    paymentProvider: r.paymentProvider ?? null,
   }))
 }
 
@@ -275,6 +282,7 @@ export async function createManualPayment(
           paid: fullyPaid,
           paidAt: fullyPaid ? now : null,
           manualPaymentId: mp.id,
+          paymentProvider: sql`array_append(COALESCE(${dealPaymentSchedules.paymentProvider}, ARRAY[]::text[]), 'manual')`,
         })
         .where(eq(dealPaymentSchedules.id, row.id))
 

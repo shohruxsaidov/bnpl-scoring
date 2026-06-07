@@ -339,6 +339,14 @@ function hideDealDropdown() {
                 >{{ $t('payments.status' + data.status.charAt(0).toUpperCase() + data.status.slice(1)) }}</span>
               </template>
             </Column>
+            <Column :header="$t('payments.provider')" field="paymentProvider" style="width:140px">
+              <template #body="{ data }">
+                <span v-if="data.paymentProvider?.length" class="provider-list">
+                  <span v-for="p in data.paymentProvider" :key="p" class="pill provider-pill">{{ p }}</span>
+                </span>
+                <span v-else class="muted">—</span>
+              </template>
+            </Column>
             <Column :header="$t('payments.date')" field="date" sortable style="width:120px">
               <template #body="{ data }">
                 <span class="font-mono muted">{{ formatDate(data.date) }}</span>
@@ -634,6 +642,8 @@ function hideDealDropdown() {
 
 .partial-amount { display: flex; align-items: baseline; gap: 0.3rem; }
 .partial-of { font-size: 0.72rem; color: var(--text-secondary); }
+.provider-list { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.provider-pill { color: var(--accent-2); background: color-mix(in srgb, var(--accent-2) 12%, transparent); text-transform: capitalize; }
 
 .error-state { padding: 3rem 2rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; text-align: center; }
 .error-state i { font-size: 2.2rem; color: var(--danger); }

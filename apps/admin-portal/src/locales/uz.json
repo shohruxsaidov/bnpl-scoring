@@ -145,6 +145,7 @@
     "amount": "Summa",
     "status": "Holat",
     "date": "Sana",
+    "provider": "Provayder",
     "tabSchedule": "To'lovlar",
     "tabManual": "Qo'lda to'lovlar",
     "tabPlan": "Rejalashtirilgan to'lovlar",

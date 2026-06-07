@@ -1,5 +1,5 @@
 {
-  "id": "b74c85eb-d59e-4d24-83fb-9798bab6b1e7",
+  "id": "d1f9ae5d-12d9-4c20-96b8-b08c454f40b8",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -859,9 +859,9 @@
           "primaryKey": true,
           "notNull": true
         },
-        "email": {
-          "name": "email",
-          "type": "varchar(255)",
+        "phone": {
+          "name": "phone",
+          "type": "varchar(20)",
           "primaryKey": false,
           "notNull": true
         },
@@ -948,11 +948,11 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "merchant_users_email_unique": {
-          "name": "merchant_users_email_unique",
+        "merchant_users_phone_unique": {
+          "name": "merchant_users_phone_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "email"
+            "phone"
           ]
         }
       },
@@ -1018,6 +1018,13 @@
           "primaryKey": false,
           "notNull": true,
           "default": true
+        },
+        "kyb_status": {
+          "name": "kyb_status",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'verified'"
         },
         "created_at": {
           "name": "created_at",
@@ -2034,6 +2041,12 @@
         "manual_payment_id": {
           "name": "manual_payment_id",
           "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payment_provider": {
+          "name": "payment_provider",
+          "type": "text[]",
           "primaryKey": false,
           "notNull": false
         }
