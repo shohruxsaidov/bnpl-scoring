@@ -1,12 +1,17 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import { RouterView } from 'vue-router'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { RouterView, useRoute } from 'vue-router'
 import AppSidebar from './app-sidebar.vue'
 import AppTopbar from './app-topbar.vue'
 
 const collapsed = ref(false)
 const mobileOpen = ref(false)
 const isMobile = ref(false)
+const route = useRoute()
+
+watch(() => route.path, () => {
+  if (isMobile.value) mobileOpen.value = false
+})
 
 function checkMobile() {
   isMobile.value = window.innerWidth < 768

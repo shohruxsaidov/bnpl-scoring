@@ -22,6 +22,13 @@ function setLang(lang: 'uz' | 'ru') {
   locale.value = lang
   localStorage.setItem('lang', lang)
 }
+
+const today = new Date().toLocaleDateString('uz-UZ', {
+  weekday: 'short',
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+})
 </script>
 
 <template>
@@ -30,20 +37,24 @@ function setLang(lang: 'uz' | 'ru') {
       <button v-if="showMenuBtn" class="menu-btn" @click="emit('menu')">
         <i class="pi pi-bars" />
       </button>
-      <h1 class="page-title">{{ title }}</h1>
-      <nav v-if="breadcrumb.length" class="crumbs">
-        <template v-for="(c, i) in breadcrumb" :key="i">
-          <span :class="{ current: i === breadcrumb.length - 1 }">{{ c }}</span>
-          <i v-if="i < breadcrumb.length - 1" class="pi pi-angle-right sep" />
-        </template>
-      </nav>
+      <div>
+        <h1 class="page-title">{{ title }}</h1>
+        <nav v-if="breadcrumb.length" class="crumbs">
+          <template v-for="(c, i) in breadcrumb" :key="i">
+            <span :class="{ current: i === breadcrumb.length - 1 }">{{ c }}</span>
+            <i v-if="i < breadcrumb.length - 1" class="pi pi-angle-right sep" />
+          </template>
+        </nav>
+      </div>
+    </div>
+
+    <div class="search">
+      <i class="pi pi-search" />
+      <input type="text" :placeholder="$t('topbar.searchPlaceholder')" />
     </div>
 
     <div class="right">
-      <div class="search">
-        <i class="pi pi-search" />
-        <input type="text" :placeholder="$t('topbar.searchPlaceholder')" />
-      </div>
+      <span class="date font-mono">{{ today }}</span>
       <div class="lang-switch">
         <button class="lang-btn" :class="{ active: locale === 'uz' }" @click="setLang('uz')">
           uz
@@ -59,11 +70,11 @@ function setLang(lang: 'uz' | 'ru') {
 
 <style scoped>
 .topbar {
-  height: 60px;
+  height: 68px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1.4rem;
+  padding: 0 1.6rem;
   background: var(--bg-base);
   border-bottom: 1px solid var(--border-subtle);
   position: sticky;
@@ -71,8 +82,13 @@ function setLang(lang: 'uz' | 'ru') {
   z-index: 10;
 }
 
+.left {
+  display: flex;
+  align-items: center;
+}
+
 .page-title {
-  font-size: 1.15rem;
+  font-size: 1.25rem;
   font-weight: 800;
   margin: 0;
   line-height: 1.1;
@@ -82,9 +98,9 @@ function setLang(lang: 'uz' | 'ru') {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
-  margin-top: 0.12rem;
+  margin-top: 0.15rem;
   font-weight: 600;
 }
 
@@ -93,14 +109,20 @@ function setLang(lang: 'uz' | 'ru') {
 }
 
 .sep {
-  font-size: 0.6rem;
+  font-size: 0.65rem;
   opacity: 0.6;
 }
 
 .right {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
+  gap: 0.9rem;
+}
+
+.date {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
 .lang-switch {
@@ -109,8 +131,9 @@ function setLang(lang: 'uz' | 'ru') {
   gap: 0.3rem;
   border: 1px solid var(--border-subtle);
   background: var(--bg-surface);
-  border-radius: 9px;
-  padding: 0.25rem 0.5rem;
+  border-radius: 10px;
+  padding: 0.28rem 0.5rem;
+  height: 38px;
 }
 
 .lang-btn {
@@ -143,16 +166,25 @@ function setLang(lang: 'uz' | 'ru') {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: 9px;
-  padding: 0.45rem 0.75rem;
-  width: 320px;
+  height: 38px;
+  padding: 0 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-input);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  transition: all 0.15s ease;
+  min-width: 280px;
+}
+
+.search:focus-within {
+  border-color: var(--accent-1);
 }
 
 .search i {
   font-size: 0.85rem;
-  color: var(--text-secondary);
+  color: var(--accent-1);
+  flex-shrink: 0;
 }
 
 .search input {
@@ -161,17 +193,19 @@ function setLang(lang: 'uz' | 'ru') {
   background: transparent;
   outline: none;
   font-family: inherit;
-  font-size: 0.82rem;
+  font-size: 0.85rem;
+  font-weight: 500;
   color: var(--text-primary);
 }
 
 .search input::placeholder {
-  color: var(--text-secondary);
+  color: var(--text-muted);
 }
 
 .menu-btn {
-  width: 36px;
-  height: 36px;
+  margin-right: 1.2rem;
+  width: 38px;
+  height: 38px;
   border-radius: 10px;
   border: 1px solid var(--border-subtle);
   background: var(--bg-surface);
@@ -183,43 +217,20 @@ function setLang(lang: 'uz' | 'ru') {
 }
 
 @media (max-width: 767px) {
-  .topbar { padding: 0 1rem; }
-  .search { width: auto; flex: 1; min-width: 0; }
-  .right { gap: 0.5rem; }
-}
+  .date {
+    display: none;
+  }
 
-.bell {
-  position: relative;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-surface);
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  transition: all 0.15s ease;
-}
+  .topbar {
+    padding: 0 1rem;
+  }
 
-.bell:hover {
-  color: var(--accent-2);
-  border-color: var(--accent-2);
-}
+  .right {
+    gap: 0.5rem;
+  }
 
-.badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background: var(--danger);
-  color: #fff;
-  font-size: 0.6rem;
-  font-weight: 800;
-  min-width: 16px;
-  height: 16px;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  padding: 0 4px;
+  .search {
+    display: none;
+  }
 }
 </style>
