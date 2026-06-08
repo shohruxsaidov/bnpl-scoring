@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useDealsStore } from '@/stores/deals'
 import { useOverviewApi } from '@/composables/useOverviewApi'
-import StatusBadge from '@/components/StatusBadge.vue'
+import StatusBadge from '@/components/status-badge.vue'
 import { formatSomCompact, formatSomShort, formatDate } from '@/utils/money'
 
 const deals = useDealsStore()

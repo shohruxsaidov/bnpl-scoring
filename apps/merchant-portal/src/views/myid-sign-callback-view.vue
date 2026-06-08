@@ -3,7 +3,7 @@ import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useClientApi } from '@/composables/useClientApi'
 import { useDealStore } from '@/stores/deal'
-import { useClientScoringStore } from '@/stores/clientScoring'
+import { useClientScoringStore } from '@/stores/client-scoring'
 
 const router = useRouter()
 const { myidSignCompleteMutation } = useClientApi()

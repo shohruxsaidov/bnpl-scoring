@@ -1,86 +1,123 @@
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
+
 import { apiFetch as api } from '@/utils/apiFetch'
-import type { Client, ClientOverview, ClientDeal, ClientScoringEntry, ClientPaymentRow } from '@/types'
 
-interface ClientsState {
-  clients: Client[]
-  loading: boolean
-  error: string | null
-  detail: ClientOverview | null
-  detailDeals: ClientDeal[]
-  detailScoring: ClientScoringEntry[]
-  detailPayments: ClientPaymentRow[]
-  detailLoading: boolean
-  dealsLoaded: boolean
-  scoringLoaded: boolean
-  paymentsLoaded: boolean
-}
+import type {
+  Client,
+  ClientOverview,
+  ClientDeal,
+  ClientScoringEntry,
+  ClientPaymentRow,
+} from '@/types'
 
-export const useClientsStore = defineStore('clients', {
-  state: (): ClientsState => ({
-    clients: [],
-    loading: false,
-    error: null,
-    detail: null,
-    detailDeals: [],
-    detailScoring: [],
-    detailPayments: [],
-    detailLoading: false,
-    dealsLoaded: false,
-    scoringLoaded: false,
-    paymentsLoaded: false,
-  }),
+export const useClientsStore = defineStore('clients', () => {
+  const clients = ref<Client[]>([])
+  const loading = ref(false)
+  const error = ref<string | null>(null)
 
-  actions: {
-    async fetchAll(): Promise<void> {
-      this.loading = true
-      this.error = null
-      try {
-        const body = await api<{ clients: Client[] }>('/admin/clients')
-        this.clients = body.clients
-      } catch (e) {
-        this.error = (e as Error).message
-        throw e
-      } finally {
-        this.loading = false
-      }
-    },
+  const detail = ref<ClientOverview | null>(null)
+  const detailDeals = ref<ClientDeal[]>([])
+  const detailScoring = ref<ClientScoringEntry[]>([])
+  const detailPayments = ref<ClientPaymentRow[]>([])
 
-    async fetchDetail(id: string): Promise<void> {
-      this.detail = null
-      this.detailDeals = []
-      this.detailScoring = []
-      this.detailPayments = []
-      this.dealsLoaded = false
-      this.scoringLoaded = false
-      this.paymentsLoaded = false
-      this.detailLoading = true
-      try {
-        this.detail = await api<ClientOverview>(`/admin/clients/${id}`)
-      } finally {
-        this.detailLoading = false
-      }
-    },
+  const detailLoading = ref(false)
 
-    async fetchDetailDeals(id: string): Promise<void> {
-      if (this.dealsLoaded) return
-      const body = await api<{ deals: ClientDeal[] }>(`/admin/clients/${id}/deals`)
-      this.detailDeals = body.deals
-      this.dealsLoaded = true
-    },
+  const dealsLoaded = ref(false)
+  const scoringLoaded = ref(false)
+  const paymentsLoaded = ref(false)
 
-    async fetchDetailScoring(id: string): Promise<void> {
-      if (this.scoringLoaded) return
-      const body = await api<{ history: ClientScoringEntry[] }>(`/admin/clients/${id}/scoring`)
-      this.detailScoring = body.history
-      this.scoringLoaded = true
-    },
+  const hasDetail = computed(() => detail.value !== null)
 
-    async fetchDetailPayments(id: string): Promise<void> {
-      if (this.paymentsLoaded) return
-      const body = await api<{ payments: ClientPaymentRow[] }>(`/admin/clients/${id}/payments`)
-      this.detailPayments = body.payments
-      this.paymentsLoaded = true
-    },
-  },
+  async function fetchAll(): Promise<void> {
+    loading.value = true
+    error.value = null
+
+    try {
+      const body = await api<{ clients: Client[] }>('/admin/clients')
+      clients.value = body.clients
+    } catch (e) {
+      error.value = (e as Error).message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchDetail(id: string): Promise<void> {
+    detail.value = null
+    detailDeals.value = []
+    detailScoring.value = []
+    detailPayments.value = []
+
+    dealsLoaded.value = false
+    scoringLoaded.value = false
+    paymentsLoaded.value = false
+
+    detailLoading.value = true
+
+    try {
+      detail.value = await api<ClientOverview>(`/admin/clients/${id}`)
+    } finally {
+      detailLoading.value = false
+    }
+  }
+
+  async function fetchDetailDeals(id: string): Promise<void> {
+    if (dealsLoaded.value) return
+
+    const body = await api<{ deals: ClientDeal[] }>(
+      `/admin/clients/${id}/deals`,
+    )
+
+    detailDeals.value = body.deals
+    dealsLoaded.value = true
+  }
+
+  async function fetchDetailScoring(id: string): Promise<void> {
+    if (scoringLoaded.value) return
+
+    const body = await api<{ history: ClientScoringEntry[] }>(
+      `/admin/clients/${id}/scoring`,
+    )
+
+    detailScoring.value = body.history
+    scoringLoaded.value = true
+  }
+
+  async function fetchDetailPayments(id: string): Promise<void> {
+    if (paymentsLoaded.value) return
+
+    const body = await api<{ payments: ClientPaymentRow[] }>(
+      `/admin/clients/${id}/payments`,
+    )
+
+    detailPayments.value = body.payments
+    paymentsLoaded.value = true
+  }
+
+  return {
+    clients,
+    loading,
+    error,
+
+    detail,
+    detailDeals,
+    detailScoring,
+    detailPayments,
+
+    detailLoading,
+
+    dealsLoaded,
+    scoringLoaded,
+    paymentsLoaded,
+
+    hasDetail,
+
+    fetchAll,
+    fetchDetail,
+    fetchDetailDeals,
+    fetchDetailScoring,
+    fetchDetailPayments,
+  }
 })

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import SkeletonTable from '@/components/SkeletonTable.vue'
+import SkeletonTable from '@/components/skeleton-table.vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import ToggleSwitch from 'primevue/toggleswitch'

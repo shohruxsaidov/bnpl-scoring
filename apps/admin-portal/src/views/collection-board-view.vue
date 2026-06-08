@@ -2,7 +2,7 @@
 import { computed, ref, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Select from 'primevue/select'
-import { useCollectionBoardStore, type OverdueCard } from '@/stores/collectionBoard'
+import { useCollectionBoardStore, type OverdueCard } from '@/stores/collection-board'
 import { useMerchantsStore } from '@/stores/merchants'
 import { formatSom, formatDateTime } from '@/utils/money'
 import { useDealCommentsQuery, useAddDealComment } from '@/composables/useAdminDealsApi'

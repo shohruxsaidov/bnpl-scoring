@@ -5,47 +5,47 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'login',
-    component: () => import('@/views/LoginView.vue'),
+    component: () => import('@/views/login-view.vue'),
     meta: { public: true, titleKey: 'routeTitle.login' },
   },
   {
     path: '/change-password',
     name: 'change-password',
-    component: () => import('@/views/ChangePasswordView.vue'),
+    component: () => import('@/views/change-password-view.vue'),
     meta: { titleKey: 'routeTitle.changePassword' },
   },
   {
     path: '/myid/callback/registration',
     name: 'myid-callback',
-    component: () => import('@/views/MyidCallbackView.vue'),
+    component: () => import('@/views/myid-callback-view.vue'),
     meta: { public: true },
   },
   {
     path: '/myid/callback/signing_deal',
     name: 'myid-sign-callback',
-    component: () => import('@/views/MyidSignCallbackView.vue'),
+    component: () => import('@/views/myid-sign-callback-view.vue'),
     meta: { public: true },
   },
   {
     path: '/',
-    component: () => import('@/components/AppShell.vue'),
+    component: () => import('@/components/app-shell.vue'),
     children: [
       {
         path: '',
         name: 'dashboard',
-        component: () => import('@/views/DashboardView.vue'),
+        component: () => import('@/views/dashboard-view.vue'),
         meta: { titleKey: 'routeTitle.dashboard', breadcrumbKeys: ['breadcrumb.dashboard'] },
       },
       {
         path: 'deals',
         name: 'deals',
-        component: () => import('@/views/deals/DealsView.vue'),
+        component: () => import('@/views/deals/deals-view.vue'),
         meta: { titleKey: 'routeTitle.deals', breadcrumbKeys: ['breadcrumb.deals'] },
       },
       {
         path: 'deals/create',
         name: 'deals-create',
-        component: () => import('@/views/new-deal/NewDealView.vue'),
+        component: () => import('@/views/new-deal/new-deal-view.vue'),
         meta: {
           titleKey: 'routeTitle.dealsCreate',
           breadcrumbKeys: ['breadcrumb.deals', 'breadcrumb.newDeal'],
@@ -55,7 +55,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'deals/:id',
         name: 'deal-detail',
-        component: () => import('@/views/deals/DealDetailView.vue'),
+        component: () => import('@/views/deals/deal-detail-view.vue'),
         meta: {
           titleKey: 'routeTitle.deal',
           breadcrumbKeys: ['breadcrumb.deals', 'breadcrumb.detail'],
@@ -64,7 +64,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'admin/products',
         name: 'admin-products',
-        component: () => import('@/views/admin/ProductsView.vue'),
+        component: () => import('@/views/admin/products-view.vue'),
         meta: {
           titleKey: 'routeTitle.products',
           breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.products'],
@@ -74,7 +74,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'admin/categories',
         name: 'admin-categories',
-        component: () => import('@/views/admin/CategoriesView.vue'),
+        component: () => import('@/views/admin/categories-view.vue'),
         meta: {
           titleKey: 'routeTitle.categories',
           breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.categories'],
@@ -84,7 +84,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'admin/tariffs',
         name: 'admin-tariffs',
-        component: () => import('@/views/admin/TariffsView.vue'),
+        component: () => import('@/views/admin/tariffs-view.vue'),
         meta: {
           titleKey: 'routeTitle.tariffs',
           breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.tariffs'],
@@ -94,7 +94,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'admin/branches',
         name: 'admin-branches',
-        component: () => import('@/views/admin/BranchesView.vue'),
+        component: () => import('@/views/admin/branches-view.vue'),
         meta: {
           titleKey: 'routeTitle.branches',
           breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.branches'],
@@ -104,7 +104,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'admin/employees',
         name: 'admin-employees',
-        component: () => import('@/views/admin/EmployeesView.vue'),
+        component: () => import('@/views/admin/employees-view.vue'),
         meta: {
           titleKey: 'routeTitle.employees',
           breadcrumbKeys: ['breadcrumb.admin', 'breadcrumb.employees'],
@@ -114,7 +114,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'notifications',
         name: 'notifications',
-        component: () => import('@/views/NotificationsView.vue'),
+        component: () => import('@/views/notifications-view.vue'),
         meta: {
           titleKey: 'routeTitle.notifications',
           breadcrumbKeys: ['breadcrumb.notifications'],
@@ -123,7 +123,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'notifications/:id',
         name: 'notification-detail',
-        component: () => import('@/views/NotificationDetailView.vue'),
+        component: () => import('@/views/notification-detail-view.vue'),
         meta: {
           titleKey: 'routeTitle.notificationDetail',
           breadcrumbKeys: ['breadcrumb.notifications', 'breadcrumb.detail'],
@@ -132,7 +132,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'settings',
         name: 'settings',
-        component: () => import('@/views/SettingsView.vue'),
+        component: () => import('@/views/settings-view.vue'),
         meta: {
           titleKey: 'routeTitle.settings',
           breadcrumbKeys: ['breadcrumb.settings'],

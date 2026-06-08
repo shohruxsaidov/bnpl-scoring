@@ -1,4 +1,6 @@
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
+
 import { apiFetch } from '@/utils/apiFetch'
 
 export interface Payment {
@@ -20,32 +22,25 @@ export interface Payment {
   paymentProvider: string[] | null
 }
 
-interface PaymentsState {
-  payments: Payment[]
-  loading: boolean
-  error: string | null
-}
+export const usePaymentsStore = defineStore('payments', () => {
+  const payments = ref<Payment[]>([])
+  const loading = ref(false)
+  const error = ref<string | null>(null)
 
-export const usePaymentsStore = defineStore('payments', {
-  state: (): PaymentsState => ({
-    payments: [],
-    loading: false,
-    error: null,
-  }),
+  async function fetchPayments(merchantId?: string): Promise<void> {
+    loading.value = true
+    error.value = null
 
-  actions: {
-    async fetchPayments(merchantId?: string): Promise<void> {
-      this.loading = true
-      this.error = null
-      try {
-        const qs = merchantId ? `?merchantId=${merchantId}` : ''
-        const data = await apiFetch<{ payments: Payment[] }>(`/admin/payments${qs}`)
-        this.payments = data.payments
-      } catch (err: any) {
-        this.error = err?.message ?? 'error'
-      } finally {
-        this.loading = false
-      }
-    },
-  },
+    try {
+      const qs = merchantId ? `?merchantId=${merchantId}` : ''
+      const data = await apiFetch<{ payments: Payment[] }>(`/admin/payments${qs}`)
+      payments.value = data.payments
+    } catch (err: any) {
+      error.value = err?.message ?? 'error'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return { payments, loading, error, fetchPayments }
 })

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useScoringHistoryStore, type ScoringDetail } from '@/stores/scoringHistory'
-import MonoAmount from '@/components/MonoAmount.vue'
+import { useScoringHistoryStore, type ScoringDetail } from '@/stores/scoring-history'
+import MonoAmount from '@/components/mono-amount.vue'
 import { formatDateTime, maskPinfl } from '@/utils/money'
 
 const route = useRoute()

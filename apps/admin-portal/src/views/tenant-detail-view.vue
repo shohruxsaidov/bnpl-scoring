@@ -8,8 +8,8 @@ import { useToast } from 'primevue/usetoast'
 import { useTenantsStore } from '@/stores/tenants'
 import { useDealsStore } from '@/stores/deals'
 import { useEmployeesStore } from '@/stores/employees'
-import StatusBadge from '@/components/StatusBadge.vue'
-import MonoAmount from '@/components/MonoAmount.vue'
+import StatusBadge from '@/components/status-badge.vue'
+import MonoAmount from '@/components/mono-amount.vue'
 import { formatDate, formatDateTime, maskPinfl } from '@/utils/money'
 
 const route = useRoute()

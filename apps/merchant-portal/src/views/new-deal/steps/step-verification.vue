@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useDealStore } from '@/stores/deal'
-import { useClientScoringStore } from '@/stores/clientScoring'
+import { useClientScoringStore } from '@/stores/client-scoring'
 import { useClientApi } from '@/composables/useClientApi'
 import { useCreateDealMutation } from '@/composables/useDealsApi'
-import MonoAmount from '@/components/MonoAmount.vue'
+import MonoAmount from '@/components/mono-amount.vue'
 
 const deal = useDealStore()
 const scoring = useClientScoringStore()

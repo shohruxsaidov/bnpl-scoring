@@ -2,8 +2,8 @@
 import { computed, onMounted, ref } from 'vue'
 import { useDealStore } from '@/stores/deal'
 import { useCatalogStore } from '@/stores/catalog'
-import { useClientScoringStore } from '@/stores/clientScoring'
-import MonoAmount from '@/components/MonoAmount.vue'
+import { useClientScoringStore } from '@/stores/client-scoring'
+import MonoAmount from '@/components/mono-amount.vue'
 import type { Tariff } from '@/types'
 
 const deal = useDealStore()

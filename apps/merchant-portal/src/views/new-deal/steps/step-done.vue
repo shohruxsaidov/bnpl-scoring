@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDealStore } from '@/stores/deal'
-import { useClientScoringStore } from '@/stores/clientScoring'
+import { useClientScoringStore } from '@/stores/client-scoring'
 import { fetchContractPdfUrl } from '@/composables/useDealsApi'
 
 const deal = useDealStore()

@@ -5,29 +5,29 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'login',
-    component: () => import('@/views/LoginView.vue'),
+    component: () => import('@/views/login-view.vue'),
     meta: { public: true, titleKey: 'routeTitle.login' },
   },
   {
     path: '/change-password',
     name: 'change-password',
-    component: () => import('@/views/ChangePasswordView.vue'),
+    component: () => import('@/views/change-password-view.vue'),
     meta: { titleKey: 'routeTitle.changePassword' },
   },
   {
     path: '/',
-    component: () => import('@/components/AppShell.vue'),
+    component: () => import('@/components/app-shell.vue'),
     children: [
       {
         path: '',
         name: 'overview',
-        component: () => import('@/views/OverviewView.vue'),
+        component: () => import('@/views/overview-view.vue'),
         meta: { titleKey: 'routeTitle.overview', breadcrumbKeys: ['breadcrumb.overview'] },
       },
       {
         path: 'merchants',
         name: 'merchants',
-        component: () => import('@/views/MerchantsView.vue'),
+        component: () => import('@/views/merchants-view.vue'),
         meta: {
           titleKey: 'routeTitle.merchants',
           breadcrumbKeys: ['breadcrumb.merchants'],
@@ -37,7 +37,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'onboarding/new',
         name: 'onboarding-new',
-        component: () => import('@/views/OnboardingWizardView.vue'),
+        component: () => import('@/views/onboarding-wizard-view.vue'),
         meta: {
           titleKey: 'routeTitle.onboarding',
           breadcrumbKeys: ['breadcrumb.onboarding'],
@@ -47,7 +47,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'merchants/:id',
         name: 'merchant-detail',
-        component: () => import('@/views/MerchantDetailView.vue'),
+        component: () => import('@/views/merchant-detail-view.vue'),
         meta: {
           titleKey: 'routeTitle.merchant',
           breadcrumbKeys: ['breadcrumb.merchants', 'breadcrumb.detail'],
@@ -57,7 +57,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'clients',
         name: 'clients',
-        component: () => import('@/views/ClientsView.vue'),
+        component: () => import('@/views/clients-view.vue'),
         meta: {
           titleKey: 'routeTitle.clients',
           breadcrumbKeys: ['breadcrumb.clients'],
@@ -67,7 +67,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'clients/:id',
         name: 'client-detail',
-        component: () => import('@/views/ClientDetailView.vue'),
+        component: () => import('@/views/client-detail-view.vue'),
         meta: {
           titleKey: 'routeTitle.clients',
           breadcrumbKeys: ['breadcrumb.clients', 'breadcrumb.detail'],
@@ -77,7 +77,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'deals',
         name: 'deals',
-        component: () => import('@/views/DealsView.vue'),
+        component: () => import('@/views/deals-view.vue'),
         meta: {
           titleKey: 'routeTitle.deals',
           breadcrumbKeys: ['breadcrumb.deals'],
@@ -87,7 +87,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'deals/:id',
         name: 'deal-detail',
-        component: () => import('@/views/AdminDealDetailView.vue'),
+        component: () => import('@/views/admin-deal-detail-view.vue'),
         meta: {
           titleKey: 'routeTitle.deals',
           breadcrumbKeys: ['breadcrumb.deals', 'breadcrumb.detail'],
@@ -97,7 +97,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'employees',
         name: 'employees',
-        component: () => import('@/views/EmployeesView.vue'),
+        component: () => import('@/views/employees-view.vue'),
         meta: {
           titleKey: 'routeTitle.employees',
           breadcrumbKeys: ['breadcrumb.employees'],
@@ -107,7 +107,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'settings',
         name: 'settings',
-        component: () => import('@/views/SettingsView.vue'),
+        component: () => import('@/views/settings-view.vue'),
         meta: {
           titleKey: 'routeTitle.settings',
           breadcrumbKeys: ['breadcrumb.settings'],
@@ -117,7 +117,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'tariffs',
         name: 'tariffs',
-        component: () => import('@/views/TariffsView.vue'),
+        component: () => import('@/views/tariffs-view.vue'),
         meta: {
           titleKey: 'routeTitle.tariffs',
           breadcrumbKeys: ['breadcrumb.tariffs'],
@@ -127,7 +127,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'blacklist',
         name: 'blacklist',
-        component: () => import('@/views/BlacklistView.vue'),
+        component: () => import('@/views/blacklist-view.vue'),
         meta: {
           titleKey: 'routeTitle.blacklist',
           breadcrumbKeys: ['breadcrumb.blacklist'],
@@ -137,7 +137,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'buyout',
         name: 'buyout',
-        component: () => import('@/views/BuyoutView.vue'),
+        component: () => import('@/views/buyout-view.vue'),
         meta: {
           titleKey: 'routeTitle.buyout',
           breadcrumbKeys: ['breadcrumb.buyout'],
@@ -147,7 +147,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'collection-board',
         name: 'collection-board',
-        component: () => import('@/views/CollectionBoardView.vue'),
+        component: () => import('@/views/collection-board-view.vue'),
         meta: {
           titleKey: 'routeTitle.collectionBoard',
           breadcrumbKeys: ['breadcrumb.collectionBoard'],
@@ -157,7 +157,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'scoring-history',
         name: 'scoring-history',
-        component: () => import('@/views/ScoringHistoryView.vue'),
+        component: () => import('@/views/scoring-history-view.vue'),
         meta: {
           titleKey: 'routeTitle.scoringHistory',
           breadcrumbKeys: ['breadcrumb.scoringHistory'],
@@ -167,7 +167,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'scoring-history/:id',
         name: 'scoring-detail',
-        component: () => import('@/views/ScoringDetailView.vue'),
+        component: () => import('@/views/scoring-detail-view.vue'),
         meta: {
           titleKey: 'routeTitle.scoringHistory',
           breadcrumbKeys: ['breadcrumb.scoringHistory', 'breadcrumb.detail'],
@@ -177,7 +177,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'payments',
         name: 'payments',
-        component: () => import('@/views/PaymentsView.vue'),
+        component: () => import('@/views/payments-view.vue'),
         meta: {
           titleKey: 'routeTitle.payments',
           breadcrumbKeys: ['breadcrumb.payments'],
@@ -187,7 +187,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'notifications',
         name: 'notifications',
-        component: () => import('@/views/SendNotificationView.vue'),
+        component: () => import('@/views/send-notification-view.vue'),
         meta: {
           titleKey: 'routeTitle.sendNotification',
           breadcrumbKeys: ['breadcrumb.notifications'],
@@ -197,7 +197,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'permissions',
         name: 'permissions',
-        component: () => import('@/views/PermissionsView.vue'),
+        component: () => import('@/views/permissions-view.vue'),
         meta: {
           titleKey: 'routeTitle.permissions',
           breadcrumbKeys: ['breadcrumb.permissions'],
@@ -207,7 +207,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'scoring-model',
         name: 'scoring-model',
-        component: () => import('@/views/ScoringModelView.vue'),
+        component: () => import('@/views/scoring-model-view.vue'),
         meta: {
           titleKey: 'routeTitle.scoringModel',
           breadcrumbKeys: ['breadcrumb.scoringModel'],
@@ -217,7 +217,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'scoring-model/:id',
         name: 'scoring-model-detail',
-        component: () => import('@/views/ScoringModelDetailView.vue'),
+        component: () => import('@/views/scoring-model-detail-view.vue'),
         meta: {
           titleKey: 'routeTitle.scoringModel',
           breadcrumbKeys: ['breadcrumb.scoringModel', 'breadcrumb.detail'],
@@ -227,7 +227,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'scoring-model/:id/try',
         name: 'scoring-model-try',
-        component: () => import('@/views/ScoringModelTryView.vue'),
+        component: () => import('@/views/scoring-model-try-view.vue'),
         meta: {
           titleKey: 'routeTitle.scoringModelTry',
           breadcrumbKeys: ['breadcrumb.scoringModel', 'breadcrumb.scoringModelTry'],

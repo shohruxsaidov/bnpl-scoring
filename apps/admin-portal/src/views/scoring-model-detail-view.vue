@@ -11,7 +11,7 @@ import InputText from 'primevue/inputtext'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Dialog from 'primevue/dialog'
 import { useToast } from 'primevue/usetoast'
-import { useScoringModelStore } from '@/stores/scoringModel'
+import { useScoringModelStore } from '@/stores/scoring-model'
 
 const store = useScoringModelStore()
 const toast = useToast()

@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
-import ThemeToggle from './ThemeToggle.vue'
+import ThemeToggle from './theme-toggle.vue'
 
 const props = defineProps<{ collapsed: boolean; mobileOpen?: boolean; isMobile?: boolean }>()
 const emit = defineEmits<{ (e: 'toggle'): void }>()

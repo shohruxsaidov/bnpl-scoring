@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import NotificationsPopup from './NotificationsPopup.vue'
+import NotificationsPopup from './notifications-popup.vue'
 import { useNotificationsStore } from '@/stores/notifications'
 
 defineProps<{ showMenuBtn?: boolean }>()

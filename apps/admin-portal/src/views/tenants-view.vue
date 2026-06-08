@@ -14,7 +14,7 @@ import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
 import { useTenantsStore } from '@/stores/tenants'
-import MonoAmount from '@/components/MonoAmount.vue'
+import MonoAmount from '@/components/mono-amount.vue'
 import { formatDate } from '@/utils/money'
 import type { Tenant } from '@/types'
 

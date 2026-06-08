@@ -1,4 +1,6 @@
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
+
 import { apiFetch } from '@/utils/apiFetch'
 
 export interface BuyoutItem {
@@ -24,38 +26,35 @@ export interface Buyout {
   items: BuyoutItem[]
 }
 
-interface State {
-  buyouts: Buyout[]
-  loading: boolean
-  error: string | null
-}
+export const useBuyoutsStore = defineStore('buyouts', () => {
+  const buyouts = ref<Buyout[]>([])
+  const loading = ref(false)
+  const error = ref<string | null>(null)
 
-export const useBuyoutsStore = defineStore('buyouts', {
-  state: (): State => ({ buyouts: [], loading: false, error: null }),
+  async function fetch(filters: { merchantId?: string; status?: string } = {}) {
+    loading.value = true
+    error.value = null
 
-  actions: {
-    async fetch(filters: { merchantId?: string; status?: string } = {}) {
-      this.loading = true
-      this.error = null
-      try {
-        const params = new URLSearchParams()
-        if (filters.merchantId) params.set('merchantId', filters.merchantId)
-        if (filters.status) params.set('status', filters.status)
-        const qs = params.toString()
-        const data = await apiFetch<{ buyouts: Buyout[] }>(`/admin/buyouts${qs ? `?${qs}` : ''}`)
-        this.buyouts = data.buyouts
-      } catch (err: any) {
-        this.error = err?.message ?? 'error'
-      } finally {
-        this.loading = false
-      }
-    },
+    try {
+      const params = new URLSearchParams()
+      if (filters.merchantId) params.set('merchantId', filters.merchantId)
+      if (filters.status) params.set('status', filters.status)
+      const qs = params.toString()
+      const data = await apiFetch<{ buyouts: Buyout[] }>(`/admin/buyouts${qs ? `?${qs}` : ''}`)
+      buyouts.value = data.buyouts
+    } catch (err: any) {
+      error.value = err?.message ?? 'error'
+    } finally {
+      loading.value = false
+    }
+  }
 
-    async markPaid(id: string) {
-      const data = await apiFetch<{ buyout: Buyout }>(`/admin/buyouts/${id}/pay`, { method: 'PATCH' })
-      const idx = this.buyouts.findIndex((b) => b.id === id)
-      if (idx !== -1) this.buyouts[idx] = data.buyout
-      return data.buyout
-    },
-  },
+  async function markPaid(id: string) {
+    const data = await apiFetch<{ buyout: Buyout }>(`/admin/buyouts/${id}/pay`, { method: 'PATCH' })
+    const idx = buyouts.value.findIndex((b) => b.id === id)
+    if (idx !== -1) buyouts.value[idx] = data.buyout
+    return data.buyout
+  }
+
+  return { buyouts, loading, error, fetch, markPaid }
 })

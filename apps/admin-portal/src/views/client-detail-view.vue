@@ -5,8 +5,8 @@ import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import { useClientsStore } from '@/stores/clients'
-import MonoAmount from '@/components/MonoAmount.vue'
-import StatusBadge from '@/components/StatusBadge.vue'
+import MonoAmount from '@/components/mono-amount.vue'
+import StatusBadge from '@/components/status-badge.vue'
 import { formatDate, formatDateTime } from '@/utils/money'
 
 const route = useRoute()

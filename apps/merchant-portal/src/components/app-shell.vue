@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { RouterView } from 'vue-router'
-import AppSidebar from './AppSidebar.vue'
-import AppTopbar from './AppTopbar.vue'
-import SearchDialog from './SearchDialog.vue'
+import AppSidebar from './app-sidebar.vue'
+import AppTopbar from './app-topbar.vue'
+import SearchDialog from './search-dialog.vue'
 import { useNotificationsStore } from '@/stores/notifications'
 
 const notifStore = useNotificationsStore()

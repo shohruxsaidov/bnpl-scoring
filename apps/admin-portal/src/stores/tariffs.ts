@@ -1,57 +1,56 @@
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
+
 import { apiFetch as api } from '@/utils/apiFetch'
 import type { Tariff } from '@/types'
 
-interface TariffsState {
-  tariffs: Tariff[]
-  loading: boolean
-  error: string | null
-}
+export const useTariffsStore = defineStore('tariffs', () => {
+  const tariffs = ref<Tariff[]>([])
+  const loading = ref(false)
+  const error = ref<string | null>(null)
 
-export const useTariffsStore = defineStore('tariffs', {
-  state: (): TariffsState => ({ tariffs: [], loading: false, error: null }),
+  async function fetchAll(): Promise<void> {
+    loading.value = true
+    error.value = null
 
-  actions: {
-    async fetchAll(): Promise<void> {
-      this.loading = true
-      this.error = null
-      try {
-        const body = await api<{ tariffs: Tariff[] }>('/admin/tariffs')
-        this.tariffs = body.tariffs
-      } catch (e) {
-        this.error = (e as Error).message
-        throw e
-      } finally {
-        this.loading = false
-      }
-    },
+    try {
+      const body = await api<{ tariffs: Tariff[] }>('/admin/tariffs')
+      tariffs.value = body.tariffs
+    } catch (e) {
+      error.value = (e as Error).message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
 
-    async create(input: {
-      name: string
-      termMonths: number
-      markupPercent: number
-    }): Promise<Tariff> {
-      const body = await api<{ tariff: Tariff }>('/admin/tariffs', {
-        method: 'POST',
-        body: JSON.stringify(input),
-      })
-      this.tariffs.unshift(body.tariff)
-      return body.tariff
-    },
+  async function create(input: {
+    name: string
+    termMonths: number
+    markupPercent: number
+  }): Promise<Tariff> {
+    const body = await api<{ tariff: Tariff }>('/admin/tariffs', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    })
+    tariffs.value.unshift(body.tariff)
+    return body.tariff
+  }
 
-    async update(id: string, patch: Partial<Omit<Tariff, 'id'>>): Promise<Tariff> {
-      const body = await api<{ tariff: Tariff }>(`/admin/tariffs/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(patch),
-      })
-      const idx = this.tariffs.findIndex((t) => t.id === id)
-      if (idx >= 0) this.tariffs[idx] = body.tariff
-      return body.tariff
-    },
+  async function update(id: string, patch: Partial<Omit<Tariff, 'id'>>): Promise<Tariff> {
+    const body = await api<{ tariff: Tariff }>(`/admin/tariffs/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    })
+    const idx = tariffs.value.findIndex((t) => t.id === id)
+    if (idx >= 0) tariffs.value[idx] = body.tariff
+    return body.tariff
+  }
 
-    async remove(id: string): Promise<void> {
-      await api(`/admin/tariffs/${id}`, { method: 'DELETE' })
-      this.tariffs = this.tariffs.filter((t) => t.id !== id)
-    },
-  },
+  async function remove(id: string): Promise<void> {
+    await api(`/admin/tariffs/${id}`, { method: 'DELETE' })
+    tariffs.value = tariffs.value.filter((t) => t.id !== id)
+  }
+
+  return { tariffs, loading, error, fetchAll, create, update, remove }
 })

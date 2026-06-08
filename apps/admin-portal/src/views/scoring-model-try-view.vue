@@ -7,8 +7,8 @@ import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { useToast } from 'primevue/usetoast'
-import { useScoringModelStore } from '@/stores/scoringModel'
-import type { CriterionResult } from '@/stores/scoringModel'
+import { useScoringModelStore } from '@/stores/scoring-model'
+import type { CriterionResult } from '@/stores/scoring-model'
 
 const route = useRoute()
 const router = useRouter()

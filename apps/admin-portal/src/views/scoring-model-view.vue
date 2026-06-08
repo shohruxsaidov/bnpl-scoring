@@ -3,7 +3,7 @@ import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useToast } from 'primevue/usetoast'
-import { useScoringModelStore } from '@/stores/scoringModel'
+import { useScoringModelStore } from '@/stores/scoring-model'
 
 const store = useScoringModelStore()
 const toast = useToast()

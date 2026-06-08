@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import StatusBadge from '@/components/StatusBadge.vue'
+import StatusBadge from '@/components/status-badge.vue'
 import { formatDate, formatDateTime, formatSomShort } from '@/utils/money'
 import { useAdminDealQuery, useDealCommentsQuery, useAddDealComment } from '@/composables/useAdminDealsApi'
 

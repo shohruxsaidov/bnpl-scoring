@@ -1,4 +1,6 @@
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
+
 import { apiFetch } from '@/utils/apiFetch'
 
 export interface ScoringListItem {
@@ -55,48 +57,41 @@ export interface ScoringDetail {
   }
 }
 
-interface ScoringHistoryState {
-  records: ScoringListItem[]
-  detail: ScoringDetail | null
-  loading: boolean
-  error: string | null
-}
+export const useScoringHistoryStore = defineStore('scoringHistory', () => {
+  const records = ref<ScoringListItem[]>([])
+  const detail = ref<ScoringDetail | null>(null)
+  const loading = ref(false)
+  const error = ref<string | null>(null)
 
-export const useScoringHistoryStore = defineStore('scoringHistory', {
-  state: (): ScoringHistoryState => ({
-    records: [],
-    detail: null,
-    loading: false,
-    error: null,
-  }),
+  async function fetchList(merchantId?: string): Promise<void> {
+    loading.value = true
+    error.value = null
 
-  actions: {
-    async fetchList(merchantId?: string): Promise<void> {
-      this.loading = true
-      this.error = null
-      try {
-        const qs = merchantId ? `?merchantId=${merchantId}` : ''
-        const data = await apiFetch<{ records: ScoringListItem[] }>(`/admin/scoring-history${qs}`)
-        this.records = data.records
-      } catch (err: any) {
-        this.error = err?.message ?? 'error'
-      } finally {
-        this.loading = false
-      }
-    },
+    try {
+      const qs = merchantId ? `?merchantId=${merchantId}` : ''
+      const data = await apiFetch<{ records: ScoringListItem[] }>(`/admin/scoring-history${qs}`)
+      records.value = data.records
+    } catch (err: any) {
+      error.value = err?.message ?? 'error'
+    } finally {
+      loading.value = false
+    }
+  }
 
-    async fetchDetail(id: string): Promise<void> {
-      this.loading = true
-      this.error = null
-      this.detail = null
-      try {
-        const data = await apiFetch<{ scoring: ScoringDetail }>(`/admin/scoring-history/${id}`)
-        this.detail = data.scoring
-      } catch (err: any) {
-        this.error = err?.message ?? 'error'
-      } finally {
-        this.loading = false
-      }
-    },
-  },
+  async function fetchDetail(id: string): Promise<void> {
+    loading.value = true
+    error.value = null
+    detail.value = null
+
+    try {
+      const data = await apiFetch<{ scoring: ScoringDetail }>(`/admin/scoring-history/${id}`)
+      detail.value = data.scoring
+    } catch (err: any) {
+      error.value = err?.message ?? 'error'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return { records, detail, loading, error, fetchList, fetchDetail }
 })

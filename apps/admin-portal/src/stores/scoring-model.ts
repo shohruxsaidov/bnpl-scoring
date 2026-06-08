@@ -1,4 +1,6 @@
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
+
 import { apiFetch as api } from '@/utils/apiFetch'
 
 export interface ScoringModelRevision {
@@ -31,75 +33,67 @@ export interface ScoringModelHistoryItem {
   createdAt: string
 }
 
-interface ScoringModelState {
-  revision: ScoringModelRevision | null
-  history: ScoringModelHistoryItem[]
-  loading: boolean
-  saving: boolean
-  error: string | null
-}
+export const useScoringModelStore = defineStore('scoringModel', () => {
+  const revision = ref<ScoringModelRevision | null>(null)
+  const history = ref<ScoringModelHistoryItem[]>([])
+  const loading = ref(false)
+  const saving = ref(false)
+  const error = ref<string | null>(null)
 
-export const useScoringModelStore = defineStore('scoringModel', {
-  state: (): ScoringModelState => ({
-    revision: null,
-    history: [],
-    loading: false,
-    saving: false,
-    error: null,
-  }),
+  async function fetch(): Promise<void> {
+    loading.value = true
+    error.value = null
 
-  actions: {
-    async fetch(): Promise<void> {
-      this.loading = true
-      this.error = null
-      try {
-        const body = await api<ScoringModelRevision>('/admin/scoring-model')
-        this.revision = body
-      } catch (e) {
-        this.error = (e as Error).message
-        throw e
-      } finally {
-        this.loading = false
-      }
-    },
+    try {
+      const body = await api<ScoringModelRevision>('/admin/scoring-model')
+      revision.value = body
+    } catch (e) {
+      error.value = (e as Error).message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
 
-    async fetchHistory(): Promise<void> {
-      const body = await api<{ revisions: ScoringModelHistoryItem[] }>(
-        '/admin/scoring-model/history',
-      )
-      this.history = body.revisions
-    },
+  async function fetchHistory(): Promise<void> {
+    const body = await api<{ revisions: ScoringModelHistoryItem[] }>(
+      '/admin/scoring-model/history',
+    )
+    history.value = body.revisions
+  }
 
-    async loadRevision(id: number): Promise<void> {
-      this.loading = true
-      try {
-        const body = await api<ScoringModelRevision>(`/admin/scoring-model/${id}`)
-        this.revision = body
-      } finally {
-        this.loading = false
-      }
-    },
+  async function loadRevision(id: number): Promise<void> {
+    loading.value = true
 
-    async tryModel(id: number, inputs: Record<string, unknown>): Promise<ScoringTryResult> {
-      return api<ScoringTryResult>(`/admin/scoring-model/${id}/try`, {
-        method: 'POST',
-        body: JSON.stringify(inputs),
+    try {
+      const body = await api<ScoringModelRevision>(`/admin/scoring-model/${id}`)
+      revision.value = body
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function tryModel(id: number, inputs: Record<string, unknown>): Promise<ScoringTryResult> {
+    return api<ScoringTryResult>(`/admin/scoring-model/${id}/try`, {
+      method: 'POST',
+      body: JSON.stringify(inputs),
+    })
+  }
+
+  async function save(name: string, version: string, params: Record<string, unknown>): Promise<void> {
+    saving.value = true
+
+    try {
+      const body = await api<ScoringModelRevision>('/admin/scoring-model', {
+        method: 'PUT',
+        body: JSON.stringify({ name, version, params }),
       })
-    },
+      revision.value = body
+      history.value.unshift({ id: body.id, name: body.name, version: body.version, createdAt: body.createdAt })
+    } finally {
+      saving.value = false
+    }
+  }
 
-    async save(name: string, version: string, params: Record<string, unknown>): Promise<void> {
-      this.saving = true
-      try {
-        const body = await api<ScoringModelRevision>('/admin/scoring-model', {
-          method: 'PUT',
-          body: JSON.stringify({ name, version, params }),
-        })
-        this.revision = body
-        // Prepend to local history so the list is immediately up to date
-        this.history.unshift({ id: body.id, name: body.name, version: body.version, createdAt: body.createdAt })
-      } finally {
-        this.saving = false
-      }
-    },
-  },
+  return { revision, history, loading, saving, error, fetch, fetchHistory, loadRevision, tryModel, save }
 })

@@ -1,55 +1,60 @@
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
+
 import { apiFetch } from '@/utils/apiFetch'
 import type { Deal } from '@/types'
 
-interface DealsState {
-  deals: Deal[]
-  loading: boolean
-  error: string | null
-}
+export const useDealsStore = defineStore('deals', () => {
+  const deals = ref<Deal[]>([])
+  const loading = ref(false)
+  const error = ref<string | null>(null)
 
-export const useDealsStore = defineStore('deals', {
-  state: (): DealsState => ({
-    deals: [],
-    loading: false,
-    error: null,
-  }),
+  const total = computed(() => deals.value.length)
+  const overdueCount = computed(() => deals.value.filter((d) => d.status === 'overdue').length)
+  const platformVolume = computed(() =>
+    deals.value
+      .filter((d) => ['active', 'overdue', 'closed'].includes(d.status))
+      .reduce((sum, d) => sum + d.amount, 0),
+  )
 
-  getters: {
-    total: (s): number => s.deals.length,
-    overdueCount: (s): number => s.deals.filter((d) => d.status === 'overdue').length,
-    platformVolume: (s): number =>
-      s.deals
-        .filter((d) => ['active', 'overdue', 'closed'].includes(d.status))
-        .reduce((sum, d) => sum + d.amount, 0),
-    recent:
-      (s) =>
-      (limit: number): Deal[] =>
-        [...s.deals]
-          .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
-          .slice(0, limit),
-    forTenant:
-      (s) =>
-      (tenantId: string): Deal[] =>
-        s.deals.filter((d) => d.tenantId === tenantId),
-    byId:
-      (s) =>
-      (id: string): Deal | undefined =>
-        s.deals.find((d) => d.id === id),
-  },
+  function recent(limit: number): Deal[] {
+    return [...deals.value]
+      .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt))
+      .slice(0, limit)
+  }
 
-  actions: {
-    async fetchDeals(): Promise<void> {
-      this.loading = true
-      this.error = null
-      try {
-        const data = await apiFetch<{ deals: Deal[] }>('/admin/deals')
-        this.deals = data.deals
-      } catch (err: any) {
-        this.error = err?.message ?? 'error'
-      } finally {
-        this.loading = false
-      }
-    },
-  },
+  function forTenant(tenantId: string): Deal[] {
+    return deals.value.filter((d) => d.tenantId === tenantId)
+  }
+
+  function byId(id: string): Deal | undefined {
+    return deals.value.find((d) => d.id === id)
+  }
+
+  async function fetchDeals(): Promise<void> {
+    loading.value = true
+    error.value = null
+
+    try {
+      const data = await apiFetch<{ deals: Deal[] }>('/admin/deals')
+      deals.value = data.deals
+    } catch (err: any) {
+      error.value = err?.message ?? 'error'
+    } finally {
+      loading.value = false
+    }
+  }
+
+  return {
+    deals,
+    loading,
+    error,
+    total,
+    overdueCount,
+    platformVolume,
+    recent,
+    forTenant,
+    byId,
+    fetchDeals,
+  }
 })

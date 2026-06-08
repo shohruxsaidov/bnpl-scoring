@@ -5,9 +5,9 @@ import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
-import { useScoringHistoryStore, type ScoringListItem } from '@/stores/scoringHistory'
+import { useScoringHistoryStore, type ScoringListItem } from '@/stores/scoring-history'
 import { useMerchantsStore } from '@/stores/merchants'
-import MonoAmount from '@/components/MonoAmount.vue'
+import MonoAmount from '@/components/mono-amount.vue'
 import { formatDate } from '@/utils/money'
 
 const store = useScoringHistoryStore()

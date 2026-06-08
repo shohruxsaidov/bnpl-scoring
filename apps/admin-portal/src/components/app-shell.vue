@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { RouterView } from 'vue-router'
-import AppSidebar from './AppSidebar.vue'
-import AppTopbar from './AppTopbar.vue'
+import AppSidebar from './app-sidebar.vue'
+import AppTopbar from './app-topbar.vue'
 
 const collapsed = ref(false)
 const mobileOpen = ref(false)

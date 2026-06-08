@@ -1,4 +1,6 @@
+import { ref } from 'vue'
 import { defineStore } from 'pinia'
+
 import type {
   BankEntry,
   Branch,
@@ -12,308 +14,356 @@ import type {
 
 import { apiFetch as api } from '@/utils/apiFetch'
 
-interface MerchantsState {
-  merchants: Merchant[]
-  branches: Record<string, Branch[]>
-  employees: Record<string, MerchantEmployee[]>
-  categories: Record<string, Category[]>
-  products: Record<string, Product[]>
-  documents: Record<string, MerchantDocument[]>
-  merchantTariffs: Record<string, Tariff[]>
-  bankList: BankEntry[]
-  loading: boolean
-  error: string | null
-}
+export const useMerchantsStore = defineStore('merchants', () => {
+  const merchants = ref<Merchant[]>([])
+  const branches = ref<Record<string, Branch[]>>({})
+  const employees = ref<Record<string, MerchantEmployee[]>>({})
+  const categories = ref<Record<string, Category[]>>({})
+  const products = ref<Record<string, Product[]>>({})
+  const documents = ref<Record<string, MerchantDocument[]>>({})
+  const merchantTariffs = ref<Record<string, Tariff[]>>({})
+  const bankList = ref<BankEntry[]>([])
+  const loading = ref(false)
+  const error = ref<string | null>(null)
 
-export const useMerchantsStore = defineStore('merchants', {
-  state: (): MerchantsState => ({
-    merchants: [],
-    branches: {},
-    employees: {},
-    categories: {},
-    products: {},
-    documents: {},
-    merchantTariffs: {},
-    bankList: [],
-    loading: false,
-    error: null,
-  }),
+  function byId(id: string): Merchant | undefined {
+    return merchants.value.find((m) => m.id === id)
+  }
 
-  getters: {
-    byId: (s) => (id: string): Merchant | undefined => s.merchants.find((m) => m.id === id),
-    branchesFor: (s) => (merchantId: string): Branch[] => s.branches[merchantId] ?? [],
-    employeesForBranch: (s) => (branchId: string): MerchantEmployee[] =>
-      s.employees[branchId] ?? [],
-    categoriesFor: (s) => (merchantId: string): Category[] => s.categories[merchantId] ?? [],
-    productsFor: (s) => (merchantId: string): Product[] => s.products[merchantId] ?? [],
-    documentsFor: (s) => (merchantId: string): MerchantDocument[] => s.documents[merchantId] ?? [],
-    tariffsFor: (s) => (merchantId: string): Tariff[] => s.merchantTariffs[merchantId] ?? [],
-  },
+  function branchesFor(merchantId: string): Branch[] {
+    return branches.value[merchantId] ?? []
+  }
 
-  actions: {
-    async fetchAll(): Promise<void> {
-      this.loading = true
-      this.error = null
-      try {
-        const body = await api<{ merchants: Merchant[] }>('/admin/merchants')
-        this.merchants = body.merchants
-      } catch (e) {
-        this.error = (e as Error).message
-        throw e
-      } finally {
-        this.loading = false
-      }
-    },
+  function employeesForBranch(branchId: string): MerchantEmployee[] {
+    return employees.value[branchId] ?? []
+  }
 
-    async fetchOne(id: string): Promise<Merchant> {
-      this.loading = true
-      this.error = null
-      try {
-        const body = await api<{ merchant: Merchant }>(`/admin/merchants/${id}`)
-        const idx = this.merchants.findIndex((m) => m.id === id)
-        if (idx >= 0) this.merchants[idx] = body.merchant
-        else this.merchants.push(body.merchant)
-        return body.merchant
-      } catch (e) {
-        this.error = (e as Error).message
-        throw e
-      } finally {
-        this.loading = false
-      }
-    },
+  function categoriesFor(merchantId: string): Category[] {
+    return categories.value[merchantId] ?? []
+  }
 
-    async create(input: {
-      name: string
-      legalName: string
-      inn: string
-      phone: string
-      address: string
-    }): Promise<Merchant> {
-      const body = await api<{ merchant: Merchant }>('/admin/merchants', {
-        method: 'POST',
-        body: JSON.stringify(input),
-      })
-      this.merchants.unshift(body.merchant)
+  function productsFor(merchantId: string): Product[] {
+    return products.value[merchantId] ?? []
+  }
+
+  function documentsFor(merchantId: string): MerchantDocument[] {
+    return documents.value[merchantId] ?? []
+  }
+
+  function tariffsFor(merchantId: string): Tariff[] {
+    return merchantTariffs.value[merchantId] ?? []
+  }
+
+  async function fetchAll(): Promise<void> {
+    loading.value = true
+    error.value = null
+
+    try {
+      const body = await api<{ merchants: Merchant[] }>('/admin/merchants')
+      merchants.value = body.merchants
+    } catch (e) {
+      error.value = (e as Error).message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchOne(id: string): Promise<Merchant> {
+    loading.value = true
+    error.value = null
+
+    try {
+      const body = await api<{ merchant: Merchant }>(`/admin/merchants/${id}`)
+      const idx = merchants.value.findIndex((m) => m.id === id)
+      if (idx >= 0) merchants.value[idx] = body.merchant
+      else merchants.value.push(body.merchant)
       return body.merchant
-    },
+    } catch (e) {
+      error.value = (e as Error).message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
 
-    async update(id: string, patch: Partial<Merchant>): Promise<Merchant> {
-      const body = await api<{ merchant: Merchant }>(`/admin/merchants/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify(patch),
-      })
-      const idx = this.merchants.findIndex((m) => m.id === id)
-      if (idx >= 0) this.merchants[idx] = body.merchant
-      return body.merchant
-    },
+  async function create(input: {
+    name: string
+    legalName: string
+    inn: string
+    phone: string
+    address: string
+  }): Promise<Merchant> {
+    const body = await api<{ merchant: Merchant }>('/admin/merchants', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    })
+    merchants.value.unshift(body.merchant)
+    return body.merchant
+  }
 
-    async fetchBranches(merchantId: string): Promise<void> {
-      const body = await api<{ branches: Branch[] }>(`/admin/merchants/${merchantId}/branches`)
-      this.branches[merchantId] = body.branches
-    },
+  async function update(id: string, patch: Partial<Merchant>): Promise<Merchant> {
+    const body = await api<{ merchant: Merchant }>(`/admin/merchants/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    })
+    const idx = merchants.value.findIndex((m) => m.id === id)
+    if (idx >= 0) merchants.value[idx] = body.merchant
+    return body.merchant
+  }
 
-    async createBranch(
-      merchantId: string,
-      input: { name: string; address: string; phone: string },
-    ): Promise<Branch> {
-      const body = await api<{ branch: Branch }>(`/admin/merchants/${merchantId}/branches`, {
+  async function fetchBranches(merchantId: string): Promise<void> {
+    const body = await api<{ branches: Branch[] }>(`/admin/merchants/${merchantId}/branches`)
+    branches.value[merchantId] = body.branches
+  }
+
+  async function createBranch(
+    merchantId: string,
+    input: { name: string; address: string; phone: string },
+  ): Promise<Branch> {
+    const body = await api<{ branch: Branch }>(`/admin/merchants/${merchantId}/branches`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    })
+    branches.value[merchantId] = [...(branches.value[merchantId] ?? []), body.branch]
+    return body.branch
+  }
+
+  async function updateBranch(branchId: string, patch: Partial<Branch>): Promise<Branch> {
+    const body = await api<{ branch: Branch }>(`/admin/branches/${branchId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    })
+    const merchantId = body.branch.merchantId
+    const list = branches.value[merchantId]
+    if (list) {
+      const idx = list.findIndex((b) => b.id === branchId)
+      if (idx >= 0) list[idx] = body.branch
+    }
+    return body.branch
+  }
+
+  async function fetchEmployees(branchId: string): Promise<void> {
+    const body = await api<{ employees: MerchantEmployee[] }>(
+      `/admin/branches/${branchId}/employees`,
+    )
+    employees.value[branchId] = body.employees
+  }
+
+  async function createEmployee(
+    branchId: string,
+    input: { phone: string; password: string; fullName: string; roles: string[] },
+  ): Promise<MerchantEmployee> {
+    const body = await api<{ employee: MerchantEmployee }>(
+      `/admin/branches/${branchId}/employees`,
+      {
         method: 'POST',
         body: JSON.stringify(input),
-      })
-      this.branches[merchantId] = [...(this.branches[merchantId] ?? []), body.branch]
-      return body.branch
-    },
+      },
+    )
+    employees.value[branchId] = [...(employees.value[branchId] ?? []), body.employee]
+    return body.employee
+  }
 
-    async updateBranch(branchId: string, patch: Partial<Branch>): Promise<Branch> {
-      const body = await api<{ branch: Branch }>(`/admin/branches/${branchId}`, {
-        method: 'PATCH',
-        body: JSON.stringify(patch),
-      })
-      const merchantId = body.branch.merchantId
-      const list = this.branches[merchantId]
-      if (list) {
-        const idx = list.findIndex((b) => b.id === branchId)
-        if (idx >= 0) list[idx] = body.branch
-      }
-      return body.branch
-    },
+  async function updateEmployee(
+    employeeId: string,
+    patch: Partial<MerchantEmployee>,
+  ): Promise<MerchantEmployee> {
+    const body = await api<{ employee: MerchantEmployee }>(`/admin/employees/${employeeId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    })
+    const list = employees.value[body.employee.branchId]
+    if (list) {
+      const idx = list.findIndex((e) => e.id === employeeId)
+      if (idx >= 0) list[idx] = body.employee
+    }
+    return body.employee
+  }
 
-    async fetchEmployees(branchId: string): Promise<void> {
-      const body = await api<{ employees: MerchantEmployee[] }>(
-        `/admin/branches/${branchId}/employees`,
-      )
-      this.employees[branchId] = body.employees
-    },
+  async function changeEmployeePassword(employeeId: string, password: string): Promise<void> {
+    await api(`/admin/employees/${employeeId}/change-password`, {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    })
+  }
 
-    async createEmployee(
-      branchId: string,
-      input: { phone: string; password: string; fullName: string; roles: string[] },
-    ): Promise<MerchantEmployee> {
-      const body = await api<{ employee: MerchantEmployee }>(
-        `/admin/branches/${branchId}/employees`,
-        {
-          method: 'POST',
-          body: JSON.stringify(input),
-        },
-      )
-      this.employees[branchId] = [...(this.employees[branchId] ?? []), body.employee]
-      return body.employee
-    },
+  async function fetchCategories(merchantId: string): Promise<void> {
+    const body = await api<{ categories: Category[] }>(
+      `/admin/merchants/${merchantId}/categories`,
+    )
+    categories.value[merchantId] = body.categories
+  }
 
-    async updateEmployee(
-      employeeId: string,
-      patch: Partial<MerchantEmployee>,
-    ): Promise<MerchantEmployee> {
-      const body = await api<{ employee: MerchantEmployee }>(`/admin/employees/${employeeId}`, {
-        method: 'PATCH',
-        body: JSON.stringify(patch),
-      })
-      const list = this.employees[body.employee.branchId]
-      if (list) {
-        const idx = list.findIndex((e) => e.id === employeeId)
-        if (idx >= 0) list[idx] = body.employee
-      }
-      return body.employee
-    },
+  async function createCategory(merchantId: string, input: { name: string }): Promise<Category> {
+    const body = await api<{ category: Category }>(`/admin/merchants/${merchantId}/categories`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    })
+    categories.value[merchantId] = [...(categories.value[merchantId] ?? []), body.category]
+    return body.category
+  }
 
-    async changeEmployeePassword(employeeId: string, password: string): Promise<void> {
-      await api(`/admin/employees/${employeeId}/change-password`, {
-        method: 'POST',
-        body: JSON.stringify({ password }),
-      })
-    },
+  async function updateCategory(categoryId: string, patch: Partial<Category>): Promise<Category> {
+    const body = await api<{ category: Category }>(`/admin/categories/${categoryId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    })
+    const list = categories.value[body.category.merchantId]
+    if (list) {
+      const idx = list.findIndex((c) => c.id === categoryId)
+      if (idx >= 0) list[idx] = body.category
+    }
+    return body.category
+  }
 
-    async fetchCategories(merchantId: string): Promise<void> {
-      const body = await api<{ categories: Category[] }>(
-        `/admin/merchants/${merchantId}/categories`,
-      )
-      this.categories[merchantId] = body.categories
-    },
+  async function fetchProducts(merchantId: string): Promise<void> {
+    const body = await api<{ products: Product[] }>(`/admin/merchants/${merchantId}/products`)
+    products.value[merchantId] = body.products
+  }
 
-    async createCategory(merchantId: string, input: { name: string }): Promise<Category> {
-      const body = await api<{ category: Category }>(`/admin/merchants/${merchantId}/categories`, {
+  async function createProduct(
+    merchantId: string,
+    input: { categoryId: string; name: string; price: string; mxikCode?: string; packageCode?: number; packageName?: string },
+  ): Promise<Product> {
+    const body = await api<{ product: Product }>(`/admin/merchants/${merchantId}/products`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    })
+    products.value[merchantId] = [...(products.value[merchantId] ?? []), body.product]
+    return body.product
+  }
+
+  async function updateProduct(productId: string, patch: Partial<Product>): Promise<Product> {
+    const body = await api<{ product: Product }>(`/admin/products/${productId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(patch),
+    })
+    const list = products.value[body.product.merchantId]
+    if (list) {
+      const idx = list.findIndex((p) => p.id === productId)
+      if (idx >= 0) list[idx] = body.product
+    }
+    return body.product
+  }
+
+  async function fetchDocuments(merchantId: string): Promise<void> {
+    const body = await api<{ documents: MerchantDocument[] }>(
+      `/admin/merchants/${merchantId}/documents`,
+    )
+    documents.value[merchantId] = body.documents
+  }
+
+  async function getUploadUrl(
+    merchantId: string,
+  ): Promise<{ uploadUrl: string; objectName: string }> {
+    return api<{ uploadUrl: string; objectName: string }>(
+      `/admin/merchants/${merchantId}/documents/upload-url`,
+      { method: 'POST' },
+    )
+  }
+
+  async function recordDocument(
+    merchantId: string,
+    input: { fileUrl: string; documentType: string },
+  ): Promise<MerchantDocument> {
+    const body = await api<{ document: MerchantDocument }>(
+      `/admin/merchants/${merchantId}/documents`,
+      {
         method: 'POST',
         body: JSON.stringify(input),
-      })
-      this.categories[merchantId] = [...(this.categories[merchantId] ?? []), body.category]
-      return body.category
-    },
+      },
+    )
+    documents.value[merchantId] = [...(documents.value[merchantId] ?? []), body.document]
+    return body.document
+  }
 
-    async updateCategory(categoryId: string, patch: Partial<Category>): Promise<Category> {
-      const body = await api<{ category: Category }>(`/admin/categories/${categoryId}`, {
-        method: 'PATCH',
-        body: JSON.stringify(patch),
-      })
-      const list = this.categories[body.category.merchantId]
-      if (list) {
-        const idx = list.findIndex((c) => c.id === categoryId)
-        if (idx >= 0) list[idx] = body.category
-      }
-      return body.category
-    },
+  async function uploadDocument(
+    merchantId: string,
+    file: File,
+    documentType: string,
+  ): Promise<MerchantDocument> {
+    const { uploadUrl, objectName } = await getUploadUrl(merchantId)
+    const putRes = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: file,
+      headers: { 'Content-Type': file.type || 'application/octet-stream' },
+    })
+    if (!putRes.ok) throw new Error('upload_failed')
+    return recordDocument(merchantId, { fileUrl: objectName, documentType })
+  }
 
-    async fetchProducts(merchantId: string): Promise<void> {
-      const body = await api<{ products: Product[] }>(`/admin/merchants/${merchantId}/products`)
-      this.products[merchantId] = body.products
-    },
+  async function fetchMerchantTariffs(merchantId: string): Promise<void> {
+    const body = await api<{ tariffs: Tariff[] }>(`/admin/merchants/${merchantId}/tariffs`)
+    merchantTariffs.value[merchantId] = body.tariffs
+  }
 
-    async createProduct(
-      merchantId: string,
-      input: { categoryId: string; name: string; price: string; mxikCode?: string; packageCode?: number; packageName?: string },
-    ): Promise<Product> {
-      const body = await api<{ product: Product }>(`/admin/merchants/${merchantId}/products`, {
-        method: 'POST',
-        body: JSON.stringify(input),
-      })
-      this.products[merchantId] = [...(this.products[merchantId] ?? []), body.product]
-      return body.product
-    },
+  async function assignTariff(merchantId: string, tariffId: string): Promise<void> {
+    await api(`/admin/merchants/${merchantId}/tariffs/${tariffId}`, { method: 'POST' })
+    const t = merchantTariffs.value[merchantId]?.find((x) => x.id === tariffId)
+    if (t) t.selected = true
+  }
 
-    async updateProduct(productId: string, patch: Partial<Product>): Promise<Product> {
-      const body = await api<{ product: Product }>(`/admin/products/${productId}`, {
-        method: 'PATCH',
-        body: JSON.stringify(patch),
-      })
-      const list = this.products[body.product.merchantId]
-      if (list) {
-        const idx = list.findIndex((p) => p.id === productId)
-        if (idx >= 0) list[idx] = body.product
-      }
-      return body.product
-    },
+  async function removeTariff(merchantId: string, tariffId: string): Promise<void> {
+    await api(`/admin/merchants/${merchantId}/tariffs/${tariffId}`, { method: 'DELETE' })
+    const t = merchantTariffs.value[merchantId]?.find((x) => x.id === tariffId)
+    if (t) t.selected = false
+  }
 
-    async fetchDocuments(merchantId: string): Promise<void> {
-      const body = await api<{ documents: MerchantDocument[] }>(
-        `/admin/merchants/${merchantId}/documents`,
-      )
-      this.documents[merchantId] = body.documents
-    },
+  async function fetchBankList(): Promise<void> {
+    if (bankList.value.length > 0) return
+    const body = await api<{ banks: BankEntry[] }>('/admin/banks')
+    bankList.value = body.banks
+  }
 
-    async getUploadUrl(
-      merchantId: string,
-    ): Promise<{ uploadUrl: string; objectName: string }> {
-      return api<{ uploadUrl: string; objectName: string }>(
-        `/admin/merchants/${merchantId}/documents/upload-url`,
-        { method: 'POST' },
-      )
-    },
+  async function refreshBankList(): Promise<void> {
+    const body = await api<{ banks: BankEntry[] }>('/admin/banks/refresh', { method: 'POST' })
+    bankList.value = body.banks
+  }
 
-    async recordDocument(
-      merchantId: string,
-      input: { fileUrl: string; documentType: string },
-    ): Promise<MerchantDocument> {
-      const body = await api<{ document: MerchantDocument }>(
-        `/admin/merchants/${merchantId}/documents`,
-        {
-          method: 'POST',
-          body: JSON.stringify(input),
-        },
-      )
-      this.documents[merchantId] = [...(this.documents[merchantId] ?? []), body.document]
-      return body.document
-    },
-
-    async uploadDocument(
-      merchantId: string,
-      file: File,
-      documentType: string,
-    ): Promise<MerchantDocument> {
-      const { uploadUrl, objectName } = await this.getUploadUrl(merchantId)
-      const putRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type || 'application/octet-stream' },
-      })
-      if (!putRes.ok) throw new Error('upload_failed')
-      return this.recordDocument(merchantId, { fileUrl: objectName, documentType })
-    },
-
-    async fetchMerchantTariffs(merchantId: string): Promise<void> {
-      const body = await api<{ tariffs: Tariff[] }>(`/admin/merchants/${merchantId}/tariffs`)
-      this.merchantTariffs[merchantId] = body.tariffs
-    },
-
-    async assignTariff(merchantId: string, tariffId: string): Promise<void> {
-      await api(`/admin/merchants/${merchantId}/tariffs/${tariffId}`, { method: 'POST' })
-      const t = this.merchantTariffs[merchantId]?.find((x) => x.id === tariffId)
-      if (t) t.selected = true
-    },
-
-    async removeTariff(merchantId: string, tariffId: string): Promise<void> {
-      await api(`/admin/merchants/${merchantId}/tariffs/${tariffId}`, { method: 'DELETE' })
-      const t = this.merchantTariffs[merchantId]?.find((x) => x.id === tariffId)
-      if (t) t.selected = false
-    },
-
-    async fetchBankList(): Promise<void> {
-      if (this.bankList.length > 0) return
-      const body = await api<{ banks: BankEntry[] }>('/admin/banks')
-      this.bankList = body.banks
-    },
-
-    async refreshBankList(): Promise<void> {
-      const body = await api<{ banks: BankEntry[] }>('/admin/banks/refresh', { method: 'POST' })
-      this.bankList = body.banks
-    },
-  },
+  return {
+    merchants,
+    branches,
+    employees,
+    categories,
+    products,
+    documents,
+    merchantTariffs,
+    bankList,
+    loading,
+    error,
+    byId,
+    branchesFor,
+    employeesForBranch,
+    categoriesFor,
+    productsFor,
+    documentsFor,
+    tariffsFor,
+    fetchAll,
+    fetchOne,
+    create,
+    update,
+    fetchBranches,
+    createBranch,
+    updateBranch,
+    fetchEmployees,
+    createEmployee,
+    updateEmployee,
+    changeEmployeePassword,
+    fetchCategories,
+    createCategory,
+    updateCategory,
+    fetchProducts,
+    createProduct,
+    updateProduct,
+    fetchDocuments,
+    getUploadUrl,
+    recordDocument,
+    uploadDocument,
+    fetchMerchantTariffs,
+    assignTariff,
+    removeTariff,
+    fetchBankList,
+    refreshBankList,
+  }
 })

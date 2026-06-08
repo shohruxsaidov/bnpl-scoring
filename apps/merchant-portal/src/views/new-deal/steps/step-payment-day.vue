@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useDealStore } from '@/stores/deal'
-import MonoAmount from '@/components/MonoAmount.vue'
+import MonoAmount from '@/components/mono-amount.vue'
 import type { DealPaymentSchedule } from '@/types'
 
 const deal = useDealStore()

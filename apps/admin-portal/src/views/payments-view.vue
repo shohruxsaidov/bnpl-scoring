@@ -5,9 +5,9 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
 import { usePaymentsStore, type Payment } from '@/stores/payments'
-import { useManualPaymentsStore, type DealSearchResult } from '@/stores/manualPayments'
+import { useManualPaymentsStore, type DealSearchResult } from '@/stores/manual-payments'
 import { useMerchantsStore } from '@/stores/merchants'
-import MonoAmount from '@/components/MonoAmount.vue'
+import MonoAmount from '@/components/mono-amount.vue'
 import { formatDate } from '@/utils/money'
 
 const store = usePaymentsStore()

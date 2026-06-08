@@ -1,4 +1,6 @@
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
+
 import { apiFetch, API } from '@/utils/apiFetch'
 
 export type NotificationType =
@@ -30,8 +32,6 @@ interface ApiNotification {
 }
 
 function toAppNotification(raw: ApiNotification): AppNotification {
-  // admin_message uses free-text params.title / params.body directly as i18n "keys"
-  // vue-i18n passes unknown keys through as-is, so free text renders verbatim.
   if (raw.type === 'admin_message') {
     return {
       id: raw.id,
@@ -57,140 +57,157 @@ function toAppNotification(raw: ApiNotification): AppNotification {
   }
 }
 
-export const useNotificationsStore = defineStore('notifications', {
-  state: () => ({
-    items: [] as AppNotification[],
-    pushEnabled: false,
-    _source: null as EventSource | null,
-  }),
+let _source: EventSource | null = null
 
-  getters: {
-    unreadCount: (s) => s.items.filter((n) => !n.read).length,
-    unread: (s) => s.items.filter((n) => !n.read),
-    recent: (s) => s.items.slice(0, 5),
-    getById: (s) => (id: string) => s.items.find((n) => n.id === id),
-  },
+export const useNotificationsStore = defineStore('notifications', () => {
+  const items = ref<AppNotification[]>([])
+  const pushEnabled = ref(false)
 
-  actions: {
-    async fetchAll() {
-      try {
-        const data = await apiFetch<{ notifications: ApiNotification[] }>('/notifications')
-        this.items = data.notifications.map(toAppNotification)
-      } catch {
-        // non-fatal: leave existing items
-      }
-    },
+  const unreadCount = computed(() => items.value.filter((n) => !n.read).length)
+  const unread = computed(() => items.value.filter((n) => !n.read))
+  const recent = computed(() => items.value.slice(0, 5))
 
-    connectSSE() {
-      if (this._source) return
-      const source = new EventSource(`${API}/notifications/stream`, {
-        withCredentials: true,
-      })
-      source.addEventListener('notification', (e) => {
-        const raw = JSON.parse((e as MessageEvent).data) as ApiNotification
+  function getById(id: string) {
+    return items.value.find((n) => n.id === id)
+  }
+
+  async function fetchAll() {
+    try {
+      const data = await apiFetch<{ notifications: ApiNotification[] }>('/notifications')
+      items.value = data.notifications.map(toAppNotification)
+    } catch {
+      // non-fatal: leave existing items
+    }
+  }
+
+  function connectSSE() {
+    if (_source) return
+    const source = new EventSource(`${API}/notifications/stream`, {
+      withCredentials: true,
+    })
+    source.addEventListener('notification', (e) => {
+      const raw = JSON.parse((e as MessageEvent).data) as ApiNotification
+      const n = toAppNotification(raw)
+      items.value = [n, ...items.value]
+    })
+    source.onerror = () => {
+      source.close()
+      _source = null
+    }
+    _source = source
+  }
+
+  function disconnectSSE() {
+    _source?.close()
+    _source = null
+  }
+
+  async function markRead(id: string) {
+    const n = items.value.find((i) => i.id === id)
+    if (!n || n.read) return
+    n.read = true
+    apiFetch(`/notifications/${id}/read`, { method: 'PATCH' }).catch(() => {
+      n.read = false
+    })
+  }
+
+  async function markAllRead() {
+    const unreadItems = items.value.filter((n) => !n.read)
+    unreadItems.forEach((n) => (n.read = true))
+    apiFetch('/notifications/read-all', { method: 'POST' }).catch(() => {
+      unreadItems.forEach((n) => (n.read = false))
+    })
+  }
+
+  async function clearRead() {
+    const before = items.value
+    items.value = items.value.filter((n) => !n.read)
+    apiFetch('/notifications', { method: 'DELETE' }).catch(() => {
+      items.value = before
+    })
+  }
+
+  function listenForPushMessages() {
+    navigator.serviceWorker?.addEventListener('message', (event) => {
+      if (event.data?.type === 'push_notification') {
+        const raw = event.data.payload as ApiNotification
         const n = toAppNotification(raw)
-        this.items = [n, ...this.items]
-      })
-      source.onerror = () => {
-        source.close()
-        this._source = null
-      }
-      this._source = source
-    },
-
-    disconnectSSE() {
-      this._source?.close()
-      this._source = null
-    },
-
-    async markRead(id: string) {
-      const n = this.items.find((i) => i.id === id)
-      if (!n || n.read) return
-      n.read = true
-      apiFetch(`/notifications/${id}/read`, { method: 'PATCH' }).catch(() => {
-        n.read = false
-      })
-    },
-
-    async markAllRead() {
-      const unread = this.items.filter((n) => !n.read)
-      unread.forEach((n) => (n.read = true))
-      apiFetch('/notifications/read-all', { method: 'POST' }).catch(() => {
-        unread.forEach((n) => (n.read = false))
-      })
-    },
-
-    async clearRead() {
-      const before = this.items
-      this.items = this.items.filter((n) => !n.read)
-      apiFetch('/notifications', { method: 'DELETE' }).catch(() => {
-        this.items = before
-      })
-    },
-
-    listenForPushMessages() {
-      navigator.serviceWorker?.addEventListener('message', (event) => {
-        if (event.data?.type === 'push_notification') {
-          const raw = event.data.payload as ApiNotification
-          const n = toAppNotification(raw)
-          if (!this.items.find((x) => x.id === n.id)) {
-            this.items = [n, ...this.items]
-          }
+        if (!items.value.find((x) => x.id === n.id)) {
+          items.value = [n, ...items.value]
         }
-      })
-    },
-
-    async checkPushStatus() {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
-      const reg = await navigator.serviceWorker.ready
-      const sub = await reg.pushManager.getSubscription()
-      this.pushEnabled = !!sub
-    },
-
-    async enablePush() {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
-      const permission = await Notification.requestPermission()
-      if (permission !== 'granted') return
-
-      const keyRes = await fetch(`${API}/merchant/push/vapid-key`, { credentials: 'include' })
-      const { publicKey } = await keyRes.json()
-
-      const reg = await navigator.serviceWorker.ready
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: publicKey,
-      })
-
-      const { endpoint, keys } = sub.toJSON() as {
-        endpoint: string
-        keys: { p256dh: string; auth: string }
       }
+    })
+  }
 
-      await fetch(`${API}/merchant/push/subscribe`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ endpoint, p256dh: keys.p256dh, auth: keys.auth }),
-      })
+  async function checkPushStatus() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+    const reg = await navigator.serviceWorker.ready
+    const sub = await reg.pushManager.getSubscription()
+    pushEnabled.value = !!sub
+  }
 
-      this.pushEnabled = true
-    },
+  async function enablePush() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+    const permission = await Notification.requestPermission()
+    if (permission !== 'granted') return
 
-    async disablePush() {
-      if (!('serviceWorker' in navigator)) return
-      const reg = await navigator.serviceWorker.ready
-      const sub = await reg.pushManager.getSubscription()
-      if (!sub) return
+    const keyRes = await fetch(`${API}/merchant/push/vapid-key`, { credentials: 'include' })
+    const { publicKey } = await keyRes.json()
 
-      await fetch(`${API}/merchant/push/subscribe`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ endpoint: sub.endpoint }),
-      })
+    const reg = await navigator.serviceWorker.ready
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: publicKey,
+    })
 
-      await sub.unsubscribe()
-      this.pushEnabled = false
-    },
-  },
+    const { endpoint, keys } = sub.toJSON() as {
+      endpoint: string
+      keys: { p256dh: string; auth: string }
+    }
+
+    await fetch(`${API}/merchant/push/subscribe`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint, p256dh: keys.p256dh, auth: keys.auth }),
+    })
+
+    pushEnabled.value = true
+  }
+
+  async function disablePush() {
+    if (!('serviceWorker' in navigator)) return
+    const reg = await navigator.serviceWorker.ready
+    const sub = await reg.pushManager.getSubscription()
+    if (!sub) return
+
+    await fetch(`${API}/merchant/push/subscribe`, {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint: sub.endpoint }),
+    })
+
+    await sub.unsubscribe()
+    pushEnabled.value = false
+  }
+
+  return {
+    items,
+    pushEnabled,
+    unreadCount,
+    unread,
+    recent,
+    getById,
+    fetchAll,
+    connectSSE,
+    disconnectSSE,
+    markRead,
+    markAllRead,
+    clearRead,
+    listenForPushMessages,
+    checkPushStatus,
+    enablePush,
+    disablePush,
+  }
 })

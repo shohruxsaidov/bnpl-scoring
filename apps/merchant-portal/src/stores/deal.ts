@@ -1,4 +1,6 @@
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
+
 import type {
   BasketItem,
   Card,
@@ -58,7 +60,6 @@ interface SessionData {
   basket: BasketItem[]
   paymentDay: number
   schedule: DealPaymentSchedule[]
-  /** UUID of the Deal created at the end of the deal flow */
   createdDealId: string | null
 }
 
@@ -78,124 +79,150 @@ function emptySession(): SessionData {
   }
 }
 
-interface DealState {
-  currentStep: DealStepKey
-  completed: Record<DealStepKey, boolean>
-  sessionData: SessionData
+function emptyCompleted(): Record<DealStepKey, boolean> {
+  return {
+    client: false,
+    karta: false,
+    tarif: false,
+    mahsulot: false,
+    payment: false,
+    verification: false,
+    done: false,
+  }
 }
 
-export const useDealStore = defineStore('deal', {
-  persist: {
-    pick: ['currentStep', 'completed', 'sessionData'],
-  },
-  state: (): DealState => ({
-    currentStep: 'client',
-    completed: {
-      client: false,
-      karta: false,
-      tarif: false,
-      mahsulot: false,
-      payment: false,
-      verification: false,
-      done: false,
-    },
-    sessionData: emptySession(),
-  }),
+export const useDealStore = defineStore(
+  'deal',
+  () => {
+    const currentStep = ref<DealStepKey>('client')
+    const completed = ref<Record<DealStepKey, boolean>>(emptyCompleted())
+    const sessionData = ref<SessionData>(emptySession())
 
-  getters: {
-    steps: (): DealStep[] => DEAL_STEPS,
+    const steps = computed(() => DEAL_STEPS)
 
-    currentIndex: (s): number =>
-      DEAL_STEPS.findIndex((x) => x.key === s.currentStep),
+    const currentIndex = computed(() =>
+      DEAL_STEPS.findIndex((x) => x.key === currentStep.value),
+    )
 
-    basketTotal: (s): number =>
-      s.sessionData.basket.reduce(
+    const basketTotal = computed(() =>
+      sessionData.value.basket.reduce(
         (sum, i) => sum + Math.round(parseFloat(i.product.price) * 100) * i.quantity,
         0,
       ),
+    )
 
-    basketCount: (s): number =>
-      s.sessionData.basket.reduce((n, i) => n + i.quantity, 0),
-  },
+    const basketCount = computed(() =>
+      sessionData.value.basket.reduce((n, i) => n + i.quantity, 0),
+    )
 
-  actions: {
-    reset() {
-      this.currentStep = 'client'
-      this.completed = {
-        client: false,
-        karta: false,
-        tarif: false,
-        mahsulot: false,
-        payment: false,
-        verification: false,
-        done: false,
-      }
-      this.sessionData = emptySession()
-    },
+    function reset() {
+      currentStep.value = 'client'
+      completed.value = emptyCompleted()
+      sessionData.value = emptySession()
+    }
 
-    goTo(step: DealStepKey) {
-      this.currentStep = step
-    },
+    function goTo(step: DealStepKey) {
+      currentStep.value = step
+    }
 
-    complete(step: DealStepKey) {
-      this.completed[step] = true
+    function complete(step: DealStepKey) {
+      completed.value[step] = true
       const idx = DEAL_STEPS.findIndex((x) => x.key === step)
       const next = DEAL_STEPS[idx + 1]
-      if (next) this.currentStep = next.key
-    },
+      if (next) currentStep.value = next.key
+    }
 
-    back() {
-      const idx = this.currentIndex
-      if (idx > 0) this.currentStep = DEAL_STEPS[idx - 1].key
-    },
+    function back() {
+      const idx = currentIndex.value
+      if (idx > 0) currentStep.value = DEAL_STEPS[idx - 1].key
+    }
 
-    // -- Session mutations --
-    setClient(client: Client, opts?: { isNew?: boolean; myidVerified?: boolean }) {
-      this.sessionData.client = client
-      this.sessionData.isNewClient = opts?.isNew ?? false
-      this.sessionData.myidVerified = opts?.myidVerified ?? false
-    },
-    setKatmConsent(v: boolean) {
-      this.sessionData.katmConsent = v
-    },
-    setKatmResult(result: KatmSummary) {
-      this.sessionData.katmResult = result
-    },
-    setCard(card: Card) {
-      this.sessionData.selectedCard = card
-    },
-    setTariff(tariff: Tariff) {
-      this.sessionData.tariff = tariff
-    },
-    addToBasket(product: Product) {
-      const existing = this.sessionData.basket.find(
-        (i) => i.product.id === product.id,
-      )
+    function setClient(client: Client, opts?: { isNew?: boolean; myidVerified?: boolean }) {
+      sessionData.value.client = client
+      sessionData.value.isNewClient = opts?.isNew ?? false
+      sessionData.value.myidVerified = opts?.myidVerified ?? false
+    }
+
+    function setKatmConsent(v: boolean) {
+      sessionData.value.katmConsent = v
+    }
+
+    function setKatmResult(result: KatmSummary) {
+      sessionData.value.katmResult = result
+    }
+
+    function setCard(card: Card) {
+      sessionData.value.selectedCard = card
+    }
+
+    function setTariff(tariff: Tariff) {
+      sessionData.value.tariff = tariff
+    }
+
+    function addToBasket(product: Product) {
+      const existing = sessionData.value.basket.find((i) => i.product.id === product.id)
       if (existing) existing.quantity++
-      else this.sessionData.basket.push({ product, quantity: 1 })
-    },
-    incrementItem(productId: string) {
-      const i = this.sessionData.basket.find((x) => x.product.id === productId)
+      else sessionData.value.basket.push({ product, quantity: 1 })
+    }
+
+    function incrementItem(productId: string) {
+      const i = sessionData.value.basket.find((x) => x.product.id === productId)
       if (i) i.quantity++
-    },
-    decrementItem(productId: string) {
-      const i = this.sessionData.basket.find((x) => x.product.id === productId)
+    }
+
+    function decrementItem(productId: string) {
+      const i = sessionData.value.basket.find((x) => x.product.id === productId)
       if (i && i.quantity > 1) i.quantity--
-      else this.removeFromBasket(productId)
-    },
-    removeFromBasket(productId: string) {
-      this.sessionData.basket = this.sessionData.basket.filter(
+      else removeFromBasket(productId)
+    }
+
+    function removeFromBasket(productId: string) {
+      sessionData.value.basket = sessionData.value.basket.filter(
         (i) => i.product.id !== productId,
       )
-    },
-    setPaymentDay(day: number) {
-      this.sessionData.paymentDay = day
-    },
-    setSchedule(rows: DealPaymentSchedule[]) {
-      this.sessionData.schedule = rows
-    },
-    setCreatedDealId(id: string) {
-      this.sessionData.createdDealId = id
+    }
+
+    function setPaymentDay(day: number) {
+      sessionData.value.paymentDay = day
+    }
+
+    function setSchedule(rows: DealPaymentSchedule[]) {
+      sessionData.value.schedule = rows
+    }
+
+    function setCreatedDealId(id: string) {
+      sessionData.value.createdDealId = id
+    }
+
+    return {
+      currentStep,
+      completed,
+      sessionData,
+      steps,
+      currentIndex,
+      basketTotal,
+      basketCount,
+      reset,
+      goTo,
+      complete,
+      back,
+      setClient,
+      setKatmConsent,
+      setKatmResult,
+      setCard,
+      setTariff,
+      addToBasket,
+      incrementItem,
+      decrementItem,
+      removeFromBasket,
+      setPaymentDay,
+      setSchedule,
+      setCreatedDealId,
+    }
+  },
+  {
+    persist: {
+      pick: ['currentStep', 'completed', 'sessionData'],
     },
   },
-})
+)
