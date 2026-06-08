@@ -1,35 +1,39 @@
-import { and, asc, eq, sql } from "drizzle-orm"
-import type { Db } from "../../../../db"
-import { deals, dealPaymentSchedules, manualPayments, dealComments } from "../../../deals/db/schema"
-import { clients, adminUsers } from "../../../id/db/schema"
-import type { ManualPayment } from "../queries/list-manual-payments"
+import { and, asc, eq, sql } from 'drizzle-orm';
+import type { Db } from '../../../../db';
+import {
+  deals,
+  dealPaymentSchedules,
+  manualPayments,
+  dealComments,
+} from '../../../deals/db/schema';
+import { clients, adminUsers } from '../../../id/db/schema';
+import type { ManualPayment } from '../queries/list-manual-payments';
 
 export async function createManualPayment(
   db: Db,
   input: {
-    dealId: string
-    adminUserId: bigint
-    amount: number
-    paymentType: string
-    note?: string
+    dealId: string;
+    adminUserId: bigint;
+    amount: number;
+    paymentType: string;
+    note?: string;
   },
 ): Promise<ManualPayment> {
   return db.transaction(async (tx) => {
-    const amountTiyin = BigInt(input.amount)
+    const amountTiyin = BigInt(input.amount);
 
     const unpaid = await tx
       .select()
       .from(dealPaymentSchedules)
-      .where(and(eq(dealPaymentSchedules.dealId, input.dealId), eq(dealPaymentSchedules.paid, false)))
-      .orderBy(asc(dealPaymentSchedules.dueDate))
+      .where(
+        and(eq(dealPaymentSchedules.dealId, input.dealId), eq(dealPaymentSchedules.paid, false)),
+      )
+      .orderBy(asc(dealPaymentSchedules.dueDate));
 
-    const totalRemaining = unpaid.reduce(
-      (sum, r) => sum + (r.amount - (r.paidAmount ?? 0n)),
-      0n,
-    )
+    const totalRemaining = unpaid.reduce((sum, r) => sum + (r.amount - (r.paidAmount ?? 0n)), 0n);
 
     if (amountTiyin > totalRemaining) {
-      throw Object.assign(new Error("overpayment"), { statusCode: 400, code: "OVERPAYMENT" })
+      throw Object.assign(new Error('overpayment'), { statusCode: 400, code: 'OVERPAYMENT' });
     }
 
     const mpRows = await tx
@@ -41,18 +45,18 @@ export async function createManualPayment(
         paymentType: input.paymentType,
         note: input.note || null,
       })
-      .returning()
-    const mp = mpRows[0]!
+      .returning();
+    const mp = mpRows[0]!;
 
-    let bucket = amountTiyin
-    const now = new Date()
+    let bucket = amountTiyin;
+    const now = new Date();
 
     for (const row of unpaid) {
-      if (bucket <= 0n) break
-      const rowRemaining = row.amount - (row.paidAmount ?? 0n)
-      const apply = bucket < rowRemaining ? bucket : rowRemaining
-      const newPaid = (row.paidAmount ?? 0n) + apply
-      const fullyPaid = newPaid >= row.amount
+      if (bucket <= 0n) break;
+      const rowRemaining = row.amount - (row.paidAmount ?? 0n);
+      const apply = bucket < rowRemaining ? bucket : rowRemaining;
+      const newPaid = (row.paidAmount ?? 0n) + apply;
+      const fullyPaid = newPaid >= row.amount;
 
       await tx
         .update(dealPaymentSchedules)
@@ -63,19 +67,21 @@ export async function createManualPayment(
           manualPaymentId: mp.id,
           paymentProvider: sql`array_append(COALESCE(${dealPaymentSchedules.paymentProvider}, ARRAY[]::text[]), 'manual')`,
         })
-        .where(eq(dealPaymentSchedules.id, row.id))
+        .where(eq(dealPaymentSchedules.id, row.id));
 
-      bucket -= apply
+      bucket -= apply;
     }
 
     const stillUnpaid = await tx
       .select({ id: dealPaymentSchedules.id })
       .from(dealPaymentSchedules)
-      .where(and(eq(dealPaymentSchedules.dealId, input.dealId), eq(dealPaymentSchedules.paid, false)))
-      .limit(1)
+      .where(
+        and(eq(dealPaymentSchedules.dealId, input.dealId), eq(dealPaymentSchedules.paid, false)),
+      )
+      .limit(1);
 
     if (stillUnpaid.length === 0) {
-      await tx.update(deals).set({ status: "closed" }).where(eq(deals.id, input.dealId))
+      await tx.update(deals).set({ status: 'closed' }).where(eq(deals.id, input.dealId));
     }
 
     if (input.note) {
@@ -83,31 +89,31 @@ export async function createManualPayment(
         dealId: input.dealId,
         adminUserId: input.adminUserId,
         text: `Ручной платёж: ${input.note}`,
-      })
+      });
     }
 
     const dealRows = await tx
       .select({ dealNumber: deals.dealNumber, clientId: deals.clientId })
       .from(deals)
-      .where(eq(deals.id, input.dealId))
-    const deal = dealRows[0]!
+      .where(eq(deals.id, input.dealId));
+    const deal = dealRows[0]!;
 
     const clientRows = await tx
       .select({ firstName: clients.firstName, lastName: clients.lastName, phone: clients.phone })
       .from(clients)
-      .where(eq(clients.id, deal.clientId!))
-    const client = clientRows[0]!
+      .where(eq(clients.id, deal.clientId!));
+    const client = clientRows[0]!;
 
     const adminRows = await tx
       .select({ fullName: adminUsers.fullName })
       .from(adminUsers)
-      .where(eq(adminUsers.id, input.adminUserId))
-    const admin = adminRows[0]
+      .where(eq(adminUsers.id, input.adminUserId));
+    const admin = adminRows[0];
 
     return {
       id: mp.id.toString(),
       dealId: mp.dealId,
-      dealNumber: `CN-${String(deal.dealNumber).padStart(7, "0")}`,
+      dealNumber: `CN-${String(deal.dealNumber).padStart(7, '0')}`,
       clientName: `${client.firstName} ${client.lastName}`,
       clientPhone: client.phone,
       amount: Number(mp.amount),
@@ -115,6 +121,6 @@ export async function createManualPayment(
       note: mp.note,
       createdAt: mp.createdAt.toISOString(),
       adminName: admin?.fullName ?? null,
-    }
-  })
+    };
+  });
 }
