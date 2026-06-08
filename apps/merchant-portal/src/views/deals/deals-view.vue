@@ -10,7 +10,7 @@ import StatusBadge from '@/components/status-badge.vue'
 import MonoAmount from '@/components/mono-amount.vue'
 import SkeletonTable from '@/components/skeleton-table.vue'
 import { formatDate } from '@/utils/money'
-import { useDealsQuery, type DealListItem, type DealSortField, type DealSortOrder } from '@/composables/useDealsApi'
+import { useDealsQuery, type DealListItem, type DealSortField, type DealSortOrder } from '@/composables/use-deals-api'
 import type { DealStatus } from '@/types'
 
 const auth = useAuthStore()

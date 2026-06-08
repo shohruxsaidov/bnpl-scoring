@@ -3,7 +3,7 @@ import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useDealsStore } from '@/stores/deals'
-import { useOverviewApi } from '@/composables/useOverviewApi'
+import { useOverviewApi } from '@/composables/use-overview-api'
 import StatusBadge from '@/components/status-badge.vue'
 import { formatSomCompact, formatSomShort, formatDate } from '@/utils/money'
 

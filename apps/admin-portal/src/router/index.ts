@@ -1,5 +1,5 @@
-import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -237,41 +237,41 @@ const routes: RouteRecordRaw[] = [
     ],
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },
-];
+]
 
 const router = createRouter({
   history: createWebHistory('/admin'),
   routes,
-});
+})
 
 router.beforeEach((to) => {
-  const auth = useAuthStore();
+  const auth = useAuthStore()
 
   if (to.meta.public) {
-    if (auth.isAuthenticated && to.name === 'login') return { name: 'overview' };
-    return true;
+    if (auth.isAuthenticated && to.name === 'login') return { name: 'overview' }
+    return true
   }
 
   if (!auth.isAuthenticated) {
-    return { name: 'login' };
+    return { name: 'login' }
   }
 
   if (auth.admin?.mustChangePassword && to.name !== 'change-password') {
-    return { name: 'change-password' };
+    return { name: 'change-password' }
   }
 
   // Dev-only screens are reserved to Superadmin.
   if (to.meta.superadmin && !auth.isSuperadmin) {
-    return { name: 'overview' };
+    return { name: 'overview' }
   }
 
   // Overview is always reachable as a safe landing; other routes are Feature-gated.
-  const feature = to.meta.feature as string | undefined;
+  const feature = to.meta.feature as string | undefined
   if (feature && !auth.can(feature) && to.name !== 'overview') {
-    return { name: 'overview' };
+    return { name: 'overview' }
   }
 
-  return true;
-});
+  return true
+})
 
-export default router;
+export default router

@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import StatusBadge from '@/components/status-badge.vue'
 import { formatDate, formatSomShort } from '@/utils/money'
-import { useDealQuery, fetchContractPdfUrl } from '@/composables/useDealsApi'
+import { useDealQuery, fetchContractPdfUrl } from '@/composables/use-deals-api'
 
 const route = useRoute()
 const router = useRouter()

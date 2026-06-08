@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useClientApi } from '@/composables/useClientApi'
+import { useClientApi } from '@/composables/use-client-api'
 import { useDealStore } from '@/stores/deal'
 import { useClientScoringStore } from '@/stores/client-scoring'
 

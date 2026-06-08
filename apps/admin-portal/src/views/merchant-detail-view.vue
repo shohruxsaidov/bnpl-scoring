@@ -13,7 +13,7 @@ import ToggleSwitch from 'primevue/toggleswitch'
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
 import { useMerchantsStore } from '@/stores/merchants'
-import { useMxik, type MxikEntry, type MxikPackage } from '@/composables/useMxik'
+import { useMxik, type MxikEntry, type MxikPackage } from '@/composables/use-mxik'
 import { formatDateTime } from '@/utils/money'
 import type { Branch, Category, MerchantEmployee, Product } from '@/types'
 

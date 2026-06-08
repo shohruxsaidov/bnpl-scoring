@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import { useDealStore } from '@/stores/deal'
 import { useClientScoringStore } from '@/stores/client-scoring'
-import { useSaveScoringMutation } from '@/composables/useScoringHistoryApi'
+import { useSaveScoringMutation } from '@/composables/use-scoring-history-api'
 import { apiFetch } from '@/utils/apiFetch'
 import type { Card, CardScoreResult, ScoreDecision } from '@/types'
 

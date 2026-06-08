@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useClientApi } from '@/composables/useClientApi'
+import { useClientApi } from '@/composables/use-client-api'
 import { useDealStore } from '@/stores/deal'
 
 const router = useRouter()

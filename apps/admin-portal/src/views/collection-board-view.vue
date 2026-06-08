@@ -5,7 +5,7 @@ import Select from 'primevue/select'
 import { useCollectionBoardStore, type OverdueCard } from '@/stores/collection-board'
 import { useMerchantsStore } from '@/stores/merchants'
 import { formatSom, formatDateTime } from '@/utils/money'
-import { useDealCommentsQuery, useAddDealComment } from '@/composables/useAdminDealsApi'
+import { useDealCommentsQuery, useAddDealComment } from '@/composables/use-admin-deals-api'
 
 const store = useCollectionBoardStore()
 const merchantsStore = useMerchantsStore()

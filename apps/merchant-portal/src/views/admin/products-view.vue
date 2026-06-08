@@ -11,7 +11,7 @@ import Select from 'primevue/select'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { useCatalogStore } from '@/stores/catalog'
-import { useMxik, type MxikPackage, type MxikEntry } from '@/composables/useMxik'
+import { useMxik, type MxikPackage, type MxikEntry } from '@/composables/use-mxik'
 import type { Product } from '@/types'
 import { useAuthStore } from '@/stores/auth'
 

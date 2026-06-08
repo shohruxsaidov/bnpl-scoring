@@ -2,8 +2,8 @@
 import { computed, onMounted, ref } from 'vue'
 import { useDealStore } from '@/stores/deal'
 import { useClientScoringStore } from '@/stores/client-scoring'
-import { useClientApi } from '@/composables/useClientApi'
-import { useCreateDealMutation } from '@/composables/useDealsApi'
+import { useClientApi } from '@/composables/use-client-api'
+import { useCreateDealMutation } from '@/composables/use-deals-api'
 import MonoAmount from '@/components/mono-amount.vue'
 
 const deal = useDealStore()

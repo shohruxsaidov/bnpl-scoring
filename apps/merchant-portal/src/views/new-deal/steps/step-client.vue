@@ -5,7 +5,7 @@ import InputText from 'primevue/inputtext'
 import Checkbox from 'primevue/checkbox'
 import { useDealStore } from '@/stores/deal'
 import type { KatmSummary } from '@/stores/deal'
-import { useClientApi } from '@/composables/useClientApi'
+import { useClientApi } from '@/composables/use-client-api'
 import { apiFetch } from '@/utils/apiFetch'
 import type { Client } from '@/types'
 

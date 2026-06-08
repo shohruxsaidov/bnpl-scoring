@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import Skeleton from 'primevue/skeleton'
 import { useNotificationsStore, type AppNotification, type NotificationType } from '@/stores/notifications'
-import { usePageLoad } from '@/composables/usePageLoad'
+import { usePageLoad } from '@/composables/use-page-load'
 
 const { loading } = usePageLoad(0)
 
