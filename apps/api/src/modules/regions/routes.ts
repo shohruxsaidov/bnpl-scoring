@@ -7,24 +7,27 @@ export default async function regionRoutes(app: FastifyInstance) {
 
   // GET /regions            → top-level Regions (oblasts)
   // GET /regions?upperId=N  → Districts under Region N
+  // GET /regions?flat=true  → all rows (used for name lookups)
   app.get('/', async (req) => {
-    const { upperId } = req.query as { upperId?: string };
+    const { upperId, flat } = req.query as { upperId?: string; flat?: string };
+
+    if (flat === 'true') {
+      return db.select().from(regions).orderBy(regions.nameRu);
+    }
 
     if (upperId !== undefined) {
       const parentId = parseInt(upperId, 10);
-      const rows = await db
+      return db
         .select()
         .from(regions)
         .where(eq(regions.upperId, parentId))
         .orderBy(regions.nameRu);
-      return rows;
     }
 
-    const rows = await db
+    return db
       .select()
       .from(regions)
       .where(isNull(regions.upperId))
       .orderBy(regions.nameRu);
-    return rows;
   });
 }

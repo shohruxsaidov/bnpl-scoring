@@ -714,7 +714,11 @@
     "region": "Viloyat",
     "selectRegion": "Viloyatni tanlang",
     "district": "Tuman",
-    "selectDistrict": "Tumanni tanlang"
+    "selectDistrict": "Tumanni tanlang",
+    "noRegion": "Viloyat ko'rsatilmagan",
+    "editRegion": "Viloyatni o'zgartirish",
+    "regionSaved": "Viloyat saqlandi",
+    "regionSaveFailed": "Viloyatni saqlab bo'lmadi"
   },
   "deals": {
     "status": "Holat",

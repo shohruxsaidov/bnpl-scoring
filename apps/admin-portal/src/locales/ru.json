@@ -722,7 +722,11 @@
     "region": "Регион",
     "selectRegion": "Выберите регион",
     "district": "Район",
-    "selectDistrict": "Выберите район"
+    "selectDistrict": "Выберите район",
+    "noRegion": "Регион не указан",
+    "editRegion": "Изменить регион",
+    "regionSaved": "Регион сохранён",
+    "regionSaveFailed": "Не удалось сохранить регион"
   },
   "deals": {
     "status": "Статус",

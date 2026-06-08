@@ -116,7 +116,7 @@ const branchForm = ref({ name: '', address: '', phone: '', regionId: null as num
 const branchRegion = ref<number | null>(null)
 const branchSaving = ref(false)
 
-const { regionOptions, districtOptions, onRegionChange } = useRegions()
+const { regionOptions, districtOptions, onRegionChange, lookupName, lookupParent } = useRegions()
 
 function openBranch() {
   branchForm.value = { name: '', address: '', phone: '', regionId: null }
@@ -508,6 +508,38 @@ async function submitBankInfo() {
   }
 }
 
+// --- Merchant region ---------------------------------------------------------
+const showRegionInfo = ref(false)
+const regionForm = ref({ regionId: null as number | null })
+const regionFormParent = ref<number | null>(null)
+const regionSaving = ref(false)
+
+function openRegionInfo() {
+  const rid = merchant.value?.regionId ?? null
+  regionForm.value.regionId = rid
+  // Pre-populate parent select: if stored ID is a district, set its parent; if it's a region, set it directly
+  const parent = lookupParent(rid)
+  regionFormParent.value = parent ? parent.id : (rid ? rid : null)
+  if (parent) {
+    // stored ID is a district — prime the district dropdown
+    onRegionChange(parent.id, () => {})
+  }
+  showRegionInfo.value = true
+}
+
+async function submitRegionInfo() {
+  regionSaving.value = true
+  try {
+    await merchants.update(merchantId.value, { regionId: regionForm.value.regionId })
+    toast.add({ severity: 'success', summary: t('merchantDetail.regionSaved'), life: 2000 })
+    showRegionInfo.value = false
+  } catch {
+    notifyError('merchantDetail.regionSaveFailed')
+  } finally {
+    regionSaving.value = false
+  }
+}
+
 // --- Tariffs -----------------------------------------------------------------
 const tariffToggling = ref<Set<string>>(new Set())
 
@@ -581,6 +613,30 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
         </div>
       </div>
       <button class="icon-btn" :title="$t('merchantDetail.editBankInfo')" @click="openBankInfo">
+        <i class="pi pi-pencil" />
+      </button>
+    </div>
+
+    <!-- Region info card -->
+    <div class="surface-card bank-card">
+      <div class="bank-card-inner">
+        <i class="pi pi-map-marker bank-icon" />
+        <div class="bank-fields">
+          <template v-if="merchant.regionId">
+            <span v-if="lookupParent(merchant.regionId)" class="bank-field">
+              <span class="muted">{{ $t('merchantDetail.region') }}</span>
+              <span>{{ lookupName(lookupParent(merchant.regionId)?.id) }}</span>
+            </span>
+            <span v-if="lookupParent(merchant.regionId)" class="bank-sep">·</span>
+            <span class="bank-field">
+              <span class="muted">{{ lookupParent(merchant.regionId) ? $t('merchantDetail.district') : $t('merchantDetail.region') }}</span>
+              <span>{{ lookupName(merchant.regionId) }}</span>
+            </span>
+          </template>
+          <span v-else class="muted">{{ $t('merchantDetail.noRegion') }}</span>
+        </div>
+      </div>
+      <button class="icon-btn" :title="$t('merchantDetail.editRegion')" @click="openRegionInfo">
         <i class="pi pi-pencil" />
       </button>
     </div>
@@ -1054,6 +1110,28 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
           :disabled="bankSaving || !/^\d{5}$/.test(bankForm.mfo) || !bankForm.bankName || !/^\d{20}$/.test(bankForm.accountNumber)"
           @click="submitBankInfo"
         >
+          {{ $t('common.save') }}
+        </button>
+      </template>
+    </Dialog>
+
+    <!-- Region dialog -->
+    <Dialog v-model:visible="showRegionInfo" modal :header="$t('merchantDetail.editRegion')" :style="{ width: '440px' }">
+      <div class="field">
+        <label class="field-label">{{ $t('merchantDetail.region') }}</label>
+        <Select v-model="regionFormParent" :options="regionOptions" option-label="label" option-value="value"
+          :placeholder="$t('merchantDetail.selectRegion')" filter show-clear class="w-full"
+          @change="onRegionChange(regionFormParent, (v) => { regionForm.regionId = v })" />
+      </div>
+      <div class="field" style="margin-top: 1rem">
+        <label class="field-label">{{ $t('merchantDetail.district') }}</label>
+        <Select v-model="regionForm.regionId" :options="districtOptions" option-label="label" option-value="value"
+          :placeholder="$t('merchantDetail.selectDistrict')" filter show-clear class="w-full"
+          :disabled="!regionFormParent" />
+      </div>
+      <template #footer>
+        <button class="btn-ghost" @click="showRegionInfo = false">{{ $t('common.cancel') }}</button>
+        <button class="btn-gradient" :disabled="regionSaving" @click="submitRegionInfo">
           {{ $t('common.save') }}
         </button>
       </template>
