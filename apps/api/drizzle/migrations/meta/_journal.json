@@ -15,6 +15,20 @@
       "when": 1780843290080,
       "tag": "0001_open_landau",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780895216504,
+      "tag": "0002_light_dark_beast",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1780895648469,
+      "tag": "0003_tearful_colonel_america",
+      "breakpoints": true
     }
   ]
 }

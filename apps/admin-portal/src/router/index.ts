@@ -204,6 +204,36 @@ const routes: RouteRecordRaw[] = [
           feature: 'manage_roles',
         },
       },
+      {
+        path: 'scoring-model',
+        name: 'scoring-model',
+        component: () => import('@/views/ScoringModelView.vue'),
+        meta: {
+          titleKey: 'routeTitle.scoringModel',
+          breadcrumbKeys: ['breadcrumb.scoringModel'],
+          feature: 'manage_scoring_model',
+        },
+      },
+      {
+        path: 'scoring-model/:id',
+        name: 'scoring-model-detail',
+        component: () => import('@/views/ScoringModelDetailView.vue'),
+        meta: {
+          titleKey: 'routeTitle.scoringModel',
+          breadcrumbKeys: ['breadcrumb.scoringModel', 'breadcrumb.detail'],
+          feature: 'manage_scoring_model',
+        },
+      },
+      {
+        path: 'scoring-model/:id/try',
+        name: 'scoring-model-try',
+        component: () => import('@/views/ScoringModelTryView.vue'),
+        meta: {
+          titleKey: 'routeTitle.scoringModelTry',
+          breadcrumbKeys: ['breadcrumb.scoringModel', 'breadcrumb.scoringModelTry'],
+          feature: 'manage_scoring_model',
+        },
+      },
     ],
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },
