@@ -163,6 +163,7 @@ export interface Tariff {
   name: string
   termMonths: number
   markupPercent: number
+  scoringModelId: number | null
   active: boolean
   selected?: boolean
 }

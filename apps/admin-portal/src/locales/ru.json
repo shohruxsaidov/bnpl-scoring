@@ -424,7 +424,10 @@
     "deleteConfirm": "Деактивировать тариф \"{name}\"? Он будет скрыт у всех мерчантов.",
     "loadFailed": "Не удалось загрузить тарифы",
     "createFailed": "Не удалось создать тариф",
-    "updateFailed": "Не удалось обновить тариф"
+    "updateFailed": "Не удалось обновить тариф",
+    "scoringModel": "Модель скоринга",
+    "scoringModelPlaceholder": "Выбрать ревизию...",
+    "scoringModelNone": "Не указана"
   },
   "blacklist": {
     "listTitle": "Заблокированные идентификаторы",

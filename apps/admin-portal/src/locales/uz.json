@@ -416,7 +416,10 @@
     "deleteConfirm": "\"{name}\" tarifi deaktivatsiya qilinsinmi? Barcha merchantlardan yashiriladi.",
     "loadFailed": "Tariflarni yuklab bo'lmadi",
     "createFailed": "Tarif yaratib bo'lmadi",
-    "updateFailed": "Tarifni yangilab bo'lmadi"
+    "updateFailed": "Tarifni yangilab bo'lmadi",
+    "scoringModel": "Skoring modeli",
+    "scoringModelPlaceholder": "Reviziyani tanlang...",
+    "scoringModelNone": "Ko'rsatilmagan"
   },
   "blacklist": {
     "listTitle": "Bloklangan identifikatorlar",

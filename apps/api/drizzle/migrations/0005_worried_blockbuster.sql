@@ -1,0 +1,2 @@
+ALTER TABLE "tariffs" ADD COLUMN "scoring_model_id" integer;--> statement-breakpoint
+ALTER TABLE "tariffs" ADD CONSTRAINT "tariffs_scoring_model_id_scoring_model_revisions_id_fk" FOREIGN KEY ("scoring_model_id") REFERENCES "public"."scoring_model_revisions"("id") ON DELETE no action ON UPDATE no action;

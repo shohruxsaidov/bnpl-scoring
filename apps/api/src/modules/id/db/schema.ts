@@ -9,6 +9,7 @@ import {
   numeric,
   pgTable,
   primaryKey,
+  serial,
   text,
   timestamp,
   unique,
@@ -232,11 +233,21 @@ export const mxikCache = pgTable('mxik_cache', {
   cachedAt: timestamp('cached_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const scoringModelRevisions = pgTable('scoring_model_revisions', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  version: varchar('version', { length: 50 }).notNull(),
+  params: jsonb('params').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  createdBy: bigint('created_by', { mode: 'bigint' }).references(() => adminUsers.id),
+});
+
 export const tariffs = pgTable('tariffs', {
   id: bigserial('id', { mode: 'bigint' }).primaryKey(),
   name: varchar('name', { length: 200 }).notNull(),
   termMonths: integer('term_months').notNull(),
   markupPercent: numeric('markup_percent', { precision: 5, scale: 2 }).notNull(),
+  scoringModelId: integer('scoring_model_id').references(() => scoringModelRevisions.id),
   active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });

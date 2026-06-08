@@ -97,7 +97,7 @@ A named grouping of Products managed by an Employee with the Merchant Admin Role
 _Avoid_: Product type, product category label
 
 **Tariff**:
-A credit plan that defines a name, number of instalment months, Ustama rate, and Credit Range. Created and managed exclusively by the Finsum platform admin. Merchant Admins select which active Tariffs to expose to their clients — they cannot create or modify Tariff parameters.
+A credit plan that defines a name, number of instalment months, Ustama rate, and Credit Range. Created and managed exclusively by the Finsum platform admin. Merchant Admins select which active Tariffs to expose to their clients — they cannot create or modify Tariff parameters. Each Tariff optionally references one **Scoring Model Revision** (`scoring_model_id`) — the specific revision whose parameters must be used when computing a Client's Score for Deals under that Tariff. Set by the Platform Admin at creation time; immutable after creation. When `scoring_model_id` is null (legacy Tariffs), the system falls back to the active Scoring Model Revision.
 _Avoid_: Plan, scheme, package
 
 **Ustama**:
@@ -248,6 +248,7 @@ _Avoid_: Notification kind, notification category
 - A **Deal** belongs to one **Merchant** and one **Branch**
 - A **Merchant** selects active **Tariffs** from the Finsum global Tariff catalog
 - A **Tariff** defines months, **Ustama** rate, and a **Credit Range** (min + max Basket total)
+- A **Tariff** optionally references exactly one **Scoring Model Revision** (`scoring_model_id`); null means fall back to the active revision
 - A **Deal** contains one **Basket** and one **Tariff**
 - A **Basket** contains one or more **Products** with quantities; total must fall within the Tariff's **Credit Range** and must not exceed the Client's **Available Balance**
 - A **Product** belongs to exactly one **Category**; a **Category** is owned by a **Merchant**

@@ -6,6 +6,7 @@ import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
+import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
@@ -13,9 +14,11 @@ import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
 import { useTariffsStore } from '@/stores/tariffs'
+import { useScoringModelStore } from '@/stores/scoring-model'
 import type { Tariff } from '@/types'
 
 const tariffs = useTariffsStore()
+const scoringModelStore = useScoringModelStore()
 const toast = useToast()
 const confirm = useConfirm()
 const { t } = useI18n()
@@ -29,20 +32,23 @@ const schema = toTypedSchema(
     name: z.string().min(1, t('tariffs.nameRequired')),
     termMonths: z.number().int().min(1).max(120),
     markupPercent: z.number().min(0).max(100),
+    scoringModelId: z.number().nullable().optional(),
   }),
 )
 
 const { handleSubmit, errors, defineField, resetForm, setValues } = useForm({
   validationSchema: schema,
-  initialValues: { name: '', termMonths: 6, markupPercent: 8 },
+  initialValues: { name: '', termMonths: 6, markupPercent: 8, scoringModelId: null },
 })
 
 const [name, nameAttrs] = defineField('name')
 const [termMonths, termMonthsAttrs] = defineField('termMonths')
 const [markupPercent, markupPercentAttrs] = defineField('markupPercent')
+const [scoringModelId] = defineField('scoringModelId')
 
 onMounted(() => {
   tariffs.fetchAll().catch(() => toast.add({ severity: 'error', summary: t('tariffs.loadFailed'), life: 3000 }))
+  scoringModelStore.fetchHistory().catch(() => {})
 })
 
 function openNew() {
@@ -57,23 +63,34 @@ function openEdit(tariff: Tariff) {
     name: tariff.name,
     termMonths: tariff.termMonths,
     markupPercent: tariff.markupPercent,
+    scoringModelId: tariff.scoringModelId,
   })
   showDialog.value = true
+}
+
+function scoringModelLabel(id: number | null): string {
+  if (!id) return '—'
+  const rev = scoringModelStore.history.find((r) => r.id === id)
+  return rev ? `${rev.name} v${rev.version}` : `#${id}`
 }
 
 const submit = handleSubmit(async (values) => {
   saving.value = true
   try {
-    const payload = {
-      name: values.name,
-      termMonths: values.termMonths,
-      markupPercent: values.markupPercent,
-    }
     if (editingId.value) {
-      await tariffs.update(editingId.value, payload)
+      await tariffs.update(editingId.value, {
+        name: values.name,
+        termMonths: values.termMonths,
+        markupPercent: values.markupPercent,
+      })
       toast.add({ severity: 'success', summary: t('tariffs.updated'), life: 2000 })
     } else {
-      await tariffs.create(payload)
+      await tariffs.create({
+        name: values.name,
+        termMonths: values.termMonths,
+        markupPercent: values.markupPercent,
+        scoringModelId: values.scoringModelId ?? null,
+      })
       toast.add({ severity: 'success', summary: t('tariffs.created'), life: 2000 })
     }
     showDialog.value = false
@@ -132,6 +149,13 @@ function remove(tariff: Tariff) {
             <span class="markup font-mono">{{ data.markupPercent }}%</span>
           </template>
         </Column>
+        <Column :header="$t('tariffs.scoringModel')">
+          <template #body="{ data }">
+            <span class="model-tag" :class="{ 'model-none': !data.scoringModelId }">
+              {{ scoringModelLabel(data.scoringModelId) }}
+            </span>
+          </template>
+        </Column>
         <Column :header="$t('tariffs.active')">
           <template #body="{ data }">
             <ToggleSwitch
@@ -177,6 +201,28 @@ function remove(tariff: Tariff) {
             <InputNumber v-model="markupPercent" v-bind="markupPercentAttrs" :min="0" :max="100" :max-fraction-digits="2" fluid />
           </div>
         </div>
+        <div class="field">
+          <label class="field-label">{{ $t('tariffs.scoringModel') }}</label>
+          <Select
+            v-model="scoringModelId"
+            :options="scoringModelStore.history"
+            option-label="name"
+            option-value="id"
+            :placeholder="$t('tariffs.scoringModelPlaceholder')"
+            :show-clear="!editingId"
+            :disabled="!!editingId"
+            fluid
+          >
+            <template #option="{ option }">
+              <span>{{ option.name }} <span class="opt-version">v{{ option.version }}</span></span>
+            </template>
+            <template #value="{ value }">
+              <span v-if="value">{{ scoringModelLabel(value) }}</span>
+              <span v-else class="placeholder-text">{{ $t('tariffs.scoringModelPlaceholder') }}</span>
+            </template>
+          </Select>
+          <small v-if="editingId" class="field-hint">{{ $t('tariffs.scoringModelNone') }}</small>
+        </div>
       </form>
       <template #footer>
         <button class="btn-ghost" @click="showDialog = false">{{ $t('common.cancel') }}</button>
@@ -220,6 +266,14 @@ function remove(tariff: Tariff) {
 .markup {
   color: var(--accent-2);
   font-weight: 700;
+}
+.model-tag {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.model-none {
+  color: var(--text-secondary);
 }
 .row-actions {
   display: flex;
@@ -269,6 +323,17 @@ function remove(tariff: Tariff) {
 .field-error {
   color: var(--danger);
   font-size: 0.78rem;
+}
+.field-hint {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+.opt-version {
+  color: var(--text-secondary);
+  font-size: 0.8em;
+}
+.placeholder-text {
+  color: var(--text-secondary);
 }
 .form :deep(.p-inputnumber) {
   width: 100%;

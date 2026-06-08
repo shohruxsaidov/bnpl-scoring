@@ -12,6 +12,7 @@ function serialize(t: NonNullable<Awaited<ReturnType<typeof getTariff>>>) {
     name: t.name,
     termMonths: t.termMonths,
     markupPercent: parseFloat(t.markupPercent),
+    scoringModelId: t.scoringModelId ?? null,
     active: t.active,
     createdAt: t.createdAt.toISOString(),
   }
@@ -28,6 +29,7 @@ export default async function adminTariffRoutes(app: FastifyInstance) {
     name: Type.String({ minLength: 1 }),
     termMonths: Type.Integer({ minimum: 1, maximum: 120 }),
     markupPercent: Type.Number({ minimum: 0, maximum: 100 }),
+    scoringModelId: Type.Optional(Type.Integer()),
   })
 
   const UpdateBody = Type.Partial(
@@ -45,8 +47,8 @@ export default async function adminTariffRoutes(app: FastifyInstance) {
   })
 
   fastify.post("/", { schema: { body: CreateBody }, preHandler }, async (request, reply) => {
-    const { markupPercent, ...rest } = request.body
-    const tariff = await createTariff(db, { ...rest, markupPercent: markupPercent.toFixed(2) })
+    const { markupPercent, scoringModelId, ...rest } = request.body
+    const tariff = await createTariff(db, { ...rest, markupPercent: markupPercent.toFixed(2), scoringModelId: scoringModelId ?? null })
     return reply.code(201).send({ tariff: serialize(tariff) })
   })
 
