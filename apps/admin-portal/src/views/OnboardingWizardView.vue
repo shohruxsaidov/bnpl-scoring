@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
@@ -15,7 +15,7 @@ const { t } = useI18n()
 const toast = useToast()
 const store = useMerchantsStore()
 
-const TOTAL_STEPS = 5
+const TOTAL_STEPS = 6
 const step = ref(1)
 const saving = ref(false)
 
@@ -25,11 +25,14 @@ const createdCategories = ref<Category[]>([])
 
 const STEPS = computed(() => [
   t('onboarding.stepMerchant'),
+  t('onboarding.stepBankAccount'),
   t('onboarding.stepBranch'),
   t('onboarding.stepEmployees'),
   t('onboarding.stepCategories'),
   t('onboarding.stepProducts'),
 ])
+
+onMounted(() => { store.fetchBankList() })
 
 const ROLE_OPTIONS = [
   { label: 'Agent', value: 'agent' },
@@ -67,7 +70,39 @@ async function submitStep1() {
   }
 }
 
-// Step 2 – Branch
+// Step 2 – Bank Account
+const ba = ref({ mfo: '', accountNumber: '' })
+const baErrors = ref({ mfo: false, accountNumber: false })
+
+const bankOptions = computed(() =>
+  store.bankList.map((b) => ({ label: `${b.mfo} — ${b.bankName}`, value: b.mfo }))
+)
+
+function validateBankAccount(): boolean {
+  baErrors.value.mfo = !ba.value.mfo
+  baErrors.value.accountNumber = !ba.value.accountNumber || ba.value.accountNumber.replace(/\D/g, '').length !== 20
+  return !Object.values(baErrors.value).some(Boolean)
+}
+
+async function submitStep2() {
+  if (!validateBankAccount()) return
+  saving.value = true
+  try {
+    const selectedBank = store.bankList.find((b) => b.mfo === ba.value.mfo)
+    await store.update(merchantId.value!, {
+      mfo: ba.value.mfo,
+      accountNumber: ba.value.accountNumber.replace(/\D/g, ''),
+      bankName: selectedBank?.bankName ?? '',
+    })
+    step.value = 3
+  } catch {
+    toast.add({ severity: 'error', summary: t('onboarding.errorBankAccount'), life: 3000 })
+  } finally {
+    saving.value = false
+  }
+}
+
+// Step 3 – Branch
 const b = ref({ name: '', address: '', phone: '' })
 const bErrors = ref({ name: false, address: false, phone: false })
 
@@ -78,7 +113,7 @@ function validateBranch(): boolean {
   return !Object.values(bErrors.value).some(Boolean)
 }
 
-async function submitStep2() {
+async function submitStep3() {
   if (!validateBranch()) return
   saving.value = true
   try {
@@ -88,7 +123,7 @@ async function submitStep2() {
     formData.phone = '998' + formData.phone.replace(/\D/g, '')
     const branch = await store.createBranch(merchantId.value!, formData)
     branchId.value = branch.id
-    step.value = 3
+    step.value = 4
   } catch {
     toast.add({ severity: 'error', summary: t('onboarding.errorBranch'), life: 3000 })
   } finally {
@@ -96,19 +131,19 @@ async function submitStep2() {
   }
 }
 
-// Step 3 – Employees
+// Step 4 – Employees
 function emptyEmp() { return { fullName: '', email: '', password: '', roles: ['agent'] as string[] } }
 const emps = ref([emptyEmp()])
 
-async function submitStep3() {
+async function submitStep4() {
   const valid = emps.value.filter(e => e.fullName.trim() && e.email.trim() && e.password.length >= 8)
-  if (!valid.length) { step.value = 4; return }
+  if (!valid.length) { step.value = 5; return }
   saving.value = true
   try {
     for (const emp of valid) {
       await store.createEmployee(branchId.value!, emp)
     }
-    step.value = 4
+    step.value = 5
   } catch {
     toast.add({ severity: 'error', summary: t('onboarding.errorEmployee'), life: 3000 })
   } finally {
@@ -116,19 +151,19 @@ async function submitStep3() {
   }
 }
 
-// Step 4 – Categories
+// Step 5 – Categories
 const cats = ref([{ name: '' }])
 
-async function submitStep4() {
+async function submitStep5() {
   const valid = cats.value.filter(c => c.name.trim())
-  if (!valid.length) { step.value = 5; return }
+  if (!valid.length) { step.value = 6; return }
   saving.value = true
   try {
     for (const cat of valid) {
       const created = await store.createCategory(merchantId.value!, { name: cat.name.trim() })
       createdCategories.value.push(created)
     }
-    step.value = 5
+    step.value = 6
   } catch {
     toast.add({ severity: 'error', summary: t('onboarding.errorCategory'), life: 3000 })
   } finally {
@@ -136,7 +171,7 @@ async function submitStep4() {
   }
 }
 
-// Step 5 – Products
+// Step 6 – Products
 function emptyProd() { return { name: '', categoryId: '', price: '' } }
 const prods = ref([emptyProd()])
 
@@ -144,7 +179,7 @@ const categoryOptions = computed(() =>
   createdCategories.value.map(c => ({ label: c.name, value: c.id }))
 )
 
-async function submitStep5() {
+async function submitStep6() {
   const valid = prods.value.filter(p => p.name.trim() && p.categoryId && p.price.trim())
   if (!valid.length) { finish(); return }
   saving.value = true
@@ -243,8 +278,36 @@ function finish() {
         </div>
       </template>
 
-      <!-- Step 2: Branch -->
+      <!-- Step 2: Bank Account -->
       <template v-if="step === 2">
+        <h2 class="section-title">{{ t('onboarding.bankAccountSection') }}</h2>
+        <div class="form-grid">
+          <div class="field col-span-2">
+            <label>{{ t('onboarding.bank') }}</label>
+            <Select v-model="ba.mfo" :options="bankOptions" option-label="label" option-value="value"
+              :placeholder="t('onboarding.selectBank')" filter class="w-full"
+              :class="{ 'p-invalid': baErrors.mfo }" />
+            <small v-if="baErrors.mfo" class="error-msg">{{ t('onboarding.bankRequired') }}</small>
+          </div>
+          <div class="field col-span-2">
+            <label>{{ t('onboarding.accountNumber') }}</label>
+            <InputMask v-model="ba.accountNumber" mask="99999999999999999999"
+              :class="{ 'p-invalid': baErrors.accountNumber }" class="w-full" placeholder="00000000000000000000" />
+            <small v-if="baErrors.accountNumber" class="error-msg">{{ t('onboarding.accountNumberRequired') }}</small>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn-secondary" @click="skip">{{ t('onboarding.skip') }}</button>
+          <button class="btn-primary" :disabled="saving" @click="submitStep2">
+            <i v-if="saving" class="pi pi-spin pi-spinner" />
+            {{ saving ? t('onboarding.saving') : t('onboarding.next') }}
+            <i v-if="!saving" class="pi pi-arrow-right" />
+          </button>
+        </div>
+      </template>
+
+      <!-- Step 3: Branch -->
+      <template v-if="step === 3">
         <h2 class="section-title">{{ t('onboarding.branchSection') }}</h2>
         <div class="form-grid">
           <div class="field">
@@ -265,7 +328,7 @@ function finish() {
           </div>
         </div>
         <div class="actions">
-          <button class="btn-primary" :disabled="saving" @click="submitStep2">
+          <button class="btn-primary" :disabled="saving" @click="submitStep3">
             <i v-if="saving" class="pi pi-spin pi-spinner" />
             {{ saving ? t('onboarding.saving') : t('onboarding.next') }}
             <i v-if="!saving" class="pi pi-arrow-right" />
@@ -273,8 +336,8 @@ function finish() {
         </div>
       </template>
 
-      <!-- Step 3: Employees -->
-      <template v-if="step === 3">
+      <!-- Step 4: Employees -->
+      <template v-if="step === 4">
         <h2 class="section-title">{{ t('onboarding.employeesSection') }}</h2>
         <div v-for="(emp, i) in emps" :key="i" class="repeatable-row">
           <div class="form-grid">
@@ -306,7 +369,7 @@ function finish() {
         </button>
         <div class="actions">
           <button class="btn-secondary" @click="skip">{{ t('onboarding.skip') }}</button>
-          <button class="btn-primary" :disabled="saving" @click="submitStep3">
+          <button class="btn-primary" :disabled="saving" @click="submitStep4">
             <i v-if="saving" class="pi pi-spin pi-spinner" />
             {{ saving ? t('onboarding.saving') : t('onboarding.next') }}
             <i v-if="!saving" class="pi pi-arrow-right" />
@@ -314,8 +377,8 @@ function finish() {
         </div>
       </template>
 
-      <!-- Step 4: Categories -->
-      <template v-if="step === 4">
+      <!-- Step 5: Categories -->
+      <template v-if="step === 5">
         <h2 class="section-title">{{ t('onboarding.categoriesSection') }}</h2>
         <div v-for="(cat, i) in cats" :key="i" class="repeatable-row">
           <div class="field flex-1">
@@ -331,7 +394,7 @@ function finish() {
         </button>
         <div class="actions">
           <button class="btn-secondary" @click="skip">{{ t('onboarding.skip') }}</button>
-          <button class="btn-primary" :disabled="saving" @click="submitStep4">
+          <button class="btn-primary" :disabled="saving" @click="submitStep5">
             <i v-if="saving" class="pi pi-spin pi-spinner" />
             {{ saving ? t('onboarding.saving') : t('onboarding.next') }}
             <i v-if="!saving" class="pi pi-arrow-right" />
@@ -339,8 +402,8 @@ function finish() {
         </div>
       </template>
 
-      <!-- Step 5: Products -->
-      <template v-if="step === 5">
+      <!-- Step 6: Products -->
+      <template v-if="step === 6">
         <h2 class="section-title">{{ t('onboarding.productsSection') }}</h2>
         <p v-if="!categoryOptions.length" class="info-msg">{{ t('onboarding.noCategories') }}</p>
         <template v-else>
@@ -370,7 +433,7 @@ function finish() {
         </template>
         <div class="actions">
           <button class="btn-secondary" @click="finish">{{ t('onboarding.skip') }}</button>
-          <button class="btn-primary" :disabled="saving || !categoryOptions.length" @click="submitStep5">
+          <button class="btn-primary" :disabled="saving || !categoryOptions.length" @click="submitStep6">
             <i v-if="saving" class="pi pi-spin pi-spinner" />
             {{ saving ? t('onboarding.saving') : t('onboarding.finish') }}
             <i v-if="!saving" class="pi pi-check" />
