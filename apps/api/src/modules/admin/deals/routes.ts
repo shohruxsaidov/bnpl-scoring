@@ -1,7 +1,10 @@
-import { Type } from '@sinclair/typebox'
-import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
-import type { FastifyInstance } from 'fastify'
-import { listAdminDeals, getAdminDeal, listDealComments, createDealComment } from './service'
+import { Type } from "@sinclair/typebox"
+import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
+import type { FastifyInstance } from "fastify"
+import { listAdminDeals } from "./queries/list-deals"
+import { getAdminDeal } from "./queries/get-deal"
+import { listDealComments } from "./queries/list-deal-comments"
+import { createDealComment } from "./commands/create-deal-comment"
 
 export default async function adminDealRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
@@ -19,8 +22,7 @@ export default async function adminDealRoutes(app: FastifyInstance) {
     text: Type.String({ minLength: 1, maxLength: 2000 }),
   })
 
-  /* GET /admin/deals */
-  fastify.get('/', { schema: { querystring: ListQuery }, preHandler }, async (request) => {
+  fastify.get("/", { schema: { querystring: ListQuery }, preHandler }, async (request) => {
     const { status, merchantId } = request.query
     const deals = await listAdminDeals(db, {
       status: status || undefined,
@@ -29,22 +31,19 @@ export default async function adminDealRoutes(app: FastifyInstance) {
     return { deals }
   })
 
-  /* GET /admin/deals/:id */
-  fastify.get('/:id', { schema: { params: IdParams }, preHandler }, async (request, reply) => {
+  fastify.get("/:id", { schema: { params: IdParams }, preHandler }, async (request, reply) => {
     const deal = await getAdminDeal(db, request.params.id)
-    if (!deal) return reply.code(404).sendError('not_found')
+    if (!deal) return reply.code(404).sendError("not_found")
     return { deal }
   })
 
-  /* GET /admin/deals/:id/comments */
-  fastify.get('/:id/comments', { schema: { params: IdParams }, preHandler }, async (request) => {
+  fastify.get("/:id/comments", { schema: { params: IdParams }, preHandler }, async (request) => {
     const comments = await listDealComments(db, request.params.id)
     return { comments }
   })
 
-  /* POST /admin/deals/:id/comments */
   fastify.post(
-    '/:id/comments',
+    "/:id/comments",
     { schema: { params: IdParams, body: CreateCommentBody }, preHandler },
     async (request, reply) => {
       const adminUserId = BigInt((request.user as { sub: string }).sub)

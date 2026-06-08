@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify"
-import { getBankList, refreshBankList } from "./service"
+import { getBankList } from "./queries/list-banks"
+import { refreshBankList } from "./commands/refresh-banks"
 
 export default async function adminBankRoutes(app: FastifyInstance) {
   const db = app.db

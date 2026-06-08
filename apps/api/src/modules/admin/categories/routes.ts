@@ -1,7 +1,8 @@
 import { Type } from "@sinclair/typebox"
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
 import type { FastifyInstance } from "fastify"
-import { getCategory, updateCategory } from "./service"
+import { getCategory } from "./queries/get-category"
+import { updateCategory } from "./commands/update-category"
 
 function serializeCategory(c: NonNullable<Awaited<ReturnType<typeof getCategory>>>) {
   return { ...c, id: c.id.toString(), merchantId: c.merchantId.toString() }

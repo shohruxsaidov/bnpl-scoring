@@ -2,10 +2,11 @@ import { Type } from '@sinclair/typebox';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { clients } from '../../id/db/schema';
-import { createClient, findClientByPinflAndMerchant, searchClients } from './service';
+import { searchClients, findClientByPinflAndMerchant } from './queries/search-client';
+import { createClient } from './commands/create-client';
 import { createOtp, verifyOtp } from '../../auth/client/service';
 import { createMyidSession, exchangeMyidCode } from '../../auth/client/myid';
-import { resolveAndCreateDeal } from '../deals/service';
+import { resolveAndCreateDeal } from '../deals/commands/create-deal';
 import { env } from '../../../env';
 
 function normalizePhone(input: string): string {

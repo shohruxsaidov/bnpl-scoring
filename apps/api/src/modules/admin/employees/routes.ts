@@ -1,7 +1,10 @@
 import { Type } from "@sinclair/typebox"
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
 import type { FastifyInstance } from "fastify"
-import { changeEmployeePassword, getEmployee, listEmployeesByMerchant, updateEmployee } from "./service"
+import { listEmployeesByMerchant } from "./queries/list-employees"
+import { getEmployee } from "./queries/get-employee"
+import { updateEmployee } from "./commands/update-employee"
+import { changeEmployeePassword } from "./commands/change-employee-password"
 
 function serializeEmployee(e: NonNullable<Awaited<ReturnType<typeof getEmployee>>>) {
   return { ...e, id: e.id.toString(), merchantId: e.merchantId.toString(), branchId: e.branchId.toString() }

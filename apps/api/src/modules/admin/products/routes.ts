@@ -1,7 +1,8 @@
 import { Type } from "@sinclair/typebox"
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
 import type { FastifyInstance } from "fastify"
-import { getProduct, updateProduct } from "./service"
+import { getProduct } from "./queries/get-product"
+import { updateProduct } from "./commands/update-product"
 
 function serializeProduct(p: NonNullable<Awaited<ReturnType<typeof getProduct>>>) {
   return { ...p, id: p.id.toString(), merchantId: p.merchantId.toString(), categoryId: p.categoryId.toString() }

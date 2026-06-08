@@ -1,7 +1,8 @@
-import { Type } from '@sinclair/typebox'
-import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
-import type { FastifyInstance } from 'fastify'
-import { listBuyouts, markBuyoutPaid } from './service'
+import { Type } from "@sinclair/typebox"
+import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
+import type { FastifyInstance } from "fastify"
+import { listBuyouts } from "./queries/list-buyouts"
+import { markBuyoutPaid } from "./commands/mark-buyout-paid"
 
 export default async function adminBuyoutRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
@@ -14,8 +15,7 @@ export default async function adminBuyoutRoutes(app: FastifyInstance) {
 
   const IdParams = Type.Object({ id: Type.String() })
 
-  /* GET /admin/buyouts */
-  fastify.get('/', { schema: { querystring: ListQuery } }, async (request) => {
+  fastify.get("/", { schema: { querystring: ListQuery } }, async (request) => {
     const { merchantId, status } = request.query
     const buyouts = await listBuyouts(db, {
       merchantId: merchantId ? BigInt(merchantId) : undefined,
@@ -24,10 +24,9 @@ export default async function adminBuyoutRoutes(app: FastifyInstance) {
     return { buyouts }
   })
 
-  /* PATCH /admin/buyouts/:id/pay */
-  fastify.patch('/:id/pay', { schema: { params: IdParams } }, async (request, reply) => {
+  fastify.patch("/:id/pay", { schema: { params: IdParams } }, async (request, reply) => {
     const buyout = await markBuyoutPaid(db, BigInt(request.params.id))
-    if (!buyout) return reply.code(404).sendError('not_found')
+    if (!buyout) return reply.code(404).sendError("not_found")
     return { buyout }
   })
 }

@@ -1,7 +1,9 @@
 import { Type } from '@sinclair/typebox';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
-import { deselectTariff, listTariffsForMerchant, selectTariff } from './service.js';
+import { listTariffsForMerchant } from './queries/list-tariffs';
+import { selectTariff } from './commands/select-tariff';
+import { deselectTariff } from './commands/deselect-tariff';
 
 type MerchantPayload = { sub: string; merchantId: string; role: string };
 

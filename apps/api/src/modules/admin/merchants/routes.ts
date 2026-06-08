@@ -2,44 +2,28 @@ import { Type } from "@sinclair/typebox"
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
 import type { FastifyInstance } from "fastify"
 import { randomUUID } from "node:crypto"
-import { and, eq } from "drizzle-orm"
+import { listMerchants } from "./queries/list-merchants"
+import { getMerchant } from "./queries/get-merchant"
+import { listDocuments } from "./queries/list-documents"
+import { getMerchantTariffs } from "./queries/get-merchant-tariffs"
+import { createMerchant } from "./commands/create-merchant"
+import { updateMerchant } from "./commands/update-merchant"
+import { recordDocument } from "./commands/record-document"
+import { assignTariff } from "./commands/assign-tariff"
+import { removeTariff } from "./commands/remove-tariff"
+import { listBranches } from "../branches/queries/list-branches"
+import { createBranch } from "../branches/commands/create-branch"
+import { listCategories } from "../categories/queries/list-categories"
+import { createCategory } from "../categories/commands/create-category"
+import { listProducts } from "../products/queries/list-products"
+import { createProduct } from "../products/commands/create-product"
 import {
-  listMerchants,
-  getMerchant,
-  createMerchant,
-  updateMerchant,
-  listDocuments,
-  recordDocument,
-} from "./service"
-import { listBranches, createBranch } from "../branches/service"
-import { listCategories, createCategory } from "../categories/service"
-import { listProducts, createProduct } from "../products/service"
-import { tariffs, merchantTariffs } from "../../id/db/schema"
-
-function serializeMerchant(m: NonNullable<Awaited<ReturnType<typeof getMerchant>>>) {
-  return { ...m, id: m.id.toString() }
-}
-
-function serializeBranch(b: Awaited<ReturnType<typeof createBranch>>) {
-  return { ...b, id: b.id.toString(), merchantId: b.merchantId.toString() }
-}
-
-function serializeCategory(c: Awaited<ReturnType<typeof createCategory>>) {
-  return { ...c, id: c.id.toString(), merchantId: c.merchantId.toString() }
-}
-
-function serializeProduct(p: Awaited<ReturnType<typeof createProduct>>) {
-  return { ...p, id: p.id.toString(), merchantId: p.merchantId.toString(), categoryId: p.categoryId.toString() }
-}
-
-function serializeDocument(d: Awaited<ReturnType<typeof recordDocument>>) {
-  return {
-    ...d,
-    id: d.id.toString(),
-    merchantId: d.merchantId.toString(),
-    uploadedByAdminId: d.uploadedByAdminId?.toString() ?? null,
-  }
-}
+  serializeMerchant,
+  serializeBranch,
+  serializeCategory,
+  serializeProduct,
+  serializeDocument,
+} from "./types"
 
 export default async function adminMerchantRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
@@ -217,22 +201,8 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     "/:id/tariffs",
     { schema: { params: IdParams }, preHandler },
     async (request) => {
-      const merchantId = BigInt(request.params.id)
-      const [all, selected] = await Promise.all([
-        db.select().from(tariffs).where(eq(tariffs.active, true)).orderBy(tariffs.name),
-        db.select().from(merchantTariffs).where(eq(merchantTariffs.merchantId, merchantId)),
-      ])
-      const selectedIds = new Set(selected.map((s) => s.tariffId.toString()))
-      return {
-        tariffs: all.map((t) => ({
-          id: t.id.toString(),
-          name: t.name,
-          termMonths: t.termMonths,
-          markupPercent: parseFloat(t.markupPercent),
-          active: t.active,
-          selected: selectedIds.has(t.id.toString()),
-        })),
-      }
+      const tariffList = await getMerchantTariffs(db, BigInt(request.params.id))
+      return { tariffs: tariffList }
     },
   )
 
@@ -240,10 +210,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     "/:id/tariffs/:tariffId",
     { schema: { params: TariffIdParams }, preHandler },
     async (request, reply) => {
-      await db
-        .insert(merchantTariffs)
-        .values({ merchantId: BigInt(request.params.id), tariffId: BigInt(request.params.tariffId) })
-        .onConflictDoNothing()
+      await assignTariff(db, BigInt(request.params.id), BigInt(request.params.tariffId))
       return reply.code(204).send()
     },
   )
@@ -252,14 +219,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     "/:id/tariffs/:tariffId",
     { schema: { params: TariffIdParams }, preHandler },
     async (request, reply) => {
-      await db
-        .delete(merchantTariffs)
-        .where(
-          and(
-            eq(merchantTariffs.merchantId, BigInt(request.params.id)),
-            eq(merchantTariffs.tariffId, BigInt(request.params.tariffId)),
-          ),
-        )
+      await removeTariff(db, BigInt(request.params.id), BigInt(request.params.tariffId))
       return reply.code(204).send()
     },
   )

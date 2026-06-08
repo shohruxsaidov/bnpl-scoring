@@ -1,10 +1,12 @@
 import { Type } from "@sinclair/typebox"
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
 import type { FastifyInstance } from "fastify"
-import {
-  listCategories, createCategory, updateCategory,
-  listProducts, createProduct, updateProduct,
-} from "./service"
+import { listCategories } from "./queries/list-categories"
+import { listProducts } from "./queries/list-products"
+import { createCategory } from "./commands/create-category"
+import { updateCategory } from "./commands/update-category"
+import { createProduct } from "./commands/create-product"
+import { updateProduct } from "./commands/update-product"
 
 type MerchantPayload = { sub: string; merchantId: string; role: string }
 

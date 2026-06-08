@@ -1,8 +1,10 @@
 import { Type } from "@sinclair/typebox"
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
 import type { FastifyInstance } from "fastify"
-import { getBranch, updateBranch } from "./service"
-import { listEmployees, createEmployee } from "../employees/service"
+import { getBranch } from "./queries/get-branch"
+import { updateBranch } from "./commands/update-branch"
+import { listEmployees } from "../employees/queries/list-employees"
+import { createEmployee } from "../employees/commands/create-employee"
 
 function serializeBranch(b: NonNullable<Awaited<ReturnType<typeof getBranch>>>) {
   return { ...b, id: b.id.toString(), merchantId: b.merchantId.toString() }
@@ -32,17 +34,12 @@ export default async function adminBranchRoutes(app: FastifyInstance) {
     password: Type.String({ minLength: 8 }),
     fullName: Type.String({ minLength: 1 }),
     roles: Type.Array(
-      Type.Union([
-        Type.Literal("agent"),
-        Type.Literal("merchant_admin"),
-      ]),
+      Type.Union([Type.Literal("agent"), Type.Literal("merchant_admin")]),
       { minItems: 1 },
     ),
   })
 
   const preHandler = app.verifyAdminJwt
-
-  /* ── Branches ───────────────────────────────────────────────────────────── */
 
   fastify.get(
     "/:id",
@@ -63,8 +60,6 @@ export default async function adminBranchRoutes(app: FastifyInstance) {
       return { branch: serializeBranch(branch) }
     },
   )
-
-  /* ── Branch employees ───────────────────────────────────────────────────── */
 
   fastify.get(
     "/:id/employees",

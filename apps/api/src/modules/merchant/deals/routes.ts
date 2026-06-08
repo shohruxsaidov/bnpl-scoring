@@ -1,7 +1,10 @@
 import { Type } from '@sinclair/typebox'
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import type { FastifyInstance } from 'fastify'
-import { resolveAndCreateDeal, listDeals, getDealById, getContractPdfUrl } from './service'
+import { resolveAndCreateDeal } from './commands/create-deal'
+import { listDeals } from './queries/list-deals'
+import { getDealById } from './queries/get-deal'
+import { getContractPdfUrl } from './queries/get-contract-pdf-url'
 import { notifyDealCreated, notifyDealDecision } from '../../notifications/service'
 
 type JwtPayload = {

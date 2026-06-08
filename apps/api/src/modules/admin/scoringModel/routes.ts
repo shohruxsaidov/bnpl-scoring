@@ -1,9 +1,12 @@
-import { Type } from '@sinclair/typebox'
-import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
-import type { FastifyInstance } from 'fastify'
-import { getActiveModel, getModelById, listModels, saveModel } from './service.js'
-import { computeScoringModel } from '../../scoring/engine.js'
-import type { ScoringModelParams, ScoringInputs } from '../../scoring/engine.js'
+import { Type } from "@sinclair/typebox"
+import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
+import type { FastifyInstance } from "fastify"
+import { getActiveModel } from "./queries/get-active-model"
+import { listModels } from "./queries/list-models"
+import { getModelById } from "./queries/get-model-by-id"
+import { saveModel } from "./commands/save-model"
+import { computeScoringModel } from "../../scoring/engine"
+import type { ScoringModelParams, ScoringInputs } from "../../scoring/engine"
 
 function serializeRevision(row: NonNullable<Awaited<ReturnType<typeof getActiveModel>>>) {
   return {
@@ -19,15 +22,13 @@ export default async function adminScoringModelRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
   const db = app.db
 
-  // Active (latest) revision
-  fastify.get('/', async (_, reply) => {
+  fastify.get("/", async (_, reply) => {
     const row = await getActiveModel(db)
-    if (!row) return reply.code(404).sendError('not_found')
+    if (!row) return reply.code(404).sendError("not_found")
     return serializeRevision(row)
   })
 
-  // History list (id, name, version, createdAt only — no params)
-  fastify.get('/history', async () => {
+  fastify.get("/history", async () => {
     const rows = await listModels(db)
     return {
       revisions: rows.map((r) => ({
@@ -39,24 +40,22 @@ export default async function adminScoringModelRoutes(app: FastifyInstance) {
     }
   })
 
-  // Specific revision by id (full params — for loading an old revision into the editor)
   fastify.get(
-    '/:id',
+    "/:id",
     { schema: { params: Type.Object({ id: Type.String() }) } },
     async (request, reply) => {
       const row = await getModelById(db, parseInt(request.params.id, 10))
-      if (!row) return reply.code(404).sendError('not_found')
+      if (!row) return reply.code(404).sendError("not_found")
       return serializeRevision(row)
     },
   )
 
-  // Try a specific revision against provided inputs
   const TryBody = Type.Object({
     incomeSum:                 Type.Optional(Type.Number()),
     workExperienceMonths:      Type.Optional(Type.Number()),
     age:                       Type.Optional(Type.Number()),
-    citizenship:               Type.Optional(Type.Union([Type.Literal('Uzbekistan'), Type.Literal('NonResident')])),
-    gender:                    Type.Optional(Type.Union([Type.Literal('Male'), Type.Literal('Female')])),
+    citizenship:               Type.Optional(Type.Union([Type.Literal("Uzbekistan"), Type.Literal("NonResident")])),
+    gender:                    Type.Optional(Type.Union([Type.Literal("Male"), Type.Literal("Female")])),
     monthlyPaymentRatio:       Type.Optional(Type.Number()),
     overduePrincipalContracts: Type.Optional(Type.Number()),
     contingentLiability:       Type.Optional(Type.Number()),
@@ -76,24 +75,23 @@ export default async function adminScoringModelRoutes(app: FastifyInstance) {
   })
 
   fastify.post(
-    '/:id/try',
+    "/:id/try",
     { schema: { params: Type.Object({ id: Type.String() }), body: TryBody } },
     async (request, reply) => {
       const row = await getModelById(db, parseInt(request.params.id, 10))
-      if (!row) return reply.code(404).sendError('not_found')
+      if (!row) return reply.code(404).sendError("not_found")
       const result = computeScoringModel(row.params as unknown as ScoringModelParams, request.body as ScoringInputs)
       return result
     },
   )
 
-  // Save new revision
   const SaveBody = Type.Object({
     name: Type.String({ minLength: 1 }),
     version: Type.String({ minLength: 1 }),
     params: Type.Record(Type.String(), Type.Unknown()),
   })
 
-  fastify.put('/', { schema: { body: SaveBody } }, async (request) => {
+  fastify.put("/", { schema: { body: SaveBody } }, async (request) => {
     const adminId = BigInt((request.user as { sub: string }).sub)
     const { name, version, params } = request.body
     const row = await saveModel(db, { name, version, params: params as never }, adminId)

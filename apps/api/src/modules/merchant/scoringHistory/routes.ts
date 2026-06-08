@@ -1,7 +1,7 @@
 import { Type } from '@sinclair/typebox'
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import type { FastifyInstance } from 'fastify'
-import { createScoring } from './service'
+import { createScoring } from './commands/create-scoring'
 
 type JwtPayload = {
   sub: string

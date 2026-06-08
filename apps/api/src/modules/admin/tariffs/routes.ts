@@ -1,7 +1,10 @@
-import { Type } from '@sinclair/typebox'
-import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
-import type { FastifyInstance } from 'fastify'
-import { createTariff, getTariff, listTariffs, updateTariff } from './service.js'
+import { Type } from "@sinclair/typebox"
+import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
+import type { FastifyInstance } from "fastify"
+import { listTariffs } from "./queries/list-tariffs"
+import { getTariff } from "./queries/get-tariff"
+import { createTariff } from "./commands/create-tariff"
+import { updateTariff } from "./commands/update-tariff"
 
 function serialize(t: NonNullable<Awaited<ReturnType<typeof getTariff>>>) {
   return {
@@ -36,34 +39,31 @@ export default async function adminTariffRoutes(app: FastifyInstance) {
     }),
   )
 
-  fastify.get('/', { preHandler }, async () => {
+  fastify.get("/", { preHandler }, async () => {
     const rows = await listTariffs(db)
     return { tariffs: rows.map(serialize) }
   })
 
-  fastify.post('/', { schema: { body: CreateBody }, preHandler }, async (request, reply) => {
+  fastify.post("/", { schema: { body: CreateBody }, preHandler }, async (request, reply) => {
     const { markupPercent, ...rest } = request.body
-    const tariff = await createTariff(db, {
-      ...rest,
-      markupPercent: markupPercent.toFixed(2),
-    })
+    const tariff = await createTariff(db, { ...rest, markupPercent: markupPercent.toFixed(2) })
     return reply.code(201).send({ tariff: serialize(tariff) })
   })
 
-  fastify.patch('/:id', { schema: { params: IdParams, body: UpdateBody }, preHandler }, async (request, reply) => {
+  fastify.patch("/:id", { schema: { params: IdParams, body: UpdateBody }, preHandler }, async (request, reply) => {
     const { markupPercent, ...rest } = request.body
     const input = {
       ...rest,
       ...(markupPercent !== undefined && { markupPercent: markupPercent.toFixed(2) }),
     }
     const tariff = await updateTariff(db, BigInt(request.params.id), input)
-    if (!tariff) return reply.code(404).sendError('not_found')
+    if (!tariff) return reply.code(404).sendError("not_found")
     return { tariff: serialize(tariff) }
   })
 
-  fastify.delete('/:id', { schema: { params: IdParams }, preHandler }, async (request, reply) => {
+  fastify.delete("/:id", { schema: { params: IdParams }, preHandler }, async (request, reply) => {
     const tariff = await updateTariff(db, BigInt(request.params.id), { active: false })
-    if (!tariff) return reply.code(404).sendError('not_found')
+    if (!tariff) return reply.code(404).sendError("not_found")
     return { tariff: serialize(tariff) }
   })
 }
