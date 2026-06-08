@@ -20,13 +20,25 @@ const totalPayable = computed(() => {
 
 const schedule = computed<DealPaymentSchedule[]>(() => {
   const t = tariff.value
-  if (!t) return []
+  if (!t || !day.value) return []
   const months = t.termMonths
   const perMonth = Math.round(totalPayable.value / months)
   const rows: DealPaymentSchedule[] = []
-  const start = new Date()
+  const today = new Date()
+  const selectedDay = day.value
+
+  let firstPayment: Date
+  if ((selectedDay + 15 < 28 && selectedDay + 15 >= today.getDate()) || selectedDay < today.getDate()) {
+    firstPayment = new Date(today.getFullYear(), today.getMonth() + 1, selectedDay)
+  } else {
+    firstPayment = new Date(today.getFullYear(), today.getMonth(), selectedDay)
+  }
+
   for (let i = 0; i < months; i++) {
-    const d = new Date(start.getFullYear(), start.getMonth() + i + 1, day.value)
+    const d =
+      i === 0
+        ? firstPayment
+        : new Date(firstPayment.getFullYear(), firstPayment.getMonth() + i, selectedDay)
     const amount =
       i === months - 1
         ? totalPayable.value - perMonth * (months - 1)
@@ -63,13 +75,7 @@ function fmtDate(iso: string) {
     <div class="day-section">
       <label class="field-label">{{ $t('stepPayment.paymentDay') }}</label>
       <div class="day-grid">
-        <button
-          v-for="d in days"
-          :key="d"
-          class="day-btn font-mono"
-          :class="{ active: day === d }"
-          @click="day = d"
-        >
+        <button v-for="d in days" :key="d" class="day-btn font-mono" :class="{ active: day === d }" @click="day = d">
           {{ d }}
         </button>
       </div>
@@ -117,25 +123,30 @@ function fmtDate(iso: string) {
 .step-card {
   padding: 2rem;
 }
+
 .sc-head h2 {
   margin: 0;
   font-size: 1.4rem;
   font-weight: 800;
 }
+
 .sc-head p {
   margin: 0.3rem 0 0;
   color: var(--text-secondary);
   font-size: 0.88rem;
 }
+
 .day-section {
   margin: 1.8rem 0;
 }
+
 .day-grid {
   display: grid;
   grid-template-columns: repeat(14, 1fr);
   gap: 0.5rem;
   margin-top: 0.6rem;
 }
+
 .day-btn {
   aspect-ratio: 1;
   border-radius: 10px;
@@ -146,47 +157,56 @@ function fmtDate(iso: string) {
   cursor: pointer;
   transition: all 0.15s ease;
 }
+
 .day-btn:hover {
   border-color: var(--accent-2);
   color: var(--accent-2);
 }
+
 .day-btn.active {
   background: var(--gradient-hero);
   color: #fff;
   border-color: transparent;
   box-shadow: var(--accent-glow);
 }
+
 .schedule {
   background: var(--bg-surface);
   border-radius: 16px;
   padding: 1.4rem;
 }
+
 .sch-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1rem;
 }
+
 .sch-head h3 {
   margin: 0;
   font-size: 1.05rem;
   font-weight: 800;
 }
+
 .sch-total {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
 }
+
 .sch-total span {
   font-size: 0.7rem;
   font-weight: 700;
   color: var(--text-secondary);
   text-transform: uppercase;
 }
+
 .sch-table {
   display: flex;
   flex-direction: column;
 }
+
 .sch-row {
   display: grid;
   grid-template-columns: 50px 1fr 1.4fr 1fr;
@@ -195,18 +215,22 @@ function fmtDate(iso: string) {
   font-size: 0.84rem;
   align-items: center;
 }
+
 .sch-row:last-child {
   border-bottom: none;
 }
+
 .sch-head-row {
   font-size: 0.7rem;
   font-weight: 800;
   color: var(--text-secondary);
   text-transform: uppercase;
 }
+
 .ta-right {
   text-align: right;
 }
+
 .sc-foot {
   display: flex;
   align-items: center;
@@ -215,6 +239,7 @@ function fmtDate(iso: string) {
   padding-top: 1.4rem;
   border-top: 1px solid var(--border-subtle);
 }
+
 .btn-gradient,
 .btn-ghost {
   display: inline-flex;
@@ -223,8 +248,16 @@ function fmtDate(iso: string) {
 }
 
 @media (max-width: 480px) {
-  .day-grid { grid-template-columns: repeat(7, 1fr); }
-  .sch-row { grid-template-columns: 40px 1fr 1fr; }
-  .sch-row > :nth-child(3) { display: none; }
+  .day-grid {
+    grid-template-columns: repeat(7, 1fr);
+  }
+
+  .sch-row {
+    grid-template-columns: 40px 1fr 1fr;
+  }
+
+  .sch-row> :nth-child(3) {
+    display: none;
+  }
 }
 </style>
