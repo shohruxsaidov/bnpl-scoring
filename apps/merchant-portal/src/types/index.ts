@@ -21,12 +21,21 @@ export interface Employee {
   createdAt: string
 }
 
+export interface Region {
+  id: number
+  upperId: number | null
+  nameRu: string
+  nameUz: string
+  nameUzc: string
+}
+
 export interface Branch {
   id: string
   merchantId: string
   name: string
   address: string
   phone: string
+  regionId: number | null
   active: boolean
   createdAt: string
 }

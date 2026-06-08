@@ -14,6 +14,7 @@ import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
 import { useMerchantsStore } from '@/stores/merchants'
 import { useMxik, type MxikEntry, type MxikPackage } from '@/composables/use-mxik'
+import { useRegions } from '@/composables/use-regions'
 import { formatDateTime } from '@/utils/money'
 import type { Branch, Category, MerchantEmployee, Product } from '@/types'
 
@@ -111,11 +112,15 @@ async function toggleMerchant() {
 
 // --- Branches ----------------------------------------------------------------
 const showBranch = ref(false)
-const branchForm = ref({ name: '', address: '', phone: '' })
+const branchForm = ref({ name: '', address: '', phone: '', regionId: null as number | null })
+const branchRegion = ref<number | null>(null)
 const branchSaving = ref(false)
 
+const { regionOptions, districtOptions, onRegionChange } = useRegions()
+
 function openBranch() {
-  branchForm.value = { name: '', address: '', phone: '' }
+  branchForm.value = { name: '', address: '', phone: '', regionId: null }
+  branchRegion.value = null
   showBranch.value = true
 }
 
@@ -123,7 +128,12 @@ async function submitBranch() {
   if (!branchForm.value.name || !branchForm.value.address || !branchForm.value.phone) return
   branchSaving.value = true
   try {
-    await merchants.createBranch(merchantId.value, { ...branchForm.value })
+    await merchants.createBranch(merchantId.value, {
+      name: branchForm.value.name,
+      address: branchForm.value.address,
+      phone: branchForm.value.phone,
+      regionId: branchForm.value.regionId ?? undefined,
+    })
     toast.add({ severity: 'success', summary: t('merchantDetail.branchCreated'), life: 2000 })
     showBranch.value = false
   } catch {
@@ -808,7 +818,7 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
     </section>
 
     <!-- Branch dialog -->
-    <Dialog v-model:visible="showBranch" modal :header="$t('merchantDetail.addBranch')" :style="{ width: '440px' }">
+    <Dialog v-model:visible="showBranch" modal :header="$t('merchantDetail.addBranch')" :style="{ width: '480px' }">
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.name') }}</label>
         <InputText v-model="branchForm.name" />
@@ -820,6 +830,18 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.phone') }}</label>
         <InputText v-model="branchForm.phone" />
+      </div>
+      <div class="field">
+        <label class="field-label">{{ $t('merchantDetail.region') }}</label>
+        <Select v-model="branchRegion" :options="regionOptions" option-label="label" option-value="value"
+          :placeholder="$t('merchantDetail.selectRegion')" filter show-clear class="w-full"
+          @change="onRegionChange(branchRegion, (v) => { branchForm.regionId = v })" />
+      </div>
+      <div class="field">
+        <label class="field-label">{{ $t('merchantDetail.district') }}</label>
+        <Select v-model="branchForm.regionId" :options="districtOptions" option-label="label" option-value="value"
+          :placeholder="$t('merchantDetail.selectDistrict')" filter show-clear class="w-full"
+          :disabled="!branchRegion" />
       </div>
       <template #footer>
         <button class="btn-ghost" @click="showBranch = false">{{ $t('common.cancel') }}</button>

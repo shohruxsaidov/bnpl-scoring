@@ -95,7 +95,7 @@ export const useCatalogStore = defineStore('catalog', () => {
     products.value = products.value.filter((p) => p.id !== id)
   }
 
-  async function addBranch(input: { name: string; address: string; phone: string }) {
+  async function addBranch(input: { name: string; address: string; phone: string; regionId?: number }) {
     const body = await api<{ branch: Branch }>('/merchant/branches', {
       method: 'POST',
       body: JSON.stringify(input),
@@ -103,7 +103,7 @@ export const useCatalogStore = defineStore('catalog', () => {
     branches.value.push(body.branch)
   }
 
-  async function updateBranch(id: string, patch: Partial<{ name: string; address: string; phone: string; active: boolean }>) {
+  async function updateBranch(id: string, patch: Partial<{ name: string; address: string; phone: string; active: boolean; regionId: number }>) {
     const body = await api<{ branch: Branch }>(`/merchant/branches/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(patch),

@@ -178,7 +178,7 @@
     "addProduct": "Добавить товар",
     "name": "Название",
     "category": "Категория",
-    "price": "Цена",
+    "price": "Цена (тан нархи)",
     "editProduct": "Редактировать товар",
     "addProductTitle": "Добавить товар",
     "productName": "Название товара",
@@ -190,7 +190,6 @@
     "deleted": "Удалено",
     "confirmDelete": "Подтвердите удаление",
     "deleteConfirm": "Удалить \"{name}\"?",
-    "price": "Цена (тан нархи)",
     "mxikCode": "Код МХИК",
     "mxikPlaceholder": "Введите код или название...",
     "mxikHint": "Для нового кода введите все 17 цифр и нажмите 🔍",
@@ -235,7 +234,6 @@
     "editEmployee": "Редактировать сотрудника",
     "fullName": "Полное имя",
     "fullNamePlaceholder": "Иван Иванов",
-    "phone": "Телефон",
     "password": "Пароль",
     "passwordPlaceholder": "Минимум 8 символов",
     "branch": "Филиал",
@@ -603,7 +601,11 @@
     "active": "Активен",
     "added": "Филиал добавлен",
     "updated": "Филиал обновлён",
-    "missingFields": "Заполните все поля"
+    "missingFields": "Заполните все поля",
+    "region": "Регион",
+    "selectRegion": "Выберите регион",
+    "district": "Район",
+    "selectDistrict": "Выберите район"
   },
   "changePassword": {
     "title": "Смена пароля",
@@ -639,5 +641,12 @@
     "hintSelect": "выбрать",
     "hintNavigate": "навигация",
     "hintClose": "закрыть"
+  },
+  "regions": {
+    "region": "Регион",
+    "selectRegion": "Выберите регион",
+    "district": "Район",
+    "selectDistrict": "Выберите район",
+    "optional": "необязательно"
   }
 }

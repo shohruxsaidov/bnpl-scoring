@@ -6,14 +6,17 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
+import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { useToast } from 'primevue/usetoast'
 import { useCatalogStore } from '@/stores/catalog'
+import { useRegions } from '@/composables/use-regions'
 import type { Branch } from '@/types'
 
 const catalog = useCatalogStore()
 const toast = useToast()
 const { t } = useI18n()
+const { regionOptions, districtOptions, onRegionChange } = useRegions()
 
 onMounted(() => catalog.fetchBranches())
 
@@ -21,13 +24,16 @@ const dialogVisible = ref(false)
 const editingId = ref<string | null>(null)
 const saving = ref(false)
 
-const form = reactive({ name: '', address: '', phone: '' })
+const form = reactive({ name: '', address: '', phone: '', regionId: null as number | null })
+const selectedRegion = ref<number | null>(null)
 
 function openNew() {
   editingId.value = null
   form.name = ''
   form.address = ''
   form.phone = ''
+  form.regionId = null
+  selectedRegion.value = null
   dialogVisible.value = true
 }
 
@@ -36,6 +42,8 @@ function openEdit(b: Branch) {
   form.name = b.name
   form.address = b.address
   form.phone = b.phone
+  form.regionId = b.regionId ?? null
+  selectedRegion.value = null
   dialogVisible.value = true
 }
 
@@ -47,10 +55,20 @@ async function save() {
   saving.value = true
   try {
     if (editingId.value) {
-      await catalog.updateBranch(editingId.value, { name: form.name, address: form.address, phone: form.phone })
+      await catalog.updateBranch(editingId.value, {
+        name: form.name,
+        address: form.address,
+        phone: form.phone,
+        regionId: form.regionId ?? undefined,
+      })
       toast.add({ severity: 'success', summary: t('branches.updated'), detail: form.name, life: 2000 })
     } else {
-      await catalog.addBranch({ name: form.name, address: form.address, phone: form.phone })
+      await catalog.addBranch({
+        name: form.name,
+        address: form.address,
+        phone: form.phone,
+        regionId: form.regionId ?? undefined,
+      })
       toast.add({ severity: 'success', summary: t('branches.added'), detail: form.name, life: 2000 })
     }
     dialogVisible.value = false
@@ -123,6 +141,17 @@ async function toggleActive(b: Branch) {
           <div class="field">
             <label class="field-label">{{ $t('branches.phone') }}</label>
             <InputText v-model="form.phone" placeholder="+998 90 123 45 67" />
+          </div>
+          <div class="field">
+            <label class="field-label">{{ $t('branches.region') }}</label>
+            <Select v-model="selectedRegion" :options="regionOptions" option-label="label" option-value="value"
+              :placeholder="$t('branches.selectRegion')" filter show-clear
+              @change="onRegionChange(selectedRegion, (v) => { form.regionId = v })" />
+          </div>
+          <div class="field">
+            <label class="field-label">{{ $t('branches.district') }}</label>
+            <Select v-model="form.regionId" :options="districtOptions" option-label="label" option-value="value"
+              :placeholder="$t('branches.selectDistrict')" filter show-clear :disabled="!selectedRegion" />
           </div>
         </div>
         <template #footer>

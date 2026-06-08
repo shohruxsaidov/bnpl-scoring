@@ -710,7 +710,11 @@
     "accountNumberPlaceholder": "20 ta raqam",
     "bankInfoSaved": "Rekvizitlar saqlandi",
     "bankInfoSaveFailed": "Rekvizitlarni saqlab bo'lmadi",
-    "noBankInfo": "Rekvizitlar ko'rsatilmagan"
+    "noBankInfo": "Rekvizitlar ko'rsatilmagan",
+    "region": "Viloyat",
+    "selectRegion": "Viloyatni tanlang",
+    "district": "Tuman",
+    "selectDistrict": "Tumanni tanlang"
   },
   "deals": {
     "status": "Holat",
@@ -948,7 +952,11 @@
     "errorEmployee": "Xodim yaratib bo'lmadi",
     "errorCategory": "Kategoriya yaratib bo'lmadi",
     "errorProduct": "Mahsulot yaratib bo'lmadi",
-    "noCategories": "Kategoriyalar yo'q — mahsulot qo'shish uchun avval kategoriya yarating"
+    "noCategories": "Kategoriyalar yo'q — mahsulot qo'shish uchun avval kategoriya yarating",
+    "region": "Viloyat",
+    "selectRegion": "Viloyatni tanlang",
+    "district": "Tuman",
+    "selectDistrict": "Tumanni tanlang"
   },
   "buyout": {
     "total": "Jami",
@@ -988,5 +996,12 @@
     "mismatch": "Parollar mos kelmadi",
     "invalidCurrent": "Joriy parol noto'g'ri",
     "error": "Xatolik yuz berdi. Qayta urinib ko'ring"
+  },
+  "regions": {
+    "region": "Viloyat",
+    "selectRegion": "Viloyatni tanlang",
+    "district": "Tuman",
+    "selectDistrict": "Tumanni tanlang",
+    "optional": "ixtiyoriy"
   }
 }

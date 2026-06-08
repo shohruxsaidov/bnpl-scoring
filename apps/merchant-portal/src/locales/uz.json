@@ -178,7 +178,7 @@
     "addProduct": "Mahsulot qo'shish",
     "name": "Nomi",
     "category": "Kategoriya",
-    "price": "Narxi",
+    "price": "Narx (tan narhiy)",
     "editProduct": "Mahsulotni tahrirlash",
     "addProductTitle": "Mahsulot qo'shish",
     "productName": "Mahsulot nomi",
@@ -190,7 +190,6 @@
     "deleted": "O'chirildi",
     "confirmDelete": "O'chirishni tasdiqlang",
     "deleteConfirm": "\"{name}\" o'chirilsinmi?",
-    "price": "Narx (tan narhiy)",
     "mxikCode": "MXIK kodi",
     "mxikPlaceholder": "Kod yoki nomini kiriting...",
     "mxikHint": "Yangi kod uchun to'liq 17 ta raqam kiriting va 🔍 bosing",
@@ -235,7 +234,6 @@
     "editEmployee": "Xodimni tahrirlash",
     "fullName": "To'liq ismi",
     "fullNamePlaceholder": "Aziz Karimov",
-    "phone": "Telefon",
     "password": "Parol",
     "passwordPlaceholder": "Kamida 8 ta belgi",
     "branch": "Filial",
@@ -603,7 +601,11 @@
     "active": "Faol",
     "added": "Filial qo'shildi",
     "updated": "Filial yangilandi",
-    "missingFields": "Barcha maydonlarni to'ldiring"
+    "missingFields": "Barcha maydonlarni to'ldiring",
+    "region": "Viloyat",
+    "selectRegion": "Viloyatni tanlang",
+    "district": "Tuman",
+    "selectDistrict": "Tumanni tanlang"
   },
   "changePassword": {
     "title": "Parolni o'zgartirish",
@@ -639,5 +641,12 @@
     "hintSelect": "tanlash",
     "hintNavigate": "navigatsiya",
     "hintClose": "yopish"
+  },
+  "regions": {
+    "region": "Viloyat",
+    "selectRegion": "Viloyatni tanlang",
+    "district": "Tuman",
+    "selectDistrict": "Tumanni tanlang",
+    "optional": "ixtiyoriy"
   }
 }

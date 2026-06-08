@@ -8,6 +8,7 @@ import MultiSelect from 'primevue/multiselect'
 import Select from 'primevue/select'
 import { useToast } from 'primevue/usetoast'
 import { useMerchantsStore } from '@/stores/merchants'
+import { useRegions } from '@/composables/use-regions'
 import type { Category } from '@/types'
 
 const router = useRouter()
@@ -34,13 +35,16 @@ const STEPS = computed(() => [
 
 onMounted(() => { store.fetchBankList() })
 
+const { regionOptions, districtOptions, districtsUpperId, onRegionChange } = useRegions()
+
 const ROLE_OPTIONS = [
   { label: 'Agent', value: 'agent' },
   { label: 'Merchant Admin', value: 'merchant_admin' },
 ]
 
 // Step 1 – Merchant
-const m = ref({ name: '', legalName: '', inn: '', phone: '', address: '' })
+const m = ref({ name: '', legalName: '', inn: '', phone: '', address: '', regionId: null as number | null })
+const mRegion = ref<number | null>(null)
 const mErrors = ref({ name: false, legalName: false, inn: false, phone: false, address: false })
 
 function validateMerchant(): boolean {
@@ -57,7 +61,8 @@ async function submitStep1() {
   saving.value = true
   try {
     const formData = {
-      ...m.value
+      ...m.value,
+      regionId: m.value.regionId ?? undefined,
     }
     formData.phone = '998' + formData.phone.replace(/\D/g, '')
     const merchant = await store.create(formData)
@@ -103,7 +108,8 @@ async function submitStep2() {
 }
 
 // Step 3 – Branch
-const b = ref({ name: '', address: '', phone: '' })
+const b = ref({ name: '', address: '', phone: '', regionId: null as number | null })
+const bRegion = ref<number | null>(null)
 const bErrors = ref({ name: false, address: false, phone: false })
 
 function validateBranch(): boolean {
@@ -118,7 +124,8 @@ async function submitStep3() {
   saving.value = true
   try {
     const formData = {
-      ...b.value
+      ...b.value,
+      regionId: b.value.regionId ?? undefined,
     }
     formData.phone = '998' + formData.phone.replace(/\D/g, '')
     const branch = await store.createBranch(merchantId.value!, formData)
@@ -268,6 +275,18 @@ function finish() {
             <InputText v-model="m.address" :class="{ 'p-invalid': mErrors.address }" class="w-full" />
             <small v-if="mErrors.address" class="error-msg">{{ t('onboarding.addressRequired') }}</small>
           </div>
+          <div class="field">
+            <label>{{ t('onboarding.region') }} <span class="optional-hint">({{ t('onboarding.skip') }})</span></label>
+            <Select v-model="mRegion" :options="regionOptions" option-label="label" option-value="value"
+              :placeholder="t('onboarding.selectRegion')" filter show-clear class="w-full"
+              @change="onRegionChange(mRegion, (v) => { m.regionId = v })" />
+          </div>
+          <div class="field">
+            <label>{{ t('onboarding.district') }} <span class="optional-hint">({{ t('onboarding.skip') }})</span></label>
+            <Select v-model="m.regionId" :options="districtOptions" option-label="label" option-value="value"
+              :placeholder="t('onboarding.selectDistrict')" filter show-clear class="w-full"
+              :disabled="!mRegion" />
+          </div>
         </div>
         <div class="actions">
           <button class="btn-primary" :disabled="saving" @click="submitStep1">
@@ -325,6 +344,18 @@ function finish() {
             <label>{{ t('onboarding.address') }}</label>
             <InputText v-model="b.address" :class="{ 'p-invalid': bErrors.address }" class="w-full" />
             <small v-if="bErrors.address" class="error-msg">{{ t('onboarding.addressRequired') }}</small>
+          </div>
+          <div class="field">
+            <label>{{ t('onboarding.region') }} <span class="optional-hint">({{ t('onboarding.skip') }})</span></label>
+            <Select v-model="bRegion" :options="regionOptions" option-label="label" option-value="value"
+              :placeholder="t('onboarding.selectRegion')" filter show-clear class="w-full"
+              @change="onRegionChange(bRegion, (v) => { b.regionId = v })" />
+          </div>
+          <div class="field">
+            <label>{{ t('onboarding.district') }} <span class="optional-hint">({{ t('onboarding.skip') }})</span></label>
+            <Select v-model="b.regionId" :options="districtOptions" option-label="label" option-value="value"
+              :placeholder="t('onboarding.selectDistrict')" filter show-clear class="w-full"
+              :disabled="!bRegion" />
           </div>
         </div>
         <div class="actions">
@@ -630,6 +661,13 @@ function finish() {
 .error-msg {
   font-size: 0.75rem;
   color: var(--danger);
+}
+
+.optional-hint {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--text-secondary);
+  text-transform: none;
 }
 
 /* ── Repeatable rows ─────────────────────────────────────────────────────────*/

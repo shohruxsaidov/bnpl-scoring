@@ -718,7 +718,11 @@
     "accountNumberPlaceholder": "20 цифр",
     "bankInfoSaved": "Реквизиты сохранены",
     "bankInfoSaveFailed": "Не удалось сохранить реквизиты",
-    "noBankInfo": "Реквизиты не указаны"
+    "noBankInfo": "Реквизиты не указаны",
+    "region": "Регион",
+    "selectRegion": "Выберите регион",
+    "district": "Район",
+    "selectDistrict": "Выберите район"
   },
   "deals": {
     "status": "Статус",
@@ -961,7 +965,11 @@
     "errorEmployee": "Не удалось создать сотрудника",
     "errorCategory": "Не удалось создать категорию",
     "errorProduct": "Не удалось создать товар",
-    "noCategories": "Нет категорий — сначала создайте категорию для добавления товаров"
+    "noCategories": "Нет категорий — сначала создайте категорию для добавления товаров",
+    "region": "Регион",
+    "selectRegion": "Выберите регион",
+    "district": "Район",
+    "selectDistrict": "Выберите район"
   },
   "buyout": {
     "total": "Всего",
@@ -1001,5 +1009,12 @@
     "mismatch": "Пароли не совпадают",
     "invalidCurrent": "Неверный текущий пароль",
     "error": "Произошла ошибка. Попробуйте ещё раз"
+  },
+  "regions": {
+    "region": "Регион",
+    "selectRegion": "Выберите регион",
+    "district": "Район",
+    "selectDistrict": "Выберите район",
+    "optional": "необязательно"
   }
 }

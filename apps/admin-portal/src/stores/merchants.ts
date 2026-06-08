@@ -93,6 +93,7 @@ export const useMerchantsStore = defineStore('merchants', () => {
     inn: string
     phone: string
     address: string
+    regionId?: number
   }): Promise<Merchant> {
     const body = await api<{ merchant: Merchant }>('/admin/merchants', {
       method: 'POST',
@@ -119,7 +120,7 @@ export const useMerchantsStore = defineStore('merchants', () => {
 
   async function createBranch(
     merchantId: string,
-    input: { name: string; address: string; phone: string },
+    input: { name: string; address: string; phone: string; regionId?: number },
   ): Promise<Branch> {
     const body = await api<{ branch: Branch }>(`/admin/merchants/${merchantId}/branches`, {
       method: 'POST',
