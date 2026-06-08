@@ -1,0 +1,6630 @@
+[
+  {
+    "id": -2,
+    "regionType": "country",
+    "upperId": null,
+    "codes": [
+      {
+        "id": 2,
+        "regionId": -2,
+        "type": "mvd",
+        "code": "182"
+      },
+      {
+        "id": 3,
+        "regionId": -2,
+        "type": "cbu",
+        "code": "860"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": -2,
+        "localeKey": "ru",
+        "title": "Узбекистан"
+      },
+      {
+        "regionId": -2,
+        "localeKey": "uz",
+        "title": "Oʻzbekiston"
+      },
+      {
+        "regionId": -2,
+        "localeKey": "uzc",
+        "title": "Ўзбекистон"
+      }
+    ]
+  },
+  {
+    "id": -1,
+    "regionType": "region",
+    "upperId": null,
+    "codes": [
+      {
+        "id": 1,
+        "regionId": -1,
+        "type": "cbu",
+        "code": "0000"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": -1,
+        "localeKey": "ru",
+        "title": "Неизвестный"
+      },
+      {
+        "regionId": -1,
+        "localeKey": "uz",
+        "title": "Nomalum"
+      },
+      {
+        "regionId": -1,
+        "localeKey": "uzc",
+        "title": "Номалум"
+      }
+    ]
+  },
+  {
+    "id": 1703,
+    "regionType": "region",
+    "upperId": null,
+    "codes": [
+      {
+        "id": 22,
+        "regionId": 1703,
+        "type": "cbu",
+        "code": "3"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1703,
+        "localeKey": "ru",
+        "title": "Андижанская область"
+      },
+      {
+        "regionId": 1703,
+        "localeKey": "uz",
+        "title": "Андижанская область"
+      },
+      {
+        "regionId": 1703,
+        "localeKey": "uzc",
+        "title": "Андижанская область"
+      }
+    ]
+  },
+  {
+    "id": 1706,
+    "regionType": "region",
+    "upperId": null,
+    "codes": [
+      {
+        "id": 37,
+        "regionId": 1706,
+        "type": "cbu",
+        "code": "6"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1706,
+        "localeKey": "ru",
+        "title": "Бухарская область"
+      },
+      {
+        "regionId": 1706,
+        "localeKey": "uz",
+        "title": "Бухарская область"
+      },
+      {
+        "regionId": 1706,
+        "localeKey": "uzc",
+        "title": "Бухарская область"
+      }
+    ]
+  },
+  {
+    "id": 1708,
+    "regionType": "region",
+    "upperId": null,
+    "codes": [
+      {
+        "id": 51,
+        "regionId": 1708,
+        "type": "cbu",
+        "code": "8"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1708,
+        "localeKey": "ru",
+        "title": "Джизакская область"
+      },
+      {
+        "regionId": 1708,
+        "localeKey": "uz",
+        "title": "Джизакская область"
+      },
+      {
+        "regionId": 1708,
+        "localeKey": "uzc",
+        "title": "Джизакская область"
+      }
+    ]
+  },
+  {
+    "id": 1710,
+    "regionType": "region",
+    "upperId": null,
+    "codes": [
+      {
+        "id": 65,
+        "regionId": 1710,
+        "type": "cbu",
+        "code": "10"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1710,
+        "localeKey": "ru",
+        "title": "Кашкадарьинская область"
+      },
+      {
+        "regionId": 1710,
+        "localeKey": "uz",
+        "title": "Кашкадарьинская область"
+      },
+      {
+        "regionId": 1710,
+        "localeKey": "uzc",
+        "title": "Кашкадарьинская область"
+      }
+    ]
+  },
+  {
+    "id": 1712,
+    "regionType": "region",
+    "upperId": null,
+    "codes": [
+      {
+        "id": 81,
+        "regionId": 1712,
+        "type": "cbu",
+        "code": "12"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1712,
+        "localeKey": "ru",
+        "title": "Навоийская область"
+      },
+      {
+        "regionId": 1712,
+        "localeKey": "uz",
+        "title": "Навоийская область"
+      },
+      {
+        "regionId": 1712,
+        "localeKey": "uzc",
+        "title": "Навоийская область"
+      }
+    ]
+  },
+  {
+    "id": 1714,
+    "regionType": "region",
+    "upperId": null,
+    "codes": [
+      {
+        "id": 93,
+        "regionId": 1714,
+        "type": "cbu",
+        "code": "14"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1714,
+        "localeKey": "ru",
+        "title": "Наманганская область"
+      },
+      {
+        "regionId": 1714,
+        "localeKey": "uz",
+        "title": "Наманганская область"
+      },
+      {
+        "regionId": 1714,
+        "localeKey": "uzc",
+        "title": "Наманганская область"
+      }
+    ]
+  },
+  {
+    "id": 1718,
+    "regionType": "region",
+    "upperId": null,
+    "codes": [
+      {
+        "id": 106,
+        "regionId": 1718,
+        "type": "cbu",
+        "code": "18"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1718,
+        "localeKey": "ru",
+        "title": "Самаркандская область"
+      },
+      {
+        "regionId": 1718,
+        "localeKey": "uz",
+        "title": "Самаркандская область"
+      },
+      {
+        "regionId": 1718,
+        "localeKey": "uzc",
+        "title": "Самаркандская область"
+      }
+    ]
+  },
+  {
+    "id": 1722,
+    "regionType": "region",
+    "upperId": null,
+    "codes": [
+      {
+        "id": 123,
+        "regionId": 1722,
+        "type": "cbu",
+        "code": "22"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1722,
+        "localeKey": "ru",
+        "title": "Сурхандарьинская область"
+      },
+      {
+        "regionId": 1722,
+        "localeKey": "uz",
+        "title": "Сурхандарьинская область"
+      },
+      {
+        "regionId": 1722,
+        "localeKey": "uzc",
+        "title": "Сурхандарьинская область"
+      }
+    ]
+  },
+  {
+    "id": 1724,
+    "regionType": "region",
+    "upperId": null,
+    "codes": [
+      {
+        "id": 139,
+        "regionId": 1724,
+        "type": "cbu",
+        "code": "24"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1724,
+        "localeKey": "ru",
+        "title": "Сырдарьинская область"
+      },
+      {
+        "regionId": 1724,
+        "localeKey": "uz",
+        "title": "Сырдарьинская область"
+      },
+      {
+        "regionId": 1724,
+        "localeKey": "uzc",
+        "title": "Сырдарьинская область"
+      }
+    ]
+  },
+  {
+    "id": 1726,
+    "regionType": "region",
+    "upperId": null,
+    "codes": [
+      {
+        "id": 151,
+        "regionId": 1726,
+        "type": "cbu",
+        "code": "26"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1726,
+        "localeKey": "ru",
+        "title": "г. Ташкент"
+      },
+      {
+        "regionId": 1726,
+        "localeKey": "uz",
+        "title": "г. Ташкент"
+      },
+      {
+        "regionId": 1726,
+        "localeKey": "uzc",
+        "title": "г. Ташкент"
+      }
+    ]
+  },
+  {
+    "id": 1727,
+    "regionType": "region",
+    "upperId": null,
+    "codes": [
+      {
+        "id": 164,
+        "regionId": 1727,
+        "type": "cbu",
+        "code": "27"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727,
+        "localeKey": "ru",
+        "title": "Ташкентская область"
+      },
+      {
+        "regionId": 1727,
+        "localeKey": "uz",
+        "title": "Ташкентская область"
+      },
+      {
+        "regionId": 1727,
+        "localeKey": "uzc",
+        "title": "Ташкентская область"
+      }
+    ]
+  },
+  {
+    "id": 1730,
+    "regionType": "region",
+    "upperId": null,
+    "codes": [
+      {
+        "id": 187,
+        "regionId": 1730,
+        "type": "cbu",
+        "code": "30"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1730,
+        "localeKey": "ru",
+        "title": "Ферганская область"
+      },
+      {
+        "regionId": 1730,
+        "localeKey": "uz",
+        "title": "Ферганская область"
+      },
+      {
+        "regionId": 1730,
+        "localeKey": "uzc",
+        "title": "Ферганская область"
+      }
+    ]
+  },
+  {
+    "id": 1733,
+    "regionType": "region",
+    "upperId": null,
+    "codes": [
+      {
+        "id": 207,
+        "regionId": 1733,
+        "type": "cbu",
+        "code": "33"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1733,
+        "localeKey": "ru",
+        "title": "Хорезмская область"
+      },
+      {
+        "regionId": 1733,
+        "localeKey": "uz",
+        "title": "Хорезмская область"
+      },
+      {
+        "regionId": 1733,
+        "localeKey": "uzc",
+        "title": "Хорезмская область"
+      }
+    ]
+  },
+  {
+    "id": 1735,
+    "regionType": "region",
+    "upperId": null,
+    "codes": [
+      {
+        "id": 4,
+        "regionId": 1735,
+        "type": "cbu",
+        "code": "35"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1735,
+        "localeKey": "ru",
+        "title": "Республика Каракалпакстан"
+      },
+      {
+        "regionId": 1735,
+        "localeKey": "uz",
+        "title": "Республика Каракалпакстан"
+      },
+      {
+        "regionId": 1735,
+        "localeKey": "uzc",
+        "title": "Республика Каракалпакстан"
+      }
+    ]
+  },
+  {
+    "id": 1703202,
+    "regionType": "region",
+    "upperId": 1703,
+    "codes": [
+      {
+        "id": 23,
+        "regionId": 1703202,
+        "type": "cbu",
+        "code": "16"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1703202,
+        "localeKey": "ru",
+        "title": "Алтынкульский район"
+      },
+      {
+        "regionId": 1703202,
+        "localeKey": "uz",
+        "title": "Алтынкульский район"
+      },
+      {
+        "regionId": 1703202,
+        "localeKey": "uzc",
+        "title": "Алтынкульский район"
+      }
+    ]
+  },
+  {
+    "id": 1703203,
+    "regionType": "region",
+    "upperId": 1703,
+    "codes": [
+      {
+        "id": 24,
+        "regionId": 1703203,
+        "type": "cbu",
+        "code": "6"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1703203,
+        "localeKey": "ru",
+        "title": "Андижанский район"
+      },
+      {
+        "regionId": 1703203,
+        "localeKey": "uz",
+        "title": "Андижанский район"
+      },
+      {
+        "regionId": 1703203,
+        "localeKey": "uzc",
+        "title": "Андижанский район"
+      }
+    ]
+  },
+  {
+    "id": 1703206,
+    "regionType": "region",
+    "upperId": 1703,
+    "codes": [],
+    "locales": [
+      {
+        "regionId": 1703206,
+        "localeKey": "ru",
+        "title": "Балыкчинский район"
+      },
+      {
+        "regionId": 1703206,
+        "localeKey": "uz",
+        "title": "Балыкчинский район"
+      },
+      {
+        "regionId": 1703206,
+        "localeKey": "uzc",
+        "title": "Балыкчинский район"
+      }
+    ]
+  },
+  {
+    "id": 1703209,
+    "regionType": "region",
+    "upperId": 1703,
+    "codes": [],
+    "locales": [
+      {
+        "regionId": 1703209,
+        "localeKey": "ru",
+        "title": "Бозский район"
+      },
+      {
+        "regionId": 1703209,
+        "localeKey": "uz",
+        "title": "Бозский район"
+      },
+      {
+        "regionId": 1703209,
+        "localeKey": "uzc",
+        "title": "Бозский район"
+      }
+    ]
+  },
+  {
+    "id": 1703210,
+    "regionType": "region",
+    "upperId": 1703,
+    "codes": [
+      {
+        "id": 25,
+        "regionId": 1703210,
+        "type": "cbu",
+        "code": "10"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1703210,
+        "localeKey": "ru",
+        "title": "Булакбашинский район"
+      },
+      {
+        "regionId": 1703210,
+        "localeKey": "uz",
+        "title": "Булакбашинский район"
+      },
+      {
+        "regionId": 1703210,
+        "localeKey": "uzc",
+        "title": "Булакбашинский район"
+      }
+    ]
+  },
+  {
+    "id": 1703211,
+    "regionType": "region",
+    "upperId": 1703,
+    "codes": [
+      {
+        "id": 26,
+        "regionId": 1703211,
+        "type": "cbu",
+        "code": "11"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1703211,
+        "localeKey": "ru",
+        "title": "Жалакудукский район"
+      },
+      {
+        "regionId": 1703211,
+        "localeKey": "uz",
+        "title": "Жалакудукский район"
+      },
+      {
+        "regionId": 1703211,
+        "localeKey": "uzc",
+        "title": "Жалакудукский район"
+      }
+    ]
+  },
+  {
+    "id": 1703214,
+    "regionType": "region",
+    "upperId": 1703,
+    "codes": [
+      {
+        "id": 27,
+        "regionId": 1703214,
+        "type": "cbu",
+        "code": "12"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1703214,
+        "localeKey": "ru",
+        "title": "Избасканский район"
+      },
+      {
+        "regionId": 1703214,
+        "localeKey": "uz",
+        "title": "Избасканский район"
+      },
+      {
+        "regionId": 1703214,
+        "localeKey": "uzc",
+        "title": "Избасканский район"
+      }
+    ]
+  },
+  {
+    "id": 1703217,
+    "regionType": "region",
+    "upperId": 1703,
+    "codes": [
+      {
+        "id": 28,
+        "regionId": 1703217,
+        "type": "cbu",
+        "code": "210"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1703217,
+        "localeKey": "ru",
+        "title": "Улугнорский район"
+      },
+      {
+        "regionId": 1703217,
+        "localeKey": "uz",
+        "title": "Улугнорский район"
+      },
+      {
+        "regionId": 1703217,
+        "localeKey": "uzc",
+        "title": "Улугнорский район"
+      }
+    ]
+  },
+  {
+    "id": 1703220,
+    "regionType": "region",
+    "upperId": 1703,
+    "codes": [
+      {
+        "id": 29,
+        "regionId": 1703220,
+        "type": "cbu",
+        "code": "14"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1703220,
+        "localeKey": "ru",
+        "title": "Кургантепинский район"
+      },
+      {
+        "regionId": 1703220,
+        "localeKey": "uz",
+        "title": "Кургантепинский район"
+      },
+      {
+        "regionId": 1703220,
+        "localeKey": "uzc",
+        "title": "Кургантепинский район"
+      }
+    ]
+  },
+  {
+    "id": 1703224,
+    "regionType": "region",
+    "upperId": 1703,
+    "codes": [
+      {
+        "id": 30,
+        "regionId": 1703224,
+        "type": "cbu",
+        "code": "7"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1703224,
+        "localeKey": "ru",
+        "title": "Асакинский район"
+      },
+      {
+        "regionId": 1703224,
+        "localeKey": "uz",
+        "title": "Асакинский район"
+      },
+      {
+        "regionId": 1703224,
+        "localeKey": "uzc",
+        "title": "Асакинский район"
+      }
+    ]
+  },
+  {
+    "id": 1703227,
+    "regionType": "region",
+    "upperId": 1703,
+    "codes": [
+      {
+        "id": 31,
+        "regionId": 1703227,
+        "type": "cbu",
+        "code": "15"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1703227,
+        "localeKey": "ru",
+        "title": "Мархаматский район"
+      },
+      {
+        "regionId": 1703227,
+        "localeKey": "uz",
+        "title": "Мархаматский район"
+      },
+      {
+        "regionId": 1703227,
+        "localeKey": "uzc",
+        "title": "Мархаматский район"
+      }
+    ]
+  },
+  {
+    "id": 1703230,
+    "regionType": "region",
+    "upperId": 1703,
+    "codes": [
+      {
+        "id": 32,
+        "regionId": 1703230,
+        "type": "cbu",
+        "code": "214"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1703230,
+        "localeKey": "ru",
+        "title": "Шахриханский район"
+      },
+      {
+        "regionId": 1703230,
+        "localeKey": "uz",
+        "title": "Шахриханский район"
+      },
+      {
+        "regionId": 1703230,
+        "localeKey": "uzc",
+        "title": "Шахриханский район"
+      }
+    ]
+  },
+  {
+    "id": 1703232,
+    "regionType": "region",
+    "upperId": 1703,
+    "codes": [
+      {
+        "id": 33,
+        "regionId": 1703232,
+        "type": "cbu",
+        "code": "17"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1703232,
+        "localeKey": "ru",
+        "title": "Пахтаабадский район"
+      },
+      {
+        "regionId": 1703232,
+        "localeKey": "uz",
+        "title": "Пахтаабадский район"
+      },
+      {
+        "regionId": 1703232,
+        "localeKey": "uzc",
+        "title": "Пахтаабадский район"
+      }
+    ]
+  },
+  {
+    "id": 1703236,
+    "regionType": "region",
+    "upperId": 1703,
+    "codes": [
+      {
+        "id": 34,
+        "regionId": 1703236,
+        "type": "cbu",
+        "code": "18"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1703236,
+        "localeKey": "ru",
+        "title": "Ходжаабадский район"
+      },
+      {
+        "regionId": 1703236,
+        "localeKey": "uz",
+        "title": "Ходжаабадский район"
+      },
+      {
+        "regionId": 1703236,
+        "localeKey": "uzc",
+        "title": "Ходжаабадский район"
+      }
+    ]
+  },
+  {
+    "id": 1703401,
+    "regionType": "region",
+    "upperId": 1703,
+    "codes": [
+      {
+        "id": 35,
+        "regionId": 1703401,
+        "type": "cbu",
+        "code": "1"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1703401,
+        "localeKey": "ru",
+        "title": "город Андижан"
+      },
+      {
+        "regionId": 1703401,
+        "localeKey": "uz",
+        "title": "город Андижан"
+      },
+      {
+        "regionId": 1703401,
+        "localeKey": "uzc",
+        "title": "город Андижан"
+      }
+    ]
+  },
+  {
+    "id": 1703408,
+    "regionType": "region",
+    "upperId": 1703,
+    "codes": [
+      {
+        "id": 36,
+        "regionId": 1703408,
+        "type": "cbu",
+        "code": "3"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1703408,
+        "localeKey": "ru",
+        "title": "город Ханабад"
+      },
+      {
+        "regionId": 1703408,
+        "localeKey": "uz",
+        "title": "город Ханабад"
+      },
+      {
+        "regionId": 1703408,
+        "localeKey": "uzc",
+        "title": "город Ханабад"
+      }
+    ]
+  },
+  {
+    "id": 1706204,
+    "regionType": "region",
+    "upperId": 1706,
+    "codes": [
+      {
+        "id": 38,
+        "regionId": 1706204,
+        "type": "cbu",
+        "code": "19"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1706204,
+        "localeKey": "ru",
+        "title": "Алатский район"
+      },
+      {
+        "regionId": 1706204,
+        "localeKey": "uz",
+        "title": "Алатский район"
+      },
+      {
+        "regionId": 1706204,
+        "localeKey": "uzc",
+        "title": "Алатский район"
+      }
+    ]
+  },
+  {
+    "id": 1706207,
+    "regionType": "region",
+    "upperId": 1706,
+    "codes": [
+      {
+        "id": 39,
+        "regionId": 1706207,
+        "type": "cbu",
+        "code": "22"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1706207,
+        "localeKey": "ru",
+        "title": "Бухарский район"
+      },
+      {
+        "regionId": 1706207,
+        "localeKey": "uz",
+        "title": "Бухарский район"
+      },
+      {
+        "regionId": 1706207,
+        "localeKey": "uzc",
+        "title": "Бухарский район"
+      }
+    ]
+  },
+  {
+    "id": 1706212,
+    "regionType": "region",
+    "upperId": 1706,
+    "codes": [
+      {
+        "id": 40,
+        "regionId": 1706212,
+        "type": "cbu",
+        "code": "20"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1706212,
+        "localeKey": "ru",
+        "title": "Вабкентский район"
+      },
+      {
+        "regionId": 1706212,
+        "localeKey": "uz",
+        "title": "Вабкентский район"
+      },
+      {
+        "regionId": 1706212,
+        "localeKey": "uzc",
+        "title": "Вабкентский район"
+      }
+    ]
+  },
+  {
+    "id": 1706215,
+    "regionType": "region",
+    "upperId": 1706,
+    "codes": [
+      {
+        "id": 41,
+        "regionId": 1706215,
+        "type": "cbu",
+        "code": "21"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1706215,
+        "localeKey": "ru",
+        "title": "Гиждуванский район"
+      },
+      {
+        "regionId": 1706215,
+        "localeKey": "uz",
+        "title": "Гиждуванский район"
+      },
+      {
+        "regionId": 1706215,
+        "localeKey": "uzc",
+        "title": "Гиждуванский район"
+      }
+    ]
+  },
+  {
+    "id": 1706219,
+    "regionType": "region",
+    "upperId": 1706,
+    "codes": [
+      {
+        "id": 42,
+        "regionId": 1706219,
+        "type": "cbu",
+        "code": "29"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1706219,
+        "localeKey": "ru",
+        "title": "Каганский район"
+      },
+      {
+        "regionId": 1706219,
+        "localeKey": "uz",
+        "title": "Каганский район"
+      },
+      {
+        "regionId": 1706219,
+        "localeKey": "uzc",
+        "title": "Каганский район"
+      }
+    ]
+  },
+  {
+    "id": 1706230,
+    "regionType": "region",
+    "upperId": 1706,
+    "codes": [
+      {
+        "id": 43,
+        "regionId": 1706230,
+        "type": "cbu",
+        "code": "23"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1706230,
+        "localeKey": "ru",
+        "title": "Каракульский район"
+      },
+      {
+        "regionId": 1706230,
+        "localeKey": "uz",
+        "title": "Каракульский район"
+      },
+      {
+        "regionId": 1706230,
+        "localeKey": "uzc",
+        "title": "Каракульский район"
+      }
+    ]
+  },
+  {
+    "id": 1706232,
+    "regionType": "region",
+    "upperId": 1706,
+    "codes": [
+      {
+        "id": 44,
+        "regionId": 1706232,
+        "type": "cbu",
+        "code": "28"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1706232,
+        "localeKey": "ru",
+        "title": "Караулбазарский район"
+      },
+      {
+        "regionId": 1706232,
+        "localeKey": "uz",
+        "title": "Караулбазарский район"
+      },
+      {
+        "regionId": 1706232,
+        "localeKey": "uzc",
+        "title": "Караулбазарский район"
+      }
+    ]
+  },
+  {
+    "id": 1706240,
+    "regionType": "region",
+    "upperId": 1706,
+    "codes": [
+      {
+        "id": 45,
+        "regionId": 1706240,
+        "type": "cbu",
+        "code": "27"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1706240,
+        "localeKey": "ru",
+        "title": "Пешкунский район"
+      },
+      {
+        "regionId": 1706240,
+        "localeKey": "uz",
+        "title": "Пешкунский район"
+      },
+      {
+        "regionId": 1706240,
+        "localeKey": "uzc",
+        "title": "Пешкунский район"
+      }
+    ]
+  },
+  {
+    "id": 1706242,
+    "regionType": "region",
+    "upperId": 1706,
+    "codes": [
+      {
+        "id": 46,
+        "regionId": 1706242,
+        "type": "cbu",
+        "code": "24"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1706242,
+        "localeKey": "ru",
+        "title": "Ромитанский район"
+      },
+      {
+        "regionId": 1706242,
+        "localeKey": "uz",
+        "title": "Ромитанский район"
+      },
+      {
+        "regionId": 1706242,
+        "localeKey": "uzc",
+        "title": "Ромитанский район"
+      }
+    ]
+  },
+  {
+    "id": 1706246,
+    "regionType": "region",
+    "upperId": 1706,
+    "codes": [
+      {
+        "id": 47,
+        "regionId": 1706246,
+        "type": "cbu",
+        "code": "25"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1706246,
+        "localeKey": "ru",
+        "title": "Жондорский район"
+      },
+      {
+        "regionId": 1706246,
+        "localeKey": "uz",
+        "title": "Жондорский район"
+      },
+      {
+        "regionId": 1706246,
+        "localeKey": "uzc",
+        "title": "Жондорский район"
+      }
+    ]
+  },
+  {
+    "id": 1706258,
+    "regionType": "region",
+    "upperId": 1706,
+    "codes": [
+      {
+        "id": 48,
+        "regionId": 1706258,
+        "type": "cbu",
+        "code": "26"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1706258,
+        "localeKey": "ru",
+        "title": "Шафирканский район"
+      },
+      {
+        "regionId": 1706258,
+        "localeKey": "uz",
+        "title": "Шафирканский район"
+      },
+      {
+        "regionId": 1706258,
+        "localeKey": "uzc",
+        "title": "Шафирканский район"
+      }
+    ]
+  },
+  {
+    "id": 1706401,
+    "regionType": "region",
+    "upperId": 1706,
+    "codes": [
+      {
+        "id": 49,
+        "regionId": 1706401,
+        "type": "cbu",
+        "code": "30"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1706401,
+        "localeKey": "ru",
+        "title": "город Бухара"
+      },
+      {
+        "regionId": 1706401,
+        "localeKey": "uz",
+        "title": "город Бухара"
+      },
+      {
+        "regionId": 1706401,
+        "localeKey": "uzc",
+        "title": "город Бухара"
+      }
+    ]
+  },
+  {
+    "id": 1706403,
+    "regionType": "region",
+    "upperId": 1706,
+    "codes": [
+      {
+        "id": 50,
+        "regionId": 1706403,
+        "type": "cbu",
+        "code": "220"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1706403,
+        "localeKey": "ru",
+        "title": "город Каган"
+      },
+      {
+        "regionId": 1706403,
+        "localeKey": "uz",
+        "title": "город Каган"
+      },
+      {
+        "regionId": 1706403,
+        "localeKey": "uzc",
+        "title": "город Каган"
+      }
+    ]
+  },
+  {
+    "id": 1708201,
+    "regionType": "region",
+    "upperId": 1708,
+    "codes": [
+      {
+        "id": 52,
+        "regionId": 1708201,
+        "type": "cbu",
+        "code": "41"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1708201,
+        "localeKey": "ru",
+        "title": "Арнасайский район"
+      },
+      {
+        "regionId": 1708201,
+        "localeKey": "uz",
+        "title": "Арнасайский район"
+      },
+      {
+        "regionId": 1708201,
+        "localeKey": "uzc",
+        "title": "Арнасайский район"
+      }
+    ]
+  },
+  {
+    "id": 1708204,
+    "regionType": "region",
+    "upperId": 1708,
+    "codes": [
+      {
+        "id": 53,
+        "regionId": 1708204,
+        "type": "cbu",
+        "code": "37"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1708204,
+        "localeKey": "ru",
+        "title": "Бахмальский район"
+      },
+      {
+        "regionId": 1708204,
+        "localeKey": "uz",
+        "title": "Бахмальский район"
+      },
+      {
+        "regionId": 1708204,
+        "localeKey": "uzc",
+        "title": "Бахмальский район"
+      }
+    ]
+  },
+  {
+    "id": 1708209,
+    "regionType": "region",
+    "upperId": 1708,
+    "codes": [
+      {
+        "id": 54,
+        "regionId": 1708209,
+        "type": "cbu",
+        "code": "33"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1708209,
+        "localeKey": "ru",
+        "title": "Галляаральский район"
+      },
+      {
+        "regionId": 1708209,
+        "localeKey": "uz",
+        "title": "Галляаральский район"
+      },
+      {
+        "regionId": 1708209,
+        "localeKey": "uzc",
+        "title": "Галляаральский район"
+      }
+    ]
+  },
+  {
+    "id": 1708212,
+    "regionType": "region",
+    "upperId": 1708,
+    "codes": [
+      {
+        "id": 55,
+        "regionId": 1708212,
+        "type": "cbu",
+        "code": "40"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1708212,
+        "localeKey": "ru",
+        "title": "Шароф Рашидовский район"
+      },
+      {
+        "regionId": 1708212,
+        "localeKey": "uz",
+        "title": "Шароф Рашидовский район"
+      },
+      {
+        "regionId": 1708212,
+        "localeKey": "uzc",
+        "title": "Шароф Рашидовский район"
+      }
+    ]
+  },
+  {
+    "id": 1708215,
+    "regionType": "region",
+    "upperId": 1708,
+    "codes": [
+      {
+        "id": 56,
+        "regionId": 1708215,
+        "type": "cbu",
+        "code": "34"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1708215,
+        "localeKey": "ru",
+        "title": "Дустликский район"
+      },
+      {
+        "regionId": 1708215,
+        "localeKey": "uz",
+        "title": "Дустликский район"
+      },
+      {
+        "regionId": 1708215,
+        "localeKey": "uzc",
+        "title": "Дустликский район"
+      }
+    ]
+  },
+  {
+    "id": 1708218,
+    "regionType": "region",
+    "upperId": 1708,
+    "codes": [
+      {
+        "id": 57,
+        "regionId": 1708218,
+        "type": "cbu",
+        "code": "36"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1708218,
+        "localeKey": "ru",
+        "title": "Заминский район"
+      },
+      {
+        "regionId": 1708218,
+        "localeKey": "uz",
+        "title": "Заминский район"
+      },
+      {
+        "regionId": 1708218,
+        "localeKey": "uzc",
+        "title": "Заминский район"
+      }
+    ]
+  },
+  {
+    "id": 1708220,
+    "regionType": "region",
+    "upperId": 1708,
+    "codes": [
+      {
+        "id": 58,
+        "regionId": 1708220,
+        "type": "cbu",
+        "code": "42"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1708220,
+        "localeKey": "ru",
+        "title": "Зарбдорский район"
+      },
+      {
+        "regionId": 1708220,
+        "localeKey": "uz",
+        "title": "Зарбдорский район"
+      },
+      {
+        "regionId": 1708220,
+        "localeKey": "uzc",
+        "title": "Зарбдорский район"
+      }
+    ]
+  },
+  {
+    "id": 1708223,
+    "regionType": "region",
+    "upperId": 1708,
+    "codes": [
+      {
+        "id": 59,
+        "regionId": 1708223,
+        "type": "cbu",
+        "code": "35"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1708223,
+        "localeKey": "ru",
+        "title": "Мирзачульский район"
+      },
+      {
+        "regionId": 1708223,
+        "localeKey": "uz",
+        "title": "Мирзачульский район"
+      },
+      {
+        "regionId": 1708223,
+        "localeKey": "uzc",
+        "title": "Мирзачульский район"
+      }
+    ]
+  },
+  {
+    "id": 1708225,
+    "regionType": "region",
+    "upperId": 1708,
+    "codes": [
+      {
+        "id": 60,
+        "regionId": 1708225,
+        "type": "cbu",
+        "code": "39"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1708225,
+        "localeKey": "ru",
+        "title": "Зафарабадский район"
+      },
+      {
+        "regionId": 1708225,
+        "localeKey": "uz",
+        "title": "Зафарабадский район"
+      },
+      {
+        "regionId": 1708225,
+        "localeKey": "uzc",
+        "title": "Зафарабадский район"
+      }
+    ]
+  },
+  {
+    "id": 1708228,
+    "regionType": "region",
+    "upperId": 1708,
+    "codes": [
+      {
+        "id": 61,
+        "regionId": 1708228,
+        "type": "cbu",
+        "code": "32"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1708228,
+        "localeKey": "ru",
+        "title": "Пахтакорский район"
+      },
+      {
+        "regionId": 1708228,
+        "localeKey": "uz",
+        "title": "Пахтакорский район"
+      },
+      {
+        "regionId": 1708228,
+        "localeKey": "uzc",
+        "title": "Пахтакорский район"
+      }
+    ]
+  },
+  {
+    "id": 1708235,
+    "regionType": "region",
+    "upperId": 1708,
+    "codes": [
+      {
+        "id": 62,
+        "regionId": 1708235,
+        "type": "cbu",
+        "code": "38"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1708235,
+        "localeKey": "ru",
+        "title": "Фаришский район"
+      },
+      {
+        "regionId": 1708235,
+        "localeKey": "uz",
+        "title": "Фаришский район"
+      },
+      {
+        "regionId": 1708235,
+        "localeKey": "uzc",
+        "title": "Фаришский район"
+      }
+    ]
+  },
+  {
+    "id": 1708237,
+    "regionType": "region",
+    "upperId": 1708,
+    "codes": [
+      {
+        "id": 63,
+        "regionId": 1708237,
+        "type": "cbu",
+        "code": "217"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1708237,
+        "localeKey": "ru",
+        "title": "Янгиабадский район"
+      },
+      {
+        "regionId": 1708237,
+        "localeKey": "uz",
+        "title": "Янгиабадский район"
+      },
+      {
+        "regionId": 1708237,
+        "localeKey": "uzc",
+        "title": "Янгиабадский район"
+      }
+    ]
+  },
+  {
+    "id": 1708401,
+    "regionType": "region",
+    "upperId": 1708,
+    "codes": [
+      {
+        "id": 64,
+        "regionId": 1708401,
+        "type": "cbu",
+        "code": "31"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1708401,
+        "localeKey": "ru",
+        "title": "город Джизак"
+      },
+      {
+        "regionId": 1708401,
+        "localeKey": "uz",
+        "title": "город Джизак"
+      },
+      {
+        "regionId": 1708401,
+        "localeKey": "uzc",
+        "title": "город Джизак"
+      }
+    ]
+  },
+  {
+    "id": 1710207,
+    "regionType": "region",
+    "upperId": 1710,
+    "codes": [
+      {
+        "id": 66,
+        "regionId": 1710207,
+        "type": "cbu",
+        "code": "45"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1710207,
+        "localeKey": "ru",
+        "title": "Гузарский район"
+      },
+      {
+        "regionId": 1710207,
+        "localeKey": "uz",
+        "title": "Гузарский район"
+      },
+      {
+        "regionId": 1710207,
+        "localeKey": "uzc",
+        "title": "Гузарский район"
+      }
+    ]
+  },
+  {
+    "id": 1710212,
+    "regionType": "region",
+    "upperId": 1710,
+    "codes": [
+      {
+        "id": 67,
+        "regionId": 1710212,
+        "type": "cbu",
+        "code": "46"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1710212,
+        "localeKey": "ru",
+        "title": "Дехканабадский район"
+      },
+      {
+        "regionId": 1710212,
+        "localeKey": "uz",
+        "title": "Дехканабадский район"
+      },
+      {
+        "regionId": 1710212,
+        "localeKey": "uzc",
+        "title": "Дехканабадский район"
+      }
+    ]
+  },
+  {
+    "id": 1710220,
+    "regionType": "region",
+    "upperId": 1710,
+    "codes": [
+      {
+        "id": 68,
+        "regionId": 1710220,
+        "type": "cbu",
+        "code": "47"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1710220,
+        "localeKey": "ru",
+        "title": "Камашинский район"
+      },
+      {
+        "regionId": 1710220,
+        "localeKey": "uz",
+        "title": "Камашинский район"
+      },
+      {
+        "regionId": 1710220,
+        "localeKey": "uzc",
+        "title": "Камашинский район"
+      }
+    ]
+  },
+  {
+    "id": 1710224,
+    "regionType": "region",
+    "upperId": 1710,
+    "codes": [
+      {
+        "id": 69,
+        "regionId": 1710224,
+        "type": "cbu",
+        "code": "44"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1710224,
+        "localeKey": "ru",
+        "title": "Каршинский район"
+      },
+      {
+        "regionId": 1710224,
+        "localeKey": "uz",
+        "title": "Каршинский район"
+      },
+      {
+        "regionId": 1710224,
+        "localeKey": "uzc",
+        "title": "Каршинский район"
+      }
+    ]
+  },
+  {
+    "id": 1710229,
+    "regionType": "region",
+    "upperId": 1710,
+    "codes": [
+      {
+        "id": 70,
+        "regionId": 1710229,
+        "type": "cbu",
+        "code": "48"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1710229,
+        "localeKey": "ru",
+        "title": "Касанский район"
+      },
+      {
+        "regionId": 1710229,
+        "localeKey": "uz",
+        "title": "Касанский район"
+      },
+      {
+        "regionId": 1710229,
+        "localeKey": "uzc",
+        "title": "Касанский район"
+      }
+    ]
+  },
+  {
+    "id": 1710232,
+    "regionType": "region",
+    "upperId": 1710,
+    "codes": [
+      {
+        "id": 71,
+        "regionId": 1710232,
+        "type": "cbu",
+        "code": "52"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1710232,
+        "localeKey": "ru",
+        "title": "Китабский район"
+      },
+      {
+        "regionId": 1710232,
+        "localeKey": "uz",
+        "title": "Китабский район"
+      },
+      {
+        "regionId": 1710232,
+        "localeKey": "uzc",
+        "title": "Китабский район"
+      }
+    ]
+  },
+  {
+    "id": 1710233,
+    "regionType": "region",
+    "upperId": 1710,
+    "codes": [
+      {
+        "id": 72,
+        "regionId": 1710233,
+        "type": "cbu",
+        "code": "221"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1710233,
+        "localeKey": "ru",
+        "title": "Миришкорский район"
+      },
+      {
+        "regionId": 1710233,
+        "localeKey": "uz",
+        "title": "Миришкорский район"
+      },
+      {
+        "regionId": 1710233,
+        "localeKey": "uzc",
+        "title": "Миришкорский район"
+      }
+    ]
+  },
+  {
+    "id": 1710234,
+    "regionType": "region",
+    "upperId": 1710,
+    "codes": [
+      {
+        "id": 73,
+        "regionId": 1710234,
+        "type": "cbu",
+        "code": "56"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1710234,
+        "localeKey": "ru",
+        "title": "Мубарекский район"
+      },
+      {
+        "regionId": 1710234,
+        "localeKey": "uz",
+        "title": "Мубарекский район"
+      },
+      {
+        "regionId": 1710234,
+        "localeKey": "uzc",
+        "title": "Мубарекский район"
+      }
+    ]
+  },
+  {
+    "id": 1710235,
+    "regionType": "region",
+    "upperId": 1710,
+    "codes": [
+      {
+        "id": 74,
+        "regionId": 1710235,
+        "type": "cbu",
+        "code": "54"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1710235,
+        "localeKey": "ru",
+        "title": "Нишанский район"
+      },
+      {
+        "regionId": 1710235,
+        "localeKey": "uz",
+        "title": "Нишанский район"
+      },
+      {
+        "regionId": 1710235,
+        "localeKey": "uzc",
+        "title": "Нишанский район"
+      }
+    ]
+  },
+  {
+    "id": 1710237,
+    "regionType": "region",
+    "upperId": 1710,
+    "codes": [
+      {
+        "id": 75,
+        "regionId": 1710237,
+        "type": "cbu",
+        "code": "53"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1710237,
+        "localeKey": "ru",
+        "title": "Касбинский район"
+      },
+      {
+        "regionId": 1710237,
+        "localeKey": "uz",
+        "title": "Касбинский район"
+      },
+      {
+        "regionId": 1710237,
+        "localeKey": "uzc",
+        "title": "Касбинский район"
+      }
+    ]
+  },
+  {
+    "id": 1710242,
+    "regionType": "region",
+    "upperId": 1710,
+    "codes": [
+      {
+        "id": 76,
+        "regionId": 1710242,
+        "type": "cbu",
+        "code": "50"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1710242,
+        "localeKey": "ru",
+        "title": "Чиракчинский район"
+      },
+      {
+        "regionId": 1710242,
+        "localeKey": "uz",
+        "title": "Чиракчинский район"
+      },
+      {
+        "regionId": 1710242,
+        "localeKey": "uzc",
+        "title": "Чиракчинский район"
+      }
+    ]
+  },
+  {
+    "id": 1710245,
+    "regionType": "region",
+    "upperId": 1710,
+    "codes": [
+      {
+        "id": 77,
+        "regionId": 1710245,
+        "type": "cbu",
+        "code": "213"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1710245,
+        "localeKey": "ru",
+        "title": "Шахрисабзский район"
+      },
+      {
+        "regionId": 1710245,
+        "localeKey": "uz",
+        "title": "Шахрисабзский район"
+      },
+      {
+        "regionId": 1710245,
+        "localeKey": "uzc",
+        "title": "Шахрисабзский район"
+      }
+    ]
+  },
+  {
+    "id": 1710250,
+    "regionType": "region",
+    "upperId": 1710,
+    "codes": [
+      {
+        "id": 78,
+        "regionId": 1710250,
+        "type": "cbu",
+        "code": "51"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1710250,
+        "localeKey": "ru",
+        "title": "Яккабагский район"
+      },
+      {
+        "regionId": 1710250,
+        "localeKey": "uz",
+        "title": "Яккабагский район"
+      },
+      {
+        "regionId": 1710250,
+        "localeKey": "uzc",
+        "title": "Яккабагский район"
+      }
+    ]
+  },
+  {
+    "id": 1710401,
+    "regionType": "region",
+    "upperId": 1710,
+    "codes": [
+      {
+        "id": 79,
+        "regionId": 1710401,
+        "type": "cbu",
+        "code": "43"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1710401,
+        "localeKey": "ru",
+        "title": "город Карши"
+      },
+      {
+        "regionId": 1710401,
+        "localeKey": "uz",
+        "title": "город Карши"
+      },
+      {
+        "regionId": 1710401,
+        "localeKey": "uzc",
+        "title": "город Карши"
+      }
+    ]
+  },
+  {
+    "id": 1710405,
+    "regionType": "region",
+    "upperId": 1710,
+    "codes": [
+      {
+        "id": 80,
+        "regionId": 1710405,
+        "type": "cbu",
+        "code": "49"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1710405,
+        "localeKey": "ru",
+        "title": "город Шахрисабз"
+      },
+      {
+        "regionId": 1710405,
+        "localeKey": "uz",
+        "title": "город Шахрисабз"
+      },
+      {
+        "regionId": 1710405,
+        "localeKey": "uzc",
+        "title": "город Шахрисабз"
+      }
+    ]
+  },
+  {
+    "id": 1712211,
+    "regionType": "region",
+    "upperId": 1712,
+    "codes": [
+      {
+        "id": 82,
+        "regionId": 1712211,
+        "type": "cbu",
+        "code": "62"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1712211,
+        "localeKey": "ru",
+        "title": "Канимехский район"
+      },
+      {
+        "regionId": 1712211,
+        "localeKey": "uz",
+        "title": "Канимехский район"
+      },
+      {
+        "regionId": 1712211,
+        "localeKey": "uzc",
+        "title": "Канимехский район"
+      }
+    ]
+  },
+  {
+    "id": 1712216,
+    "regionType": "region",
+    "upperId": 1712,
+    "codes": [
+      {
+        "id": 83,
+        "regionId": 1712216,
+        "type": "cbu",
+        "code": "63"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1712216,
+        "localeKey": "ru",
+        "title": "Кызылтепинский район"
+      },
+      {
+        "regionId": 1712216,
+        "localeKey": "uz",
+        "title": "Кызылтепинский район"
+      },
+      {
+        "regionId": 1712216,
+        "localeKey": "uzc",
+        "title": "Кызылтепинский район"
+      }
+    ]
+  },
+  {
+    "id": 1712230,
+    "regionType": "region",
+    "upperId": 1712,
+    "codes": [
+      {
+        "id": 84,
+        "regionId": 1712230,
+        "type": "cbu",
+        "code": "64"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1712230,
+        "localeKey": "ru",
+        "title": "Навбахорский район"
+      },
+      {
+        "regionId": 1712230,
+        "localeKey": "uz",
+        "title": "Навбахорский район"
+      },
+      {
+        "regionId": 1712230,
+        "localeKey": "uzc",
+        "title": "Навбахорский район"
+      }
+    ]
+  },
+  {
+    "id": 1712234,
+    "regionType": "region",
+    "upperId": 1712,
+    "codes": [
+      {
+        "id": 85,
+        "regionId": 1712234,
+        "type": "cbu",
+        "code": "61"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1712234,
+        "localeKey": "ru",
+        "title": "Карманинский район"
+      },
+      {
+        "regionId": 1712234,
+        "localeKey": "uz",
+        "title": "Карманинский район"
+      },
+      {
+        "regionId": 1712234,
+        "localeKey": "uzc",
+        "title": "Карманинский район"
+      }
+    ]
+  },
+  {
+    "id": 1712238,
+    "regionType": "region",
+    "upperId": 1712,
+    "codes": [
+      {
+        "id": 86,
+        "regionId": 1712238,
+        "type": "cbu",
+        "code": "65"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1712238,
+        "localeKey": "ru",
+        "title": "Нуратинский район"
+      },
+      {
+        "regionId": 1712238,
+        "localeKey": "uz",
+        "title": "Нуратинский район"
+      },
+      {
+        "regionId": 1712238,
+        "localeKey": "uzc",
+        "title": "Нуратинский район"
+      }
+    ]
+  },
+  {
+    "id": 1712244,
+    "regionType": "region",
+    "upperId": 1712,
+    "codes": [
+      {
+        "id": 87,
+        "regionId": 1712244,
+        "type": "cbu",
+        "code": "67"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1712244,
+        "localeKey": "ru",
+        "title": "Тамдынский район"
+      },
+      {
+        "regionId": 1712244,
+        "localeKey": "uz",
+        "title": "Тамдынский район"
+      },
+      {
+        "regionId": 1712244,
+        "localeKey": "uzc",
+        "title": "Тамдынский район"
+      }
+    ]
+  },
+  {
+    "id": 1712248,
+    "regionType": "region",
+    "upperId": 1712,
+    "codes": [
+      {
+        "id": 88,
+        "regionId": 1712248,
+        "type": "cbu",
+        "code": "211"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1712248,
+        "localeKey": "ru",
+        "title": "Учкудукский район"
+      },
+      {
+        "regionId": 1712248,
+        "localeKey": "uz",
+        "title": "Учкудукский район"
+      },
+      {
+        "regionId": 1712248,
+        "localeKey": "uzc",
+        "title": "Учкудукский район"
+      }
+    ]
+  },
+  {
+    "id": 1712251,
+    "regionType": "region",
+    "upperId": 1712,
+    "codes": [
+      {
+        "id": 89,
+        "regionId": 1712251,
+        "type": "cbu",
+        "code": "66"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1712251,
+        "localeKey": "ru",
+        "title": "Хатырчинский район"
+      },
+      {
+        "regionId": 1712251,
+        "localeKey": "uz",
+        "title": "Хатырчинский район"
+      },
+      {
+        "regionId": 1712251,
+        "localeKey": "uzc",
+        "title": "Хатырчинский район"
+      }
+    ]
+  },
+  {
+    "id": 1712401,
+    "regionType": "region",
+    "upperId": 1712,
+    "codes": [
+      {
+        "id": 90,
+        "regionId": 1712401,
+        "type": "cbu",
+        "code": "58"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1712401,
+        "localeKey": "ru",
+        "title": "город Навои"
+      },
+      {
+        "regionId": 1712401,
+        "localeKey": "uz",
+        "title": "город Навои"
+      },
+      {
+        "regionId": 1712401,
+        "localeKey": "uzc",
+        "title": "город Навои"
+      }
+    ]
+  },
+  {
+    "id": 1712408,
+    "regionType": "region",
+    "upperId": 1712,
+    "codes": [
+      {
+        "id": 91,
+        "regionId": 1712408,
+        "type": "cbu",
+        "code": "59"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1712408,
+        "localeKey": "ru",
+        "title": "город Зарафшан"
+      },
+      {
+        "regionId": 1712408,
+        "localeKey": "uz",
+        "title": "город Зарафшан"
+      },
+      {
+        "regionId": 1712408,
+        "localeKey": "uzc",
+        "title": "город Зарафшан"
+      }
+    ]
+  },
+  {
+    "id": 1712412,
+    "regionType": "region",
+    "upperId": 1712,
+    "codes": [
+      {
+        "id": 92,
+        "regionId": 1712412,
+        "type": "cbu",
+        "code": "224"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1712412,
+        "localeKey": "ru",
+        "title": "город Газган"
+      },
+      {
+        "regionId": 1712412,
+        "localeKey": "uz",
+        "title": "город Газган"
+      },
+      {
+        "regionId": 1712412,
+        "localeKey": "uzc",
+        "title": "город Газган"
+      }
+    ]
+  },
+  {
+    "id": 1714204,
+    "regionType": "region",
+    "upperId": 1714,
+    "codes": [
+      {
+        "id": 94,
+        "regionId": 1714204,
+        "type": "cbu",
+        "code": "69"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1714204,
+        "localeKey": "ru",
+        "title": "Мингбулакский район"
+      },
+      {
+        "regionId": 1714204,
+        "localeKey": "uz",
+        "title": "Мингбулакский район"
+      },
+      {
+        "regionId": 1714204,
+        "localeKey": "uzc",
+        "title": "Мингбулакский район"
+      }
+    ]
+  },
+  {
+    "id": 1714207,
+    "regionType": "region",
+    "upperId": 1714,
+    "codes": [
+      {
+        "id": 95,
+        "regionId": 1714207,
+        "type": "cbu",
+        "code": "70"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1714207,
+        "localeKey": "ru",
+        "title": "Касансайский район"
+      },
+      {
+        "regionId": 1714207,
+        "localeKey": "uz",
+        "title": "Касансайский район"
+      },
+      {
+        "regionId": 1714207,
+        "localeKey": "uzc",
+        "title": "Касансайский район"
+      }
+    ]
+  },
+  {
+    "id": 1714212,
+    "regionType": "region",
+    "upperId": 1714,
+    "codes": [
+      {
+        "id": 96,
+        "regionId": 1714212,
+        "type": "cbu",
+        "code": "78"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1714212,
+        "localeKey": "ru",
+        "title": "Наманганский район"
+      },
+      {
+        "regionId": 1714212,
+        "localeKey": "uz",
+        "title": "Наманганский район"
+      },
+      {
+        "regionId": 1714212,
+        "localeKey": "uzc",
+        "title": "Наманганский район"
+      }
+    ]
+  },
+  {
+    "id": 1714216,
+    "regionType": "region",
+    "upperId": 1714,
+    "codes": [
+      {
+        "id": 97,
+        "regionId": 1714216,
+        "type": "cbu",
+        "code": "71"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1714216,
+        "localeKey": "ru",
+        "title": "Нарынский район"
+      },
+      {
+        "regionId": 1714216,
+        "localeKey": "uz",
+        "title": "Нарынский район"
+      },
+      {
+        "regionId": 1714216,
+        "localeKey": "uzc",
+        "title": "Нарынский район"
+      }
+    ]
+  },
+  {
+    "id": 1714219,
+    "regionType": "region",
+    "upperId": 1714,
+    "codes": [
+      {
+        "id": 98,
+        "regionId": 1714219,
+        "type": "cbu",
+        "code": "72"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1714219,
+        "localeKey": "ru",
+        "title": "Папский район"
+      },
+      {
+        "regionId": 1714219,
+        "localeKey": "uz",
+        "title": "Папский район"
+      },
+      {
+        "regionId": 1714219,
+        "localeKey": "uzc",
+        "title": "Папский район"
+      }
+    ]
+  },
+  {
+    "id": 1714224,
+    "regionType": "region",
+    "upperId": 1714,
+    "codes": [
+      {
+        "id": 99,
+        "regionId": 1714224,
+        "type": "cbu",
+        "code": "73"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1714224,
+        "localeKey": "ru",
+        "title": "Туракурганский район"
+      },
+      {
+        "regionId": 1714224,
+        "localeKey": "uz",
+        "title": "Туракурганский район"
+      },
+      {
+        "regionId": 1714224,
+        "localeKey": "uzc",
+        "title": "Туракурганский район"
+      }
+    ]
+  },
+  {
+    "id": 1714229,
+    "regionType": "region",
+    "upperId": 1714,
+    "codes": [
+      {
+        "id": 100,
+        "regionId": 1714229,
+        "type": "cbu",
+        "code": "74"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1714229,
+        "localeKey": "ru",
+        "title": "Уйчинский район"
+      },
+      {
+        "regionId": 1714229,
+        "localeKey": "uz",
+        "title": "Уйчинский район"
+      },
+      {
+        "regionId": 1714229,
+        "localeKey": "uzc",
+        "title": "Уйчинский район"
+      }
+    ]
+  },
+  {
+    "id": 1714234,
+    "regionType": "region",
+    "upperId": 1714,
+    "codes": [
+      {
+        "id": 101,
+        "regionId": 1714234,
+        "type": "cbu",
+        "code": "75"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1714234,
+        "localeKey": "ru",
+        "title": "Учкурганский район"
+      },
+      {
+        "regionId": 1714234,
+        "localeKey": "uz",
+        "title": "Учкурганский район"
+      },
+      {
+        "regionId": 1714234,
+        "localeKey": "uzc",
+        "title": "Учкурганский район"
+      }
+    ]
+  },
+  {
+    "id": 1714236,
+    "regionType": "region",
+    "upperId": 1714,
+    "codes": [
+      {
+        "id": 102,
+        "regionId": 1714236,
+        "type": "cbu",
+        "code": "79"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1714236,
+        "localeKey": "ru",
+        "title": "Чартакский район"
+      },
+      {
+        "regionId": 1714236,
+        "localeKey": "uz",
+        "title": "Чартакский район"
+      },
+      {
+        "regionId": 1714236,
+        "localeKey": "uzc",
+        "title": "Чартакский район"
+      }
+    ]
+  },
+  {
+    "id": 1714237,
+    "regionType": "region",
+    "upperId": 1714,
+    "codes": [
+      {
+        "id": 103,
+        "regionId": 1714237,
+        "type": "cbu",
+        "code": "76"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1714237,
+        "localeKey": "ru",
+        "title": "Чустский район"
+      },
+      {
+        "regionId": 1714237,
+        "localeKey": "uz",
+        "title": "Чустский район"
+      },
+      {
+        "regionId": 1714237,
+        "localeKey": "uzc",
+        "title": "Чустский район"
+      }
+    ]
+  },
+  {
+    "id": 1714242,
+    "regionType": "region",
+    "upperId": 1714,
+    "codes": [
+      {
+        "id": 104,
+        "regionId": 1714242,
+        "type": "cbu",
+        "code": "77"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1714242,
+        "localeKey": "ru",
+        "title": "Янгикурганский район"
+      },
+      {
+        "regionId": 1714242,
+        "localeKey": "uz",
+        "title": "Янгикурганский район"
+      },
+      {
+        "regionId": 1714242,
+        "localeKey": "uzc",
+        "title": "Янгикурганский район"
+      }
+    ]
+  },
+  {
+    "id": 1714401,
+    "regionType": "region",
+    "upperId": 1714,
+    "codes": [
+      {
+        "id": 105,
+        "regionId": 1714401,
+        "type": "cbu",
+        "code": "68"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1714401,
+        "localeKey": "ru",
+        "title": "город Наманган"
+      },
+      {
+        "regionId": 1714401,
+        "localeKey": "uz",
+        "title": "город Наманган"
+      },
+      {
+        "regionId": 1714401,
+        "localeKey": "uzc",
+        "title": "город Наманган"
+      }
+    ]
+  },
+  {
+    "id": 1718203,
+    "regionType": "region",
+    "upperId": 1718,
+    "codes": [
+      {
+        "id": 107,
+        "regionId": 1718203,
+        "type": "cbu",
+        "code": "80"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1718203,
+        "localeKey": "ru",
+        "title": "Акдарьинский район"
+      },
+      {
+        "regionId": 1718203,
+        "localeKey": "uz",
+        "title": "Акдарьинский район"
+      },
+      {
+        "regionId": 1718203,
+        "localeKey": "uzc",
+        "title": "Акдарьинский район"
+      }
+    ]
+  },
+  {
+    "id": 1718206,
+    "regionType": "region",
+    "upperId": 1718,
+    "codes": [
+      {
+        "id": 108,
+        "regionId": 1718206,
+        "type": "cbu",
+        "code": "81"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1718206,
+        "localeKey": "ru",
+        "title": "Булунгурский район"
+      },
+      {
+        "regionId": 1718206,
+        "localeKey": "uz",
+        "title": "Булунгурский район"
+      },
+      {
+        "regionId": 1718206,
+        "localeKey": "uzc",
+        "title": "Булунгурский район"
+      }
+    ]
+  },
+  {
+    "id": 1718209,
+    "regionType": "region",
+    "upperId": 1718,
+    "codes": [
+      {
+        "id": 109,
+        "regionId": 1718209,
+        "type": "cbu",
+        "code": "83"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1718209,
+        "localeKey": "ru",
+        "title": "Джамбайский район"
+      },
+      {
+        "regionId": 1718209,
+        "localeKey": "uz",
+        "title": "Джамбайский район"
+      },
+      {
+        "regionId": 1718209,
+        "localeKey": "uzc",
+        "title": "Джамбайский район"
+      }
+    ]
+  },
+  {
+    "id": 1718212,
+    "regionType": "region",
+    "upperId": 1718,
+    "codes": [
+      {
+        "id": 110,
+        "regionId": 1718212,
+        "type": "cbu",
+        "code": "84"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1718212,
+        "localeKey": "ru",
+        "title": "Иштыханский район"
+      },
+      {
+        "regionId": 1718212,
+        "localeKey": "uz",
+        "title": "Иштыханский район"
+      },
+      {
+        "regionId": 1718212,
+        "localeKey": "uzc",
+        "title": "Иштыханский район"
+      }
+    ]
+  },
+  {
+    "id": 1718215,
+    "regionType": "region",
+    "upperId": 1718,
+    "codes": [
+      {
+        "id": 111,
+        "regionId": 1718215,
+        "type": "cbu",
+        "code": "85"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1718215,
+        "localeKey": "ru",
+        "title": "Каттакурганский район"
+      },
+      {
+        "regionId": 1718215,
+        "localeKey": "uz",
+        "title": "Каттакурганский район"
+      },
+      {
+        "regionId": 1718215,
+        "localeKey": "uzc",
+        "title": "Каттакурганский район"
+      }
+    ]
+  },
+  {
+    "id": 1718216,
+    "regionType": "region",
+    "upperId": 1718,
+    "codes": [
+      {
+        "id": 112,
+        "regionId": 1718216,
+        "type": "cbu",
+        "code": "86"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1718216,
+        "localeKey": "ru",
+        "title": "Кошрабадский район"
+      },
+      {
+        "regionId": 1718216,
+        "localeKey": "uz",
+        "title": "Кошрабадский район"
+      },
+      {
+        "regionId": 1718216,
+        "localeKey": "uzc",
+        "title": "Кошрабадский район"
+      }
+    ]
+  },
+  {
+    "id": 1718218,
+    "regionType": "region",
+    "upperId": 1718,
+    "codes": [
+      {
+        "id": 113,
+        "regionId": 1718218,
+        "type": "cbu",
+        "code": "87"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1718218,
+        "localeKey": "ru",
+        "title": "Нарпайский район"
+      },
+      {
+        "regionId": 1718218,
+        "localeKey": "uz",
+        "title": "Нарпайский район"
+      },
+      {
+        "regionId": 1718218,
+        "localeKey": "uzc",
+        "title": "Нарпайский район"
+      }
+    ]
+  },
+  {
+    "id": 1718224,
+    "regionType": "region",
+    "upperId": 1718,
+    "codes": [
+      {
+        "id": 114,
+        "regionId": 1718224,
+        "type": "cbu",
+        "code": "91"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1718224,
+        "localeKey": "ru",
+        "title": "Пайарыкский район"
+      },
+      {
+        "regionId": 1718224,
+        "localeKey": "uz",
+        "title": "Пайарыкский район"
+      },
+      {
+        "regionId": 1718224,
+        "localeKey": "uzc",
+        "title": "Пайарыкский район"
+      }
+    ]
+  },
+  {
+    "id": 1718227,
+    "regionType": "region",
+    "upperId": 1718,
+    "codes": [
+      {
+        "id": 115,
+        "regionId": 1718227,
+        "type": "cbu",
+        "code": "89"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1718227,
+        "localeKey": "ru",
+        "title": "Пастдаргомский район"
+      },
+      {
+        "regionId": 1718227,
+        "localeKey": "uz",
+        "title": "Пастдаргомский район"
+      },
+      {
+        "regionId": 1718227,
+        "localeKey": "uzc",
+        "title": "Пастдаргомский район"
+      }
+    ]
+  },
+  {
+    "id": 1718230,
+    "regionType": "region",
+    "upperId": 1718,
+    "codes": [
+      {
+        "id": 116,
+        "regionId": 1718230,
+        "type": "cbu",
+        "code": "90"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1718230,
+        "localeKey": "ru",
+        "title": "Пахтачийский район"
+      },
+      {
+        "regionId": 1718230,
+        "localeKey": "uz",
+        "title": "Пахтачийский район"
+      },
+      {
+        "regionId": 1718230,
+        "localeKey": "uzc",
+        "title": "Пахтачийский район"
+      }
+    ]
+  },
+  {
+    "id": 1718233,
+    "regionType": "region",
+    "upperId": 1718,
+    "codes": [
+      {
+        "id": 117,
+        "regionId": 1718233,
+        "type": "cbu",
+        "code": "92"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1718233,
+        "localeKey": "ru",
+        "title": "Самаркандский район"
+      },
+      {
+        "regionId": 1718233,
+        "localeKey": "uz",
+        "title": "Самаркандский район"
+      },
+      {
+        "regionId": 1718233,
+        "localeKey": "uzc",
+        "title": "Самаркандский район"
+      }
+    ]
+  },
+  {
+    "id": 1718235,
+    "regionType": "region",
+    "upperId": 1718,
+    "codes": [
+      {
+        "id": 118,
+        "regionId": 1718235,
+        "type": "cbu",
+        "code": "88"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1718235,
+        "localeKey": "ru",
+        "title": "Нурабадский район"
+      },
+      {
+        "regionId": 1718235,
+        "localeKey": "uz",
+        "title": "Нурабадский район"
+      },
+      {
+        "regionId": 1718235,
+        "localeKey": "uzc",
+        "title": "Нурабадский район"
+      }
+    ]
+  },
+  {
+    "id": 1718236,
+    "regionType": "region",
+    "upperId": 1718,
+    "codes": [
+      {
+        "id": 119,
+        "regionId": 1718236,
+        "type": "cbu",
+        "code": "94"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1718236,
+        "localeKey": "ru",
+        "title": "Ургутский район"
+      },
+      {
+        "regionId": 1718236,
+        "localeKey": "uz",
+        "title": "Ургутский район"
+      },
+      {
+        "regionId": 1718236,
+        "localeKey": "uzc",
+        "title": "Ургутский район"
+      }
+    ]
+  },
+  {
+    "id": 1718238,
+    "regionType": "region",
+    "upperId": 1718,
+    "codes": [
+      {
+        "id": 120,
+        "regionId": 1718238,
+        "type": "cbu",
+        "code": "93"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1718238,
+        "localeKey": "ru",
+        "title": "Тайлакский район"
+      },
+      {
+        "regionId": 1718238,
+        "localeKey": "uz",
+        "title": "Тайлакский район"
+      },
+      {
+        "regionId": 1718238,
+        "localeKey": "uzc",
+        "title": "Тайлакский район"
+      }
+    ]
+  },
+  {
+    "id": 1718401,
+    "regionType": "region",
+    "upperId": 1718,
+    "codes": [
+      {
+        "id": 121,
+        "regionId": 1718401,
+        "type": "cbu",
+        "code": "96"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1718401,
+        "localeKey": "ru",
+        "title": "город Самарканд"
+      },
+      {
+        "regionId": 1718401,
+        "localeKey": "uz",
+        "title": "город Самарканд"
+      },
+      {
+        "regionId": 1718401,
+        "localeKey": "uzc",
+        "title": "город Самарканд"
+      }
+    ]
+  },
+  {
+    "id": 1718406,
+    "regionType": "region",
+    "upperId": 1718,
+    "codes": [
+      {
+        "id": 122,
+        "regionId": 1718406,
+        "type": "cbu",
+        "code": "97"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1718406,
+        "localeKey": "ru",
+        "title": "город Каттакурган"
+      },
+      {
+        "regionId": 1718406,
+        "localeKey": "uz",
+        "title": "город Каттакурган"
+      },
+      {
+        "regionId": 1718406,
+        "localeKey": "uzc",
+        "title": "город Каттакурган"
+      }
+    ]
+  },
+  {
+    "id": 1722201,
+    "regionType": "region",
+    "upperId": 1722,
+    "codes": [
+      {
+        "id": 124,
+        "regionId": 1722201,
+        "type": "cbu",
+        "code": "111"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1722201,
+        "localeKey": "ru",
+        "title": "Алтынсайский район"
+      },
+      {
+        "regionId": 1722201,
+        "localeKey": "uz",
+        "title": "Алтынсайский район"
+      },
+      {
+        "regionId": 1722201,
+        "localeKey": "uzc",
+        "title": "Алтынсайский район"
+      }
+    ]
+  },
+  {
+    "id": 1722202,
+    "regionType": "region",
+    "upperId": 1722,
+    "codes": [
+      {
+        "id": 125,
+        "regionId": 1722202,
+        "type": "cbu",
+        "code": "107"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1722202,
+        "localeKey": "ru",
+        "title": "Ангорский район"
+      },
+      {
+        "regionId": 1722202,
+        "localeKey": "uz",
+        "title": "Ангорский район"
+      },
+      {
+        "regionId": 1722202,
+        "localeKey": "uzc",
+        "title": "Ангорский район"
+      }
+    ]
+  },
+  {
+    "id": 1722203,
+    "regionType": "region",
+    "upperId": 1722,
+    "codes": [
+      {
+        "id": 126,
+        "regionId": 1722203,
+        "type": "cbu",
+        "code": "112"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1722203,
+        "localeKey": "ru",
+        "title": "Бандиханский район"
+      },
+      {
+        "regionId": 1722203,
+        "localeKey": "uz",
+        "title": "Бандиханский район"
+      },
+      {
+        "regionId": 1722203,
+        "localeKey": "uzc",
+        "title": "Бандиханский район"
+      }
+    ]
+  },
+  {
+    "id": 1722204,
+    "regionType": "region",
+    "upperId": 1722,
+    "codes": [
+      {
+        "id": 127,
+        "regionId": 1722204,
+        "type": "cbu",
+        "code": "99"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1722204,
+        "localeKey": "ru",
+        "title": "Байсунский район"
+      },
+      {
+        "regionId": 1722204,
+        "localeKey": "uz",
+        "title": "Байсунский район"
+      },
+      {
+        "regionId": 1722204,
+        "localeKey": "uzc",
+        "title": "Байсунский район"
+      }
+    ]
+  },
+  {
+    "id": 1722207,
+    "regionType": "region",
+    "upperId": 1722,
+    "codes": [
+      {
+        "id": 128,
+        "regionId": 1722207,
+        "type": "cbu",
+        "code": "102"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1722207,
+        "localeKey": "ru",
+        "title": "Музрабадский район"
+      },
+      {
+        "regionId": 1722207,
+        "localeKey": "uz",
+        "title": "Музрабадский район"
+      },
+      {
+        "regionId": 1722207,
+        "localeKey": "uzc",
+        "title": "Музрабадский район"
+      }
+    ]
+  },
+  {
+    "id": 1722210,
+    "regionType": "region",
+    "upperId": 1722,
+    "codes": [
+      {
+        "id": 129,
+        "regionId": 1722210,
+        "type": "cbu",
+        "code": "100"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1722210,
+        "localeKey": "ru",
+        "title": "Денауский район"
+      },
+      {
+        "regionId": 1722210,
+        "localeKey": "uz",
+        "title": "Денауский район"
+      },
+      {
+        "regionId": 1722210,
+        "localeKey": "uzc",
+        "title": "Денауский район"
+      }
+    ]
+  },
+  {
+    "id": 1722212,
+    "regionType": "region",
+    "upperId": 1722,
+    "codes": [
+      {
+        "id": 130,
+        "regionId": 1722212,
+        "type": "cbu",
+        "code": "101"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1722212,
+        "localeKey": "ru",
+        "title": "Джаркурганский район"
+      },
+      {
+        "regionId": 1722212,
+        "localeKey": "uz",
+        "title": "Джаркурганский район"
+      },
+      {
+        "regionId": 1722212,
+        "localeKey": "uzc",
+        "title": "Джаркурганский район"
+      }
+    ]
+  },
+  {
+    "id": 1722214,
+    "regionType": "region",
+    "upperId": 1722,
+    "codes": [
+      {
+        "id": 131,
+        "regionId": 1722214,
+        "type": "cbu",
+        "code": "109"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1722214,
+        "localeKey": "ru",
+        "title": "Кумкурганский район"
+      },
+      {
+        "regionId": 1722214,
+        "localeKey": "uz",
+        "title": "Кумкурганский район"
+      },
+      {
+        "regionId": 1722214,
+        "localeKey": "uzc",
+        "title": "Кумкурганский район"
+      }
+    ]
+  },
+  {
+    "id": 1722215,
+    "regionType": "region",
+    "upperId": 1722,
+    "codes": [
+      {
+        "id": 132,
+        "regionId": 1722215,
+        "type": "cbu",
+        "code": "108"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1722215,
+        "localeKey": "ru",
+        "title": "Кизирикский район"
+      },
+      {
+        "regionId": 1722215,
+        "localeKey": "uz",
+        "title": "Кизирикский район"
+      },
+      {
+        "regionId": 1722215,
+        "localeKey": "uzc",
+        "title": "Кизирикский район"
+      }
+    ]
+  },
+  {
+    "id": 1722217,
+    "regionType": "region",
+    "upperId": 1722,
+    "codes": [
+      {
+        "id": 133,
+        "regionId": 1722217,
+        "type": "cbu",
+        "code": "106"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1722217,
+        "localeKey": "ru",
+        "title": "Сариасийский район"
+      },
+      {
+        "regionId": 1722217,
+        "localeKey": "uz",
+        "title": "Сариасийский район"
+      },
+      {
+        "regionId": 1722217,
+        "localeKey": "uzc",
+        "title": "Сариасийский район"
+      }
+    ]
+  },
+  {
+    "id": 1722220,
+    "regionType": "region",
+    "upperId": 1722,
+    "codes": [
+      {
+        "id": 134,
+        "regionId": 1722220,
+        "type": "cbu",
+        "code": "110"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1722220,
+        "localeKey": "ru",
+        "title": "Термезский район"
+      },
+      {
+        "regionId": 1722220,
+        "localeKey": "uz",
+        "title": "Термезский район"
+      },
+      {
+        "regionId": 1722220,
+        "localeKey": "uzc",
+        "title": "Термезский район"
+      }
+    ]
+  },
+  {
+    "id": 1722221,
+    "regionType": "region",
+    "upperId": 1722,
+    "codes": [
+      {
+        "id": 135,
+        "regionId": 1722221,
+        "type": "cbu",
+        "code": "105"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1722221,
+        "localeKey": "ru",
+        "title": "Узунский район"
+      },
+      {
+        "regionId": 1722221,
+        "localeKey": "uz",
+        "title": "Узунский район"
+      },
+      {
+        "regionId": 1722221,
+        "localeKey": "uzc",
+        "title": "Узунский район"
+      }
+    ]
+  },
+  {
+    "id": 1722223,
+    "regionType": "region",
+    "upperId": 1722,
+    "codes": [
+      {
+        "id": 136,
+        "regionId": 1722223,
+        "type": "cbu",
+        "code": "103"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1722223,
+        "localeKey": "ru",
+        "title": "Шерабадский район"
+      },
+      {
+        "regionId": 1722223,
+        "localeKey": "uz",
+        "title": "Шерабадский район"
+      },
+      {
+        "regionId": 1722223,
+        "localeKey": "uzc",
+        "title": "Шерабадский район"
+      }
+    ]
+  },
+  {
+    "id": 1722226,
+    "regionType": "region",
+    "upperId": 1722,
+    "codes": [
+      {
+        "id": 137,
+        "regionId": 1722226,
+        "type": "cbu",
+        "code": "104"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1722226,
+        "localeKey": "ru",
+        "title": "Шурчинский район"
+      },
+      {
+        "regionId": 1722226,
+        "localeKey": "uz",
+        "title": "Шурчинский район"
+      },
+      {
+        "regionId": 1722226,
+        "localeKey": "uzc",
+        "title": "Шурчинский район"
+      }
+    ]
+  },
+  {
+    "id": 1722401,
+    "regionType": "region",
+    "upperId": 1722,
+    "codes": [
+      {
+        "id": 138,
+        "regionId": 1722401,
+        "type": "cbu",
+        "code": "98"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1722401,
+        "localeKey": "ru",
+        "title": "город Термез"
+      },
+      {
+        "regionId": 1722401,
+        "localeKey": "uz",
+        "title": "город Термез"
+      },
+      {
+        "regionId": 1722401,
+        "localeKey": "uzc",
+        "title": "город Термез"
+      }
+    ]
+  },
+  {
+    "id": 1724206,
+    "regionType": "region",
+    "upperId": 1724,
+    "codes": [
+      {
+        "id": 140,
+        "regionId": 1724206,
+        "type": "cbu",
+        "code": "118"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1724206,
+        "localeKey": "ru",
+        "title": "Акалтынский район"
+      },
+      {
+        "regionId": 1724206,
+        "localeKey": "uz",
+        "title": "Акалтынский район"
+      },
+      {
+        "regionId": 1724206,
+        "localeKey": "uzc",
+        "title": "Акалтынский район"
+      }
+    ]
+  },
+  {
+    "id": 1724212,
+    "regionType": "region",
+    "upperId": 1724,
+    "codes": [
+      {
+        "id": 141,
+        "regionId": 1724212,
+        "type": "cbu",
+        "code": "119"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1724212,
+        "localeKey": "ru",
+        "title": "Баяутский район"
+      },
+      {
+        "regionId": 1724212,
+        "localeKey": "uz",
+        "title": "Баяутский район"
+      },
+      {
+        "regionId": 1724212,
+        "localeKey": "uzc",
+        "title": "Баяутский район"
+      }
+    ]
+  },
+  {
+    "id": 1724216,
+    "regionType": "region",
+    "upperId": 1724,
+    "codes": [
+      {
+        "id": 142,
+        "regionId": 1724216,
+        "type": "cbu",
+        "code": "123"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1724216,
+        "localeKey": "ru",
+        "title": "Сайхунабадский район"
+      },
+      {
+        "regionId": 1724216,
+        "localeKey": "uz",
+        "title": "Сайхунабадский район"
+      },
+      {
+        "regionId": 1724216,
+        "localeKey": "uzc",
+        "title": "Сайхунабадский район"
+      }
+    ]
+  },
+  {
+    "id": 1724220,
+    "regionType": "region",
+    "upperId": 1724,
+    "codes": [
+      {
+        "id": 143,
+        "regionId": 1724220,
+        "type": "cbu",
+        "code": "120"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1724220,
+        "localeKey": "ru",
+        "title": "Гулистанский район"
+      },
+      {
+        "regionId": 1724220,
+        "localeKey": "uz",
+        "title": "Гулистанский район"
+      },
+      {
+        "regionId": 1724220,
+        "localeKey": "uzc",
+        "title": "Гулистанский район"
+      }
+    ]
+  },
+  {
+    "id": 1724226,
+    "regionType": "region",
+    "upperId": 1724,
+    "codes": [
+      {
+        "id": 144,
+        "regionId": 1724226,
+        "type": "cbu",
+        "code": "121"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1724226,
+        "localeKey": "ru",
+        "title": "Сардобинский район"
+      },
+      {
+        "regionId": 1724226,
+        "localeKey": "uz",
+        "title": "Сардобинский район"
+      },
+      {
+        "regionId": 1724226,
+        "localeKey": "uzc",
+        "title": "Сардобинский район"
+      }
+    ]
+  },
+  {
+    "id": 1724228,
+    "regionType": "region",
+    "upperId": 1724,
+    "codes": [
+      {
+        "id": 145,
+        "regionId": 1724228,
+        "type": "cbu",
+        "code": "126"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1724228,
+        "localeKey": "ru",
+        "title": "Мирзаабадский район"
+      },
+      {
+        "regionId": 1724228,
+        "localeKey": "uz",
+        "title": "Мирзаабадский район"
+      },
+      {
+        "regionId": 1724228,
+        "localeKey": "uzc",
+        "title": "Мирзаабадский район"
+      }
+    ]
+  },
+  {
+    "id": 1724231,
+    "regionType": "region",
+    "upperId": 1724,
+    "codes": [
+      {
+        "id": 146,
+        "regionId": 1724231,
+        "type": "cbu",
+        "code": "122"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1724231,
+        "localeKey": "ru",
+        "title": "Сырдарьинский район"
+      },
+      {
+        "regionId": 1724231,
+        "localeKey": "uz",
+        "title": "Сырдарьинский район"
+      },
+      {
+        "regionId": 1724231,
+        "localeKey": "uzc",
+        "title": "Сырдарьинский район"
+      }
+    ]
+  },
+  {
+    "id": 1724235,
+    "regionType": "region",
+    "upperId": 1724,
+    "codes": [
+      {
+        "id": 147,
+        "regionId": 1724235,
+        "type": "cbu",
+        "code": "124"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1724235,
+        "localeKey": "ru",
+        "title": "Хавастский район"
+      },
+      {
+        "regionId": 1724235,
+        "localeKey": "uz",
+        "title": "Хавастский район"
+      },
+      {
+        "regionId": 1724235,
+        "localeKey": "uzc",
+        "title": "Хавастский район"
+      }
+    ]
+  },
+  {
+    "id": 1724401,
+    "regionType": "region",
+    "upperId": 1724,
+    "codes": [
+      {
+        "id": 148,
+        "regionId": 1724401,
+        "type": "cbu",
+        "code": "114"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1724401,
+        "localeKey": "ru",
+        "title": "город Гулистан"
+      },
+      {
+        "regionId": 1724401,
+        "localeKey": "uz",
+        "title": "город Гулистан"
+      },
+      {
+        "regionId": 1724401,
+        "localeKey": "uzc",
+        "title": "город Гулистан"
+      }
+    ]
+  },
+  {
+    "id": 1724410,
+    "regionType": "region",
+    "upperId": 1724,
+    "codes": [
+      {
+        "id": 149,
+        "regionId": 1724410,
+        "type": "cbu",
+        "code": "116"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1724410,
+        "localeKey": "ru",
+        "title": "город Ширин"
+      },
+      {
+        "regionId": 1724410,
+        "localeKey": "uz",
+        "title": "город Ширин"
+      },
+      {
+        "regionId": 1724410,
+        "localeKey": "uzc",
+        "title": "город Ширин"
+      }
+    ]
+  },
+  {
+    "id": 1724413,
+    "regionType": "region",
+    "upperId": 1724,
+    "codes": [
+      {
+        "id": 150,
+        "regionId": 1724413,
+        "type": "cbu",
+        "code": "115"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1724413,
+        "localeKey": "ru",
+        "title": "город Янгиер"
+      },
+      {
+        "regionId": 1724413,
+        "localeKey": "uz",
+        "title": "город Янгиер"
+      },
+      {
+        "regionId": 1724413,
+        "localeKey": "uzc",
+        "title": "город Янгиер"
+      }
+    ]
+  },
+  {
+    "id": 1726262,
+    "regionType": "region",
+    "upperId": 1726,
+    "codes": [
+      {
+        "id": 152,
+        "regionId": 1726262,
+        "type": "cbu",
+        "code": "198"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1726262,
+        "localeKey": "ru",
+        "title": "Учтепинский район"
+      },
+      {
+        "regionId": 1726262,
+        "localeKey": "uz",
+        "title": "Учтепинский район"
+      },
+      {
+        "regionId": 1726262,
+        "localeKey": "uzc",
+        "title": "Учтепинский район"
+      }
+    ]
+  },
+  {
+    "id": 1726264,
+    "regionType": "region",
+    "upperId": 1726,
+    "codes": [
+      {
+        "id": 153,
+        "regionId": 1726264,
+        "type": "cbu",
+        "code": "199"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1726264,
+        "localeKey": "ru",
+        "title": "Бектемирский район"
+      },
+      {
+        "regionId": 1726264,
+        "localeKey": "uz",
+        "title": "Бектемирский район"
+      },
+      {
+        "regionId": 1726264,
+        "localeKey": "uzc",
+        "title": "Бектемирский район"
+      }
+    ]
+  },
+  {
+    "id": 1726266,
+    "regionType": "region",
+    "upperId": 1726,
+    "codes": [
+      {
+        "id": 154,
+        "regionId": 1726266,
+        "type": "cbu",
+        "code": "200"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1726266,
+        "localeKey": "ru",
+        "title": "Юнусабадский район"
+      },
+      {
+        "regionId": 1726266,
+        "localeKey": "uz",
+        "title": "Юнусабадский район"
+      },
+      {
+        "regionId": 1726266,
+        "localeKey": "uzc",
+        "title": "Юнусабадский район"
+      }
+    ]
+  },
+  {
+    "id": 1726269,
+    "regionType": "region",
+    "upperId": 1726,
+    "codes": [
+      {
+        "id": 155,
+        "regionId": 1726269,
+        "type": "cbu",
+        "code": "201"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1726269,
+        "localeKey": "ru",
+        "title": "Мирзо Улугбекский район"
+      },
+      {
+        "regionId": 1726269,
+        "localeKey": "uz",
+        "title": "Мирзо Улугбекский район"
+      },
+      {
+        "regionId": 1726269,
+        "localeKey": "uzc",
+        "title": "Мирзо Улугбекский район"
+      }
+    ]
+  },
+  {
+    "id": 1726273,
+    "regionType": "region",
+    "upperId": 1726,
+    "codes": [
+      {
+        "id": 156,
+        "regionId": 1726273,
+        "type": "cbu",
+        "code": "202"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1726273,
+        "localeKey": "ru",
+        "title": "Мирабадский район"
+      },
+      {
+        "regionId": 1726273,
+        "localeKey": "uz",
+        "title": "Мирабадский район"
+      },
+      {
+        "regionId": 1726273,
+        "localeKey": "uzc",
+        "title": "Мирабадский район"
+      }
+    ]
+  },
+  {
+    "id": 1726277,
+    "regionType": "region",
+    "upperId": 1726,
+    "codes": [
+      {
+        "id": 157,
+        "regionId": 1726277,
+        "type": "cbu",
+        "code": "203"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1726277,
+        "localeKey": "ru",
+        "title": "Шайхантахурский район"
+      },
+      {
+        "regionId": 1726277,
+        "localeKey": "uz",
+        "title": "Шайхантахурский район"
+      },
+      {
+        "regionId": 1726277,
+        "localeKey": "uzc",
+        "title": "Шайхантахурский район"
+      }
+    ]
+  },
+  {
+    "id": 1726280,
+    "regionType": "region",
+    "upperId": 1726,
+    "codes": [
+      {
+        "id": 158,
+        "regionId": 1726280,
+        "type": "cbu",
+        "code": "204"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1726280,
+        "localeKey": "ru",
+        "title": "Алмазарский район"
+      },
+      {
+        "regionId": 1726280,
+        "localeKey": "uz",
+        "title": "Алмазарский район"
+      },
+      {
+        "regionId": 1726280,
+        "localeKey": "uzc",
+        "title": "Алмазарский район"
+      }
+    ]
+  },
+  {
+    "id": 1726283,
+    "regionType": "region",
+    "upperId": 1726,
+    "codes": [
+      {
+        "id": 159,
+        "regionId": 1726283,
+        "type": "cbu",
+        "code": "205"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1726283,
+        "localeKey": "ru",
+        "title": "Сергелийский район"
+      },
+      {
+        "regionId": 1726283,
+        "localeKey": "uz",
+        "title": "Сергелийский район"
+      },
+      {
+        "regionId": 1726283,
+        "localeKey": "uzc",
+        "title": "Сергелийский район"
+      }
+    ]
+  },
+  {
+    "id": 1726287,
+    "regionType": "region",
+    "upperId": 1726,
+    "codes": [
+      {
+        "id": 160,
+        "regionId": 1726287,
+        "type": "cbu",
+        "code": "206"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1726287,
+        "localeKey": "ru",
+        "title": "Яккасарайский район"
+      },
+      {
+        "regionId": 1726287,
+        "localeKey": "uz",
+        "title": "Яккасарайский район"
+      },
+      {
+        "regionId": 1726287,
+        "localeKey": "uzc",
+        "title": "Яккасарайский район"
+      }
+    ]
+  },
+  {
+    "id": 1726290,
+    "regionType": "region",
+    "upperId": 1726,
+    "codes": [
+      {
+        "id": 161,
+        "regionId": 1726290,
+        "type": "cbu",
+        "code": "207"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1726290,
+        "localeKey": "ru",
+        "title": "Яшнабадский район"
+      },
+      {
+        "regionId": 1726290,
+        "localeKey": "uz",
+        "title": "Яшнабадский район"
+      },
+      {
+        "regionId": 1726290,
+        "localeKey": "uzc",
+        "title": "Яшнабадский район"
+      }
+    ]
+  },
+  {
+    "id": 1726292,
+    "regionType": "region",
+    "upperId": 1726,
+    "codes": [
+      {
+        "id": 162,
+        "regionId": 1726292,
+        "type": "cbu",
+        "code": "227"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1726292,
+        "localeKey": "ru",
+        "title": "Янгихаётский район"
+      },
+      {
+        "regionId": 1726292,
+        "localeKey": "uz",
+        "title": "Янгихаётский район"
+      },
+      {
+        "regionId": 1726292,
+        "localeKey": "uzc",
+        "title": "Янгихаётский район"
+      }
+    ]
+  },
+  {
+    "id": 1726294,
+    "regionType": "region",
+    "upperId": 1726,
+    "codes": [
+      {
+        "id": 163,
+        "regionId": 1726294,
+        "type": "cbu",
+        "code": "208"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1726294,
+        "localeKey": "ru",
+        "title": "Чиланзарский район"
+      },
+      {
+        "regionId": 1726294,
+        "localeKey": "uz",
+        "title": "Чиланзарский район"
+      },
+      {
+        "regionId": 1726294,
+        "localeKey": "uzc",
+        "title": "Чиланзарский район"
+      }
+    ]
+  },
+  {
+    "id": 1727206,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 165,
+        "regionId": 1727206,
+        "type": "cbu",
+        "code": "132"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727206,
+        "localeKey": "ru",
+        "title": "Аккурганский район"
+      },
+      {
+        "regionId": 1727206,
+        "localeKey": "uz",
+        "title": "Аккурганский район"
+      },
+      {
+        "regionId": 1727206,
+        "localeKey": "uzc",
+        "title": "Аккурганский район"
+      }
+    ]
+  },
+  {
+    "id": 1727212,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 166,
+        "regionId": 1727212,
+        "type": "cbu",
+        "code": "133"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727212,
+        "localeKey": "ru",
+        "title": "Ахангаранский район"
+      },
+      {
+        "regionId": 1727212,
+        "localeKey": "uz",
+        "title": "Ахангаранский район"
+      },
+      {
+        "regionId": 1727212,
+        "localeKey": "uzc",
+        "title": "Ахангаранский район"
+      }
+    ]
+  },
+  {
+    "id": 1727220,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 167,
+        "regionId": 1727220,
+        "type": "cbu",
+        "code": "137"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727220,
+        "localeKey": "ru",
+        "title": "Бекабадский район"
+      },
+      {
+        "regionId": 1727220,
+        "localeKey": "uz",
+        "title": "Бекабадский район"
+      },
+      {
+        "regionId": 1727220,
+        "localeKey": "uzc",
+        "title": "Бекабадский район"
+      }
+    ]
+  },
+  {
+    "id": 1727224,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 168,
+        "regionId": 1727224,
+        "type": "cbu",
+        "code": "134"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727224,
+        "localeKey": "ru",
+        "title": "Бостанлыкский район"
+      },
+      {
+        "regionId": 1727224,
+        "localeKey": "uz",
+        "title": "Бостанлыкский район"
+      },
+      {
+        "regionId": 1727224,
+        "localeKey": "uzc",
+        "title": "Бостанлыкский район"
+      }
+    ]
+  },
+  {
+    "id": 1727228,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 169,
+        "regionId": 1727228,
+        "type": "cbu",
+        "code": "135"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727228,
+        "localeKey": "ru",
+        "title": "Букинский район"
+      },
+      {
+        "regionId": 1727228,
+        "localeKey": "uz",
+        "title": "Букинский район"
+      },
+      {
+        "regionId": 1727228,
+        "localeKey": "uzc",
+        "title": "Букинский район"
+      }
+    ]
+  },
+  {
+    "id": 1727233,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 170,
+        "regionId": 1727233,
+        "type": "cbu",
+        "code": "140"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727233,
+        "localeKey": "ru",
+        "title": "Куйичирчикский район"
+      },
+      {
+        "regionId": 1727233,
+        "localeKey": "uz",
+        "title": "Куйичирчикский район"
+      },
+      {
+        "regionId": 1727233,
+        "localeKey": "uzc",
+        "title": "Куйичирчикский район"
+      }
+    ]
+  },
+  {
+    "id": 1727237,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 171,
+        "regionId": 1727237,
+        "type": "cbu",
+        "code": "136"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727237,
+        "localeKey": "ru",
+        "title": "Зангиатинский район"
+      },
+      {
+        "regionId": 1727237,
+        "localeKey": "uz",
+        "title": "Зангиатинский район"
+      },
+      {
+        "regionId": 1727237,
+        "localeKey": "uzc",
+        "title": "Зангиатинский район"
+      }
+    ]
+  },
+  {
+    "id": 1727239,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 172,
+        "regionId": 1727239,
+        "type": "cbu",
+        "code": "145"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727239,
+        "localeKey": "ru",
+        "title": "Юкоричирчикский район"
+      },
+      {
+        "regionId": 1727239,
+        "localeKey": "uz",
+        "title": "Юкоричирчикский район"
+      },
+      {
+        "regionId": 1727239,
+        "localeKey": "uzc",
+        "title": "Юкоричирчикский район"
+      }
+    ]
+  },
+  {
+    "id": 1727248,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 173,
+        "regionId": 1727248,
+        "type": "cbu",
+        "code": "138"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727248,
+        "localeKey": "ru",
+        "title": "Кибрайский район"
+      },
+      {
+        "regionId": 1727248,
+        "localeKey": "uz",
+        "title": "Кибрайский район"
+      },
+      {
+        "regionId": 1727248,
+        "localeKey": "uzc",
+        "title": "Кибрайский район"
+      }
+    ]
+  },
+  {
+    "id": 1727249,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 174,
+        "regionId": 1727249,
+        "type": "cbu",
+        "code": "139"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727249,
+        "localeKey": "ru",
+        "title": "Паркентский район"
+      },
+      {
+        "regionId": 1727249,
+        "localeKey": "uz",
+        "title": "Паркентский район"
+      },
+      {
+        "regionId": 1727249,
+        "localeKey": "uzc",
+        "title": "Паркентский район"
+      }
+    ]
+  },
+  {
+    "id": 1727250,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 175,
+        "regionId": 1727250,
+        "type": "cbu",
+        "code": "141"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727250,
+        "localeKey": "ru",
+        "title": "Пскентский район"
+      },
+      {
+        "regionId": 1727250,
+        "localeKey": "uz",
+        "title": "Пскентский район"
+      },
+      {
+        "regionId": 1727250,
+        "localeKey": "uzc",
+        "title": "Пскентский район"
+      }
+    ]
+  },
+  {
+    "id": 1727253,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 176,
+        "regionId": 1727253,
+        "type": "cbu",
+        "code": "143"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727253,
+        "localeKey": "ru",
+        "title": "Уртачирчикский район"
+      },
+      {
+        "regionId": 1727253,
+        "localeKey": "uz",
+        "title": "Уртачирчикский район"
+      },
+      {
+        "regionId": 1727253,
+        "localeKey": "uzc",
+        "title": "Уртачирчикский район"
+      }
+    ]
+  },
+  {
+    "id": 1727256,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 177,
+        "regionId": 1727256,
+        "type": "cbu",
+        "code": "144"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727256,
+        "localeKey": "ru",
+        "title": "Чиназский район"
+      },
+      {
+        "regionId": 1727256,
+        "localeKey": "uz",
+        "title": "Чиназский район"
+      },
+      {
+        "regionId": 1727256,
+        "localeKey": "uzc",
+        "title": "Чиназский район"
+      }
+    ]
+  },
+  {
+    "id": 1727259,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 178,
+        "regionId": 1727259,
+        "type": "cbu",
+        "code": "146"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727259,
+        "localeKey": "ru",
+        "title": "Янгиюльский район"
+      },
+      {
+        "regionId": 1727259,
+        "localeKey": "uz",
+        "title": "Янгиюльский район"
+      },
+      {
+        "regionId": 1727259,
+        "localeKey": "uzc",
+        "title": "Янгиюльский район"
+      }
+    ]
+  },
+  {
+    "id": 1727265,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 179,
+        "regionId": 1727265,
+        "type": "cbu",
+        "code": "142"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727265,
+        "localeKey": "ru",
+        "title": "Ташкентский район"
+      },
+      {
+        "regionId": 1727265,
+        "localeKey": "uz",
+        "title": "Ташкентский район"
+      },
+      {
+        "regionId": 1727265,
+        "localeKey": "uzc",
+        "title": "Ташкентский район"
+      }
+    ]
+  },
+  {
+    "id": 1727401,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 180,
+        "regionId": 1727401,
+        "type": "cbu",
+        "code": "223"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727401,
+        "localeKey": "ru",
+        "title": "город Нурафшон"
+      },
+      {
+        "regionId": 1727401,
+        "localeKey": "uz",
+        "title": "город Нурафшон"
+      },
+      {
+        "regionId": 1727401,
+        "localeKey": "uzc",
+        "title": "город Нурафшон"
+      }
+    ]
+  },
+  {
+    "id": 1727404,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 181,
+        "regionId": 1727404,
+        "type": "cbu",
+        "code": "128"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727404,
+        "localeKey": "ru",
+        "title": "город Алмалык"
+      },
+      {
+        "regionId": 1727404,
+        "localeKey": "uz",
+        "title": "город Алмалык"
+      },
+      {
+        "regionId": 1727404,
+        "localeKey": "uzc",
+        "title": "город Алмалык"
+      }
+    ]
+  },
+  {
+    "id": 1727407,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 182,
+        "regionId": 1727407,
+        "type": "cbu",
+        "code": "129"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727407,
+        "localeKey": "ru",
+        "title": "город Ангрен"
+      },
+      {
+        "regionId": 1727407,
+        "localeKey": "uz",
+        "title": "город Ангрен"
+      },
+      {
+        "regionId": 1727407,
+        "localeKey": "uzc",
+        "title": "город Ангрен"
+      }
+    ]
+  },
+  {
+    "id": 1727413,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 183,
+        "regionId": 1727413,
+        "type": "cbu",
+        "code": "130"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727413,
+        "localeKey": "ru",
+        "title": "город Бекабад"
+      },
+      {
+        "regionId": 1727413,
+        "localeKey": "uz",
+        "title": "город Бекабад"
+      },
+      {
+        "regionId": 1727413,
+        "localeKey": "uzc",
+        "title": "город Бекабад"
+      }
+    ]
+  },
+  {
+    "id": 1727415,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 184,
+        "regionId": 1727415,
+        "type": "cbu",
+        "code": "127"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727415,
+        "localeKey": "ru",
+        "title": "город Ахангаран"
+      },
+      {
+        "regionId": 1727415,
+        "localeKey": "uz",
+        "title": "город Ахангаран"
+      },
+      {
+        "regionId": 1727415,
+        "localeKey": "uzc",
+        "title": "город Ахангаран"
+      }
+    ]
+  },
+  {
+    "id": 1727419,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 185,
+        "regionId": 1727419,
+        "type": "cbu",
+        "code": "131"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727419,
+        "localeKey": "ru",
+        "title": "город Чирчик"
+      },
+      {
+        "regionId": 1727419,
+        "localeKey": "uz",
+        "title": "город Чирчик"
+      },
+      {
+        "regionId": 1727419,
+        "localeKey": "uzc",
+        "title": "город Чирчик"
+      }
+    ]
+  },
+  {
+    "id": 1727424,
+    "regionType": "region",
+    "upperId": 1727,
+    "codes": [
+      {
+        "id": 186,
+        "regionId": 1727424,
+        "type": "cbu",
+        "code": "147"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1727424,
+        "localeKey": "ru",
+        "title": "город Янгиюль"
+      },
+      {
+        "regionId": 1727424,
+        "localeKey": "uz",
+        "title": "город Янгиюль"
+      },
+      {
+        "regionId": 1727424,
+        "localeKey": "uzc",
+        "title": "город Янгиюль"
+      }
+    ]
+  },
+  {
+    "id": 1730203,
+    "regionType": "region",
+    "upperId": 1730,
+    "codes": [
+      {
+        "id": 188,
+        "regionId": 1730203,
+        "type": "cbu",
+        "code": "158"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1730203,
+        "localeKey": "ru",
+        "title": "Алтыарыкский район"
+      },
+      {
+        "regionId": 1730203,
+        "localeKey": "uz",
+        "title": "Алтыарыкский район"
+      },
+      {
+        "regionId": 1730203,
+        "localeKey": "uzc",
+        "title": "Алтыарыкский район"
+      }
+    ]
+  },
+  {
+    "id": 1730206,
+    "regionType": "region",
+    "upperId": 1730,
+    "codes": [
+      {
+        "id": 189,
+        "regionId": 1730206,
+        "type": "cbu",
+        "code": "159"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1730206,
+        "localeKey": "ru",
+        "title": "Куштепинский район"
+      },
+      {
+        "regionId": 1730206,
+        "localeKey": "uz",
+        "title": "Куштепинский район"
+      },
+      {
+        "regionId": 1730206,
+        "localeKey": "uzc",
+        "title": "Куштепинский район"
+      }
+    ]
+  },
+  {
+    "id": 1730209,
+    "regionType": "region",
+    "upperId": 1730,
+    "codes": [
+      {
+        "id": 190,
+        "regionId": 1730209,
+        "type": "cbu",
+        "code": "153"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1730209,
+        "localeKey": "ru",
+        "title": "Багдадский район"
+      },
+      {
+        "regionId": 1730209,
+        "localeKey": "uz",
+        "title": "Багдадский район"
+      },
+      {
+        "regionId": 1730209,
+        "localeKey": "uzc",
+        "title": "Багдадский район"
+      }
+    ]
+  },
+  {
+    "id": 1730212,
+    "regionType": "region",
+    "upperId": 1730,
+    "codes": [
+      {
+        "id": 191,
+        "regionId": 1730212,
+        "type": "cbu",
+        "code": "154"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1730212,
+        "localeKey": "ru",
+        "title": "Бувайдинский район"
+      },
+      {
+        "regionId": 1730212,
+        "localeKey": "uz",
+        "title": "Бувайдинский район"
+      },
+      {
+        "regionId": 1730212,
+        "localeKey": "uzc",
+        "title": "Бувайдинский район"
+      }
+    ]
+  },
+  {
+    "id": 1730215,
+    "regionType": "region",
+    "upperId": 1730,
+    "codes": [
+      {
+        "id": 192,
+        "regionId": 1730215,
+        "type": "cbu",
+        "code": "152"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1730215,
+        "localeKey": "ru",
+        "title": "Бешарыкский район"
+      },
+      {
+        "regionId": 1730215,
+        "localeKey": "uz",
+        "title": "Бешарыкский район"
+      },
+      {
+        "regionId": 1730215,
+        "localeKey": "uzc",
+        "title": "Бешарыкский район"
+      }
+    ]
+  },
+  {
+    "id": 1730218,
+    "regionType": "region",
+    "upperId": 1730,
+    "codes": [
+      {
+        "id": 193,
+        "regionId": 1730218,
+        "type": "cbu",
+        "code": "157"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1730218,
+        "localeKey": "ru",
+        "title": "Кувинский район"
+      },
+      {
+        "regionId": 1730218,
+        "localeKey": "uz",
+        "title": "Кувинский район"
+      },
+      {
+        "regionId": 1730218,
+        "localeKey": "uzc",
+        "title": "Кувинский район"
+      }
+    ]
+  },
+  {
+    "id": 1730221,
+    "regionType": "region",
+    "upperId": 1730,
+    "codes": [
+      {
+        "id": 194,
+        "regionId": 1730221,
+        "type": "cbu",
+        "code": "164"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1730221,
+        "localeKey": "ru",
+        "title": "Учкуприкский район"
+      },
+      {
+        "regionId": 1730221,
+        "localeKey": "uz",
+        "title": "Учкуприкский район"
+      },
+      {
+        "regionId": 1730221,
+        "localeKey": "uzc",
+        "title": "Учкуприкский район"
+      }
+    ]
+  },
+  {
+    "id": 1730224,
+    "regionType": "region",
+    "upperId": 1730,
+    "codes": [
+      {
+        "id": 195,
+        "regionId": 1730224,
+        "type": "cbu",
+        "code": "160"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1730224,
+        "localeKey": "ru",
+        "title": "Риштанский район"
+      },
+      {
+        "regionId": 1730224,
+        "localeKey": "uz",
+        "title": "Риштанский район"
+      },
+      {
+        "regionId": 1730224,
+        "localeKey": "uzc",
+        "title": "Риштанский район"
+      }
+    ]
+  },
+  {
+    "id": 1730226,
+    "regionType": "region",
+    "upperId": 1730,
+    "codes": [
+      {
+        "id": 196,
+        "regionId": 1730226,
+        "type": "cbu",
+        "code": "161"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1730226,
+        "localeKey": "ru",
+        "title": "Сохский район"
+      },
+      {
+        "regionId": 1730226,
+        "localeKey": "uz",
+        "title": "Сохский район"
+      },
+      {
+        "regionId": 1730226,
+        "localeKey": "uzc",
+        "title": "Сохский район"
+      }
+    ]
+  },
+  {
+    "id": 1730227,
+    "regionType": "region",
+    "upperId": 1730,
+    "codes": [
+      {
+        "id": 197,
+        "regionId": 1730227,
+        "type": "cbu",
+        "code": "162"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1730227,
+        "localeKey": "ru",
+        "title": "Ташлакский район"
+      },
+      {
+        "regionId": 1730227,
+        "localeKey": "uz",
+        "title": "Ташлакский район"
+      },
+      {
+        "regionId": 1730227,
+        "localeKey": "uzc",
+        "title": "Ташлакский район"
+      }
+    ]
+  },
+  {
+    "id": 1730230,
+    "regionType": "region",
+    "upperId": 1730,
+    "codes": [
+      {
+        "id": 198,
+        "regionId": 1730230,
+        "type": "cbu",
+        "code": "163"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1730230,
+        "localeKey": "ru",
+        "title": "Узбекистанский район"
+      },
+      {
+        "regionId": 1730230,
+        "localeKey": "uz",
+        "title": "Узбекистанский район"
+      },
+      {
+        "regionId": 1730230,
+        "localeKey": "uzc",
+        "title": "Узбекистанский район"
+      }
+    ]
+  },
+  {
+    "id": 1730233,
+    "regionType": "region",
+    "upperId": 1730,
+    "codes": [
+      {
+        "id": 199,
+        "regionId": 1730233,
+        "type": "cbu",
+        "code": "165"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1730233,
+        "localeKey": "ru",
+        "title": "Ферганский район"
+      },
+      {
+        "regionId": 1730233,
+        "localeKey": "uz",
+        "title": "Ферганский район"
+      },
+      {
+        "regionId": 1730233,
+        "localeKey": "uzc",
+        "title": "Ферганский район"
+      }
+    ]
+  },
+  {
+    "id": 1730236,
+    "regionType": "region",
+    "upperId": 1730,
+    "codes": [
+      {
+        "id": 200,
+        "regionId": 1730236,
+        "type": "cbu",
+        "code": "155"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1730236,
+        "localeKey": "ru",
+        "title": "Дангаринский район"
+      },
+      {
+        "regionId": 1730236,
+        "localeKey": "uz",
+        "title": "Дангаринский район"
+      },
+      {
+        "regionId": 1730236,
+        "localeKey": "uzc",
+        "title": "Дангаринский район"
+      }
+    ]
+  },
+  {
+    "id": 1730238,
+    "regionType": "region",
+    "upperId": 1730,
+    "codes": [
+      {
+        "id": 201,
+        "regionId": 1730238,
+        "type": "cbu",
+        "code": "166"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1730238,
+        "localeKey": "ru",
+        "title": "Фуркатский район"
+      },
+      {
+        "regionId": 1730238,
+        "localeKey": "uz",
+        "title": "Фуркатский район"
+      },
+      {
+        "regionId": 1730238,
+        "localeKey": "uzc",
+        "title": "Фуркатский район"
+      }
+    ]
+  },
+  {
+    "id": 1730242,
+    "regionType": "region",
+    "upperId": 1730,
+    "codes": [
+      {
+        "id": 202,
+        "regionId": 1730242,
+        "type": "cbu",
+        "code": "156"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1730242,
+        "localeKey": "ru",
+        "title": "Язъяванский район"
+      },
+      {
+        "regionId": 1730242,
+        "localeKey": "uz",
+        "title": "Язъяванский район"
+      },
+      {
+        "regionId": 1730242,
+        "localeKey": "uzc",
+        "title": "Язъяванский район"
+      }
+    ]
+  },
+  {
+    "id": 1730401,
+    "regionType": "region",
+    "upperId": 1730,
+    "codes": [
+      {
+        "id": 203,
+        "regionId": 1730401,
+        "type": "cbu",
+        "code": "150"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1730401,
+        "localeKey": "ru",
+        "title": "город Фергана"
+      },
+      {
+        "regionId": 1730401,
+        "localeKey": "uz",
+        "title": "город Фергана"
+      },
+      {
+        "regionId": 1730401,
+        "localeKey": "uzc",
+        "title": "город Фергана"
+      }
+    ]
+  },
+  {
+    "id": 1730405,
+    "regionType": "region",
+    "upperId": 1730,
+    "codes": [
+      {
+        "id": 204,
+        "regionId": 1730405,
+        "type": "cbu",
+        "code": "148"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1730405,
+        "localeKey": "ru",
+        "title": "город Коканд"
+      },
+      {
+        "regionId": 1730405,
+        "localeKey": "uz",
+        "title": "город Коканд"
+      },
+      {
+        "regionId": 1730405,
+        "localeKey": "uzc",
+        "title": "город Коканд"
+      }
+    ]
+  },
+  {
+    "id": 1730408,
+    "regionType": "region",
+    "upperId": 1730,
+    "codes": [
+      {
+        "id": 205,
+        "regionId": 1730408,
+        "type": "cbu",
+        "code": "151"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1730408,
+        "localeKey": "ru",
+        "title": "город Кувасай"
+      },
+      {
+        "regionId": 1730408,
+        "localeKey": "uz",
+        "title": "город Кувасай"
+      },
+      {
+        "regionId": 1730408,
+        "localeKey": "uzc",
+        "title": "город Кувасай"
+      }
+    ]
+  },
+  {
+    "id": 1730412,
+    "regionType": "region",
+    "upperId": 1730,
+    "codes": [
+      {
+        "id": 206,
+        "regionId": 1730412,
+        "type": "cbu",
+        "code": "149"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1730412,
+        "localeKey": "ru",
+        "title": "город Маргилан"
+      },
+      {
+        "regionId": 1730412,
+        "localeKey": "uz",
+        "title": "город Маргилан"
+      },
+      {
+        "regionId": 1730412,
+        "localeKey": "uzc",
+        "title": "город Маргилан"
+      }
+    ]
+  },
+  {
+    "id": 1733204,
+    "regionType": "region",
+    "upperId": 1733,
+    "codes": [
+      {
+        "id": 208,
+        "regionId": 1733204,
+        "type": "cbu",
+        "code": "172"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1733204,
+        "localeKey": "ru",
+        "title": "Багатский район"
+      },
+      {
+        "regionId": 1733204,
+        "localeKey": "uz",
+        "title": "Багатский район"
+      },
+      {
+        "regionId": 1733204,
+        "localeKey": "uzc",
+        "title": "Багатский район"
+      }
+    ]
+  },
+  {
+    "id": 1733208,
+    "regionType": "region",
+    "upperId": 1733,
+    "codes": [
+      {
+        "id": 209,
+        "regionId": 1733208,
+        "type": "cbu",
+        "code": "171"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1733208,
+        "localeKey": "ru",
+        "title": "Гурленский район"
+      },
+      {
+        "regionId": 1733208,
+        "localeKey": "uz",
+        "title": "Гурленский район"
+      },
+      {
+        "regionId": 1733208,
+        "localeKey": "uzc",
+        "title": "Гурленский район"
+      }
+    ]
+  },
+  {
+    "id": 1733212,
+    "regionType": "region",
+    "upperId": 1733,
+    "codes": [
+      {
+        "id": 210,
+        "regionId": 1733212,
+        "type": "cbu",
+        "code": "176"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1733212,
+        "localeKey": "ru",
+        "title": "Кошкупырский район"
+      },
+      {
+        "regionId": 1733212,
+        "localeKey": "uz",
+        "title": "Кошкупырский район"
+      },
+      {
+        "regionId": 1733212,
+        "localeKey": "uzc",
+        "title": "Кошкупырский район"
+      }
+    ]
+  },
+  {
+    "id": 1733217,
+    "regionType": "region",
+    "upperId": 1733,
+    "codes": [
+      {
+        "id": 211,
+        "regionId": 1733217,
+        "type": "cbu",
+        "code": "178"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1733217,
+        "localeKey": "ru",
+        "title": "Ургенчский район"
+      },
+      {
+        "regionId": 1733217,
+        "localeKey": "uz",
+        "title": "Ургенчский район"
+      },
+      {
+        "regionId": 1733217,
+        "localeKey": "uzc",
+        "title": "Ургенчский район"
+      }
+    ]
+  },
+  {
+    "id": 1733220,
+    "regionType": "region",
+    "upperId": 1733,
+    "codes": [
+      {
+        "id": 212,
+        "regionId": 1733220,
+        "type": "cbu",
+        "code": "173"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1733220,
+        "localeKey": "ru",
+        "title": "Хазараспский район"
+      },
+      {
+        "regionId": 1733220,
+        "localeKey": "uz",
+        "title": "Хазараспский район"
+      },
+      {
+        "regionId": 1733220,
+        "localeKey": "uzc",
+        "title": "Хазараспский район"
+      }
+    ]
+  },
+  {
+    "id": 1733221,
+    "regionType": "region",
+    "upperId": 1733,
+    "codes": [
+      {
+        "id": 213,
+        "regionId": 1733221,
+        "type": "cbu",
+        "code": "226"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1733221,
+        "localeKey": "ru",
+        "title": "Тупроккалинский район"
+      },
+      {
+        "regionId": 1733221,
+        "localeKey": "uz",
+        "title": "Тупроккалинский район"
+      },
+      {
+        "regionId": 1733221,
+        "localeKey": "uzc",
+        "title": "Тупроккалинский район"
+      }
+    ]
+  },
+  {
+    "id": 1733223,
+    "regionType": "region",
+    "upperId": 1733,
+    "codes": [
+      {
+        "id": 214,
+        "regionId": 1733223,
+        "type": "cbu",
+        "code": "174"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1733223,
+        "localeKey": "ru",
+        "title": "Ханкинский район"
+      },
+      {
+        "regionId": 1733223,
+        "localeKey": "uz",
+        "title": "Ханкинский район"
+      },
+      {
+        "regionId": 1733223,
+        "localeKey": "uzc",
+        "title": "Ханкинский район"
+      }
+    ]
+  },
+  {
+    "id": 1733226,
+    "regionType": "region",
+    "upperId": 1733,
+    "codes": [
+      {
+        "id": 215,
+        "regionId": 1733226,
+        "type": "cbu",
+        "code": "212"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1733226,
+        "localeKey": "ru",
+        "title": "Хивинский район"
+      },
+      {
+        "regionId": 1733226,
+        "localeKey": "uz",
+        "title": "Хивинский район"
+      },
+      {
+        "regionId": 1733226,
+        "localeKey": "uzc",
+        "title": "Хивинский район"
+      }
+    ]
+  },
+  {
+    "id": 1733230,
+    "regionType": "region",
+    "upperId": 1733,
+    "codes": [
+      {
+        "id": 216,
+        "regionId": 1733230,
+        "type": "cbu",
+        "code": "177"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1733230,
+        "localeKey": "ru",
+        "title": "Шаватский район"
+      },
+      {
+        "regionId": 1733230,
+        "localeKey": "uz",
+        "title": "Шаватский район"
+      },
+      {
+        "regionId": 1733230,
+        "localeKey": "uzc",
+        "title": "Шаватский район"
+      }
+    ]
+  },
+  {
+    "id": 1733233,
+    "regionType": "region",
+    "upperId": 1733,
+    "codes": [
+      {
+        "id": 217,
+        "regionId": 1733233,
+        "type": "cbu",
+        "code": "175"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1733233,
+        "localeKey": "ru",
+        "title": "Янгиарыкский район"
+      },
+      {
+        "regionId": 1733233,
+        "localeKey": "uz",
+        "title": "Янгиарыкский район"
+      },
+      {
+        "regionId": 1733233,
+        "localeKey": "uzc",
+        "title": "Янгиарыкский район"
+      }
+    ]
+  },
+  {
+    "id": 1733236,
+    "regionType": "region",
+    "upperId": 1733,
+    "codes": [
+      {
+        "id": 218,
+        "regionId": 1733236,
+        "type": "cbu",
+        "code": "179"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1733236,
+        "localeKey": "ru",
+        "title": "Янгибазарский район"
+      },
+      {
+        "regionId": 1733236,
+        "localeKey": "uz",
+        "title": "Янгибазарский район"
+      },
+      {
+        "regionId": 1733236,
+        "localeKey": "uzc",
+        "title": "Янгибазарский район"
+      }
+    ]
+  },
+  {
+    "id": 1733401,
+    "regionType": "region",
+    "upperId": 1733,
+    "codes": [
+      {
+        "id": 219,
+        "regionId": 1733401,
+        "type": "cbu",
+        "code": "168"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1733401,
+        "localeKey": "ru",
+        "title": "город Ургенч"
+      },
+      {
+        "regionId": 1733401,
+        "localeKey": "uz",
+        "title": "город Ургенч"
+      },
+      {
+        "regionId": 1733401,
+        "localeKey": "uzc",
+        "title": "город Ургенч"
+      }
+    ]
+  },
+  {
+    "id": 1733406,
+    "regionType": "region",
+    "upperId": 1733,
+    "codes": [
+      {
+        "id": 220,
+        "regionId": 1733406,
+        "type": "cbu",
+        "code": "169"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1733406,
+        "localeKey": "ru",
+        "title": "город Хива"
+      },
+      {
+        "regionId": 1733406,
+        "localeKey": "uz",
+        "title": "город Хива"
+      },
+      {
+        "regionId": 1733406,
+        "localeKey": "uzc",
+        "title": "город Хива"
+      }
+    ]
+  },
+  {
+    "id": 1735204,
+    "regionType": "region",
+    "upperId": 1735,
+    "codes": [
+      {
+        "id": 5,
+        "regionId": 1735204,
+        "type": "cbu",
+        "code": "209"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1735204,
+        "localeKey": "ru",
+        "title": "Амударьинский район"
+      },
+      {
+        "regionId": 1735204,
+        "localeKey": "uz",
+        "title": "Амударьинский район"
+      },
+      {
+        "regionId": 1735204,
+        "localeKey": "uzc",
+        "title": "Амударьинский район"
+      }
+    ]
+  },
+  {
+    "id": 1735207,
+    "regionType": "region",
+    "upperId": 1735,
+    "codes": [
+      {
+        "id": 6,
+        "regionId": 1735207,
+        "type": "cbu",
+        "code": "191"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1735207,
+        "localeKey": "ru",
+        "title": "Берунийский район"
+      },
+      {
+        "regionId": 1735207,
+        "localeKey": "uz",
+        "title": "Берунийский район"
+      },
+      {
+        "regionId": 1735207,
+        "localeKey": "uzc",
+        "title": "Берунийский район"
+      }
+    ]
+  },
+  {
+    "id": 1735209,
+    "regionType": "region",
+    "upperId": 1735,
+    "codes": [
+      {
+        "id": 7,
+        "regionId": 1735209,
+        "type": "cbu",
+        "code": "225"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1735209,
+        "localeKey": "ru",
+        "title": "Бузатауский район"
+      },
+      {
+        "regionId": 1735209,
+        "localeKey": "uz",
+        "title": "Бузатауский район"
+      },
+      {
+        "regionId": 1735209,
+        "localeKey": "uzc",
+        "title": "Бузатауский район"
+      }
+    ]
+  },
+  {
+    "id": 1735211,
+    "regionType": "region",
+    "upperId": 1735,
+    "codes": [
+      {
+        "id": 8,
+        "regionId": 1735211,
+        "type": "cbu",
+        "code": "193"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1735211,
+        "localeKey": "ru",
+        "title": "Караузякский район"
+      },
+      {
+        "regionId": 1735211,
+        "localeKey": "uz",
+        "title": "Караузякский район"
+      },
+      {
+        "regionId": 1735211,
+        "localeKey": "uzc",
+        "title": "Караузякский район"
+      }
+    ]
+  },
+  {
+    "id": 1735212,
+    "regionType": "region",
+    "upperId": 1735,
+    "codes": [
+      {
+        "id": 9,
+        "regionId": 1735212,
+        "type": "cbu",
+        "code": "182"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1735212,
+        "localeKey": "ru",
+        "title": "Кегейлийский район"
+      },
+      {
+        "regionId": 1735212,
+        "localeKey": "uz",
+        "title": "Кегейлийский район"
+      },
+      {
+        "regionId": 1735212,
+        "localeKey": "uzc",
+        "title": "Кегейлийский район"
+      }
+    ]
+  },
+  {
+    "id": 1735215,
+    "regionType": "region",
+    "upperId": 1735,
+    "codes": [
+      {
+        "id": 10,
+        "regionId": 1735215,
+        "type": "cbu",
+        "code": "184"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1735215,
+        "localeKey": "ru",
+        "title": "Кунградский район"
+      },
+      {
+        "regionId": 1735215,
+        "localeKey": "uz",
+        "title": "Кунградский район"
+      },
+      {
+        "regionId": 1735215,
+        "localeKey": "uzc",
+        "title": "Кунградский район"
+      }
+    ]
+  },
+  {
+    "id": 1735218,
+    "regionType": "region",
+    "upperId": 1735,
+    "codes": [
+      {
+        "id": 11,
+        "regionId": 1735218,
+        "type": "cbu",
+        "code": "192"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1735218,
+        "localeKey": "ru",
+        "title": "Канлыкульский район"
+      },
+      {
+        "regionId": 1735218,
+        "localeKey": "uz",
+        "title": "Канлыкульский район"
+      },
+      {
+        "regionId": 1735218,
+        "localeKey": "uzc",
+        "title": "Канлыкульский район"
+      }
+    ]
+  },
+  {
+    "id": 1735222,
+    "regionType": "region",
+    "upperId": 1735,
+    "codes": [
+      {
+        "id": 12,
+        "regionId": 1735222,
+        "type": "cbu",
+        "code": "185"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1735222,
+        "localeKey": "ru",
+        "title": "Муйнакский район"
+      },
+      {
+        "regionId": 1735222,
+        "localeKey": "uz",
+        "title": "Муйнакский район"
+      },
+      {
+        "regionId": 1735222,
+        "localeKey": "uzc",
+        "title": "Муйнакский район"
+      }
+    ]
+  },
+  {
+    "id": 1735225,
+    "regionType": "region",
+    "upperId": 1735,
+    "codes": [
+      {
+        "id": 13,
+        "regionId": 1735225,
+        "type": "cbu",
+        "code": "216"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1735225,
+        "localeKey": "ru",
+        "title": "Нукусский район"
+      },
+      {
+        "regionId": 1735225,
+        "localeKey": "uz",
+        "title": "Нукусский район"
+      },
+      {
+        "regionId": 1735225,
+        "localeKey": "uzc",
+        "title": "Нукусский район"
+      }
+    ]
+  },
+  {
+    "id": 1735228,
+    "regionType": "region",
+    "upperId": 1735,
+    "codes": [
+      {
+        "id": 14,
+        "regionId": 1735228,
+        "type": "cbu",
+        "code": "222"
+      },
+      {
+        "id": 221,
+        "regionId": 1735228,
+        "type": "cbu",
+        "code": "181"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1735228,
+        "localeKey": "ru",
+        "title": "Тахиаташский район"
+      },
+      {
+        "regionId": 1735228,
+        "localeKey": "uz",
+        "title": "Тахиаташский район"
+      },
+      {
+        "regionId": 1735228,
+        "localeKey": "uzc",
+        "title": "Тахиаташский район"
+      }
+    ]
+  },
+  {
+    "id": 1735230,
+    "regionType": "region",
+    "upperId": 1735,
+    "codes": [
+      {
+        "id": 15,
+        "regionId": 1735230,
+        "type": "cbu",
+        "code": "187"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1735230,
+        "localeKey": "ru",
+        "title": "Тахтакупырский район"
+      },
+      {
+        "regionId": 1735230,
+        "localeKey": "uz",
+        "title": "Тахтакупырский район"
+      },
+      {
+        "regionId": 1735230,
+        "localeKey": "uzc",
+        "title": "Тахтакупырский район"
+      }
+    ]
+  },
+  {
+    "id": 1735233,
+    "regionType": "region",
+    "upperId": 1735,
+    "codes": [
+      {
+        "id": 16,
+        "regionId": 1735233,
+        "type": "cbu",
+        "code": "188"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1735233,
+        "localeKey": "ru",
+        "title": "Турткульский район"
+      },
+      {
+        "regionId": 1735233,
+        "localeKey": "uz",
+        "title": "Турткульский район"
+      },
+      {
+        "regionId": 1735233,
+        "localeKey": "uzc",
+        "title": "Турткульский район"
+      }
+    ]
+  },
+  {
+    "id": 1735236,
+    "regionType": "region",
+    "upperId": 1735,
+    "codes": [
+      {
+        "id": 17,
+        "regionId": 1735236,
+        "type": "cbu",
+        "code": "189"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1735236,
+        "localeKey": "ru",
+        "title": "Ходжейлийский район"
+      },
+      {
+        "regionId": 1735236,
+        "localeKey": "uz",
+        "title": "Ходжейлийский район"
+      },
+      {
+        "regionId": 1735236,
+        "localeKey": "uzc",
+        "title": "Ходжейлийский район"
+      }
+    ]
+  },
+  {
+    "id": 1735240,
+    "regionType": "region",
+    "upperId": 1735,
+    "codes": [
+      {
+        "id": 18,
+        "regionId": 1735240,
+        "type": "cbu",
+        "code": "190"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1735240,
+        "localeKey": "ru",
+        "title": "Чимбайский район"
+      },
+      {
+        "regionId": 1735240,
+        "localeKey": "uz",
+        "title": "Чимбайский район"
+      },
+      {
+        "regionId": 1735240,
+        "localeKey": "uzc",
+        "title": "Чимбайский район"
+      }
+    ]
+  },
+  {
+    "id": 1735243,
+    "regionType": "region",
+    "upperId": 1735,
+    "codes": [
+      {
+        "id": 19,
+        "regionId": 1735243,
+        "type": "cbu",
+        "code": "183"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1735243,
+        "localeKey": "ru",
+        "title": "Шуманайский район"
+      },
+      {
+        "regionId": 1735243,
+        "localeKey": "uz",
+        "title": "Шуманайский район"
+      },
+      {
+        "regionId": 1735243,
+        "localeKey": "uzc",
+        "title": "Шуманайский район"
+      }
+    ]
+  },
+  {
+    "id": 1735250,
+    "regionType": "region",
+    "upperId": 1735,
+    "codes": [
+      {
+        "id": 20,
+        "regionId": 1735250,
+        "type": "cbu",
+        "code": "194"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1735250,
+        "localeKey": "ru",
+        "title": "Элликкалинский район"
+      },
+      {
+        "regionId": 1735250,
+        "localeKey": "uz",
+        "title": "Элликкалинский район"
+      },
+      {
+        "regionId": 1735250,
+        "localeKey": "uzc",
+        "title": "Элликкалинский район"
+      }
+    ]
+  },
+  {
+    "id": 1735401,
+    "regionType": "region",
+    "upperId": 1735,
+    "codes": [
+      {
+        "id": 21,
+        "regionId": 1735401,
+        "type": "cbu",
+        "code": "180"
+      }
+    ],
+    "locales": [
+      {
+        "regionId": 1735401,
+        "localeKey": "ru",
+        "title": "город Нукус"
+      },
+      {
+        "regionId": 1735401,
+        "localeKey": "uz",
+        "title": "город Нукус"
+      },
+      {
+        "regionId": 1735401,
+        "localeKey": "uzc",
+        "title": "город Нукус"
+      }
+    ]
+  }
+]

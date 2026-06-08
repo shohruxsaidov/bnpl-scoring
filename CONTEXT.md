@@ -188,6 +188,16 @@ _Avoid_: Payment schedule row, instalment row, payment row
 The channel through which a Manual Payment was physically received. Two fixed values: `mib` (МИБ — bank transfer via Microcredit Investment Bank) and `transfer` (Перевод — generic bank transfer). Stored as a text enum on the `manual_payments` row.
 _Avoid_: Payment method, payment channel
 
+### Geography
+
+**Region**:
+A top-level geographic administrative unit in Uzbekistan (oblast), such as "Андижанская область". Used to classify the location of a Merchant or Branch. Seeded from `references/regions.json` (finsum.uz source); 15 entries. Stored in the `regions` table with `upper_id IS NULL`.
+_Avoid_: Oblast, province
+
+**District**:
+A second-level geographic unit (rayon) belonging to exactly one Region, such as "Алтынкульский район". Stored in the `regions` table with `upper_id` pointing to its parent Region. 205 entries seeded from the same source.
+_Avoid_: Rayon, sub-region, city
+
 ### Bank information
 
 **Merchant Bank Account**:
@@ -256,6 +266,9 @@ _Avoid_: Notification kind, notification category
 - A **Basket** is persisted as one or more **DealItems** on the Deal
 - A **Notification** belongs to exactly one actor; fan-out creates one **Notification** row per recipient at write time
 - A **Merchant** has at most one **Merchant Bank Account** (MFO + Account Number + bank name stored as columns on the `merchants` row)
+- A **Merchant** optionally belongs to one **Region** or **District** (`region_id` nullable FK)
+- A **Branch** optionally belongs to one **Region** or **District** (`region_id` nullable FK)
+- A **District** belongs to exactly one **Region** (`upper_id` FK); a **Region** has no parent
 - An **MFO** resolves to a bank name via the **CBU Bank Registry** at edit time; the resolved name is stored on the `merchants` row
 
 ## Auth identity tables

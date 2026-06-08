@@ -1,0 +1,722 @@
+[
+  {
+    "Filialkodi": "00001",
+    "Filialnomi": "Markaziy bankning Banklararo hisob-kitoblar markazi",
+    "Filialmanzili": "100001, Toshkent shahri, Mirobod tumani, Islom Karimov ko'chasi, 6 uy",
+    "STIRRAQAMI": "-",
+    "Vebsayt": "www.cbu.uz",
+    "latitude": "41.308681",
+    "longitude": "69.274545"
+  },
+  {
+    "Filialkodi": "00002",
+    "Filialnomi": "Markaziy bankning Chakana to'lovlar kliring markazi",
+    "Filialmanzili": "100001, Toshkent shahri, Mirobod tumani, Islom Karimov ko'chasi, 6 uy",
+    "STIRRAQAMI": "-",
+    "Vebsayt": "www.cbu.uz",
+    "latitude": "41.308681",
+    "longitude": "69.274545"
+  },
+  {
+    "Filialkodi": "00003",
+    "Filialnomi": "Markaziy bankning Tezkor to'lovlar kliring markazi",
+    "Filialmanzili": "100001, Toshkent shahri, Mirobod tumani, Islom Karimov ko'chasi, 6 uy",
+    "STIRRAQAMI": "-",
+    "Vebsayt": "www.cbu.uz",
+    "latitude": "41.308681",
+    "longitude": "69.274545"
+  },
+  {
+    "Filialkodi": "00014",
+    "Filialnomi": "Markaziy bank Toshkent shahar hisob-kitob kassa markazi",
+    "Filialmanzili": "100001, Toshkent shahri, Mirobod tumani, Islom Karimov ko'chasi, 6 uy",
+    "STIRRAQAMI": "201053774",
+    "Vebsayt": "www.cbu.uz",
+    "latitude": "41.308681",
+    "longitude": "69.274545"
+  },
+  {
+    "Filialkodi": "00015",
+    "Filialnomi": "Markaziy bank Qoraqalpog'iston Respublikasi hisob-kitob kassa markazi",
+    "Filialmanzili": "230100, Qoraqalpog'iston Respublikasi, Nukus sh., Qoraqalpog'iston ko'chasi, 18 uy",
+    "STIRRAQAMI": "202855567",
+    "Vebsayt": "www.cbu.uz",
+    "latitude": "42.459699",
+    "longitude": "59.610137"
+  },
+  {
+    "Filialkodi": "00016",
+    "Filialnomi": "Markaziy bank Andijon viloyati hisob-kitob kassa markazi",
+    "Filialmanzili": "170100, Andijon viloyati, Andijon sh., Navoiy shoh ko'chasi, 17 uy",
+    "STIRRAQAMI": "202841846",
+    "Vebsayt": "www.cbu.uz",
+    "latitude": "40.749004",
+    "longitude": "72.357192"
+  },
+  {
+    "Filialkodi": "00017",
+    "Filialnomi": "Markaziy bank Buxoro viloyati hisob-kitob kassa markazi",
+    "Filialmanzili": "200114, Buxoro viloyati, Buxoro sh., Mustaqillik ko'chasi, 28/1 uy",
+    "STIRRAQAMI": "201504441",
+    "Vebsayt": "www.cbu.uz",
+    "latitude": "39.76405",
+    "longitude": "64.430681"
+  },
+  {
+    "Filialkodi": "00018",
+    "Filialnomi": "Markaziy bank Jizzax viloyati hisob-kitob kassa markazi",
+    "Filialmanzili": "130100, Jizzax viloyati, Jizzax sh., Sh.Rashidov shoh ko'chasi, 16 uy",
+    "STIRRAQAMI": "201432857",
+    "Vebsayt": "www.cbu.uz",
+    "latitude": "40.137684",
+    "longitude": "67.823654"
+  },
+  {
+    "Filialkodi": "00019",
+    "Filialnomi": "Markaziy bank Qashqadaryo viloyati hisob-kitob kassa markazi",
+    "Filialmanzili": "180100, Qashqadaryo viloyati, Qarshi sh., Mustaqillik shoh ko'chasi, 3 uy",
+    "STIRRAQAMI": "202737998",
+    "Vebsayt": "www.cbu.uz",
+    "latitude": "38.837741",
+    "longitude": "65.806106"
+  },
+  {
+    "Filialkodi": "00020",
+    "Filialnomi": "Markaziy bank Navoiy viloyati hisob-kitob kassa markazi",
+    "Filialmanzili": "210109, Navoiy viloyati, Navoiy sh., G'alaba shoh ko'chasi, 220 uy",
+    "STIRRAQAMI": "200007324",
+    "Vebsayt": "www.cbu.uz",
+    "latitude": "40.118191",
+    "longitude": "65.374401"
+  },
+  {
+    "Filialkodi": "00021",
+    "Filialnomi": "Markaziy bank Namangan viloyati hisob-kitob kassa markazi",
+    "Filialmanzili": "160136, Namangan viloyati , Namangan sh., Boboraxim Mashrab ko'chasi, 2 uy",
+    "STIRRAQAMI": "200049597",
+    "Vebsayt": "www.cbu.uz",
+    "latitude": "41.002104",
+    "longitude": "71.668216"
+  },
+  {
+    "Filialkodi": "00022",
+    "Filialnomi": "Markaziy bank Samarqand viloyati hisob-kitob kassa markazi",
+    "Filialmanzili": "140100, Samarqand viloyati , Samarqand sh. , Shoxrux ko'chasi, 19 uy",
+    "STIRRAQAMI": "201208359",
+    "Vebsayt": "www.cbu.uz",
+    "latitude": "39.659447",
+    "longitude": "66.959019"
+  },
+  {
+    "Filialkodi": "00023",
+    "Filialnomi": "Markaziy bank Sirdaryo viloyati hisob-kitob kassa markazi",
+    "Filialmanzili": "120100, Sirdaryo viloyati, Guliston sh., O'zbekiston ko'chasi, 93 uy",
+    "STIRRAQAMI": "200324944",
+    "Vebsayt": "www.cbu.uz",
+    "latitude": "40.834848",
+    "longitude": "68.664934"
+  },
+  {
+    "Filialkodi": "00024",
+    "Filialnomi": "Markaziy bank Surxondaryo viloyati hisob-kitob kassa markazi",
+    "Filialmanzili": "190112, Surxondaryo viloyati, Termiz sh., At-Termiziy ko'chasi, 7-A uy",
+    "STIRRAQAMI": "200475170",
+    "Vebsayt": "www.cbu.uz",
+    "latitude": "37.233611",
+    "longitude": "67.276238"
+  },
+  {
+    "Filialkodi": "00025",
+    "Filialnomi": "Markaziy bank Toshkent viloyati hisob-kitob kassa markazi",
+    "Filialmanzili": "100019, Toshkent shahri, Olmazor tumani, A.Kodiriy ko'chasi, 1-A uy",
+    "STIRRAQAMI": "200833294",
+    "Vebsayt": "www.cbu.uz",
+    "latitude": "41.331159",
+    "longitude": "69.244597"
+  },
+  {
+    "Filialkodi": "00026",
+    "Filialnomi": "Markaziy bank Farg'ona viloyatihisob-kitob kassa markazi",
+    "Filialmanzili": "150100, Farg'ona viloyati, Farg'ona sh., Al-Farg'oniy ko'chasi, 9 uy",
+    "STIRRAQAMI": "200152977",
+    "Vebsayt": "www.cbu.uz",
+    "latitude": "40.381877",
+    "longitude": "71.786004"
+  },
+  {
+    "Filialkodi": "00027",
+    "Filialnomi": "Markaziy bank Xorazm viloyati hisob-kitob kassa markazi",
+    "Filialmanzili": "220100, Xorazm viloyati, Urganch sh., Tinchlik ko'chasi, 20 uy",
+    "STIRRAQAMI": "201651119",
+    "Vebsayt": "www.cbu.uz",
+    "latitude": "41.560838",
+    "longitude": "60.626119"
+  },
+  {
+    "Filialkodi": "00031",
+    "Filialnomi": "\"Agrobank\" ATB Paxtaobod filiali",
+    "Filialmanzili": "171300, Andijon viloyati, Paxtaobod tumani, Paxtaobod sh., A.Temur ko'chasi, 8 uy",
+    "STIRRAQAMI": "200295593",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "40.930088",
+    "longitude": "72.493683"
+  },
+  {
+    "Filialkodi": "00033",
+    "Filialnomi": "\"Agrobank\" ATB Asaka filiali",
+    "Filialmanzili": "170200, Andijon viloyati, Asaka tumani, Asaka sh., A.Navoiy ko'chasi, 1 uy",
+    "STIRRAQAMI": "200283814",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "40.639627",
+    "longitude": "72.25045"
+  },
+  {
+    "Filialkodi": "00035",
+    "Filialnomi": "\"Agrobank\" ATB Marxamat filiali",
+    "Filialmanzili": "170800, Andijon viloyati, Marxamat tumani, Mingtepa MFY, Al Buxoriy koʻchasi, 109-uy ",
+    "STIRRAQAMI": "200287175",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "-",
+    "longitude": "-"
+  },
+  {
+    "Filialkodi": "00037",
+    "Filialnomi": "\"Agrobank\" ATB Shaxrixon filiali",
+    "Filialmanzili": "171600, Andijon viloyati, Shaxrixon sh., Shaxrixon shoh ko'chasi, 1 uy",
+    "STIRRAQAMI": "200251466",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "40.711485",
+    "longitude": "72.047976"
+  },
+  {
+    "Filialkodi": "00040",
+    "Filialnomi": "\"Agrobank\" ATB Jalaquduq filiali",
+    "Filialmanzili": "171100, Andijon viloyati, Jalolquduq tumani, O'zbekiston ko'chasi, 41 uy",
+    "STIRRAQAMI": "200269284",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "40.717761",
+    "longitude": "72.64065"
+  },
+  {
+    "Filialkodi": "00042",
+    "Filialnomi": "\"Agrobank\" ATB Xo'jaobod filiali",
+    "Filialmanzili": "171300, Andijon viloyati, Xoʻjaobod tumani, Xoʻjaobod shaharchasi, Uzun koʻcha MFY, Karvon yoʻli koʻchasi, 18-uy",
+    "STIRRAQAMI": "200298502",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "-",
+    "longitude": "-"
+  },
+  {
+    "Filialkodi": "00045",
+    "Filialnomi": "\"Agrobank\" ATB Izboskan filiali",
+    "Filialmanzili": "171200, Andijon viloyati, Izboskan tumani, Poytug sh., E.Qobulov ko'chasi, 3 uy",
+    "STIRRAQAMI": "200272124",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "40.893916",
+    "longitude": "72.250791"
+  },
+  {
+    "Filialkodi": "00049",
+    "Filialnomi": "\"Agrobank\" ATB Oltinko'l filiali",
+    "Filialmanzili": "171000, Andijon viloyati, Oltinkoʻl tumani, Ittifoq MFY, Nurli hayot koʻchasi, 8-uy",
+    "STIRRAQAMI": "200255334",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "-",
+    "longitude": "-"
+  },
+  {
+    "Filialkodi": "00053",
+    "Filialnomi": "\"Agrobank\" ATB Bo'ston filiali",
+    "Filialmanzili": "170400, Andijon viloyati, Buston tumani, Doʻstlik  MFY, Mustaqillik  koʻchasi, 131-uy",
+    "STIRRAQAMI": "200264995",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "-",
+    "longitude": "-"
+  },
+  {
+    "Filialkodi": "00055",
+    "Filialnomi": "\"Agrobank\" ATB Ulug'nor filiali",
+    "Filialmanzili": "170900, Andijon viloyati, Ulug'nor tumani, Mustaqillik ko'chasi, 1 uy",
+    "STIRRAQAMI": "200274517",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "40.746056",
+    "longitude": "71.712939"
+  },
+  {
+    "Filialkodi": "00056",
+    "Filialnomi": "\"Agrobank\" ATB Qo'rg'ontepa filiali",
+    "Filialmanzili": "170700, Andijon viloyati, Qo'rg'ontepa tumani, Qo'rg'ontepa sh., Qaxxor Yunusov ko'chasi, 8 uy",
+    "STIRRAQAMI": "200279873",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "40.728523",
+    "longitude": "72.734651"
+  },
+  {
+    "Filialkodi": "00059",
+    "Filialnomi": "\"Ipoteka-bank\" ATIB Andijon viloyat filiali",
+    "Filialmanzili": "170100, Andijon viloyati, Andijon sh., Anisiy ko'chasi, 1 uy",
+    "STIRRAQAMI": "200242864",
+    "Vebsayt": "www.ipotekabank.uz",
+    "latitude": "40.787129",
+    "longitude": "72.352232"
+  },
+  {
+    "Filialkodi": "00062",
+    "Filialnomi": "\"Agrobank\" ATB Andijon filiali",
+    "Filialmanzili": "170600, Andijon viloyati, Andijon tumani, Kuyganyor sh., U.Yusupova ko'chasi, 23 uy",
+    "STIRRAQAMI": "200258639",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "40.855472",
+    "longitude": "72.319116"
+  },
+  {
+    "Filialkodi": "00064",
+    "Filialnomi": "\"Agrobank\" ATB Buloqboshi filiali",
+    "Filialmanzili": "Andijon viloyati, Buloqboshi tumani, Buloqboshi a.p., Toshkechik ko'chasi, 30-a-uy",
+    "STIRRAQAMI": "200267169",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "-",
+    "longitude": "-"
+  },
+  {
+    "Filialkodi": "00066",
+    "Filialnomi": "\"Agrobank\" ATB Baliqchi filiali",
+    "Filialmanzili": "170300, Andijon viloyati, Baliqchi tumani, Baliqchi qo'rg'oni, Baliqchi ko'chasi, 9 uy",
+    "STIRRAQAMI": "200258883",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "40.901201",
+    "longitude": "71.849712"
+  },
+  {
+    "Filialkodi": "00068",
+    "Filialnomi": "\"Ipoteka-bank\" ATIB Istiklol filiali",
+    "Filialmanzili": "170100, Andijon viloyati, Andijon sh., Istiklol ko'chasi, 22 uy",
+    "STIRRAQAMI": "201988308",
+    "Vebsayt": "www.ipotekabank.uz",
+    "latitude": "40.761826",
+    "longitude": "72.353884"
+  },
+  {
+    "Filialkodi": "00069",
+    "Filialnomi": "\"Asakabank\" AJ Andijon filiali",
+    "Filialmanzili": "170112, Andijon viloyati, Andijon sh., Milliy tiklanish ko'chasi, 41 uy",
+    "STIRRAQAMI": "201832629",
+    "Vebsayt": "www.asakabank.uz",
+    "latitude": "40.770181",
+    "longitude": "72.366213"
+  },
+  {
+    "Filialkodi": "00073",
+    "Filialnomi": "\"Asakabank\" AJ Bobur filiali",
+    "Filialmanzili": "170200, Andijon viloyati, Asaka tumani, Asaka sh., G'. Yoqubov ko'chasi, 14 uy",
+    "STIRRAQAMI": "200246828",
+    "Vebsayt": "www.asakabank.uz",
+    "latitude": "40.642372",
+    "longitude": "72.246818"
+  },
+  {
+    "Filialkodi": "00074",
+    "Filialnomi": "\"O'zmilliybank\" Andijon bo'limi",
+    "Filialmanzili": "170121, Andijon viloyati, Andijon sh., A. Navoiy shoh ko'chasi, 39 uy",
+    "STIRRAQAMI": "200242929",
+    "Vebsayt": "www.nbu.uz",
+    "latitude": "40.774495",
+    "longitude": "72.358253"
+  },
+  {
+    "Filialkodi": "00077",
+    "Filialnomi": "\"Agrobank\" ATB Andijon viloyat hududiy boshqarmasi",
+    "Filialmanzili": "Andijon viloyati, Andijon sh., Pushkin ko'chasi, 47 uy",
+    "STIRRAQAMI": "200242857",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "40.761396",
+    "longitude": "72.358502"
+  },
+  {
+    "Filialkodi": "00083",
+    "Filialnomi": "Chet el kapitali ishtirokidagi \"Hamkorbank\" ATB bosh ofisi",
+    "Filialmanzili": "710011, Andijon viloyati, Andijon shahri, Boburshox ko'chasi, 85 uy",
+    "STIRRAQAMI": "200242936",
+    "Vebsayt": "www.hamkorbank.uz",
+    "latitude": "40.769694",
+    "longitude": "72.342002"
+  },
+  {
+    "Filialkodi": "00088",
+    "Filialnomi": "\"Ipoteka-bank\" ATIB Buxoro viloyat filiali",
+    "Filialmanzili": "200100, Buxoro viloyati, Buxoro sh., Ikbol ko'chasi, 10 uy",
+    "STIRRAQAMI": "202215548",
+    "Vebsayt": "www.ipotekabank.uz",
+    "latitude": "39.763456",
+    "longitude": "64.420331"
+  },
+  {
+    "Filialkodi": "00089",
+    "Filialnomi": "\"Agrobank\" ATB Buxoro viloyat hududiy boshqarmasi",
+    "Filialmanzili": "200113, Buxoro viloyati, Buxoro sh., I.Mo'minov ko'chasi, 29 uy",
+    "STIRRAQAMI": "200862229",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "39.771357",
+    "longitude": "64.444046"
+  },
+  {
+    "Filialkodi": "00090",
+    "Filialnomi": "\"Agrobank\" ATB Olot filiali",
+    "Filialmanzili": "200200, Buxoro viloyati, Olot tumani, Olot sh., Shifokorlar ko'chasi, 20 uy",
+    "STIRRAQAMI": "201365687",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "39.416728",
+    "longitude": "63.805215"
+  },
+  {
+    "Filialkodi": "00091",
+    "Filialnomi": "\"Agrobank\" ATB Vobkent filiali",
+    "Filialmanzili": "210800, Buxoro viloyati, Vobkent tumani, Vobkent sh., F.Xo'jayev ko'chasi, 20-a uy",
+    "STIRRAQAMI": "201408101",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "40.022085",
+    "longitude": "64.520181"
+  },
+  {
+    "Filialkodi": "00092",
+    "Filialnomi": "\"Agrobank\" ATB G'ijduvon filiali",
+    "Filialmanzili": "200500, Buxoro viloyati, G'ijduvon tumani, G'ijduvon sh., S.Yodgorov ko'chasi, 1 uy",
+    "STIRRAQAMI": "201033166",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "40.1018",
+    "longitude": "64.680812"
+  },
+  {
+    "Filialkodi": "00093",
+    "Filialnomi": "\"Agrobank\" ATB Shofirkon filiali",
+    "Filialmanzili": "201100, Buxoro viloyati, Shofirkon tumani, Shofirkon sh., Mustaqillik ko'chasi, 11 uy",
+    "STIRRAQAMI": "201112258",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "40.120491",
+    "longitude": "64.500347"
+  },
+  {
+    "Filialkodi": "00094",
+    "Filialnomi": "\"Agrobank\" ATB Qorako'l filiali",
+    "Filialmanzili": "200800, Buxoro viloyati, Qorako‘l tumani, Ulug‘bek ko‘chasi, 113-uy",
+    "STIRRAQAMI": "200878484",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "-",
+    "longitude": "-"
+  },
+  {
+    "Filialkodi": "00095",
+    "Filialnomi": "\"Agrobank\" ATB Romitan filiali",
+    "Filialmanzili": "201000, Buxoro viloyati, Romitan tumani, Romitan sh., Shafigulin ko'chasi, 6 uy",
+    "STIRRAQAMI": "201043859",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "39.935836",
+    "longitude": "64.378342"
+  },
+  {
+    "Filialkodi": "00096",
+    "Filialnomi": "\"Agrobank\" ATB Jondor filiali",
+    "Filialmanzili": "200600, Buxoro viloyati, Jondor tumani, Jondor qo'rg'oni, M.Tarobiy ko'chasi, 43 uy",
+    "STIRRAQAMI": "201808079",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "39.738262",
+    "longitude": "64.173838"
+  },
+  {
+    "Filialkodi": "00097",
+    "Filialnomi": "\"Agrobank\" ATB Buxoro filiali",
+    "Filialmanzili": "200400, Buxoro viloyati, Buxoro sh., M.Muxsin ko'chasi, 56 uy",
+    "STIRRAQAMI": "200868741",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "39.858085",
+    "longitude": "64.417567"
+  },
+  {
+    "Filialkodi": "00098",
+    "Filialnomi": "\"Agrobank\" ATB Peshku filiali",
+    "Filialmanzili": "201200, Buxoro viloyati, Peshku tumani, Mustaqillik ko'chasi, 1 uy",
+    "STIRRAQAMI": "200884098",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "40.038138",
+    "longitude": "64.398425"
+  },
+  {
+    "Filialkodi": "00119",
+    "Filialnomi": "\"Ipoteka-bank\" ATIB \"Sardor\" filiali",
+    "Filialmanzili": "200100, Buxoro viloyati, Buxoro sh., Xofiz Tanish ko'chasi, 5A",
+    "STIRRAQAMI": "202145517",
+    "Vebsayt": "www.ipotekabank.uz",
+    "latitude": "39.770997",
+    "longitude": "64.396658"
+  },
+  {
+    "Filialkodi": "00120",
+    "Filialnomi": "\"Asakabank\" AJ Buxoro filiali",
+    "Filialmanzili": "200104, Buxoro viloyati, Buxoro sh., B.Naqshband ko'chasi, 168/B uy",
+    "STIRRAQAMI": "201920409",
+    "Vebsayt": "www.asakabank.uz",
+    "latitude": "39.771758",
+    "longitude": "64.440952"
+  },
+  {
+    "Filialkodi": "00121",
+    "Filialnomi": "\"O'zmilliybank\" Jizzax bo'limi",
+    "Filialmanzili": "Jizzax viloyati, Jizzax shahri, Sayiljoyi mahallasi, Sh.Rashidov shoh ko'chasi, 20-uy",
+    "STIRRAQAMI": "201001332",
+    "Vebsayt": "www.nbu.uz",
+    "latitude": "40.136771",
+    "longitude": "67.823689"
+  },
+  {
+    "Filialkodi": "00122",
+    "Filialnomi": "\"Ipoteka-bank\" ATIB Jizzax viloyat filiali",
+    "Filialmanzili": "130100, Jizzax viloyati, Jizzax sh., Sh. Rashidov ko'chasi, 72 uy",
+    "STIRRAQAMI": "201432929",
+    "Vebsayt": "www.ipotekabank.uz",
+    "latitude": "40.129641",
+    "longitude": "67.826896"
+  },
+  {
+    "Filialkodi": "00123",
+    "Filialnomi": "\"Agrobank\" ATB Jizzax filiali",
+    "Filialmanzili": "131100, Jizzax viloyati, Sh.Rashidov tumani, Uchtepa dahasi, Paxtakor koʻchasi, 4-uy ",
+    "STIRRAQAMI": "201009732",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "-",
+    "longitude": "-"
+  },
+  {
+    "Filialkodi": "00124",
+    "Filialnomi": "\"Agrobank\" ATB Arnasoy filiali",
+    "Filialmanzili": "130200, Jizzax viloyati, Arnasoy tumani, G'oliblar a.p., Xalqlar do'stligi ko'chasi, 1 uy",
+    "STIRRAQAMI": "201375398",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "40.499814",
+    "longitude": "67.879316"
+  },
+  {
+    "Filialkodi": "00125",
+    "Filialnomi": "\"Agrobank\" ATB Zarbdor filiali",
+    "Filialmanzili": "130600, Jizzax viloyati, Zarbdor tumani, Nurobod MFY, Oq yoʻl ko'chasi, 91a-uy",
+    "STIRRAQAMI": "201357664",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "-",
+    "longitude": "-"
+  },
+  {
+    "Filialkodi": "00126",
+    "Filialnomi": "\"Agrobank\" ATB Jizzax viloyat hududiy filiali",
+    "Filialmanzili": "130100, Jizzax viloyati, Jizzax sh., Baynalminalchilar ko'chasi, 18 uy",
+    "STIRRAQAMI": "200341970",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "40.140367",
+    "longitude": "67.829336"
+  },
+  {
+    "Filialkodi": "00127",
+    "Filialnomi": "\"Agrobank\" ATB Paxtakor filiali",
+    "Filialmanzili": "130900, Jizzax viloyati, Paxtakor tumani , Paxtakor sh. , Jabborov ko'chasi, 23 uy",
+    "STIRRAQAMI": "201026593",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "40.310004",
+    "longitude": "67.957019"
+  },
+  {
+    "Filialkodi": "00128",
+    "Filialnomi": "\"Agrobank\" ATB G'allaorol filiali",
+    "Filialmanzili": "130400, Jizzax viloyati, G'allaorol tumani, G'allaorol sh., Mustaqillik ko'chasi, 27 uy",
+    "STIRRAQAMI": "201030574",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "40.02563",
+    "longitude": "67.588865"
+  },
+  {
+    "Filialkodi": "00129",
+    "Filialnomi": "\"Agrobank\" ATB Do'stlik filiali",
+    "Filialmanzili": "130500, Jizzax viloyati, Do'stlik tumani, Do'stlik sh., Sh.Rashidov ko'chasi, 1 uy",
+    "STIRRAQAMI": "200999151",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "40.517783",
+    "longitude": "68.029272"
+  },
+  {
+    "Filialkodi": "00130",
+    "Filialnomi": "\"Agrobank\" ATB Mirzacho'l filiali",
+    "Filialmanzili": "130300, Jizzax viloyati, Mirzacho‘l tumani, G‘alaba mahallasi, O‘zbekiston ko‘chasi, 52-uy",
+    "STIRRAQAMI": "200338997",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "-",
+    "longitude": "-"
+  },
+  {
+    "Filialkodi": "00131",
+    "Filialnomi": "\"Agrobank\" ATB Zomin filiali",
+    "Filialmanzili": "130800, Jizzax viloyati, Zomin tumani, Qoʻrgʻon MFY, A.Sattorov koʻchasi",
+    "STIRRAQAMI": "201463185",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "-",
+    "longitude": "-"
+  },
+  {
+    "Filialkodi": "00132",
+    "Filialnomi": "\"Agrobank\" ATB Baxmal filiali",
+    "Filialmanzili": "131000, Jizzax viloyati, Baxmal tumani, O‘smat shaharchasi, X.Olimjon ko‘chasi, 18-uy",
+    "STIRRAQAMI": "201711010",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "-",
+    "longitude": "-"
+  },
+  {
+    "Filialkodi": "00133",
+    "Filialnomi": "\"Agrobank\" ATB Forish filiali",
+    "Filialmanzili": "131200, Jizzax viloyati, Forish tumani, Bogʻdon MFY, Fayziobod koʻchasi, 5-uy",
+    "STIRRAQAMI": "200341647",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "-",
+    "longitude": "-"
+  },
+  {
+    "Filialkodi": "00134",
+    "Filialnomi": "\"Agrobank\" ATB Zafarobod filiali",
+    "Filialmanzili": "130700, Jizzax viloyati, Zafarobod tumani, Bo‘ston mahallasi, Do‘stlik ko‘chasi, 4-uy",
+    "STIRRAQAMI": "201455298",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "-",
+    "longitude": "-"
+  },
+  {
+    "Filialkodi": "00140",
+    "Filialnomi": "\"Asakabank\" AJ Jizzax filiali",
+    "Filialmanzili": "130100, Jizzax viloyati, Jizzax sh., Sh.Rashidov shoh ko'chasi, 115 uy",
+    "STIRRAQAMI": "201967261",
+    "Vebsayt": "www.asakabank.uz",
+    "latitude": "40.120288",
+    "longitude": "67.828508"
+  },
+  {
+    "Filialkodi": "00151",
+    "Filialnomi": "\"Agrobank\" ATB Qashqadaryo viloyat hududiy filiali",
+    "Filialmanzili": "180100, Qashqadaryo viloyati, Qarshi sh., A.Navoiy ko'chasi, 2 uy",
+    "STIRRAQAMI": "200669324",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "41.33576",
+    "longitude": "69.283519"
+  },
+  {
+    "Filialkodi": "00157",
+    "Filialnomi": "\"Agrobank\" ATB G'uzor filiali",
+    "Filialmanzili": "180300, Qashqadaryo viloyati, G'uzor tumani, G'uzor sh., Mustaqillik ko'chasi, 10 uy",
+    "STIRRAQAMI": "200676879",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "38.621057",
+    "longitude": "66.255329"
+  },
+  {
+    "Filialkodi": "00158",
+    "Filialnomi": "\"Agrobank\" ATB Dehqonobod filiali",
+    "Filialmanzili": "180405, Qashqadaryo viloyati, Dehqonobod tumani, Qarashina a.p., M.Ulug'bek ko'chasi, 7 uy",
+    "STIRRAQAMI": "201582196",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "38.340156",
+    "longitude": "66.567759"
+  },
+  {
+    "Filialkodi": "00160",
+    "Filialnomi": "\"Agrobank\" ATB Qamashi filiali",
+    "Filialmanzili": "180500, Qashqadaryo viloyati, Qamashi tumani, Qamashi shaharchasi, Oʻzbekiston MFY, Iftixor koʻchasi, 271-uy",
+    "STIRRAQAMI": "200680344",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "-",
+    "longitude": "-"
+  },
+  {
+    "Filialkodi": "00162",
+    "Filialnomi": "\"Agrobank\" ATB Koson filiali",
+    "Filialmanzili": "180800, Qashqadaryo viloyati, Koson tumani, Regzor MFY, Nasaf koʻchasi, 2-uy",
+    "STIRRAQAMI": "201614828",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "-",
+    "longitude": "-"
+  },
+  {
+    "Filialkodi": "00165",
+    "Filialnomi": "\"Ipoteka-bank\" ATIB Shahrisabz filiali",
+    "Filialmanzili": "Qashqadaryo viloyati, Shahrisabz tumani, Shahrisabz sh., Ipak yuli ko'chasi, 3 uy",
+    "STIRRAQAMI": "200673123",
+    "Vebsayt": "www.ipotekabank.uz",
+    "latitude": "39.09553",
+    "longitude": "66.842603"
+  },
+  {
+    "Filialkodi": "00166",
+    "Filialnomi": "\"Agrobank\" ATB Shahrisabz filiali",
+    "Filialmanzili": "Qashqadaryo viloyati, Shahrisabz tumani, Shahrisabz sh., Buyuk ipak yo'li ko'chasi, 2 uy",
+    "STIRRAQAMI": "200673051",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "39.076775",
+    "longitude": "66.836631"
+  },
+  {
+    "Filialkodi": "00169",
+    "Filialnomi": "\"Agrobank\" ATB Yakkabog' filiali",
+    "Filialmanzili": "181400, Qashqadaryo viloyati, Yakkabogʻ tumani, Yangiobod MFY, Saroy koʻchasi, 12-uy",
+    "STIRRAQAMI": "200710757",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "-",
+    "longitude": "-"
+  },
+  {
+    "Filialkodi": "00172",
+    "Filialnomi": "\"Agrobank\" ATB Qarshi filiali",
+    "Filialmanzili": "180200, Qashqadaryo viloyati, Qarshi tumani, A.Navoiy MFY, A.Temur koʻchasi, 1-uy",
+    "STIRRAQAMI": "200689023",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "-",
+    "longitude": "-"
+  },
+  {
+    "Filialkodi": "00174",
+    "Filialnomi": "\"Agrobank\" ATB Chiroqchi filiali",
+    "Filialmanzili": "181200, Qashqadaryo viloyati, Chiroqchi tumani, Chiroqchi MFY, Lutfkorona koʻchasi, 140-uy",
+    "STIRRAQAMI": "200809244",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "-",
+    "longitude": "-"
+  },
+  {
+    "Filialkodi": "00176",
+    "Filialnomi": "\"Agrobank\" ATB Kitob filiali",
+    "Filialmanzili": "180700, Qashqadaryo viloyati, Kitob tumani, Kitob sh., Buyuk ipak yo'li ko'chasi, 18 uy",
+    "STIRRAQAMI": "200693787",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "39.13094",
+    "longitude": "66.881912"
+  },
+  {
+    "Filialkodi": "00179",
+    "Filialnomi": "\"Agrobank\" ATB Kasbi filiali",
+    "Filialmanzili": "180600, Qashqadaryo viloyati, Kasbi tumani, Mo'g'lon a.p., A.Temur ko'chasi, 7 uy",
+    "STIRRAQAMI": "200700706",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "38.922638",
+    "longitude": "65.407965"
+  },
+  {
+    "Filialkodi": "00181",
+    "Filialnomi": "\"Agrobank\" ATB Nishon filiali",
+    "Filialmanzili": "181100, Qashqadaryo viloyati, Nishon tumani, Yanginishon shahri, Paxtakor MFY, Oʻzbekiston koʻchasi, 3-uy",
+    "STIRRAQAMI": "201284772",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "-",
+    "longitude": "-"
+  },
+  {
+    "Filialkodi": "00184",
+    "Filialnomi": "\"Agrobank\" ATB Mirishkor filiali",
+    "Filialmanzili": "181000, Qashqadaryo viloyati, Mirishkor tumani, Yangimirishkor shaharchasi, Yangimirishkor MFY, Amir Temur koʻchasi, 31-uy",
+    "STIRRAQAMI": "200702078",
+    "Vebsayt": "www.agrobank.uz",
+    "latitude": "-",
+    "longitude": "-"
+  }
+]

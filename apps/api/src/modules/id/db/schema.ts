@@ -1,4 +1,5 @@
 import {
+  AnyPgColumn,
   bigint,
   bigserial,
   boolean,
@@ -140,6 +141,20 @@ export const adminSessions = pgTable('admin_sessions', {
   revokedAt: timestamp('revoked_at', { withTimezone: true }),
 });
 
+// ---------------------------------------------------------------------------
+// regions
+// Two-level geographic hierarchy: Region (oblast, upperId IS NULL) and
+// District (rayon, upperId → parent Region). Seeded from references/regions.json.
+// Uses external IDs from finsum.uz — stable integers that map to the source system.
+// ---------------------------------------------------------------------------
+export const regions = pgTable('regions', {
+  id: integer('id').primaryKey(),
+  upperId: integer('upper_id').references((): AnyPgColumn => regions.id),
+  nameRu: varchar('name_ru', { length: 200 }).notNull(),
+  nameUz: varchar('name_uz', { length: 200 }).notNull(),
+  nameUzc: varchar('name_uzc', { length: 200 }).notNull(),
+});
+
 // merchant_id and branch_id reference merchants/branches tables not yet built.
 export const merchants = pgTable('merchants', {
   id: bigserial('id', { mode: 'bigint' }).primaryKey(),
@@ -153,6 +168,7 @@ export const merchants = pgTable('merchants', {
   mfo: varchar('mfo', { length: 5 }),
   accountNumber: varchar('account_number', { length: 20 }),
   bankName: varchar('bank_name', { length: 200 }),
+  regionId: integer('region_id').references(() => regions.id),
   active: boolean('active').notNull().default(true),
   kybStatus: varchar('kyb_status', { length: 20 }).notNull().default('verified'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -172,6 +188,7 @@ export const branches = pgTable('branches', {
   name: varchar('name', { length: 200 }).notNull(),
   address: text('address').notNull(),
   phone: varchar('phone', { length: 20 }).notNull(),
+  regionId: integer('region_id').references(() => regions.id),
   active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });

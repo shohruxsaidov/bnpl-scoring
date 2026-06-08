@@ -12,7 +12,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "seed:banks": "tsx src/scripts/seed-bank-mfo.ts"
+    "seed:banks": "tsx src/scripts/seed-bank-mfo.ts",
+    "seed:regions": "tsx src/scripts/seed-regions.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
