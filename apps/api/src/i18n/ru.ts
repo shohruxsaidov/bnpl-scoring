@@ -70,4 +70,5 @@ export const ru: Record<string, string> = {
   katm_not_completed: "Запрос КАТМ ещё не завершён",
   card_scoring_already_started: "Скоринг карты уже запущен",
   user_not_found: "Пользователь не найден",
+  version_taken: "Ревизия с такой версией уже существует",
 }

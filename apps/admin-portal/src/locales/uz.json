@@ -335,7 +335,8 @@
     "active": "Faol",
     "createdAt": "Yaratilgan",
     "status": "Holat",
-    "backToList": "Barcha reviziyalar"
+    "backToList": "Barcha reviziyalar",
+    "versionTaken": "Bunday versiyali reviziya allaqachon mavjud"
   },
   "scoringTry": {
     "title": "Skoring modelini sinash",

@@ -70,4 +70,5 @@ export const uz: Record<string, string> = {
   katm_not_completed: "KATM so'rovi hali yakunlanmagan",
   card_scoring_already_started: "Karta skoring allaqachon boshlangan",
   user_not_found: "Foydalanuvchi topilmadi",
+  version_taken: "Bunday versiyali reviziya allaqachon mavjud",
 }

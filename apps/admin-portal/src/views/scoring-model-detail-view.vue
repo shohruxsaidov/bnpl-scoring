@@ -24,6 +24,7 @@ const localParams = ref<Record<string, unknown> | null>(null)
 const showSaveDialog = ref(false)
 const saveName = ref('')
 const saveVersion = ref('')
+const saveError = ref('')
 
 onMounted(async () => {
   try {
@@ -39,18 +40,24 @@ const isActive = computed(() => store.history[0]?.id === revisionId)
 function openSaveDialog() {
   saveName.value = store.revision?.name ?? ''
   saveVersion.value = store.revision?.version ?? ''
+  saveError.value = ''
   showSaveDialog.value = true
 }
 
 async function confirmSave() {
   if (!localParams.value || !saveName.value || !saveVersion.value) return
+  saveError.value = ''
   try {
     await store.save(saveName.value, saveVersion.value, localParams.value)
     showSaveDialog.value = false
     toast.add({ severity: 'success', summary: t('scoringModel.saved'), life: 2000 })
     router.push(`/scoring-model/${store.revision!.id}`)
-  } catch {
-    toast.add({ severity: 'error', summary: t('scoringModel.saveFailed'), life: 3000 })
+  } catch (e) {
+    if ((e as Error).message === 'version_taken') {
+      saveError.value = t('scoringModel.versionTaken')
+    } else {
+      toast.add({ severity: 'error', summary: t('scoringModel.saveFailed'), life: 3000 })
+    }
   }
 }
 
@@ -211,8 +218,20 @@ function bandDescription(band: Record<string, unknown>): string {
               </thead>
               <tbody>
                 <tr v-for="(band, i) in (data['Values'] as Record<string, unknown>[])" :key="i">
-                  <td class="col-range mono">{{ (band as Record<string, unknown>)['From'] }}</td>
-                  <td class="col-range mono">{{ (band as Record<string, unknown>)['To'] }}</td>
+                  <td class="col-range">
+                    <InputNumber
+                      v-model="(band as Record<string, unknown>)['From'] as number"
+                      :use-grouping="false" :min-fraction-digits="0" :max-fraction-digits="0"
+                      input-class="score-input"
+                    />
+                  </td>
+                  <td class="col-range">
+                    <InputNumber
+                      v-model="(band as Record<string, unknown>)['To'] as number"
+                      :use-grouping="false" :min-fraction-digits="0" :max-fraction-digits="0"
+                      input-class="score-input"
+                    />
+                  </td>
                   <td class="col-score">
                     <InputNumber
                       v-model="(band as Record<string, unknown>)['Score'] as number"
@@ -296,8 +315,9 @@ function bandDescription(band: Record<string, unknown>): string {
       </div>
       <div class="field">
         <label class="field-label">{{ t('scoringModel.modelVersion') }}</label>
-        <InputText v-model="saveVersion" fluid placeholder="1.0" />
+        <InputText v-model="saveVersion" fluid placeholder="1.0" @input="saveError = ''" />
       </div>
+      <p v-if="saveError" class="save-error">{{ saveError }}</p>
     </div>
     <template #footer>
       <button class="btn-secondary" @click="showSaveDialog = false">{{ t('common.cancel') }}</button>
@@ -606,5 +626,12 @@ function bandDescription(band: Record<string, unknown>): string {
   font-size: 0.78rem;
   font-weight: 700;
   color: var(--text-secondary);
+}
+
+.save-error {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--error, #e53e3e);
 }
 </style>
