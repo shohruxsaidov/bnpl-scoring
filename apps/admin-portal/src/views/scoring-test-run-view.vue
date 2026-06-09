@@ -6,7 +6,7 @@ import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import Select from 'primevue/select'
 import { useScoringModelStore } from '@/stores/scoring-model'
-import { useScoringTestCasesStore, type TestRun } from '@/stores/scoring-test-cases'
+import { useScoringTestCasesStore, type TestRun, type TestRunResult } from '@/stores/scoring-test-cases'
 
 const store = useScoringTestCasesStore()
 const modelStore = useScoringModelStore()
@@ -61,6 +61,12 @@ function captureBaseline() {
   })
 }
 
+const selectedResult = ref<TestRunResult | null>(null)
+
+function selectRow(r: TestRunResult) {
+  selectedResult.value = selectedResult.value?.testCaseId === r.testCaseId ? null : r
+}
+
 function outcomeClass(o: string) {
   if (o === 'approved') return 'badge-approved'
   if (o === 'partial')  return 'badge-partial'
@@ -70,6 +76,18 @@ function outcomeClass(o: string) {
 
 function outcomeLabel(o: string) {
   return t(`scoringTestCases.${o}`)
+}
+
+function verdictClass(coeff: number) {
+  if (coeff >= 1) return 'verdict-approved'
+  if (coeff > 0)  return 'verdict-partial'
+  return 'verdict-denied'
+}
+
+function verdictLabel(coeff: number) {
+  if (coeff >= 1) return t('scoringTry.approved')
+  if (coeff > 0)  return t('scoringTry.partial')
+  return t('scoringTry.denied')
 }
 </script>
 
@@ -151,7 +169,8 @@ function outcomeLabel(o: string) {
               v-for="r in run.results"
               :key="r.testCaseId"
               class="result-row"
-              :class="{ fail: !r.pass }"
+              :class="{ fail: !r.pass, selected: selectedResult?.testCaseId === r.testCaseId }"
+              @click="selectRow(r)"
             >
               <td class="col-result">
                 <span class="pass-icon" :class="r.pass ? 'pass' : 'fail'">
@@ -180,6 +199,84 @@ function outcomeLabel(o: string) {
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Breakdown detail panel -->
+      <div v-if="selectedResult" class="surface-card detail-panel">
+        <div class="detail-header">
+          <span class="detail-title">{{ selectedResult.name }}</span>
+          <button class="detail-close" @click="selectedResult = null"><i class="pi pi-times" /></button>
+        </div>
+
+        <!-- Stop-factor rejection -->
+        <template v-if="selectedResult.actualOutcome === 'rejected'">
+          <div class="result-summary">
+            <div class="summary-card">
+              <span class="summary-label">{{ t('scoringTry.verdict') }}</span>
+              <span class="verdict-badge verdict-denied">{{ t('scoringTry.denied') }}</span>
+            </div>
+            <div class="summary-card col-span-2">
+              <span class="summary-label">{{ t('scoringTry.stopFactor') }}</span>
+              <span class="summary-value-sm">{{ selectedResult.stopFactor }}</span>
+            </div>
+          </div>
+        </template>
+
+        <!-- Scored breakdown -->
+        <template v-else-if="selectedResult.breakdown">
+          <div class="result-summary">
+            <div class="summary-card">
+              <span class="summary-label">{{ t('scoringTry.totalScore') }}</span>
+              <span class="summary-value">{{ selectedResult.totalScore?.toFixed(1) }}</span>
+            </div>
+            <div class="summary-card">
+              <span class="summary-label">{{ t('scoringTry.coefficient') }}</span>
+              <span class="summary-value">{{ selectedResult.coefficient }}</span>
+            </div>
+            <div class="summary-card">
+              <span class="summary-label">{{ t('scoringTry.verdict') }}</span>
+              <span class="verdict-badge" :class="verdictClass(selectedResult.coefficient!)">
+                {{ verdictLabel(selectedResult.coefficient!) }}
+              </span>
+            </div>
+          </div>
+
+          <table class="breakdown-table">
+            <thead>
+              <tr>
+                <th class="bc-name">{{ t('scoringTry.criterion') }}</th>
+                <th class="bc-num">{{ t('scoringTry.rawScore') }}</th>
+                <th class="bc-num">× {{ t('scoringModel.importantLevel') }}</th>
+                <th class="bc-num">= {{ t('scoringTry.weighted') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="row in selectedResult.breakdown"
+                :key="row.key"
+                :class="{ skipped: row.skipped }"
+              >
+                <td class="bc-name">
+                  {{ row.name }}
+                  <span v-if="row.skipped" class="skip-badge">{{ t('scoringTry.skipped') }}</span>
+                </td>
+                <td class="bc-num">{{ row.skipped ? '—' : row.rawScore }}</td>
+                <td class="bc-num">{{ row.importantLevel }}</td>
+                <td class="bc-num" :class="{ positive: row.weightedScore > 0, negative: row.weightedScore < 0 }">
+                  {{ row.skipped ? '—' : row.weightedScore.toFixed(1) }}
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="total-row">
+                <td class="bc-name">{{ t('scoringTry.total') }}</td>
+                <td class="bc-num" />
+                <td class="bc-num" />
+                <td class="bc-num total-score">{{ selectedResult.totalScore?.toFixed(1) }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </template>
       </div>
     </template>
 
@@ -448,4 +545,148 @@ function outcomeLabel(o: string) {
 }
 
 .btn-secondary:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+
+/* ── Row interaction ────────────────────────────────────────────────────────*/
+.result-row { cursor: pointer; }
+.result-row:hover { background: var(--bg-base); }
+.result-row.selected { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+
+/* ── Detail panel ───────────────────────────────────────────────────────────*/
+.detail-panel {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.detail-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.detail-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 0.78rem;
+  transition: all 0.15s;
+}
+
+.detail-close:hover { border-color: var(--danger); color: var(--danger); }
+
+.result-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.summary-card {
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.summary-card.col-span-2 { grid-column: span 2; }
+
+.summary-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.summary-value {
+  font-size: 1.6rem;
+  font-weight: 800;
+  font-family: monospace;
+}
+
+.summary-value-sm {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.verdict-badge {
+  display: inline-block;
+  font-size: 0.9rem;
+  font-weight: 800;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  margin-top: 0.2rem;
+}
+
+.verdict-approved { background: color-mix(in srgb, #22c55e 15%, transparent); color: #22c55e; }
+.verdict-partial   { background: color-mix(in srgb, #f59e0b 15%, transparent); color: #f59e0b; }
+.verdict-denied    { background: color-mix(in srgb, #ef4444 15%, transparent); color: #ef4444; }
+
+.breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.breakdown-table thead tr { border-bottom: 2px solid var(--border-subtle); }
+
+.breakdown-table th {
+  padding: 0.45rem 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.breakdown-table td {
+  padding: 0.35rem 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+}
+
+.breakdown-table tr:last-child td { border-bottom: none; }
+.bc-name { text-align: left; }
+.bc-num  { text-align: right; font-family: monospace; }
+.skipped td { opacity: 0.45; }
+
+.skip-badge {
+  margin-left: 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 0.06rem 0.3rem;
+}
+
+.positive { color: #22c55e; font-weight: 700; }
+.negative { color: #ef4444; font-weight: 700; }
+
+.total-row td {
+  border-top: 2px solid var(--border-subtle);
+  font-weight: 800;
+  padding-top: 0.5rem;
+}
+
+.total-score {
+  font-size: 1rem;
+  color: var(--accent-2);
+}
 </style>
