@@ -424,7 +424,8 @@ a {
 --------------------------------------------------------------------------- */
 .p-inputtext,
 .p-inputnumber-input,
-.p-password-input {
+.p-password-input,
+.p-textarea {
   background: var(--bg-base) !important;
   border-color: var(--border-subtle) !important;
   color: var(--text-primary) !important;
@@ -434,7 +435,8 @@ a {
 
 .p-inputtext:focus,
 .p-inputnumber-input:focus,
-.p-password-input:focus {
+.p-password-input:focus,
+.p-textarea:focus {
   border-color: var(--accent-1) !important;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-1) 20%, transparent) !important;
   outline: none !important;
