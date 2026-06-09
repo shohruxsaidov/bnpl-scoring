@@ -13,7 +13,9 @@
     "retry": "Qayta urinish",
     "loading": "Yuklanmoqda...",
     "error": "Xatolik yuz berdi",
-    "noData": "Ma'lumot yo'q"
+    "noData": "Ma'lumot yo'q",
+    "active": "Faol",
+    "inactive": "Faol emas"
   },
   "routeTitle": {
     "login": "Kirish",
@@ -485,7 +487,11 @@
     "updateFailed": "Tarifni yangilab bo'lmadi",
     "scoringModel": "Skoring modeli",
     "scoringModelPlaceholder": "Reviziyani tanlang...",
-    "scoringModelNone": "Ko'rsatilmagan"
+    "scoringModelNone": "Ko'rsatilmagan",
+    "merchants": "Bu tarifni ulagan merchantlar",
+    "merchantsEmpty": "Hech bir merchant bu tarifni ulamagan",
+    "merchantsLoadFailed": "Merchantlarni yuklab bo'lmadi",
+    "addedAt": "Ulanish sanasi"
   },
   "blacklist": {
     "listTitle": "Bloklangan identifikatorlar",

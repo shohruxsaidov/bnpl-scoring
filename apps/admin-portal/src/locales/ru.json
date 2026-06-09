@@ -13,7 +13,9 @@
     "retry": "Повторить",
     "loading": "Загрузка...",
     "error": "Произошла ошибка",
-    "noData": "Нет данных"
+    "noData": "Нет данных",
+    "active": "Активен",
+    "inactive": "Неактивен"
   },
   "routeTitle": {
     "login": "Войти",
@@ -493,7 +495,11 @@
     "updateFailed": "Не удалось обновить тариф",
     "scoringModel": "Модель скоринга",
     "scoringModelPlaceholder": "Выбрать ревизию...",
-    "scoringModelNone": "Не указана"
+    "scoringModelNone": "Не указана",
+    "merchants": "Мерчанты с этим тарифом",
+    "merchantsEmpty": "Ни один мерчант не подключил этот тариф",
+    "merchantsLoadFailed": "Не удалось загрузить мерчантов",
+    "addedAt": "Дата подключения"
   },
   "blacklist": {
     "listTitle": "Заблокированные идентификаторы",

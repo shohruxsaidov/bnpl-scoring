@@ -2,10 +2,11 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { apiFetch as api } from '@/utils/apiFetch'
-import type { Tariff } from '@/types'
+import type { Tariff, TariffMerchant } from '@/types'
 
 export const useTariffsStore = defineStore('tariffs', () => {
   const tariffs = ref<Tariff[]>([])
+  const tariffMerchants = ref<Record<string, TariffMerchant[]>>({})
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -53,5 +54,15 @@ export const useTariffsStore = defineStore('tariffs', () => {
     tariffs.value = tariffs.value.filter((t) => t.id !== id)
   }
 
-  return { tariffs, loading, error, fetchAll, create, update, remove }
+  async function fetchMerchants(tariffId: string): Promise<TariffMerchant[]> {
+    const body = await api<{ merchants: TariffMerchant[] }>(`/admin/tariffs/${tariffId}/merchants`)
+    tariffMerchants.value[tariffId] = body.merchants
+    return body.merchants
+  }
+
+  function merchantsFor(tariffId: string): TariffMerchant[] {
+    return tariffMerchants.value[tariffId] ?? []
+  }
+
+  return { tariffs, tariffMerchants, loading, error, fetchAll, create, update, remove, fetchMerchants, merchantsFor }
 })

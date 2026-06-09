@@ -3,6 +3,7 @@ import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
 import type { FastifyInstance } from "fastify"
 import { listTariffs } from "./queries/list-tariffs"
 import { getTariff } from "./queries/get-tariff"
+import { getTariffMerchants } from "./queries/get-tariff-merchants"
 import { createTariff } from "./commands/create-tariff"
 import { updateTariff } from "./commands/update-tariff"
 
@@ -67,5 +68,19 @@ export default async function adminTariffRoutes(app: FastifyInstance) {
     const tariff = await updateTariff(db, BigInt(request.params.id), { active: false })
     if (!tariff) return reply.code(404).sendError("not_found")
     return { tariff: serialize(tariff) }
+  })
+
+  fastify.get("/:id/merchants", { schema: { params: IdParams }, preHandler }, async (request) => {
+    const rows = await getTariffMerchants(db, BigInt(request.params.id))
+    return {
+      merchants: rows.map((m) => ({
+        id: m.id.toString(),
+        name: m.name,
+        legalName: m.legalName,
+        inn: m.inn,
+        active: m.active,
+        addedAt: m.addedAt.toISOString(),
+      })),
+    }
   })
 }

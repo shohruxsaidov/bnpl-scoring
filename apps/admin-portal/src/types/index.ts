@@ -168,6 +168,15 @@ export interface Tariff {
   selected?: boolean
 }
 
+export interface TariffMerchant {
+  id: string
+  name: string
+  legalName: string
+  inn: string
+  active: boolean
+  addedAt: string
+}
+
 export interface ScoringModel {
   version: string
   updatedAt: string
