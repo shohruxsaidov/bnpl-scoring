@@ -195,21 +195,6 @@ export interface IntegrationStatus {
   detail: string
 }
 
-export interface PlatformConfigItem {
-  key: string
-  label: string
-  value: string | number
-  unit?: string
-  /** when true the inline editor uses a number input */
-  numeric: boolean
-}
-
-export interface IntegrationEndpoint {
-  label: string
-  value: string
-  masked: boolean
-}
-
 // ---------------------------------------------------------------------------
 // Merchant domain (API-backed) — admin CRUD
 // ---------------------------------------------------------------------------

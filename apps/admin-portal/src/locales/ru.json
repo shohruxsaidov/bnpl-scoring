@@ -866,24 +866,10 @@
     "blockConfirm": "Заблокировать \"{name}\"? Он больше не сможет войти в систему."
   },
   "settings": {
-    "integrationEndpoints": "Эндпоинты интеграций",
-    "readOnlyInfra": "Только чтение · управляется через инфраструктуру",
-    "platformConfig": "Конфигурация платформы",
-    "inlineEditable": "Редактируется на месте",
-    "save": "Сохранить",
-    "cancel": "Отмена",
-    "edit": "Редактировать",
-    "settingSaved": "Настройка сохранена",
-    "katmBaseUrl": "Базовый URL KATM",
-    "katmTimeout": "Таймаут KATM",
-    "myidClientId": "MyID client ID",
-    "plumgateApiKey": "PlumGate API ключ",
-    "paymeMerchantId": "Payme merchant ID",
-    "clickServiceId": "Click service ID",
-    "otpExpiry": "Срок действия OTP по умолчанию",
-    "maxWizard": "Макс. сессий мастера на агента",
-    "hardDeny": "Порог жёсткого отказа по баллу",
-    "partialLimit": "Порог частичного лимита по баллу"
+    "language": "Язык",
+    "theme": "Тема оформления",
+    "themeLight": "Светлая",
+    "themeDark": "Тёмная"
   },
   "dealDetail": {
     "backToDeals": "Все сделки",

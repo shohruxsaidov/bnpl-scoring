@@ -858,24 +858,10 @@
     "blockConfirm": "\"{name}\" bloklansinmi? U endi tizimga kira olmaydi."
   },
   "settings": {
-    "integrationEndpoints": "Integratsiya endpointlari",
-    "readOnlyInfra": "Faqat o'qish · infra orqali boshqariladi",
-    "platformConfig": "Platforma konfiguratsiyasi",
-    "inlineEditable": "Joyida tahrirlanadi",
-    "save": "Saqlash",
-    "cancel": "Bekor qilish",
-    "edit": "Tahrirlash",
-    "settingSaved": "Sozlama saqlandi",
-    "katmBaseUrl": "KATM bazaviy URL",
-    "katmTimeout": "KATM kutish vaqti",
-    "myidClientId": "MyID mijoz ID",
-    "plumgateApiKey": "PlumGate API kalit",
-    "paymeMerchantId": "Payme merchant ID",
-    "clickServiceId": "Click xizmat ID",
-    "otpExpiry": "Standart OTP amal muddati",
-    "maxWizard": "Agentga maksimal sehrgar sessiyalari",
-    "hardDeny": "Ball qat'iy rad etish chegarasi",
-    "partialLimit": "Ball qisman limit chegarasi"
+    "language": "Til",
+    "theme": "Mavzu",
+    "themeLight": "Yorug'",
+    "themeDark": "Qorong'u"
   },
   "dealDetail": {
     "backToDeals": "Barcha shartnomalar",

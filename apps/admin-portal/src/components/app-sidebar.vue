@@ -3,7 +3,6 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
-import ThemeToggle from './theme-toggle.vue'
 
 const props = defineProps<{ collapsed: boolean; mobileOpen?: boolean; isMobile?: boolean }>()
 const emit = defineEmits<{ (e: 'toggle'): void }>()
@@ -97,7 +96,6 @@ async function logout() {
           <i class="pi pi-sign-out" />
           <span v-if="!props.collapsed">{{ $t('nav.logout') }}</span>
         </button>
-        <ThemeToggle />
       </div>
     </div>
   </aside>

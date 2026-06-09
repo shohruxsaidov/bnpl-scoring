@@ -7,7 +7,7 @@ defineProps<{ showMenuBtn?: boolean }>()
 const emit = defineEmits<{ (e: 'menu'): void }>()
 
 const route = useRoute()
-const { t, locale } = useI18n()
+const { t } = useI18n()
 
 const title = computed(() => {
   const key = route.meta.titleKey as string | undefined
@@ -17,11 +17,6 @@ const breadcrumb = computed(() => {
   const keys = (route.meta.breadcrumbKeys as string[]) ?? []
   return keys.map((k) => t(k))
 })
-
-function setLang(lang: 'uz' | 'ru') {
-  locale.value = lang
-  localStorage.setItem('lang', lang)
-}
 
 const today = new Date().toLocaleDateString('uz-UZ', {
   weekday: 'short',
@@ -48,22 +43,8 @@ const today = new Date().toLocaleDateString('uz-UZ', {
       </div>
     </div>
 
-    <div class="search">
-      <i class="pi pi-search" />
-      <input type="text" :placeholder="$t('topbar.searchPlaceholder')" />
-    </div>
-
     <div class="right">
       <span class="date font-mono">{{ today }}</span>
-      <div class="lang-switch">
-        <button class="lang-btn" :class="{ active: locale === 'uz' }" @click="setLang('uz')">
-          uz
-        </button>
-        <span class="lang-sep">|</span>
-        <button class="lang-btn" :class="{ active: locale === 'ru' }" @click="setLang('ru')">
-          ru
-        </button>
-      </div>
     </div>
   </header>
 </template>
@@ -125,83 +106,6 @@ const today = new Date().toLocaleDateString('uz-UZ', {
   font-weight: 600;
 }
 
-.lang-switch {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-surface);
-  border-radius: 10px;
-  padding: 0.28rem 0.5rem;
-  height: 38px;
-}
-
-.lang-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  font-weight: 700;
-  font-size: 0.76rem;
-  text-transform: uppercase;
-  cursor: pointer;
-  padding: 0.15rem 0.3rem;
-  border-radius: 6px;
-  transition: color 0.15s ease;
-}
-
-.lang-btn:hover {
-  color: var(--text-primary);
-}
-
-.lang-btn.active {
-  color: var(--accent-2);
-}
-
-.lang-sep {
-  color: var(--border-subtle);
-  font-size: 0.76rem;
-}
-
-.search {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  height: 38px;
-  padding: 0 0.85rem;
-  border-radius: 10px;
-  border: 1px solid var(--border-default);
-  background: var(--bg-input);
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  transition: all 0.15s ease;
-  min-width: 280px;
-}
-
-.search:focus-within {
-  border-color: var(--accent-1);
-}
-
-.search i {
-  font-size: 0.85rem;
-  color: var(--accent-1);
-  flex-shrink: 0;
-}
-
-.search input {
-  flex: 1;
-  border: none;
-  background: transparent;
-  outline: none;
-  font-family: inherit;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.search input::placeholder {
-  color: var(--text-muted);
-}
-
 .menu-btn {
   margin-right: 1.2rem;
   width: 38px;
@@ -227,10 +131,6 @@ const today = new Date().toLocaleDateString('uz-UZ', {
 
   .right {
     gap: 0.5rem;
-  }
-
-  .search {
-    display: none;
   }
 }
 </style>
