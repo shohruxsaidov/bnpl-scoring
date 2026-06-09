@@ -18,12 +18,7 @@ const breadcrumb = computed(() => {
   return keys.map((k) => t(k))
 })
 
-const today = new Date().toLocaleDateString('uz-UZ', {
-  weekday: 'short',
-  day: '2-digit',
-  month: 'short',
-  year: 'numeric',
-})
+
 </script>
 
 <template>
@@ -43,9 +38,7 @@ const today = new Date().toLocaleDateString('uz-UZ', {
       </div>
     </div>
 
-    <div class="right">
-      <span class="date font-mono">{{ today }}</span>
-    </div>
+
   </header>
 </template>
 
@@ -94,18 +87,6 @@ const today = new Date().toLocaleDateString('uz-UZ', {
   opacity: 0.6;
 }
 
-.right {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-}
-
-.date {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  font-weight: 600;
-}
-
 .menu-btn {
   margin-right: 1.2rem;
   width: 38px;
@@ -121,16 +102,8 @@ const today = new Date().toLocaleDateString('uz-UZ', {
 }
 
 @media (max-width: 767px) {
-  .date {
-    display: none;
-  }
-
   .topbar {
     padding: 0 1rem;
-  }
-
-  .right {
-    gap: 0.5rem;
   }
 }
 </style>
