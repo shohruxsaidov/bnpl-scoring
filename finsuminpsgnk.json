@@ -1,628 +1,343 @@
 {
-  "FinsumInpsGnkScoringModelParams": {
-    "IncomeSum": {
-      "MinAllowedAmount": 412000,
-      "MaxAllowedAmount": 30000000,
-      "ImportantLevel": 1,
-      "Name": "Уровень дохода",
-      "Values": [
-        {
-          "IncomeFrom": 0,
-          "IncomeTo": 10,
-          "Score": 0,
-          "Description": "до 10 БРВ"
-        },
-        {
-          "IncomeFrom": 10,
-          "IncomeTo": 20,
-          "Score": 60,
-          "Description": "от 10 до 20 БРВ"
-        },
-        {
-          "IncomeFrom": 20,
-          "IncomeTo": 30,
-          "Score": 70,
-          "Description": "от 20 до 30 БРВ"
-        },
-        {
-          "IncomeFrom": 30,
-          "IncomeTo": 40,
-          "Score": 80,
-          "Description": "от 30 до 40 БРВ"
-        },
-        {
-          "IncomeFrom": 40,
-          "IncomeTo": 50,
-          "Score": 90,
-          "Description": "от 40 до 50 БРВ"
-        },
-        {
-          "IncomeFrom": 50,
-          "IncomeTo": 70,
-          "Score": 100,
-          "Description": "от 50 до 70 БРВ"
-        },
-        {
-          "IncomeFrom": 70,
-          "IncomeTo": 10000,
-          "Score": 150,
-          "Description": "от 70 и выше"
-        }
-      ]
-    },
-    "Citizenship": {
-      "ImportantLevel": 0.5,
-      "Name": "Паспортные данные (гражданство)",
-      "Scores": {
-        "Uzbekistan": 100,
-        "NonResident": 0
-      }
-    },
-    "WorkExperience": {
-      "ImportantLevel": 1,
-      "Name": "период отчислений",
-      "Values": [
-        {
-          "Score": 0,
-          "ExperienceFrom": 0,
-          "ExperienceTo": 5,
-          "Description": "от 0 до 6 месяцев"
-        },
-        {
-          "Score": 75,
-          "ExperienceFrom": 6,
-          "ExperienceTo": 11,
-          "Description": "от 6 до 12 месяцев"
-        },
-        {
-          "Score": 100,
-          "ExperienceFrom": 12,
-          "ExperienceTo": 17,
-          "Description": "от 12 до 18 месяцев"
-        },
-        {
-          "Score": 150,
-          "ExperienceFrom": 18,
-          "ExperienceTo": 10000,
-          "Description": "от 18 месяцев"
-        }
-      ]
-    },
-    "Age": {
-      "ImportantLevel": 1,
-      "Name": "Возраст",
-      "Values": [
-        {
-          "Score": -350,
-          "AgeFrom": 0,
-          "AgeTo": 20,
-          "Description": "от 0 до 21 лет"
-        },
-        {
-          "Score": 25,
-          "AgeFrom": 21,
-          "AgeTo": 30,
-          "Description": "от 21 до 31 лет"
-        },
-        {
-          "Score": 75,
-          "AgeFrom": 31,
-          "AgeTo": 40,
-          "Description": "от 31 до 40 лет"
-        },
-        {
-          "Score": 100,
-          "AgeFrom": 41,
-          "AgeTo": 54,
-          "Description": "от 41 до 55 лет"
-        },
-        {
-          "Score": 50,
-          "AgeFrom": 55,
-          "AgeTo": 64,
-          "Description": "от 55 до 65 лет"
-        },
-        {
-          "Score": -350,
-          "AgeFrom": 65,
-          "AgeTo": 200,
-          "Description": "65 и больше "
-        }
-      ]
-    },
-    "MonthlyAveragePayment": {
-      "ImportantLevel": 0,
-      "Name": "Соотношения кредитной нагрузки к доходу",
-      "Values": [
-        {
-          "Score": 100,
-          "AveragePaymentFrom": 0,
-          "AveragePaymentTo": 0,
-          "Description": "нет выплаты по кредиту"
-        },
-        {
-          "Score": 85,
-          "AveragePaymentFrom": 0.1,
-          "AveragePaymentTo": 5,
-          "Description": "от 0.01% - 5% от дохода"
-        },
-        {
-          "Score": 70,
-          "AveragePaymentFrom": 5,
-          "AveragePaymentTo": 10,
-          "Description": "6-10% от дохода"
-        },
-        {
-          "Score": 55,
-          "AveragePaymentFrom": 11,
-          "AveragePaymentTo": 20,
-          "Description": "11-20% от дохода"
-        },
-        {
-          "Score": 40,
-          "AveragePaymentFrom": 21,
-          "AveragePaymentTo": 30,
-          "Description": "21-30% от дохода"
-        },
-        {
-          "Score": 25,
-          "AveragePaymentFrom": 31,
-          "AveragePaymentTo": 40,
-          "Description": "31-40% от дохода"
-        },
-        {
-          "Score": 10,
-          "AveragePaymentFrom": 41,
-          "AveragePaymentTo": 50,
-          "Description": "41-50% от дохода"
-        },
-        {
-          "Score": 0,
-          "AveragePaymentFrom": 51,
-          "AveragePaymentTo": 60,
-          "Description": "50-60% от дохода"
-        },
-        {
-          "Score": -200,
-          "AveragePaymentFrom": 61,
-          "AveragePaymentTo": 80,
-          "Description": "61-80% от дохода"
-        },
-        {
-          "Score": -500,
-          "AveragePaymentFrom": 81,
-          "AveragePaymentTo": 1000,
-          "Description": "81% и выше"
-        }
-      ]
-    },
-    "OverduePrincipalDays": {
-      "ImportantLevel": 1,
-      "Name": "Договора без единой просрочек с кредитной истории",
-      "Values": [
-        {
-          "OverdueCountFrom": 0,
-          "OverdueCountTo": 0,
-          "Score": -500,
-          "Description": "Без кредитной истории"
-        },
-        {
-          "OverdueCountFrom": 1,
-          "OverdueCountTo": 1,
-          "Score": 150,
-          "Description": "Нету просрочек по договорам "
-        },
-        {
-          "OverdueCountFrom": 2,
-          "OverdueCountTo": 1000,
-          "Score": 75,
-          "Description": "Есть просрочка по договорам"
-        }
-      ]
-    },
-    "ContingentLiability": {
-      "ImportantLevel": 1,
-      "Name": "Все виды задолженности (кредиты, лизинги, ритейл) количество открытых кредитов",
-      "Values": [
-        {
-          "LiabilityFrom": 0,
-          "LiabilityTo": 0,
-          "Score": 100,
-          "Description": "Нету объязаетельств (кредитов, лизингов, ритейл)"
-        },
-        {
-          "LiabilityFrom": 1,
-          "LiabilityTo": 3,
-          "Score": 75,
-          "Description": "Не более 3"
-        },
-        {
-          "LiabilityFrom": 4,
-          "LiabilityTo": 4,
-          "Score": 50,
-          "Description": "Не более 4"
-        },
-        {
-          "LiabilityFrom": 5,
-          "LiabilityTo": 1000,
-          "Score": 0,
-          "Description": "5 и более"
-        }
-      ]
-    },
-    "Overdue30Days": {
-      "ImportantLevel": 1,
-      "Name": "Просрочки до 30 дней",
-      "Values": [
-        {
-          "OverdueCountFrom": 1,
-          "OverdueCountTo": 2,
-          "Score": 0,
-          "Description": "2 просрочки до 30 дней(не более 2 раз)"
-        },
-        {
-          "OverdueCountFrom": 3,
-          "OverdueCountTo": 3,
-          "Score": 0,
-          "Description": "3 просрочка до 30 дней(не более 3 раза)"
-        },
-        {
-          "OverdueCountFrom": 4,
-          "OverdueCountTo": 1000,
-          "Score": 0,
-          "Description": "более 3х просрочек до 30 дней( более 3 раз)"
-        },
-        {
-          "OverdueCountFrom": 0,
-          "OverdueCountTo": 0,
-          "Score": 0,
-          "Description": "Без просрочки "
-        }
-      ]
-    },
-    "Overdue30To60Days": {
-      "ImportantLevel": 1,
-      "Name": "Просрочки от 30 до 60 дней",
-      "Values": [
-        {
-          "OverdueCountFrom": 1,
-          "OverdueCountTo": 1,
-          "Score": -10,
-          "Description": "1 просрочка от 30 до 60 дней(не более 1 раза)"
-        },
-        {
-          "OverdueCountFrom": 2,
-          "OverdueCountTo": 2,
-          "Score": -30,
-          "Description": "1 просрочка от 30 до 60 дней(не более 1 раза)"
-        },
-        {
-          "OverdueCountFrom": 2,
-          "OverdueCountTo": 1000,
-          "Score": -50,
-          "Description": "более 1 просрочки от 30 до 60 дней(более 1 раз)"
-        },
-        {
-          "OverdueCountFrom": 0,
-          "OverdueCountTo": 0,
-          "Score": 0,
-          "Description": "Без просрочки от 30 до 60 дней(нет)"
-        }
-      ]
-    },
-    "Overdue60To90Days": {
-      "ImportantLevel": 1,
-      "Name": "Просрочки от 60 до 90 дней",
-      "Values": [
-        {
-          "OverdueCountFrom": 1,
-          "OverdueCountTo": 1,
-          "Score": -30,
-          "Description": "1 просрочка от 60 до 90 дней(не более 1 раза)"
-        },
-        {
-          "OverdueCountFrom": 2,
-          "OverdueCountTo": 1000,
-          "Score": -50,
-          "Description": "просрочка от 60 до 90 дней(более 1 раза)"
-        },
-        {
-          "OverdueCountFrom": 0,
-          "OverdueCountTo": 0,
-          "Score": 0,
-          "Description": "Без просрочки от 60 до 90 дней(нет)"
-        }
-      ]
-    },
-    "Overdue90Days": {
-      "ImportantLevel": 1,
-      "Name": "Просрочки от 90 дней и более",
-      "Values": [
-        {
-          "OverdueCountFrom": 1,
-          "OverdueCountTo": 1000,
-          "Score": -100,
-          "Description": "Есть просрочка от 90 дней и более"
-        },
-        {
-          "OverdueCountFrom": 0,
-          "OverdueCountTo": 0,
-          "Score": 0,
-          "Description": "Нету просрочка от 90 дней и более"
-        }
-      ]
-    },
+  "Metadata": {
+    "ModelName": "FinsumInpsGnkScoringModel",
+    "ModelVersion": "2.0.0",
+    "EffectiveDate": "2026-01-01",
+    "Currency": "UZS",
+    "BrvValue": 412000,
+    "BoundarySemantics": "half-open [From, To): From inclusive, To exclusive. To=null means unbounded (and above).",
+    "Description": "Кредитная скоринговая модель на основе данных ИНПС (пенсионные отчисления) и ГНК (налоговый комитет)."
+  },
+
+  "StopFactors": {
     "Juridical": {
-      "ImportantLevel": 1,
-      "Scores": {
-        "WithJuridical": -400,
-        "WithoutJuridical": 0
-      }
+      "Name": "Судебные/юридические разбирательства",
+      "Type": "boolean",
+      "Match": "WithJuridical",
+      "Reject": true,
+      "Description": "Наличие судебных дел по обязательствам — жёсткий отказ."
     },
     "DeCommissioned": {
+      "Name": "Списанные (безнадёжные) кредиты",
+      "Type": "boolean",
+      "Match": "WithDecommission",
+      "Reject": true,
+      "Description": "Наличие списанного банком долга — жёсткий отказ."
+    }
+  },
+
+  "ScoringParams": {
+    "IncomeSum": {
+      "Name": "Уровень дохода",
+      "Enabled": true,
       "ImportantLevel": 1,
-      "Scores": {
-        "WithDecommission": -400,
-        "WithoutDecommission": 0
+      "Type": "range",
+      "Unit": "BRV",
+      "DefaultScore": 0,
+      "Constraints": {
+        "MinAllowedAmount": 412000,
+        "MaxAllowedAmount": 30000000,
+        "AmountUnit": "UZS"
+      },
+      "Ranges": [
+        { "From": 0,  "To": 10,   "Score": 0,   "Description": "до 10 БРВ" },
+        { "From": 10, "To": 20,   "Score": 60,  "Description": "от 10 до 20 БРВ" },
+        { "From": 20, "To": 30,   "Score": 70,  "Description": "от 20 до 30 БРВ" },
+        { "From": 30, "To": 40,   "Score": 80,  "Description": "от 30 до 40 БРВ" },
+        { "From": 40, "To": 50,   "Score": 90,  "Description": "от 40 до 50 БРВ" },
+        { "From": 50, "To": 70,   "Score": 100, "Description": "от 50 до 70 БРВ" },
+        { "From": 70, "To": null, "Score": 150, "Description": "от 70 БРВ и выше" }
+      ]
+    },
+
+    "Citizenship": {
+      "Name": "Паспортные данные (гражданство)",
+      "Enabled": true,
+      "ImportantLevel": 0.5,
+      "Type": "categorical",
+      "DefaultScore": 0,
+      "Categories": {
+        "Uzbekistan":  { "Score": 100, "Description": "Гражданин Узбекистана" },
+        "NonResident": { "Score": 0,   "Description": "Нерезидент" }
       }
     },
+
+    "WorkExperience": {
+      "Name": "Период отчислений (стаж)",
+      "Enabled": true,
+      "ImportantLevel": 1,
+      "Type": "range",
+      "Unit": "months",
+      "DefaultScore": 0,
+      "Ranges": [
+        { "From": 0,  "To": 6,    "Score": 0,   "Description": "от 0 до 6 месяцев" },
+        { "From": 6,  "To": 12,   "Score": 75,  "Description": "от 6 до 12 месяцев" },
+        { "From": 12, "To": 18,   "Score": 100, "Description": "от 12 до 18 месяцев" },
+        { "From": 18, "To": null, "Score": 150, "Description": "от 18 месяцев" }
+      ]
+    },
+
+    "Age": {
+      "Name": "Возраст",
+      "Enabled": true,
+      "ImportantLevel": 1,
+      "Type": "range",
+      "Unit": "years",
+      "DefaultScore": 0,
+      "Ranges": [
+        { "From": 0,  "To": 21,   "Score": -350, "Description": "до 21 года" },
+        { "From": 21, "To": 31,   "Score": 25,   "Description": "от 21 до 31 года" },
+        { "From": 31, "To": 41,   "Score": 75,   "Description": "от 31 до 41 года" },
+        { "From": 41, "To": 55,   "Score": 100,  "Description": "от 41 до 55 лет" },
+        { "From": 55, "To": 65,   "Score": 50,   "Description": "от 55 до 65 лет" },
+        { "From": 65, "To": null, "Score": -350, "Description": "65 лет и старше" }
+      ]
+    },
+
+    "MonthlyAveragePayment": {
+      "Name": "Соотношение кредитной нагрузки к доходу",
+      "Enabled": false,
+      "ImportantLevel": 1,
+      "Type": "range",
+      "Unit": "percent",
+      "DefaultScore": 0,
+      "Ranges": [
+        { "From": 0,    "To": 0.01, "Score": 100,  "Description": "нет выплаты по кредиту" },
+        { "From": 0.01, "To": 5,    "Score": 85,   "Description": "от 0.01% до 5% от дохода" },
+        { "From": 5,    "To": 10,   "Score": 70,   "Description": "от 5% до 10% от дохода" },
+        { "From": 10,   "To": 20,   "Score": 55,   "Description": "от 10% до 20% от дохода" },
+        { "From": 20,   "To": 30,   "Score": 40,   "Description": "от 20% до 30% от дохода" },
+        { "From": 30,   "To": 40,   "Score": 25,   "Description": "от 30% до 40% от дохода" },
+        { "From": 40,   "To": 50,   "Score": 10,   "Description": "от 40% до 50% от дохода" },
+        { "From": 50,   "To": 60,   "Score": 0,    "Description": "от 50% до 60% от дохода" },
+        { "From": 60,   "To": 80,   "Score": -200, "Description": "от 60% до 80% от дохода" },
+        { "From": 80,   "To": null, "Score": -500, "Description": "81% и выше" }
+      ]
+    },
+
+    "CreditHistoryContracts": {
+      "Name": "Договоры без единой просрочки в кредитной истории",
+      "Enabled": true,
+      "ImportantLevel": 1,
+      "Type": "range",
+      "Unit": "count",
+      "DefaultScore": 0,
+      "Ranges": [
+        { "From": 0, "To": 1,    "Score": -500, "Description": "Без кредитной истории" },
+        { "From": 1, "To": 2,    "Score": 150,  "Description": "Нет просрочек по договорам" },
+        { "From": 2, "To": null, "Score": 75,   "Description": "Есть просрочка по договорам" }
+      ]
+    },
+
+    "ContingentLiability": {
+      "Name": "Количество открытых обязательств (кредиты, лизинги, ритейл)",
+      "Enabled": true,
+      "ImportantLevel": 1,
+      "Type": "range",
+      "Unit": "count",
+      "DefaultScore": 0,
+      "Ranges": [
+        { "From": 0, "To": 1,    "Score": 100, "Description": "Нет обязательств" },
+        { "From": 1, "To": 4,    "Score": 75,  "Description": "Не более 3" },
+        { "From": 4, "To": 5,    "Score": 50,  "Description": "4 обязательства" },
+        { "From": 5, "To": null, "Score": 0,   "Description": "5 и более" }
+      ]
+    },
+
+    "Overdue30Days": {
+      "Name": "Просрочки до 30 дней",
+      "Enabled": true,
+      "ImportantLevel": 1,
+      "Type": "range",
+      "Unit": "count",
+      "DefaultScore": 0,
+      "Note": "Все баллы 0 — параметр сейчас нейтрален. Проверить, нужны ли реальные веса.",
+      "Ranges": [
+        { "From": 0, "To": 1,    "Score": 0, "Description": "Без просрочки" },
+        { "From": 1, "To": 3,    "Score": 0, "Description": "1-2 просрочки до 30 дней" },
+        { "From": 3, "To": 4,    "Score": 0, "Description": "3 просрочки до 30 дней" },
+        { "From": 4, "To": null, "Score": 0, "Description": "более 3 просрочек до 30 дней" }
+      ]
+    },
+
+    "Overdue30To60Days": {
+      "Name": "Просрочки от 30 до 60 дней",
+      "Enabled": true,
+      "ImportantLevel": 1,
+      "Type": "range",
+      "Unit": "count",
+      "DefaultScore": 0,
+      "Ranges": [
+        { "From": 0, "To": 1,    "Score": 0,   "Description": "Без просрочки от 30 до 60 дней" },
+        { "From": 1, "To": 2,    "Score": -10, "Description": "1 просрочка от 30 до 60 дней" },
+        { "From": 2, "To": 3,    "Score": -30, "Description": "2 просрочки от 30 до 60 дней" },
+        { "From": 3, "To": null, "Score": -50, "Description": "более 2 просрочек от 30 до 60 дней" }
+      ]
+    },
+
+    "Overdue60To90Days": {
+      "Name": "Просрочки от 60 до 90 дней",
+      "Enabled": true,
+      "ImportantLevel": 1,
+      "Type": "range",
+      "Unit": "count",
+      "DefaultScore": 0,
+      "Ranges": [
+        { "From": 0, "To": 1,    "Score": 0,   "Description": "Без просрочки от 60 до 90 дней" },
+        { "From": 1, "To": 2,    "Score": -30, "Description": "1 просрочка от 60 до 90 дней" },
+        { "From": 2, "To": null, "Score": -50, "Description": "более 1 просрочки от 60 до 90 дней" }
+      ]
+    },
+
+    "Overdue90Days": {
+      "Name": "Просрочки от 90 дней и более",
+      "Enabled": true,
+      "ImportantLevel": 1,
+      "Type": "range",
+      "Unit": "count",
+      "DefaultScore": 0,
+      "Ranges": [
+        { "From": 0, "To": 1,    "Score": 0,    "Description": "Нет просрочки от 90 дней и более" },
+        { "From": 1, "To": null, "Score": -100, "Description": "Есть просрочка от 90 дней и более" }
+      ]
+    },
+
     "LoanApplication": {
-      "ImportantLevel": 1,
       "Name": "Заявки на кредитные продукты",
+      "Enabled": true,
+      "ImportantLevel": 1,
+      "Type": "range",
+      "Unit": "count",
+      "DefaultScore": 0,
       "Rejections": [
-        {
-          "Code": "08"
-        },
-        {
-          "Code": "09"
-        },
-        {
-          "Code": "01"
-        },
-        {
-          "Code": "11"
-        },
-        {
-          "Code": "10"
-        },
-        {
-          "Code": "02"
-        },
-        {
-          "Code": "05"
-        },
-        {
-          "Code": "07"
-        }
+        { "Code": "01", "Description": "ЗАПОЛНИТЬ: причина отказа 01" },
+        { "Code": "02", "Description": "ЗАПОЛНИТЬ: причина отказа 02" },
+        { "Code": "05", "Description": "ЗАПОЛНИТЬ: причина отказа 05" },
+        { "Code": "07", "Description": "ЗАПОЛНИТЬ: причина отказа 07" },
+        { "Code": "08", "Description": "ЗАПОЛНИТЬ: причина отказа 08" },
+        { "Code": "09", "Description": "ЗАПОЛНИТЬ: причина отказа 09" },
+        { "Code": "10", "Description": "ЗАПОЛНИТЬ: причина отказа 10" },
+        { "Code": "11", "Description": "ЗАПОЛНИТЬ: причина отказа 11" }
       ],
-      "Values": [
-        {
-          "LoanApplicationFrom": 0,
-          "LoanApplicationTo": 0,
-          "Score": 50,
-          "Description": "не было "
-        },
-        {
-          "LoanApplicationFrom": 1,
-          "LoanApplicationTo": 1,
-          "Score": 0,
-          "Description": "у субъекта имеются заявки, ожидающие решения в другой кредитной организации "
-        },
-        {
-          "LoanApplicationFrom": 2,
-          "LoanApplicationTo": 1000,
-          "Score": 0,
-          "Description": "субъект обращался за разными кредитами в последнее время"
-        }
+      "Ranges": [
+        { "From": 0, "To": 1,    "Score": 50, "Description": "Заявок не было" },
+        { "From": 1, "To": 2,    "Score": 0,  "Description": "Есть заявка, ожидающая решения в другой организации" },
+        { "From": 2, "To": null, "Score": 0,  "Description": "Обращался за разными кредитами в последнее время" }
       ]
     },
+
     "Gender": {
-      "ImportantLevel": 0.5,
       "Name": "Паспортные данные (пол)",
-      "Scores": {
-        "Female": 100,
-        "Male": 90
+      "Enabled": true,
+      "ImportantLevel": 0.5,
+      "Type": "categorical",
+      "DefaultScore": 0,
+      "Categories": {
+        "Female": { "Score": 100, "Description": "Женский" },
+        "Male":   { "Score": 90,  "Description": "Мужской" }
       }
     },
+
     "CoBorrowerLiability": {
+      "Name": "Прочие обязательства (Созаёмщик)",
+      "Enabled": true,
       "ImportantLevel": 1,
-      "Name": "Прочи обязательства (Созаёмщик)",
-      "Values": [
-        {
-          "CoBorrowerFrom": null,
-          "CoBorrowerTo": null,
-          "Score": 50,
-          "Description": "нет"
-        },
-        {
-          "CoBorrowerFrom": 0,
-          "CoBorrowerTo": 0,
-          "Score": 0,
-          "Description": "есть, без просрочки"
-        },
-        {
-          "CoBorrowerFrom": 1,
-          "CoBorrowerTo": 29,
-          "Score": 0,
-          "Description": "просрочка до 30 дней"
-        },
-        {
-          "CoBorrowerFrom": 30,
-          "CoBorrowerTo": 59,
-          "Score": -20,
-          "Description": "Просрочки от 30 до 60 дней"
-        },
-        {
-          "CoBorrowerFrom": 60,
-          "CoBorrowerTo": 89,
-          "Score": -30,
-          "Description": "Просрочки от 60 до 90 дней"
-        },
-        {
-          "CoBorrowerFrom": 90,
-          "CoBorrowerTo": 10000,
-          "Score": -40,
-          "Description": "Просрочки от 90 дней и более"
-        }
+      "Type": "range",
+      "Unit": "days",
+      "DefaultScore": 0,
+      "NotApplicable": { "Score": 50, "Description": "Созаёмщиком не является" },
+      "Ranges": [
+        { "From": 0,  "To": 1,    "Score": 0,   "Description": "Есть, без просрочки" },
+        { "From": 1,  "To": 30,   "Score": 0,   "Description": "Просрочка до 30 дней" },
+        { "From": 30, "To": 60,   "Score": -20, "Description": "Просрочка от 30 до 60 дней" },
+        { "From": 60, "To": 90,   "Score": -30, "Description": "Просрочка от 60 до 90 дней" },
+        { "From": 90, "To": null, "Score": -40, "Description": "Просрочка от 90 дней и более" }
       ]
     },
+
     "GuarantorLiability": {
+      "Name": "Прочие обязательства (Поручитель)",
+      "Enabled": true,
       "ImportantLevel": 1,
-      "Name": "Прочи обязательства (Поручитель)",
-      "Values": [
-        {
-          "GuarantorFrom": null,
-          "GuarantorTo": null,
-          "Score": 50,
-          "Description": "нет"
-        },
-        {
-          "GuarantorFrom": 0,
-          "GuarantorTo": 0,
-          "Score": 0,
-          "Description": "есть, без просрочки"
-        },
-        {
-          "GuarantorFrom": 1,
-          "GuarantorTo": 29,
-          "Score": 0,
-          "Description": "просрочка до 30 дней"
-        },
-        {
-          "GuarantorFrom": 30,
-          "GuarantorTo": 59,
-          "Score": 0,
-          "Description": "Просрочки от 30 до 60 дней"
-        },
-        {
-          "GuarantorFrom": 60,
-          "GuarantorTo": 89,
-          "Score": 0,
-          "Description": "Просрочки от 60 до 90 дней"
-        },
-        {
-          "GuarantorFrom": 90,
-          "GuarantorTo": 10000,
-          "Score": -40,
-          "Description": "Просрочки от 90 дней и более"
-        }
+      "Type": "range",
+      "Unit": "days",
+      "DefaultScore": 0,
+      "NotApplicable": { "Score": 50, "Description": "Поручителем не является" },
+      "Ranges": [
+        { "From": 0,  "To": 1,    "Score": 0,   "Description": "Есть, без просрочки" },
+        { "From": 1,  "To": 30,   "Score": 0,   "Description": "Просрочка до 30 дней" },
+        { "From": 30, "To": 60,   "Score": 0,   "Description": "Просрочка от 30 до 60 дней" },
+        { "From": 60, "To": 90,   "Score": 0,   "Description": "Просрочка от 60 до 90 дней" },
+        { "From": 90, "To": null, "Score": -40, "Description": "Просрочка от 90 дней и более" }
       ]
     },
+
     "PledgerLiability": {
+      "Name": "Прочие обязательства (Залогодатель)",
+      "Enabled": true,
       "ImportantLevel": 0.5,
-      "Name": "Прочи обязательства (Залогодатель)",
-      "Values": [
-        {
-          "PledgerFrom": null,
-          "PledgerTo": null,
-          "Score": 50,
-          "Description": "нет"
-        },
-        {
-          "PledgerFrom": 0,
-          "PledgerTo": 0,
-          "Score": 0,
-          "Description": "есть, без просрочки"
-        },
-        {
-          "PledgerFrom": 1,
-          "PledgerTo": 29,
-          "Score": 0,
-          "Description": "просрочка до 30 дней"
-        },
-        {
-          "PledgerFrom": 30,
-          "PledgerTo": 59,
-          "Score": 0,
-          "Description": "Просрочки от 30 до 60 дней"
-        },
-        {
-          "PledgerFrom": 60,
-          "PledgerTo": 89,
-          "Score": 0,
-          "Description": "Просрочки от 60 до 90 дней"
-        },
-        {
-          "PledgerFrom": 90,
-          "PledgerTo": 10000,
-          "Score": -40,
-          "Description": "Просрочки от 90 дней и более"
-        }
+      "Type": "range",
+      "Unit": "days",
+      "DefaultScore": 0,
+      "NotApplicable": { "Score": 50, "Description": "Залогодателем не является" },
+      "Ranges": [
+        { "From": 0,  "To": 1,    "Score": 0,   "Description": "Есть, без просрочки" },
+        { "From": 1,  "To": 30,   "Score": 0,   "Description": "Просрочка до 30 дней" },
+        { "From": 30, "To": 60,   "Score": 0,   "Description": "Просрочка от 30 до 60 дней" },
+        { "From": 60, "To": 90,   "Score": 0,   "Description": "Просрочка от 60 до 90 дней" },
+        { "From": 90, "To": null, "Score": -40, "Description": "Просрочка от 90 дней и более" }
       ]
     },
+
     "Mortgage": {
-      "ImportantLevel": 0.5,
       "Name": "Ипотека",
-      "Scores": {
-        "WithoutMortgage": 0,
-        "WithMortgage": 50
+      "Enabled": true,
+      "ImportantLevel": 0.5,
+      "Type": "categorical",
+      "DefaultScore": 0,
+      "Categories": {
+        "WithMortgage":    { "Score": 50, "Description": "Есть ипотека" },
+        "WithoutMortgage": { "Score": 0,  "Description": "Нет ипотеки" }
       }
     },
+
     "PassportData": {
       "Name": "Прописка",
-      "ValidRegions": [
-        "1726",
-        "1727"
-      ],
-      "Score": 50,
-      "ImportantLevel": 1
-    },
-    "AllDebts": {
-      "ImportantLevel": 0.5,
-      "Name": "Наличие по задолженности по БПИ",
-      "Values": [
-        {
-          "DebtsFrom": 0,
-          "DebtsTo": 0,
-          "Score": 100,
-          "Description": "не имеется "
-        },
-        {
-          "DebtsFrom": 0,
-          "DebtsTo": 2000000,
-          "Score": 50,
-          "Description": "от 0 до 2 000 000"
-        },
-        {
-          "DebtsFrom": 2000001,
-          "DebtsTo": 4000000,
-          "Score": 0,
-          "Description": "от 2 000 001 до 4 000 000"
-        },
-        {
-          "DebtsFrom": 4000001,
-          "DebtsTo": 6000000,
-          "Score": -200,
-          "Description": "от 4 000 001 до 6 000 000"
-        },
-        {
-          "DebtsFrom": 6000001,
-          "DebtsTo": 100000000,
-          "Score": -500,
-          "Description": "6 000 001 и больше "
-        }
-      ]
-    },
-    "LimitSum": {
+      "Enabled": true,
       "ImportantLevel": 1,
-      "Name": "Коэффициент",
-      "Values": [
-        {
-          "From": -2205,
-          "To": 500,
-          "Score": 0
-        },
-        {
-          "From": 500,
-          "To": 750,
-          "Score": 0.8
-        },
-        {
-          "From": 750,
-          "To": 5000,
-          "Score": 1
-        }
+      "Type": "regionMatch",
+      "DefaultScore": 0,
+      "ValidRegions": ["1726", "1727"],
+      "MatchScore": 50,
+      "Description": "Если регион прописки в списке ValidRegions — начисляется MatchScore."
+    },
+
+    "AllDebts": {
+      "Name": "Наличие задолженности по БПИ",
+      "Enabled": true,
+      "ImportantLevel": 0.5,
+      "Type": "range",
+      "Unit": "UZS",
+      "DefaultScore": 0,
+      "Ranges": [
+        { "From": 0,       "To": 1,        "Score": 100,  "Description": "Не имеется" },
+        { "From": 1,       "To": 2000001,  "Score": 50,   "Description": "от 1 до 2 000 000" },
+        { "From": 2000001, "To": 4000001,  "Score": 0,    "Description": "от 2 000 001 до 4 000 000" },
+        { "From": 4000001, "To": 6000001,  "Score": -200, "Description": "от 4 000 001 до 6 000 000" },
+        { "From": 6000001, "To": null,     "Score": -500, "Description": "6 000 001 и больше" }
       ]
     }
+  },
+
+  "LimitCoefficient": {
+    "Name": "Коэффициент итогового лимита",
+    "Description": "Множитель кредитного лимита в зависимости от суммарного скор-балла.",
+    "Unit": "score",
+    "DefaultCoefficient": 0,
+    "Ranges": [
+      { "From": -2205, "To": 500,  "Coefficient": 0 },
+      { "From": 500,   "To": 750,  "Coefficient": 0.8 },
+      { "From": 750,   "To": null, "Coefficient": 1 }
+    ]
   }
 }

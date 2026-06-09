@@ -8,7 +8,7 @@ import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { useToast } from 'primevue/usetoast'
 import { useScoringModelStore } from '@/stores/scoring-model'
-import type { CriterionResult } from '@/stores/scoring-model'
+import type { ScoringTryResult } from '@/stores/scoring-model'
 
 const route = useRoute()
 const router = useRouter()
@@ -19,7 +19,7 @@ const store = useScoringModelStore()
 const modelId = Number(route.params.id)
 const step = ref(0) // 0-4 = input steps, 5 = result
 const loading = ref(false)
-const result = ref<{ totalScore: number; coefficient: number; breakdown: CriterionResult[] } | null>(null)
+const result = ref<ScoringTryResult | null>(null)
 
 const STEPS = computed(() => [
   t('scoringTry.stepPersonal'),
@@ -38,17 +38,22 @@ onMounted(async () => {
 })
 
 function isEnabled(criterionKey: string): boolean {
-  const p = store.revision?.params as Record<string, { Enabled?: boolean }> | undefined
-  return p?.[criterionKey]?.Enabled !== false
+  const p = store.revision?.params as { ScoringParams?: Record<string, { Enabled?: boolean }> } | undefined
+  return p?.ScoringParams?.[criterionKey]?.Enabled !== false
+}
+
+function isStopFactorPresent(key: string): boolean {
+  const p = store.revision?.params as { StopFactors?: Record<string, unknown> } | undefined
+  return key in (p?.StopFactors ?? {})
 }
 
 // ── Derived step visibility ────────────────────────────────────────────────
 const stepHasFields = computed(() => [
   isEnabled('Age') || isEnabled('Gender') || isEnabled('Citizenship') || isEnabled('PassportData'),
   isEnabled('IncomeSum') || isEnabled('WorkExperience') || isEnabled('MonthlyAveragePayment'),
-  isEnabled('OverduePrincipalDays') || isEnabled('ContingentLiability') || isEnabled('Overdue30Days') || isEnabled('Overdue30To60Days') || isEnabled('Overdue60To90Days') || isEnabled('Overdue90Days') || isEnabled('AllDebts'),
+  isEnabled('CreditHistoryContracts') || isEnabled('ContingentLiability') || isEnabled('Overdue30Days') || isEnabled('Overdue30To60Days') || isEnabled('Overdue60To90Days') || isEnabled('Overdue90Days') || isEnabled('AllDebts'),
   isEnabled('CoBorrowerLiability') || isEnabled('GuarantorLiability') || isEnabled('PledgerLiability') || isEnabled('Mortgage') || isEnabled('LoanApplication'),
-  isEnabled('Juridical') || isEnabled('DeCommissioned'),
+  isStopFactorPresent('Juridical') || isStopFactorPresent('DeCommissioned'),
 ])
 
 // ── Input state ───────────────────────────────────────────────────────────
@@ -65,7 +70,7 @@ const workExperienceMonths = ref<number | null>(null)
 const monthlyPaymentRatio = ref<number | null>(null)
 
 // Step 2: Credit history
-const overduePrincipalContracts = ref<number | null>(null)
+const creditHistoryContracts = ref<number | null>(null)
 const contingentLiability = ref<number | null>(null)
 const overdue30Count = ref<number | null>(null)
 const overdue30to60Count = ref<number | null>(null)
@@ -122,7 +127,7 @@ async function calculate() {
     if (incomeSum.value !== null)                 inputs.incomeSum = incomeSum.value
     if (workExperienceMonths.value !== null)      inputs.workExperienceMonths = workExperienceMonths.value
     if (monthlyPaymentRatio.value !== null)       inputs.monthlyPaymentRatio = monthlyPaymentRatio.value
-    if (overduePrincipalContracts.value !== null) inputs.overduePrincipalContracts = overduePrincipalContracts.value
+    if (creditHistoryContracts.value !== null) inputs.creditHistoryContracts = creditHistoryContracts.value
     if (contingentLiability.value !== null)      inputs.contingentLiability = contingentLiability.value
     if (overdue30Count.value !== null)           inputs.overdue30Count = overdue30Count.value
     if (overdue30to60Count.value !== null)       inputs.overdue30to60Count = overdue30to60Count.value
@@ -262,10 +267,10 @@ function verdictLabel(coeff: number) {
         <h2 class="section-title">{{ t('scoringTry.stepCredit') }}</h2>
         <p v-if="!stepHasFields[2]" class="step-empty">{{ t('scoringTry.allDisabled') }}</p>
         <div v-else class="form-grid">
-          <div v-if="isEnabled('OverduePrincipalDays')" class="field col-span-2">
+          <div v-if="isEnabled('CreditHistoryContracts')" class="field col-span-2">
             <label>{{ t('scoringTry.overduePrincipal') }}</label>
             <small class="field-hint">{{ t('scoringTry.overduePrincipalHint') }}</small>
-            <InputNumber v-model="overduePrincipalContracts" :min="0" :use-grouping="false" class="w-full" :placeholder="t('scoringTry.optional')" />
+            <InputNumber v-model="creditHistoryContracts" :min="0" :use-grouping="false" class="w-full" :placeholder="t('scoringTry.optional')" />
           </div>
           <div v-if="isEnabled('ContingentLiability')" class="field col-span-2">
             <label>{{ t('scoringTry.contingentLiability') }}</label>
@@ -355,13 +360,13 @@ function verdictLabel(coeff: number) {
         <h2 class="section-title">{{ t('scoringTry.stepLegal') }}</h2>
         <p v-if="!stepHasFields[4]" class="step-empty">{{ t('scoringTry.allDisabled') }}</p>
         <div v-else class="form-grid">
-          <div v-if="isEnabled('Juridical')" class="field col-span-2">
+          <div v-if="isStopFactorPresent('Juridical')" class="field col-span-2">
             <div class="toggle-row">
               <span>{{ t('scoringTry.hasJuridical') }}</span>
               <ToggleSwitch v-model="hasJuridical" />
             </div>
           </div>
-          <div v-if="isEnabled('DeCommissioned')" class="field col-span-2">
+          <div v-if="isStopFactorPresent('DeCommissioned')" class="field col-span-2">
             <div class="toggle-row">
               <span>{{ t('scoringTry.hasDecommission') }}</span>
               <ToggleSwitch v-model="hasDecommission" />
@@ -384,54 +389,71 @@ function verdictLabel(coeff: number) {
       <template v-if="step === 5 && result">
         <h2 class="section-title">{{ t('scoringTry.result') }}</h2>
 
-        <div class="result-summary">
-          <div class="summary-card">
-            <span class="summary-label">{{ t('scoringTry.totalScore') }}</span>
-            <span class="summary-value">{{ result.totalScore.toFixed(1) }}</span>
+        <!-- Stop factor rejection -->
+        <template v-if="result.rejected">
+          <div class="result-summary">
+            <div class="summary-card">
+              <span class="summary-label">{{ t('scoringTry.verdict') }}</span>
+              <span class="verdict-badge verdict-denied">{{ t('scoringTry.denied') }}</span>
+            </div>
+            <div class="summary-card col-span-2">
+              <span class="summary-label">{{ t('scoringTry.stopFactor') }}</span>
+              <span class="summary-value">{{ result.name }}</span>
+            </div>
           </div>
-          <div class="summary-card">
-            <span class="summary-label">{{ t('scoringTry.coefficient') }}</span>
-            <span class="summary-value">{{ result.coefficient }}</span>
-          </div>
-          <div class="summary-card">
-            <span class="summary-label">{{ t('scoringTry.verdict') }}</span>
-            <span class="verdict-badge" :class="verdictClass(result.coefficient)">
-              {{ verdictLabel(result.coefficient) }}
-            </span>
-          </div>
-        </div>
+        </template>
 
-        <table class="breakdown-table">
-          <thead>
-            <tr>
-              <th class="bc-name">{{ t('scoringTry.criterion') }}</th>
-              <th class="bc-num">{{ t('scoringTry.rawScore') }}</th>
-              <th class="bc-num">× {{ t('scoringModel.importantLevel') }}</th>
-              <th class="bc-num">= {{ t('scoringTry.weighted') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in result.breakdown" :key="row.key" :class="{ skipped: row.skipped }">
-              <td class="bc-name">
-                {{ row.name }}
-                <span v-if="row.skipped" class="skip-badge">{{ t('scoringTry.skipped') }}</span>
-              </td>
-              <td class="bc-num">{{ row.skipped ? '—' : row.rawScore }}</td>
-              <td class="bc-num">{{ row.importantLevel }}</td>
-              <td class="bc-num" :class="{ positive: row.weightedScore > 0, negative: row.weightedScore < 0 }">
-                {{ row.skipped ? '—' : row.weightedScore.toFixed(1) }}
-              </td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr class="total-row">
-              <td class="bc-name">{{ t('scoringTry.total') }}</td>
-              <td class="bc-num" />
-              <td class="bc-num" />
-              <td class="bc-num total-score">{{ result.totalScore.toFixed(1) }}</td>
-            </tr>
-          </tfoot>
-        </table>
+        <!-- Scored result -->
+        <template v-else>
+          <div class="result-summary">
+            <div class="summary-card">
+              <span class="summary-label">{{ t('scoringTry.totalScore') }}</span>
+              <span class="summary-value">{{ result.totalScore.toFixed(1) }}</span>
+            </div>
+            <div class="summary-card">
+              <span class="summary-label">{{ t('scoringTry.coefficient') }}</span>
+              <span class="summary-value">{{ result.coefficient }}</span>
+            </div>
+            <div class="summary-card">
+              <span class="summary-label">{{ t('scoringTry.verdict') }}</span>
+              <span class="verdict-badge" :class="verdictClass(result.coefficient)">
+                {{ verdictLabel(result.coefficient) }}
+              </span>
+            </div>
+          </div>
+
+          <table class="breakdown-table">
+            <thead>
+              <tr>
+                <th class="bc-name">{{ t('scoringTry.criterion') }}</th>
+                <th class="bc-num">{{ t('scoringTry.rawScore') }}</th>
+                <th class="bc-num">× {{ t('scoringModel.importantLevel') }}</th>
+                <th class="bc-num">= {{ t('scoringTry.weighted') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in result.breakdown" :key="row.key" :class="{ skipped: row.skipped }">
+                <td class="bc-name">
+                  {{ row.name }}
+                  <span v-if="row.skipped" class="skip-badge">{{ t('scoringTry.skipped') }}</span>
+                </td>
+                <td class="bc-num">{{ row.skipped ? '—' : row.rawScore }}</td>
+                <td class="bc-num">{{ row.importantLevel }}</td>
+                <td class="bc-num" :class="{ positive: row.weightedScore > 0, negative: row.weightedScore < 0 }">
+                  {{ row.skipped ? '—' : row.weightedScore.toFixed(1) }}
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="total-row">
+                <td class="bc-name">{{ t('scoringTry.total') }}</td>
+                <td class="bc-num" />
+                <td class="bc-num" />
+                <td class="bc-num total-score">{{ result.totalScore.toFixed(1) }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </template>
 
         <div class="actions">
           <button class="btn-secondary" @click="step = 0; result = null">

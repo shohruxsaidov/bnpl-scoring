@@ -20,11 +20,9 @@ export interface CriterionResult {
   skipped: boolean
 }
 
-export interface ScoringTryResult {
-  totalScore: number
-  coefficient: number
-  breakdown: CriterionResult[]
-}
+export type ScoringTryResult =
+  | { rejected: true; stopFactor: string; name: string }
+  | { rejected: false; totalScore: number; coefficient: number; breakdown: CriterionResult[] }
 
 export interface ScoringModelHistoryItem {
   id: number

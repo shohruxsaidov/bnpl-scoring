@@ -1,11 +1,11 @@
 import { eq } from "drizzle-orm"
 import type { Db } from "../../../../db"
 import { scoringModelRevisions } from "../db/schema"
-import type { ScoringModelParams } from "../../../scoring/engine"
+import type { ScoringModelData } from "../../../scoring/engine"
 
 export async function saveModel(
   db: Db,
-  input: { name: string; version: string; params: ScoringModelParams },
+  input: { name: string; version: string; params: ScoringModelData },
   createdBy: bigint | null,
 ) {
   const existing = await db

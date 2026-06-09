@@ -121,8 +121,20 @@ _Avoid_: Remaining limit, free limit
 ### Scoring
 
 **Score**:
-The platform's creditworthiness value computed for a Client as a weighted criteria sum. Each criterion (income level, work contribution period, credit history, overdue counts, liabilities, demographics, and optionally Card Score) has an `ImportantLevel` multiplier and a value-band-to-score mapping. The raw sum maps through a coefficient table to determine credit limit eligibility (0 = denied, 0.8 = partial limit, 1.0 = full limit). Defined in one global scoring model owned by Finsum Nasiya. Determines the Client's Platform Credit Limit.
+The platform's creditworthiness value computed for a Client as a weighted sum of Scoring Parameters. Each Scoring Parameter has an `ImportantLevel` multiplier (0, 0.5, or 1) and a value-to-score mapping. The raw sum maps through the Limit Coefficient table to determine credit limit eligibility (0 = denied, 0.8 = partial limit, 1.0 = full limit). Defined in the active Scoring Model Revision owned by Finsum Nasiya. Determines the Client's Platform Credit Limit. If any Stop Factor matches, scoring is aborted and the Client is rejected before a Score is computed.
 _Avoid_: Rating, grade, creditworthiness
+
+**Stop Factor**:
+A hard-rejection condition declared in the Scoring Model Revision and evaluated before any scoring begins. Defined by a boolean match key (e.g. `WithJuridical`, `WithDecommission`). If any Stop Factor with `Reject: true` matches, the engine returns a rejection result immediately — no Score is computed and no Scoring Parameters are evaluated. Current Stop Factors: active judicial proceedings (`Juridical`) and decommissioned/written-off debt (`DeCommissioned`).
+_Avoid_: blocking criterion, negative score, stop criterion
+
+**Scoring Parameter**:
+A named, typed criterion within a Scoring Model Revision that contributes a weighted score to the Client's total Score. Three types: `range` (numeric value mapped to a score via half-open `[From, To)` bands), `categorical` (enum key mapped to a score), `regionMatch` (region code matched against a whitelist). Each parameter has an `ImportantLevel` multiplier and an `Enabled` flag. Disabled parameters are skipped (contribute 0). Some range parameters have a `NotApplicable` score for when the condition does not apply (e.g. Client is not a co-borrower).
+_Avoid_: scoring criterion, scoring field, model parameter
+
+**Limit Coefficient**:
+The output multiplier table in a Scoring Model Revision that converts a total Score into a credit limit factor. Uses half-open `[From, To)` score bands, each mapping to a `Coefficient` (0 = denied, 0.8 = partial, 1.0 = full). Applied after all Scoring Parameters are summed. Stored as a top-level section in the model alongside `StopFactors` and `ScoringParams`.
+_Avoid_: LimitSum, score-to-limit table, coefficient table
 
 **InfoScore Grade**:
 The raw bureau score (0–999) returned by KATM in the `scoring_grade` field of an InfoScore (077) response. Stored on the Deal (`infoscore_raw`) for audit in the Wizard flow; stored in the Scoring Pipeline `result` jsonb for self-service scoring. The global scoring model uses granular KATM credit history fields (overdue counts, liability counts, loan applications) rather than the InfoScore Grade directly. Not the same as the platform's Score.
@@ -317,6 +329,7 @@ Key decisions live in `docs/adr/` as thematic files:
 | `0015-self-service-scoring-flow.md` | Self-service scoring keyed on `users.id`; `scoring_sessions` + `scoring_pipelines` + `user_limits`; KATM hard block; permanently separate from Wizard scoring |
 | `0016-client-web-push-notifications.md` | Web push replaces SSE for Clients; VAPID env vars; `push_subscriptions` table; manual SW; opt-in toggle in ProfileView; admin_message broadcast |
 | `0019-merchant-bank-account.md` | MFO + account number + bank name on `merchants`; CBU bank list fetched backend-side, cached on-demand in `bank_mfo_cache`; bank name denormalized at save time |
+| `0020-scoring-model-v2-structure.md` | v2 model: StopFactors (hard reject) + ScoringParams + LimitCoefficient; standardized From/To bands; half-open [From,To) semantics; discriminated union engine return type |
 
 ## Example dialogue
 

@@ -336,7 +336,15 @@
     "createdAt": "Yaratilgan",
     "status": "Holat",
     "backToList": "Barcha reviziyalar",
-    "versionTaken": "Bunday versiyali reviziya allaqachon mavjud"
+    "versionTaken": "Bunday versiyali reviziya allaqachon mavjud",
+    "stopFactors": "To'xtash omillari",
+    "stopFactorsSubtitle": "Ball hisoblanishidan oldin tekshiriladigan qat'iy rad etish shartlari.",
+    "stopFactorName": "To'xtash omili",
+    "stopFactorCondition": "Shart",
+    "scoringParams": "Skoring parametrlari",
+    "limitCoefficient": "Limit koeffitsienti",
+    "limitCoefficientSubtitle": "Yakuniy ballni kredit limiti koeffitsientiga aylantiradi.",
+    "defaultCoefficient": "Standart koeffitsient"
   },
   "scoringTry": {
     "title": "Skoring modelini sinash",
@@ -395,7 +403,8 @@
     "total": "Jami",
     "tryAgain": "Qayta",
     "calcFailed": "Hisoblash xatosi",
-    "allDisabled": "Bu qadamdagi barcha mezonlar o'chirilgan — davom etish uchun «Keyingisi»ni bosing"
+    "allDisabled": "Bu qadamdagi barcha mezonlar o'chirilgan — davom etish uchun «Keyingisi»ni bosing",
+    "stopFactor": "To'xtash omili"
   },
   "tariffs": {
     "title": "Tariflar",

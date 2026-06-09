@@ -61,27 +61,48 @@ async function confirmSave() {
   }
 }
 
-function getCriteria() {
+// ── Section accessors ─────────────────────────────────────────────────────────
+
+function getStopFactors() {
   if (!localParams.value) return []
-  return Object.entries(localParams.value).map(([key, data]) => ({
+  const sf = (localParams.value as Record<string, unknown>)['StopFactors'] as Record<string, unknown> | undefined
+  if (!sf) return []
+  return Object.entries(sf).map(([key, data]) => ({
     key,
     data: data as Record<string, unknown>,
   }))
 }
+
+function getCriteria() {
+  if (!localParams.value) return []
+  const sp = (localParams.value as Record<string, unknown>)['ScoringParams'] as Record<string, unknown> | undefined
+  if (!sp) return []
+  return Object.entries(sp).map(([key, data]) => ({
+    key,
+    data: data as Record<string, unknown>,
+  }))
+}
+
+function getLimitCoefficient(): Record<string, unknown> | null {
+  if (!localParams.value) return null
+  return ((localParams.value as Record<string, unknown>)['LimitCoefficient'] as Record<string, unknown>) ?? null
+}
+
+// ── Criterion helpers ─────────────────────────────────────────────────────────
 
 function criterionName(key: string, data: Record<string, unknown>): string {
   return (data['Name'] as string | undefined) ?? key
 }
 
 function isRangeBased(data: Record<string, unknown>): boolean {
-  return Array.isArray(data['Values'])
+  return Array.isArray(data['Ranges'])
 }
 
 function isEnumBased(data: Record<string, unknown>): boolean {
   return (
-    typeof data['Scores'] === 'object' &&
-    data['Scores'] !== null &&
-    !Array.isArray(data['Scores'])
+    typeof data['Categories'] === 'object' &&
+    data['Categories'] !== null &&
+    !Array.isArray(data['Categories'])
   )
 }
 
@@ -89,22 +110,12 @@ function isPassportData(key: string): boolean {
   return key === 'PassportData'
 }
 
-function isLimitSum(key: string): boolean {
-  return key === 'LimitSum'
-}
-
 function bandFrom(band: Record<string, unknown>): number | null {
-  const k = Object.keys(band).find(
-    (k) => k.toLowerCase().endsWith('from') && k !== 'Score',
-  )
-  return k !== undefined ? (band[k] as number) : null
+  return band['From'] as number ?? null
 }
 
 function bandTo(band: Record<string, unknown>): number | null {
-  const k = Object.keys(band).find(
-    (k) => k.toLowerCase().endsWith('to') && k !== 'Score',
-  )
-  return k !== undefined ? (band[k] as number) : null
+  return (band['To'] as number | null | undefined) ?? null
 }
 
 function bandDescription(band: Record<string, unknown>): string {
@@ -146,159 +157,222 @@ function bandDescription(band: Record<string, unknown>): string {
       <i class="pi pi-spin pi-spinner" /> {{ t('common.loading') }}
     </div>
 
-    <Accordion v-else-if="localParams" multiple>
-      <AccordionPanel
-        v-for="{ key, data } in getCriteria()"
-        :key="key"
-        :value="key"
-        :class="{ 'criterion-disabled': data['Enabled'] === false }"
-      >
-        <AccordionHeader>
-          <div class="crit-header">
-            <div class="enabled-wrap" @click.stop>
-              <ToggleSwitch
-                :model-value="(data as Record<string, unknown>)['Enabled'] !== false"
-                @update:model-value="(v: boolean) => (data as Record<string, unknown>)['Enabled'] = v"
-              />
-            </div>
-            <span class="crit-name" :class="{ 'name-muted': data['Enabled'] === false }">{{ criterionName(key, data) }}</span>
-            <span class="crit-key">{{ key }}</span>
-            <div class="imp-wrap" @click.stop>
-              <span class="imp-label">{{ t('scoringModel.importantLevel') }}</span>
-              <InputNumber
-                v-model="(data as Record<string, unknown>)['ImportantLevel'] as number"
-                :min="0" :max="1" :step="0.5" :max-fraction-digits="1"
-                input-class="imp-input"
-                :disabled="data['Enabled'] === false"
-              />
-            </div>
+    <template v-else-if="localParams">
+
+      <!-- ── Stop Factors ─────────────────────────────────────────────────── -->
+      <div v-if="getStopFactors().length" class="section-card">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">{{ t('scoringModel.stopFactors') }}</h2>
+            <p class="section-subtitle">{{ t('scoringModel.stopFactorsSubtitle') }}</p>
           </div>
-        </AccordionHeader>
+        </div>
+        <table class="crit-table">
+          <thead>
+            <tr>
+              <th class="col-key">{{ t('scoringModel.stopFactorName') }}</th>
+              <th class="col-desc">{{ t('scoringModel.stopFactorCondition') }}</th>
+              <th class="col-reject">{{ t('scoringModel.score') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="{ key, data } in getStopFactors()" :key="key">
+              <td class="col-key">
+                <span class="crit-key-badge">{{ key }}</span>
+                <span class="sf-name">{{ data['Name'] as string }}</span>
+              </td>
+              <td class="col-desc">
+                <code class="sf-match">{{ data['Match'] as string }}</code>
+                <span v-if="data['Description']" class="sf-desc">{{ data['Description'] as string }}</span>
+              </td>
+              <td class="col-reject">
+                <span v-if="data['Reject']" class="reject-chip">{{ t('scoringTry.denied') }}</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-        <AccordionContent>
-          <!-- Range-based -->
-          <template v-if="isRangeBased(data) && !isLimitSum(key)">
-            <table class="crit-table">
-              <thead>
-                <tr>
-                  <th class="col-desc">{{ t('scoringModel.description') }}</th>
-                  <th class="col-range">{{ t('scoringModel.range') }}</th>
-                  <th class="col-score">{{ t('scoringModel.score') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(band, i) in (data['Values'] as Record<string, unknown>[])" :key="i">
-                  <td class="col-desc">{{ bandDescription(band) }}</td>
-                  <td class="col-range">
-                    <span class="range-val">{{ bandFrom(band) }}</span>
-                    <span class="range-sep">—</span>
-                    <span class="range-val">{{ bandTo(band) }}</span>
-                  </td>
-                  <td class="col-score">
-                    <InputNumber
-                      v-model="(band as Record<string, unknown>)['Score'] as number"
-                      :use-grouping="false"
-                      input-class="score-input"
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </template>
+      <!-- ── Scoring Parameters ──────────────────────────────────────────── -->
+      <div class="section-card">
+        <div class="section-header">
+          <h2 class="section-title">{{ t('scoringModel.scoringParams') }}</h2>
+        </div>
+        <Accordion multiple>
+          <AccordionPanel
+            v-for="{ key, data } in getCriteria()"
+            :key="key"
+            :value="key"
+            :class="{ 'criterion-disabled': data['Enabled'] === false }"
+          >
+            <AccordionHeader>
+              <div class="crit-header">
+                <div class="enabled-wrap" @click.stop>
+                  <ToggleSwitch
+                    :model-value="(data as Record<string, unknown>)['Enabled'] !== false"
+                    @update:model-value="(v: boolean) => (data as Record<string, unknown>)['Enabled'] = v"
+                  />
+                </div>
+                <span class="crit-name" :class="{ 'name-muted': data['Enabled'] === false }">{{ criterionName(key, data) }}</span>
+                <span class="crit-key">{{ key }}</span>
+                <div class="imp-wrap" @click.stop>
+                  <span class="imp-label">{{ t('scoringModel.importantLevel') }}</span>
+                  <InputNumber
+                    v-model="(data as Record<string, unknown>)['ImportantLevel'] as number"
+                    :min="0" :max="1" :step="0.5" :max-fraction-digits="1"
+                    input-class="imp-input"
+                    :disabled="data['Enabled'] === false"
+                  />
+                </div>
+              </div>
+            </AccordionHeader>
 
-          <!-- LimitSum coefficient table -->
-          <template v-else-if="isLimitSum(key)">
-            <table class="crit-table">
-              <thead>
-                <tr>
-                  <th class="col-range">{{ t('scoringModel.scoreFrom') }}</th>
-                  <th class="col-range">{{ t('scoringModel.scoreTo') }}</th>
-                  <th class="col-score">{{ t('scoringModel.coefficient') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(band, i) in (data['Values'] as Record<string, unknown>[])" :key="i">
-                  <td class="col-range">
-                    <InputNumber
-                      v-model="(band as Record<string, unknown>)['From'] as number"
-                      :use-grouping="false" :min-fraction-digits="0" :max-fraction-digits="0"
-                      input-class="score-input"
-                    />
-                  </td>
-                  <td class="col-range">
-                    <InputNumber
-                      v-model="(band as Record<string, unknown>)['To'] as number"
-                      :use-grouping="false" :min-fraction-digits="0" :max-fraction-digits="0"
-                      input-class="score-input"
-                    />
-                  </td>
-                  <td class="col-score">
-                    <InputNumber
-                      v-model="(band as Record<string, unknown>)['Score'] as number"
-                      :min="0" :max="1" :max-fraction-digits="2" :step="0.1"
-                      input-class="score-input"
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </template>
+            <AccordionContent>
+              <!-- Range-based -->
+              <template v-if="isRangeBased(data)">
+                <table class="crit-table">
+                  <thead>
+                    <tr>
+                      <th class="col-desc">{{ t('scoringModel.description') }}</th>
+                      <th class="col-range">{{ t('scoringModel.range') }}</th>
+                      <th class="col-score">{{ t('scoringModel.score') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(band, i) in (data['Ranges'] as Record<string, unknown>[])" :key="i">
+                      <td class="col-desc">{{ bandDescription(band) }}</td>
+                      <td class="col-range">
+                        <span class="range-val">{{ bandFrom(band) }}</span>
+                        <span class="range-sep">—</span>
+                        <span class="range-val">{{ bandTo(band) ?? '∞' }}</span>
+                      </td>
+                      <td class="col-score">
+                        <InputNumber
+                          v-model="(band as Record<string, unknown>)['Score'] as number"
+                          :use-grouping="false"
+                          input-class="score-input"
+                        />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </template>
 
-          <!-- Enum-based -->
-          <template v-else-if="isEnumBased(data)">
-            <table class="crit-table">
-              <thead>
-                <tr>
-                  <th class="col-desc">{{ t('scoringModel.option') }}</th>
-                  <th class="col-score">{{ t('scoringModel.score') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="(_s, enumKey) in (data['Scores'] as Record<string, number>)"
-                  :key="enumKey"
-                >
-                  <td class="col-desc enum-key-cell">{{ enumKey }}</td>
-                  <td class="col-score">
-                    <InputNumber
-                      v-model="(data['Scores'] as Record<string, number>)[enumKey]"
-                      :use-grouping="false"
-                      input-class="score-input"
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </template>
+              <!-- Categorical -->
+              <template v-else-if="isEnumBased(data)">
+                <table class="crit-table">
+                  <thead>
+                    <tr>
+                      <th class="col-desc">{{ t('scoringModel.option') }}</th>
+                      <th class="col-score">{{ t('scoringModel.score') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr
+                      v-for="(_, catKey) in (data['Categories'] as Record<string, { Score: number }>)"
+                      :key="catKey"
+                    >
+                      <td class="col-desc enum-key-cell">{{ catKey }}</td>
+                      <td class="col-score">
+                        <InputNumber
+                          v-model="(data['Categories'] as Record<string, { Score: number }>)[catKey].Score"
+                          :use-grouping="false"
+                          input-class="score-input"
+                        />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </template>
 
-          <!-- PassportData -->
-          <template v-else-if="isPassportData(key)">
-            <table class="crit-table">
-              <thead>
-                <tr>
-                  <th class="col-desc">{{ t('scoringModel.validRegions') }}</th>
-                  <th class="col-score">{{ t('scoringModel.score') }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td class="col-desc mono">
-                    {{ (data['ValidRegions'] as string[]).join(', ') }}
-                  </td>
-                  <td class="col-score">
-                    <InputNumber
-                      v-model="(data as Record<string, unknown>)['Score'] as number"
-                      :use-grouping="false"
-                      input-class="score-input"
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </template>
-        </AccordionContent>
-      </AccordionPanel>
-    </Accordion>
+              <!-- PassportData (regionMatch) -->
+              <template v-else-if="isPassportData(key)">
+                <table class="crit-table">
+                  <thead>
+                    <tr>
+                      <th class="col-desc">{{ t('scoringModel.validRegions') }}</th>
+                      <th class="col-score">{{ t('scoringModel.score') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="col-desc mono">
+                        {{ (data['ValidRegions'] as string[]).join(', ') }}
+                      </td>
+                      <td class="col-score">
+                        <InputNumber
+                          v-model="(data as Record<string, unknown>)['MatchScore'] as number"
+                          :use-grouping="false"
+                          input-class="score-input"
+                        />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </template>
+            </AccordionContent>
+          </AccordionPanel>
+        </Accordion>
+      </div>
+
+      <!-- ── Limit Coefficient ───────────────────────────────────────────── -->
+      <div v-if="getLimitCoefficient()" class="section-card">
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">{{ t('scoringModel.limitCoefficient') }}</h2>
+            <p class="section-subtitle">{{ t('scoringModel.limitCoefficientSubtitle') }}</p>
+          </div>
+          <div class="default-coeff-wrap">
+            <span class="imp-label">{{ t('scoringModel.defaultCoefficient') }}</span>
+            <InputNumber
+              v-model="(getLimitCoefficient() as Record<string, unknown>)['DefaultCoefficient'] as number"
+              :min="0" :max="1" :step="0.1" :max-fraction-digits="2"
+              input-class="imp-input"
+            />
+          </div>
+        </div>
+        <table class="crit-table">
+          <thead>
+            <tr>
+              <th class="col-range">{{ t('scoringModel.scoreFrom') }}</th>
+              <th class="col-range">{{ t('scoringModel.scoreTo') }}</th>
+              <th class="col-score">{{ t('scoringModel.coefficient') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="(band, i) in ((getLimitCoefficient() as Record<string, unknown>)['Ranges'] as Record<string, unknown>[])"
+              :key="i"
+            >
+              <td class="col-range">
+                <InputNumber
+                  v-model="(band as Record<string, unknown>)['From'] as number"
+                  :use-grouping="false" :max-fraction-digits="0"
+                  input-class="score-input"
+                />
+              </td>
+              <td class="col-range">
+                <span v-if="band['To'] === null" class="range-val">∞</span>
+                <InputNumber
+                  v-else
+                  v-model="(band as Record<string, unknown>)['To'] as number"
+                  :use-grouping="false" :max-fraction-digits="0"
+                  input-class="score-input"
+                />
+              </td>
+              <td class="col-score">
+                <InputNumber
+                  v-model="(band as Record<string, unknown>)['Coefficient'] as number"
+                  :min="0" :max="1" :max-fraction-digits="2" :step="0.1"
+                  input-class="score-input"
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </template>
   </div>
 
   <!-- Save dialog -->
@@ -315,7 +389,7 @@ function bandDescription(band: Record<string, unknown>): string {
       </div>
       <div class="field">
         <label class="field-label">{{ t('scoringModel.modelVersion') }}</label>
-        <InputText v-model="saveVersion" fluid placeholder="1.0" @input="saveError = ''" />
+        <InputText v-model="saveVersion" fluid placeholder="2.0.0" @input="saveError = ''" />
       </div>
       <p v-if="saveError" class="save-error">{{ saveError }}</p>
     </div>
@@ -468,6 +542,92 @@ function bandDescription(band: Record<string, unknown>): string {
   color: var(--text-primary);
 }
 
+/* ── Section cards ───────────────────────────────────────────────────────────*/
+.section-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem 0.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.section-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.section-subtitle {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 0.15rem 0 0;
+}
+
+.default-coeff-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* ── Stop factor cells ───────────────────────────────────────────────────────*/
+.col-key { width: 280px; }
+.col-reject { width: 90px; text-align: center; }
+
+.crit-key-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 0.08rem 0.3rem;
+  margin-right: 0.4rem;
+  vertical-align: middle;
+}
+
+.sf-name {
+  font-weight: 600;
+  font-size: 0.86rem;
+  vertical-align: middle;
+}
+
+.sf-match {
+  font-family: monospace;
+  font-size: 0.8rem;
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+}
+
+.sf-desc {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  margin-top: 0.2rem;
+}
+
+.reject-chip {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--error, #e53e3e);
+  background: color-mix(in srgb, var(--error, #e53e3e) 12%, transparent);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+}
+
 /* ── Disabled criterion ──────────────────────────────────────────────────────*/
 :deep(.criterion-disabled .p-accordioncontent) {
   opacity: 0.35;
@@ -569,7 +729,7 @@ function bandDescription(band: Record<string, unknown>): string {
 .crit-table tbody tr:hover { background: var(--bg-base); }
 
 .crit-table td {
-  padding: 0.3rem 1rem;
+  padding: 0.45rem 1rem;
   vertical-align: middle;
 }
 

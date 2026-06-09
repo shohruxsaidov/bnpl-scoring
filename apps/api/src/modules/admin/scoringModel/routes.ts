@@ -6,7 +6,7 @@ import { listModels } from "./queries/list-models"
 import { getModelById } from "./queries/get-model-by-id"
 import { saveModel } from "./commands/save-model"
 import { computeScoringModel } from "../../scoring/engine"
-import type { ScoringModelParams, ScoringInputs } from "../../scoring/engine"
+import type { ScoringModelData, ScoringInputs } from "../../scoring/engine"
 
 function serializeRevision(row: NonNullable<Awaited<ReturnType<typeof getActiveModel>>>) {
   return {
@@ -51,27 +51,27 @@ export default async function adminScoringModelRoutes(app: FastifyInstance) {
   )
 
   const TryBody = Type.Object({
-    incomeSum:                 Type.Optional(Type.Number()),
-    workExperienceMonths:      Type.Optional(Type.Number()),
-    age:                       Type.Optional(Type.Number()),
-    citizenship:               Type.Optional(Type.Union([Type.Literal("Uzbekistan"), Type.Literal("NonResident")])),
-    gender:                    Type.Optional(Type.Union([Type.Literal("Male"), Type.Literal("Female")])),
-    monthlyPaymentRatio:       Type.Optional(Type.Number()),
-    overduePrincipalContracts: Type.Optional(Type.Number()),
-    contingentLiability:       Type.Optional(Type.Number()),
-    overdue30Count:            Type.Optional(Type.Number()),
-    overdue30to60Count:        Type.Optional(Type.Number()),
-    overdue60to90Count:        Type.Optional(Type.Number()),
-    overdue90Count:            Type.Optional(Type.Number()),
-    hasJuridical:              Type.Optional(Type.Boolean()),
-    hasDecommission:           Type.Optional(Type.Boolean()),
-    loanApplicationCount:      Type.Optional(Type.Number()),
-    coBorrowerMaxDays:         Type.Optional(Type.Union([Type.Number(), Type.Null()])),
-    guarantorMaxDays:          Type.Optional(Type.Union([Type.Number(), Type.Null()])),
-    pledgerMaxDays:            Type.Optional(Type.Union([Type.Number(), Type.Null()])),
-    hasMortgage:               Type.Optional(Type.Boolean()),
-    passportRegion:            Type.Optional(Type.String()),
-    allDebts:                  Type.Optional(Type.Number()),
+    incomeSum:                Type.Optional(Type.Number()),
+    workExperienceMonths:     Type.Optional(Type.Number()),
+    age:                      Type.Optional(Type.Number()),
+    citizenship:              Type.Optional(Type.Union([Type.Literal("Uzbekistan"), Type.Literal("NonResident")])),
+    gender:                   Type.Optional(Type.Union([Type.Literal("Male"), Type.Literal("Female")])),
+    monthlyPaymentRatio:      Type.Optional(Type.Number()),
+    creditHistoryContracts:   Type.Optional(Type.Number()),
+    contingentLiability:      Type.Optional(Type.Number()),
+    overdue30Count:           Type.Optional(Type.Number()),
+    overdue30to60Count:       Type.Optional(Type.Number()),
+    overdue60to90Count:       Type.Optional(Type.Number()),
+    overdue90Count:           Type.Optional(Type.Number()),
+    hasJuridical:             Type.Optional(Type.Boolean()),
+    hasDecommission:          Type.Optional(Type.Boolean()),
+    loanApplicationCount:     Type.Optional(Type.Number()),
+    coBorrowerMaxDays:        Type.Optional(Type.Union([Type.Number(), Type.Null()])),
+    guarantorMaxDays:         Type.Optional(Type.Union([Type.Number(), Type.Null()])),
+    pledgerMaxDays:           Type.Optional(Type.Union([Type.Number(), Type.Null()])),
+    hasMortgage:              Type.Optional(Type.Boolean()),
+    passportRegion:           Type.Optional(Type.String()),
+    allDebts:                 Type.Optional(Type.Number()),
   })
 
   fastify.post(
@@ -80,15 +80,18 @@ export default async function adminScoringModelRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const row = await getModelById(db, parseInt(request.params.id, 10))
       if (!row) return reply.code(404).sendError("not_found")
-      const result = computeScoringModel(row.params as unknown as ScoringModelParams, request.body as ScoringInputs)
+      const result = computeScoringModel(
+        row.params as unknown as ScoringModelData,
+        request.body as ScoringInputs,
+      )
       return result
     },
   )
 
   const SaveBody = Type.Object({
-    name: Type.String({ minLength: 1 }),
+    name:    Type.String({ minLength: 1 }),
     version: Type.String({ minLength: 1 }),
-    params: Type.Record(Type.String(), Type.Unknown()),
+    params:  Type.Record(Type.String(), Type.Unknown()),
   })
 
   fastify.put("/", { schema: { body: SaveBody } }, async (request) => {
