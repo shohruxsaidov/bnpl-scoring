@@ -266,6 +266,25 @@ export const merchantTariffs = pgTable(
   (t) => [primaryKey({ columns: [t.merchantId, t.tariffId] })],
 );
 
+export const scoringTestCases = pgTable('scoring_test_cases', {
+  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+  name: varchar('name', { length: 200 }).notNull(),
+  description: text('description'),
+  inputs: jsonb('inputs').notNull(),
+  expectedOutcome: varchar('expected_outcome', { length: 20 }).notNull(), // 'approved' | 'partial' | 'denied' | 'rejected'
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const scoringTestRuns = pgTable('scoring_test_runs', {
+  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+  modelRevisionId: integer('model_revision_id').notNull().references(() => scoringModelRevisions.id),
+  ranAt: timestamp('ran_at', { withTimezone: true }).defaultNow().notNull(),
+  passCount: integer('pass_count').notNull(),
+  failCount: integer('fail_count').notNull(),
+  results: jsonb('results').notNull(), // array of { testCaseId, name, expectedOutcome, actualOutcome, totalScore, coefficient, breakdown, pass }
+});
+
 export const merchantDocuments = pgTable('merchant_documents', {
   id: bigserial('id', { mode: 'bigint' }).primaryKey(),
   merchantId: bigint('merchant_id', { mode: 'bigint' })

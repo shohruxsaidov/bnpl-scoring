@@ -19,6 +19,7 @@ import adminClientsRoutes from "./clients/routes"
 import mxikRoutes from "../mxik/routes"
 import adminBankRoutes from "./banks/routes"
 import adminScoringModelRoutes from "./scoringModel/routes"
+import adminScoringTestCasesRoutes from "./scoringTestCases/routes"
 import regionRoutes from "../regions/routes"
 
 interface FeatureMap {
@@ -61,6 +62,7 @@ export default async function adminModule(app: FastifyInstance) {
   // CBU bank registry: any authenticated admin.
   await app.register(adminBankRoutes, { prefix: "/admin/banks" })
   await app.register(guarded(adminScoringModelRoutes, { read: "manage_scoring_model", write: "manage_scoring_model" }), { prefix: "/admin/scoring-model" })
+  await app.register(guarded(adminScoringTestCasesRoutes, { read: "manage_scoring_model", write: "manage_scoring_model" }), { prefix: "/admin/scoring-test-cases" })
   // Region reference: any authenticated admin.
   await app.register(regionRoutes, { prefix: "/admin/regions", preHandler: app.verifyAdminJwt })
 }

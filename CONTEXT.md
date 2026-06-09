@@ -136,6 +136,18 @@ _Avoid_: scoring criterion, scoring field, model parameter
 The output multiplier table in a Scoring Model Revision that converts a total Score into a credit limit factor. Uses half-open `[From, To)` score bands, each mapping to a `Coefficient` (0 = denied, 0.8 = partial, 1.0 = full). Applied after all Scoring Parameters are summed. Stored as a top-level section in the model alongside `StopFactors` and `ScoringParams`.
 _Avoid_: LimitSum, score-to-limit table, coefficient table
 
+**Scoring Test Case**:
+A named, global set of `ScoringInputs` with an **Expected Outcome** used to validate Scoring Model Revisions. Not tied to any specific revision — the same suite runs against any revision for comparison. Created and managed by Platform Admins. A test case also records the actual outcome of the most recent run so it can serve as a baseline for the next run.
+_Avoid_: test input, scoring profile, model test
+
+**Expected Outcome**:
+The approval-tier assertion on a Scoring Test Case. One of four values: `approved` (coefficient = 1.0), `partial` (coefficient = 0.8), `denied` (coefficient = 0), or `rejected` (a Stop Factor fired before scoring). A test case **passes** when the actual outcome of running the Scoring Model engine matches the Expected Outcome.
+_Avoid_: expected score, expected coefficient, expected result
+
+**Scoring Test Run**:
+A recorded execution of the full Scoring Test Case suite against a specific Scoring Model Revision. Stores the actual outcome, `totalScore`, `coefficient`, and per-parameter breakdown for each test case, plus a pass/fail result. Saved permanently so Finsum can compare how different revisions affect credit decisions. A run can also be used to capture current outcomes as the new Expected Outcomes (baseline capture).
+_Avoid_: test execution, model run, scoring run
+
 **InfoScore Grade**:
 The raw bureau score (0–999) returned by KATM in the `scoring_grade` field of an InfoScore (077) response. Stored on the Deal (`infoscore_raw`) for audit in the Wizard flow; stored in the Scoring Pipeline `result` jsonb for self-service scoring. The global scoring model uses granular KATM credit history fields (overdue counts, liability counts, loan applications) rather than the InfoScore Grade directly. Not the same as the platform's Score.
 _Avoid_: KATM score, bureau score, scoring_grade
