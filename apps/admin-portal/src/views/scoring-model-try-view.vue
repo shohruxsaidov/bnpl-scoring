@@ -6,9 +6,12 @@ import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
+import Dialog from 'primevue/dialog'
 import { useToast } from 'primevue/usetoast'
 import { useScoringModelStore } from '@/stores/scoring-model'
 import type { ScoringTryResult } from '@/stores/scoring-model'
+import { useScoringTestCasesStore } from '@/stores/scoring-test-cases'
+import type { ApprovalOutcome } from '@/stores/scoring-test-cases'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,6 +23,7 @@ const modelId = Number(route.params.id)
 const step = ref(0) // 0-4 = input steps, 5 = result
 const loading = ref(false)
 const result = ref<ScoringTryResult | null>(null)
+const inputs = ref<Record<string, unknown>>({})
 
 const STEPS = computed(() => [
   t('scoringTry.stepPersonal'),
@@ -118,37 +122,70 @@ async function next() {
 async function calculate() {
   loading.value = true
   try {
-    const inputs: Record<string, unknown> = {}
+    const built: Record<string, unknown> = {}
 
-    if (age.value !== null)                       inputs.age = age.value
-    if (gender.value)                             inputs.gender = gender.value
-    if (citizenship.value)                        inputs.citizenship = citizenship.value
-    if (passportRegion.value)                     inputs.passportRegion = passportRegion.value
-    if (incomeSum.value !== null)                 inputs.incomeSum = incomeSum.value
-    if (workExperienceMonths.value !== null)      inputs.workExperienceMonths = workExperienceMonths.value
-    if (monthlyPaymentRatio.value !== null)       inputs.monthlyPaymentRatio = monthlyPaymentRatio.value
-    if (creditHistoryContracts.value !== null) inputs.creditHistoryContracts = creditHistoryContracts.value
-    if (contingentLiability.value !== null)      inputs.contingentLiability = contingentLiability.value
-    if (overdue30Count.value !== null)           inputs.overdue30Count = overdue30Count.value
-    if (overdue30to60Count.value !== null)       inputs.overdue30to60Count = overdue30to60Count.value
-    if (overdue60to90Count.value !== null)       inputs.overdue60to90Count = overdue60to90Count.value
-    if (overdue90Count.value !== null)           inputs.overdue90Count = overdue90Count.value
-    if (allDebts.value !== null)                 inputs.allDebts = allDebts.value
+    if (age.value !== null)                       built.age = age.value
+    if (gender.value)                             built.gender = gender.value
+    if (citizenship.value)                        built.citizenship = citizenship.value
+    if (passportRegion.value)                     built.passportRegion = passportRegion.value
+    if (incomeSum.value !== null)                 built.incomeSum = incomeSum.value
+    if (workExperienceMonths.value !== null)      built.workExperienceMonths = workExperienceMonths.value
+    if (monthlyPaymentRatio.value !== null)       built.monthlyPaymentRatio = monthlyPaymentRatio.value
+    if (creditHistoryContracts.value !== null)    built.creditHistoryContracts = creditHistoryContracts.value
+    if (contingentLiability.value !== null)       built.contingentLiability = contingentLiability.value
+    if (overdue30Count.value !== null)            built.overdue30Count = overdue30Count.value
+    if (overdue30to60Count.value !== null)        built.overdue30to60Count = overdue30to60Count.value
+    if (overdue60to90Count.value !== null)        built.overdue60to90Count = overdue60to90Count.value
+    if (overdue90Count.value !== null)            built.overdue90Count = overdue90Count.value
+    if (allDebts.value !== null)                  built.allDebts = allDebts.value
 
-    inputs.coBorrowerMaxDays  = hasCoBorrower.value ? (coBorrowerMaxDays.value ?? 0) : null
-    inputs.guarantorMaxDays   = hasGuarantor.value  ? (guarantorMaxDays.value ?? 0)  : null
-    inputs.pledgerMaxDays     = hasPledger.value    ? (pledgerMaxDays.value ?? 0)    : null
-    inputs.hasMortgage        = hasMortgage.value
-    if (loanApplicationCount.value !== null)     inputs.loanApplicationCount = loanApplicationCount.value
-    inputs.hasJuridical    = hasJuridical.value
-    inputs.hasDecommission = hasDecommission.value
+    built.coBorrowerMaxDays  = hasCoBorrower.value ? (coBorrowerMaxDays.value ?? 0) : null
+    built.guarantorMaxDays   = hasGuarantor.value  ? (guarantorMaxDays.value ?? 0)  : null
+    built.pledgerMaxDays     = hasPledger.value    ? (pledgerMaxDays.value ?? 0)    : null
+    built.hasMortgage        = hasMortgage.value
+    if (loanApplicationCount.value !== null)      built.loanApplicationCount = loanApplicationCount.value
+    built.hasJuridical    = hasJuridical.value
+    built.hasDecommission = hasDecommission.value
 
-    result.value = await store.tryModel(modelId, inputs)
+    result.value = await store.tryModel(modelId, built)
+    inputs.value = built
     step.value = 5
   } catch {
     toast.add({ severity: 'error', summary: t('scoringTry.calcFailed'), life: 3000 })
   } finally {
     loading.value = false
+  }
+}
+
+// ── Save as test case ────────────────────────────────────────────────────
+const testCasesStore = useScoringTestCasesStore()
+const saveDialogVisible = ref(false)
+const saveTestCaseName = ref('')
+const savingTestCase = ref(false)
+
+function deriveOutcome(r: ScoringTryResult): ApprovalOutcome {
+  if (r.rejected) return 'rejected'
+  if (r.coefficient >= 1) return 'approved'
+  if (r.coefficient > 0) return 'partial'
+  return 'denied'
+}
+
+async function saveAsTestCase() {
+  if (!result.value || !saveTestCaseName.value.trim()) return
+  savingTestCase.value = true
+  try {
+    await testCasesStore.create({
+      name: saveTestCaseName.value.trim(),
+      inputs: { ...inputs.value },
+      expectedOutcome: deriveOutcome(result.value),
+    })
+    saveDialogVisible.value = false
+    saveTestCaseName.value = ''
+    toast.add({ severity: 'success', summary: t('scoringTry.testCaseSaved'), life: 3000 })
+  } catch {
+    toast.add({ severity: 'error', summary: t('scoringTry.testCaseSaveFailed'), life: 3000 })
+  } finally {
+    savingTestCase.value = false
   }
 }
 
@@ -459,6 +496,9 @@ function verdictLabel(coeff: number) {
           <button class="btn-secondary" @click="step = 0; result = null">
             {{ t('scoringTry.tryAgain') }}
           </button>
+          <button class="btn-save-case" @click="saveTestCaseName = ''; saveDialogVisible = true">
+            <i class="pi pi-bookmark" /> {{ t('scoringTry.saveAsTestCase') }}
+          </button>
           <button class="btn-primary" @click="router.push('/scoring-model')">
             {{ t('scoringTry.backToModel') }} <i class="pi pi-arrow-right" />
           </button>
@@ -467,6 +507,32 @@ function verdictLabel(coeff: number) {
 
     </div>
   </div>
+
+  <Dialog
+    v-model:visible="saveDialogVisible"
+    :header="t('scoringTry.saveAsTestCase')"
+    modal
+    :style="{ width: '400px' }"
+    :draggable="false"
+  >
+    <div class="save-dialog-body">
+      <label class="save-label">{{ t('scoringTestCases.name') }}</label>
+      <InputText
+        v-model="saveTestCaseName"
+        class="w-full"
+        :placeholder="t('scoringTry.testCaseNamePlaceholder')"
+        autofocus
+        @keyup.enter="saveAsTestCase"
+      />
+    </div>
+    <template #footer>
+      <button class="btn-secondary" @click="saveDialogVisible = false">{{ t('common.cancel') }}</button>
+      <button class="btn-primary" :disabled="!saveTestCaseName.trim() || savingTestCase" @click="saveAsTestCase">
+        <i v-if="savingTestCase" class="pi pi-spin pi-spinner" />
+        {{ t('common.save') }}
+      </button>
+    </template>
+  </Dialog>
 </template>
 
 <style scoped>
@@ -856,4 +922,40 @@ function verdictLabel(coeff: number) {
     grid-template-columns: 1fr;
   }
 }
+
+.btn-save-case {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
+  border: 1px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-save-case:hover {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.save-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.25rem 0 0.5rem;
+}
+
+.save-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.w-full { width: 100%; }
 </style>

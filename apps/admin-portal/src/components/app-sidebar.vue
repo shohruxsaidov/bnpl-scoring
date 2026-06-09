@@ -34,6 +34,7 @@ const allNav = computed<NavItem[]>(() => [
   { label: t('nav.collectionBoard'), icon: 'pi pi-table', to: '/collection-board', feature: 'view_collection_board' },
   { label: t('nav.scoringHistory'), icon: 'pi pi-chart-line', to: '/scoring-history', feature: 'view_scoring_history' },
   { label: t('nav.scoringModel'), icon: 'pi pi-sliders-h', to: '/scoring-model', feature: 'manage_scoring_model' },
+  { label: t('nav.scoringTestCases'), icon: 'pi pi-check-square', to: '/scoring-test-cases', feature: 'manage_scoring_model' },
   { label: t('nav.payments'), icon: 'pi pi-credit-card', to: '/payments', feature: 'view_payments' },
   { label: t('nav.notifications'), icon: 'pi pi-send', to: '/notifications', feature: 'send_notifications' },
 { label: t('nav.permissions'), icon: 'pi pi-shield', to: '/permissions', feature: 'manage_roles' },

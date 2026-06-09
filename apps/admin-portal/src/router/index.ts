@@ -234,6 +234,26 @@ const routes: RouteRecordRaw[] = [
           feature: 'manage_scoring_model',
         },
       },
+      {
+        path: 'scoring-test-cases',
+        name: 'scoring-test-cases',
+        component: () => import('@/views/scoring-test-cases-view.vue'),
+        meta: {
+          titleKey: 'routeTitle.scoringTestCases',
+          breadcrumbKeys: ['breadcrumb.scoringTestCases'],
+          feature: 'manage_scoring_model',
+        },
+      },
+      {
+        path: 'scoring-test-cases/run',
+        name: 'scoring-test-run',
+        component: () => import('@/views/scoring-test-run-view.vue'),
+        meta: {
+          titleKey: 'routeTitle.scoringTestRun',
+          breadcrumbKeys: ['breadcrumb.scoringTestCases', 'breadcrumb.scoringTestRun'],
+          feature: 'manage_scoring_model',
+        },
+      },
     ],
   },
   { path: '/:pathMatch(.*)*', redirect: '/' },
