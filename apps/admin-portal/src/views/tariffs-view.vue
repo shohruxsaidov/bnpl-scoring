@@ -14,6 +14,7 @@ import { useConfirm } from 'primevue/useconfirm'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
+import { useRouter } from 'vue-router'
 import { useTariffsStore } from '@/stores/tariffs'
 import { useScoringModelStore } from '@/stores/scoring-model'
 import type { Tariff } from '@/types'
@@ -22,6 +23,7 @@ const tariffs = useTariffsStore()
 const scoringModelStore = useScoringModelStore()
 const toast = useToast()
 const confirm = useConfirm()
+const router = useRouter()
 const { t } = useI18n()
 
 const showDialog = ref(false)
@@ -220,7 +222,7 @@ function remove(tariff: Tariff) {
             <li v-for="m in tariffs.merchantsFor(selectedTariff.id)" :key="m.id" class="merchant-item">
               <div class="merchant-row">
                 <div class="merchant-info">
-                  <span class="merchant-name">{{ m.name }}</span>
+                  <a class="merchant-name merchant-link" @click="router.push({ name: 'merchant-detail', params: { id: m.id } }); showMerchants = false">{{ m.name }}</a>
                   <span class="merchant-meta">{{ m.legalName }} · {{ m.inn }}</span>
                 </div>
                 <span class="merchant-status" :class="m.active ? 'status-active' : 'status-inactive'">
@@ -462,6 +464,14 @@ function remove(tariff: Tariff) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.merchant-link {
+  color: var(--accent-1);
+  cursor: pointer;
+  text-decoration: none;
+}
+.merchant-link:hover {
+  text-decoration: underline;
 }
 .merchant-meta {
   font-size: 0.78rem;
