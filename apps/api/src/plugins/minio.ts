@@ -2,6 +2,7 @@ import fp from 'fastify-plugin';
 import { Client } from 'minio';
 import type { FastifyInstance } from 'fastify';
 import { env } from '../env';
+import { minioPresign } from '../lib/minio-presign';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -27,6 +28,6 @@ export default fp(async function minioPlugin(app: FastifyInstance) {
 
   app.decorate('minio', client);
   app.decorate('minioPresignedPut', (objectName: string, expirySeconds = 300) =>
-    client.presignedPutObject(bucket, objectName, expirySeconds),
+    minioPresign.presignedPutObject(bucket, objectName, expirySeconds),
   );
 });

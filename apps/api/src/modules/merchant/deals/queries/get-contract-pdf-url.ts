@@ -4,6 +4,7 @@ import type { Db } from "../../../../db"
 import { deals as dealsTable, dealDocuments } from "../../../deals/db/schema"
 import { env } from "../../../../env"
 import { recordFile, deleteFile } from "../../../../lib/file-storage"
+import { minioPresign } from "../../../../lib/minio-presign"
 import { files } from "../../../../lib/file-storage/schema"
 import { generateContract, type ContractData } from "../pdf"
 import { getDealById } from "./get-deal"
@@ -31,7 +32,7 @@ export async function getContractPdfUrl(
     if (fileRow) {
       try {
         await minio.statObject(fileRow.bucket, fileRow.objectKey)
-        return minio.presignedGetObject(fileRow.bucket, fileRow.objectKey, 86400)
+        return minioPresign.presignedGetObject(fileRow.bucket, fileRow.objectKey, 86400)
       } catch {
         await deleteFile(db, minio, existingDoc.fileId)
         await db
@@ -99,5 +100,5 @@ export async function getContractPdfUrl(
     .insert(dealDocuments)
     .values({ dealId, fileId: fileRecord.id, documentType: "contract" })
 
-  return minio.presignedGetObject(bucket, objectKey, 86400)
+  return minioPresign.presignedGetObject(bucket, objectKey, 86400)
 }
