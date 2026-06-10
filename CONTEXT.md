@@ -97,7 +97,7 @@ A named grouping of Products managed by an Employee with the Merchant Admin Role
 _Avoid_: Product type, product category label
 
 **Tariff**:
-A credit plan that defines a name, number of instalment months, Ustama rate, and Credit Range. Created and managed exclusively by the Finsum platform admin. Merchant Admins select which active Tariffs to expose to their clients — they cannot create or modify Tariff parameters. Each Tariff optionally references one **Scoring Model Revision** (`scoring_model_id`) — the specific revision whose parameters must be used when computing a Client's Score for Deals under that Tariff. Set by the Platform Admin at creation time; immutable after creation. When `scoring_model_id` is null (legacy Tariffs), the system falls back to the active Scoring Model Revision.
+A credit plan that defines a name, number of instalment months, Ustama rate, and Credit Range. Created and managed exclusively by the Finsum platform admin. Merchant Admins select which active Tariffs to expose to their clients — they cannot create or modify Tariff parameters. A Tariff is purely a pricing construct: it plays no role in scoring, which always uses the active **Scoring Model Revision** globally.
 _Avoid_: Plan, scheme, package
 
 **Ustama**:
@@ -119,6 +119,10 @@ The portion of a Client's Platform Credit Limit not currently committed to activ
 _Avoid_: Remaining limit, free limit
 
 ### Scoring
+
+**Scoring Model Revision**:
+An immutable, versioned snapshot of the full scoring configuration (Stop Factors, Scoring Parameters, Limit Coefficient table) owned by Finsum Nasiya. Revisions are append-only; the most recently created revision is the **active** one and is applied globally to every scoring run, regardless of Merchant or Tariff. Saving a new revision makes it live immediately for all subsequent scoring. Each scoring run records which revision produced its decision.
+_Avoid_: scoring model version, model config, per-tariff model
 
 **Score**:
 The platform's creditworthiness value computed for a Client as a weighted sum of Scoring Parameters. Each Scoring Parameter has an `ImportantLevel` multiplier (0, 0.5, or 1) and a value-to-score mapping. The raw sum maps through the Limit Coefficient table to determine credit limit eligibility (0 = denied, 0.8 = partial limit, 1.0 = full limit). Defined in the active Scoring Model Revision owned by Finsum Nasiya. Determines the Client's Platform Credit Limit. If any Stop Factor matches, scoring is aborted and the Client is rejected before a Score is computed.
@@ -272,7 +276,7 @@ _Avoid_: Notification kind, notification category
 - A **Deal** belongs to one **Merchant** and one **Branch**
 - A **Merchant** selects active **Tariffs** from the Finsum global Tariff catalog
 - A **Tariff** defines months, **Ustama** rate, and a **Credit Range** (min + max Basket total)
-- A **Tariff** optionally references exactly one **Scoring Model Revision** (`scoring_model_id`); null means fall back to the active revision
+- Scoring always uses the single active **Scoring Model Revision** platform-wide; Tariffs play no role in scoring
 - A **Deal** contains one **Basket** and one **Tariff**
 - A **Basket** contains one or more **Products** with quantities; total must fall within the Tariff's **Credit Range** and must not exceed the Client's **Available Balance**
 - A **Product** belongs to exactly one **Category**; a **Category** is owned by a **Merchant**

@@ -13,7 +13,7 @@ import {
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core'
-import { clients, merchantUsers, merchants, branches, tariffs, products, adminUsers } from '../../id/db/schema'
+import { clients, merchantUsers, merchants, branches, tariffs, products, adminUsers, scoringModelRevisions } from '../../id/db/schema'
 import { files } from '../../../lib/file-storage/schema'
 
 // ---------------------------------------------------------------------------
@@ -79,6 +79,9 @@ export const scoringHistories = pgTable('scoring_histories', {
   coefficient: numeric('coefficient', { precision: 5, scale: 4 }),
   // 'approved' | 'declined' | 'manual_review'
   decision: varchar('decision', { length: 20 }).notNull(),
+  // Scoring Model Revision that produced this decision; null for runs predating
+  // the global-model audit trail (ADR 0021) or scored outside the model engine
+  modelRevisionId: integer('model_revision_id').references(() => scoringModelRevisions.id),
   platformCreditLimit: bigint('platform_credit_limit', { mode: 'bigint' }).notNull(),
   scoredAt: timestamp('scored_at', { withTimezone: true }).defaultNow().notNull(),
 })

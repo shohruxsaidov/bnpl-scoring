@@ -247,7 +247,6 @@ export const tariffs = pgTable('tariffs', {
   name: varchar('name', { length: 200 }).notNull(),
   termMonths: integer('term_months').notNull(),
   markupPercent: numeric('markup_percent', { precision: 5, scale: 2 }).notNull(),
-  scoringModelId: integer('scoring_model_id').references(() => scoringModelRevisions.id),
   active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
