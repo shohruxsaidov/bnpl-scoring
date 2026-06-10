@@ -60,6 +60,9 @@ export const uz: Record<string, string> = {
   // tariffs
   tariff_not_found: "Tarif topilmadi",
 
+  // scoring models
+  scoring_model_not_found: "Skoring modeli topilmadi",
+
   // mxik
   mxik_not_found: "MXIK kodi topilmadi",
 

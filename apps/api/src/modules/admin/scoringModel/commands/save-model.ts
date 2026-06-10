@@ -1,17 +1,22 @@
-import { eq } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import type { Db } from "../../../../db"
 import { scoringModelRevisions } from "../db/schema"
 import type { ScoringModelData } from "../../../scoring/engine"
 
 export async function saveModel(
   db: Db,
-  input: { name: string; version: string; params: ScoringModelData },
+  input: { scoringModelId: number; name: string; version: string; params: ScoringModelData },
   createdBy: bigint | null,
 ) {
   const existing = await db
     .select({ id: scoringModelRevisions.id })
     .from(scoringModelRevisions)
-    .where(eq(scoringModelRevisions.version, input.version))
+    .where(
+      and(
+        eq(scoringModelRevisions.scoringModelId, input.scoringModelId),
+        eq(scoringModelRevisions.version, input.version),
+      ),
+    )
     .limit(1)
 
   if (existing.length > 0) {
@@ -21,6 +26,7 @@ export async function saveModel(
   const [row] = await db
     .insert(scoringModelRevisions)
     .values({
+      scoringModelId: input.scoringModelId,
       name: input.name,
       version: input.version,
       params: input.params as unknown as Record<string, unknown>,

@@ -60,6 +60,9 @@ export const ru: Record<string, string> = {
   // tariffs
   tariff_not_found: "Тариф не найден",
 
+  // scoring models
+  scoring_model_not_found: "Скоринговая модель не найдена",
+
   // mxik
   mxik_not_found: "Код MXIK не найден",
 

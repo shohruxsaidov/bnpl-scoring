@@ -2,18 +2,33 @@ import { Type } from "@sinclair/typebox"
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
 import type { FastifyInstance } from "fastify"
 import { getActiveModel } from "./queries/get-active-model"
+import { getGlobalModel } from "./queries/get-global-model"
+import { getScoringModel } from "./queries/get-scoring-model"
+import { listScoringModels } from "./queries/list-scoring-models"
 import { listModels } from "./queries/list-models"
 import { getModelById } from "./queries/get-model-by-id"
 import { saveModel } from "./commands/save-model"
+import { createScoringModel } from "./commands/create-scoring-model"
+import { setGlobalModel } from "./commands/set-global-model"
 import { computeScoringModel } from "../../scoring/engine"
 import type { ScoringModelData, ScoringInputs } from "../../scoring/engine"
 
 function serializeRevision(row: NonNullable<Awaited<ReturnType<typeof getActiveModel>>>) {
   return {
     id: row.id,
+    scoringModelId: row.scoringModelId,
     name: row.name,
     version: row.version,
     params: row.params,
+    createdAt: row.createdAt.toISOString(),
+  }
+}
+
+function serializeScoringModel(row: NonNullable<Awaited<ReturnType<typeof getScoringModel>>>) {
+  return {
+    id: row.id,
+    name: row.name,
+    isGlobal: row.isGlobal,
     createdAt: row.createdAt.toISOString(),
   }
 }
@@ -22,14 +37,115 @@ export default async function adminScoringModelRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
   const db = app.db
 
+  /* ── Scoring Models (ADR-0023) ──────────────────────────────────────────── */
+
+  const ModelIdParams = Type.Object({ modelId: Type.String() })
+
+  fastify.get("/models", async () => {
+    const rows = await listScoringModels(db)
+    return {
+      models: rows.map((m) => ({
+        id: m.id,
+        name: m.name,
+        isGlobal: m.isGlobal,
+        merchantCount: m.merchantCount,
+        createdAt: m.createdAt.toISOString(),
+      })),
+    }
+  })
+
+  fastify.post(
+    "/models",
+    { schema: { body: Type.Object({ name: Type.String({ minLength: 1 }) }) } },
+    async (request, reply) => {
+      const model = await createScoringModel(db, { name: request.body.name })
+      return reply.code(201).send({ model: serializeScoringModel(model) })
+    },
+  )
+
+  // Model + its active (latest) revision, if any.
+  fastify.get(
+    "/models/:modelId",
+    { schema: { params: ModelIdParams } },
+    async (request, reply) => {
+      const model = await getScoringModel(db, parseInt(request.params.modelId, 10))
+      if (!model) return reply.code(404).sendError("not_found")
+      const revision = await getActiveModel(db, model.id)
+      return {
+        model: serializeScoringModel(model),
+        activeRevision: revision ? serializeRevision(revision) : null,
+      }
+    },
+  )
+
+  fastify.get(
+    "/models/:modelId/history",
+    { schema: { params: ModelIdParams } },
+    async (request, reply) => {
+      const model = await getScoringModel(db, parseInt(request.params.modelId, 10))
+      if (!model) return reply.code(404).sendError("not_found")
+      const rows = await listModels(db, model.id)
+      return {
+        revisions: rows.map((r) => ({
+          id: r.id,
+          name: r.name,
+          version: r.version,
+          createdAt: r.createdAt.toISOString(),
+        })),
+      }
+    },
+  )
+
+  // Atomic Global Model switch: marking this model unmarks the previous holder.
+  fastify.post(
+    "/models/:modelId/global",
+    { schema: { params: ModelIdParams } },
+    async (request, reply) => {
+      const model = await getScoringModel(db, parseInt(request.params.modelId, 10))
+      if (!model) return reply.code(404).sendError("not_found")
+      const row = await setGlobalModel(db, model.id)
+      return { model: serializeScoringModel(row) }
+    },
+  )
+
+  const SaveBody = Type.Object({
+    name:    Type.String({ minLength: 1 }),
+    version: Type.String({ minLength: 1 }),
+    params:  Type.Record(Type.String(), Type.Unknown()),
+  })
+
+  // Save a new revision under a model; it becomes the model's active revision.
+  fastify.put(
+    "/models/:modelId",
+    { schema: { params: ModelIdParams, body: SaveBody } },
+    async (request, reply) => {
+      const model = await getScoringModel(db, parseInt(request.params.modelId, 10))
+      if (!model) return reply.code(404).sendError("not_found")
+      const adminId = BigInt((request.user as { sub: string }).sub)
+      const { name, version, params } = request.body
+      const row = await saveModel(
+        db,
+        { scoringModelId: model.id, name, version, params: params as never },
+        adminId,
+      )
+      return serializeRevision(row)
+    },
+  )
+
+  /* ── Global Model revisions (legacy shape, consumed by the admin portal) ── */
+
   fastify.get("/", async (_, reply) => {
-    const row = await getActiveModel(db)
+    const model = await getGlobalModel(db)
+    if (!model) return reply.code(404).sendError("not_found")
+    const row = await getActiveModel(db, model.id)
     if (!row) return reply.code(404).sendError("not_found")
     return serializeRevision(row)
   })
 
-  fastify.get("/history", async () => {
-    const rows = await listModels(db)
+  fastify.get("/history", async (_, reply) => {
+    const model = await getGlobalModel(db)
+    if (!model) return reply.code(404).sendError("not_found")
+    const rows = await listModels(db, model.id)
     return {
       revisions: rows.map((r) => ({
         id: r.id,
@@ -88,16 +204,17 @@ export default async function adminScoringModelRoutes(app: FastifyInstance) {
     },
   )
 
-  const SaveBody = Type.Object({
-    name:    Type.String({ minLength: 1 }),
-    version: Type.String({ minLength: 1 }),
-    params:  Type.Record(Type.String(), Type.Unknown()),
-  })
-
-  fastify.put("/", { schema: { body: SaveBody } }, async (request) => {
+  // Legacy save: writes a new revision to the Global Model.
+  fastify.put("/", { schema: { body: SaveBody } }, async (request, reply) => {
+    const model = await getGlobalModel(db)
+    if (!model) return reply.code(404).sendError("not_found")
     const adminId = BigInt((request.user as { sub: string }).sub)
     const { name, version, params } = request.body
-    const row = await saveModel(db, { name, version, params: params as never }, adminId)
+    const row = await saveModel(
+      db,
+      { scoringModelId: model.id, name, version, params: params as never },
+      adminId,
+    )
     return serializeRevision(row)
   })
 }

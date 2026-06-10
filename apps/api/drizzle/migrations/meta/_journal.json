@@ -22,6 +22,13 @@
       "when": 1781112952251,
       "tag": "0002_light_dark_phoenix",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1781115142908,
+      "tag": "0003_mushy_the_captain",
+      "breakpoints": true
     }
   ]
 }

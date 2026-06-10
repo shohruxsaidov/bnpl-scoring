@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   AnyPgColumn,
   bigint,
@@ -13,6 +14,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
@@ -170,6 +172,8 @@ export const merchants = pgTable('merchants', {
   accountNumber: varchar('account_number', { length: 20 }),
   bankName: varchar('bank_name', { length: 200 }),
   regionId: integer('region_id').references(() => regions.id),
+  // ADR-0023: optional Scoring Model assignment; null = the Global Model.
+  scoringModelId: integer('scoring_model_id').references(() => scoringModels.id),
   active: boolean('active').notNull().default(true),
   kybStatus: varchar('kyb_status', { length: 20 }).notNull().default('verified'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -233,8 +237,26 @@ export const mxikCache = pgTable('mxik_cache', {
   cachedAt: timestamp('cached_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+// ADR-0023: named family of revisions. Exactly one model is the Global Model
+// at all times (partial unique index); it serves every scoring run whose
+// Merchant has no assigned model, and all self-service runs.
+export const scoringModels = pgTable(
+  'scoring_models',
+  {
+    id: serial('id').primaryKey(),
+    name: varchar('name', { length: 200 }).notNull(),
+    isGlobal: boolean('is_global').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex('scoring_models_single_global_idx').on(t.isGlobal).where(sql`${t.isGlobal}`)],
+);
+
+// scoringModelId is nullable only so the column can be added to a populated
+// table; the backfill script attaches every orphan revision to the Global
+// Model, and all write paths set it.
 export const scoringModelRevisions = pgTable('scoring_model_revisions', {
   id: serial('id').primaryKey(),
+  scoringModelId: integer('scoring_model_id').references(() => scoringModels.id),
   name: text('name').notNull(),
   version: varchar('version', { length: 50 }).notNull(),
   params: jsonb('params').notNull(),

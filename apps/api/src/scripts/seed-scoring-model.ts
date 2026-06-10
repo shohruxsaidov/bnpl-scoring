@@ -1,7 +1,8 @@
 import 'dotenv/config'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
-import { scoringModelRevisions } from '../modules/admin/scoringModel/db/schema'
+import { eq } from 'drizzle-orm'
+import { scoringModels, scoringModelRevisions } from '../modules/admin/scoringModel/db/schema'
 import { tariffs } from '../modules/id/db/schema'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
@@ -24,12 +25,28 @@ async function main() {
   await db.delete(tariffs)
   await db.delete(scoringModelRevisions)
 
+  // ADR-0023: revisions belong to a Scoring Model; seed into the Global Model.
+  let [global] = await db
+    .select()
+    .from(scoringModels)
+    .where(eq(scoringModels.isGlobal, true))
+    .limit(1)
+  if (!global) {
+    const [created] = await db
+      .insert(scoringModels)
+      .values({ name, isGlobal: true })
+      .returning()
+    global = created!
+  }
+
   const [row] = await db
     .insert(scoringModelRevisions)
-    .values({ name, version, params, createdBy: null })
+    .values({ scoringModelId: global.id, name, version, params, createdBy: null })
     .returning({ id: scoringModelRevisions.id })
 
-  console.log(`Scoring model seeded as revision #${row!.id} (${name} v${version})`)
+  console.log(
+    `Scoring model seeded as revision #${row!.id} (${name} v${version}) under Global Model #${global.id}`,
+  )
   await client.end()
 }
 

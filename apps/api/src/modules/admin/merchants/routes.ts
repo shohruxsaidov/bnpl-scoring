@@ -3,6 +3,7 @@ import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
 import type { FastifyInstance } from "fastify"
 import { randomUUID } from "node:crypto"
 import { listMerchants } from "./queries/list-merchants"
+import { getScoringModel } from "../scoringModel/queries/get-scoring-model"
 import { getMerchant } from "./queries/get-merchant"
 import { listDocuments } from "./queries/list-documents"
 import { getMerchantTariffs } from "./queries/get-merchant-tariffs"
@@ -37,6 +38,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     address: Type.String({ minLength: 1 }),
     logoUrl: Type.Optional(Type.String()),
     contractNumber: Type.Optional(Type.String()),
+    scoringModelId: Type.Optional(Type.Integer()),
   })
 
   const UpdateMerchantBody = Type.Partial(
@@ -52,6 +54,8 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
       mfo: Type.String({ pattern: "^\\d{5}$" }),
       accountNumber: Type.String({ pattern: "^\\d{20}$" }),
       bankName: Type.String({ minLength: 1 }),
+      // null clears the assignment → merchant falls back to the Global Model
+      scoringModelId: Type.Union([Type.Integer(), Type.Null()]),
     }),
   )
 
@@ -94,6 +98,10 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     "/",
     { schema: { body: CreateMerchantBody }, preHandler },
     async (request, reply) => {
+      if (request.body.scoringModelId !== undefined) {
+        const model = await getScoringModel(db, request.body.scoringModelId)
+        if (!model) return reply.code(404).sendError("scoring_model_not_found")
+      }
       const merchant = await createMerchant(db, request.body)
       return reply.code(201).send({ merchant: serializeMerchant(merchant) })
     },
@@ -113,6 +121,10 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     "/:id",
     { schema: { params: IdParams, body: UpdateMerchantBody }, preHandler },
     async (request, reply) => {
+      if (request.body.scoringModelId != null) {
+        const model = await getScoringModel(db, request.body.scoringModelId)
+        if (!model) return reply.code(404).sendError("scoring_model_not_found")
+      }
       const merchant = await updateMerchant(db, BigInt(request.params.id), request.body)
       if (!merchant) return reply.code(404).sendError("not_found")
       return { merchant: serializeMerchant(merchant) }

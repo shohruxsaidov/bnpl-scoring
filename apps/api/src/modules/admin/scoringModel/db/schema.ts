@@ -1,1 +1,1 @@
-export { scoringModelRevisions } from '../../../id/db/schema'
+export { scoringModels, scoringModelRevisions } from '../../../id/db/schema'

@@ -11,6 +11,7 @@ export async function createMerchant(
     address: string
     logoUrl?: string
     contractNumber?: string
+    scoringModelId?: number
   },
 ) {
   const [row] = await db.insert(merchants).values(input).returning()
