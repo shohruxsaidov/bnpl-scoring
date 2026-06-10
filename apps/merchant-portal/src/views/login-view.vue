@@ -6,6 +6,7 @@ import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
 import InputText from 'primevue/inputtext'
+import InputMask from 'primevue/inputmask'
 import Password from 'primevue/password'
 import Dialog from 'primevue/dialog'
 import { useAuthStore } from '@/stores/auth'
@@ -17,7 +18,7 @@ const { t } = useI18n()
 
 const schema = toTypedSchema(
   z.object({
-    phone: z.string().min(1, t('login.phoneRequired')),
+    phone: z.string().refine(v => v.replace(/\D/g, '').length === 9, t('login.phoneRequired')),
     password: z.string().min(1, t('login.passwordRequired')),
   }),
 )
@@ -181,7 +182,7 @@ async function pickRole(role: EmployeeRole) {
         <div class="field">
           <label class="field-label" for="phone">{{ $t('login.phone') }}</label>
           <span class="p-inputgroup-addon">+998</span>
-          <InputText id="phone" v-model="phone" v-bind="phoneAttrs" :invalid="!!errors.phone" autocomplete="tel" />
+          <InputMask id="phone" v-model="phone" v-bind="phoneAttrs" mask="999999999" :invalid="!!errors.phone" autocomplete="tel" class="w-full" />
           <span v-if="errors.phone" class="field-error">{{ errors.phone }}</span>
         </div>
 
@@ -683,7 +684,8 @@ async function pickRole(role: EmployeeRole) {
   align-items: center;
 }
 
-.p-inputgroup-addon + :deep(.p-inputtext) {
+.p-inputgroup-addon + :deep(.p-inputtext),
+.p-inputgroup-addon + :deep(.p-inputmask) {
   padding-left: 3.25rem;
 }
 
