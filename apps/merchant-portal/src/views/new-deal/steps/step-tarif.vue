@@ -12,7 +12,6 @@ const scoring = useClientScoringStore()
 
 onMounted(() => catalog.fetchTariffs())
 
-const score = computed(() => scoring.scoreSum ?? 0)
 const limit = computed(() => scoring.platformCreditLimit ?? 0)
 
 const selectedId = ref<string | null>(deal.sessionData.tariff?.id ?? null)
@@ -37,15 +36,13 @@ function next() {
         <h2>{{ $t('stepTarif.title') }}</h2>
         <p>{{ $t('stepTarif.subtitle') }}</p>
       </div>
-      <div class="score-pill">
-        <div>
-          <span class="sp-label">{{ $t('stepTarif.score') }}</span>
-          <span class="sp-value font-mono text-gradient">{{ score }}</span>
+      <div class="limit-banner">
+        <div class="lb-icon">
+          <i class="pi pi-wallet" />
         </div>
-        <div class="sp-sep" />
-        <div>
-          <span class="sp-label">{{ $t('stepTarif.approvedLimit') }}</span>
-          <MonoAmount :value="limit" size="md" />
+        <div class="lb-body">
+          <span class="lb-label">{{ $t('stepTarif.approvedLimit') }}</span>
+          <MonoAmount :value="limit" size="xl" />
         </div>
       </div>
     </header>
@@ -105,37 +102,49 @@ function next() {
   font-size: 0.88rem;
 }
 
-.score-pill {
+.limit-banner {
   display: flex;
   align-items: center;
-  gap: 1.2rem;
+  gap: 1.1rem;
   background: var(--bg-surface);
-  padding: 0.9rem 1.4rem;
-  border-radius: 14px;
+  border: 2px solid var(--accent-2);
+  box-shadow: var(--accent-glow);
+  padding: 1.1rem 1.6rem;
+  border-radius: 16px;
 }
 
-.sp-label {
-  display: block;
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  text-transform: uppercase;
+.lb-icon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: var(--gradient-hero);
 }
 
-.sp-value {
-  font-size: 1.4rem;
+.lb-icon i {
+  font-size: 1.3rem;
+  color: #fff;
+}
+
+.lb-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.lb-label {
+  font-size: 0.78rem;
   font-weight: 800;
-}
-
-.sp-sep {
-  width: 1px;
-  height: 34px;
-  background: var(--border-subtle);
+  color: var(--accent-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
 .tariffs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(220px, 260px));
   gap: 1.2rem;
   margin: 1.8rem 0;
 }
@@ -232,6 +241,10 @@ function next() {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
+  }
+
+  .limit-banner {
+    width: 100%;
   }
 }
 

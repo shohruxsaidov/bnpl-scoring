@@ -1,22 +1,78 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import Dialog from 'primevue/dialog'
+import InputText from 'primevue/inputtext'
+import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { useScoringModelStore } from '@/stores/scoring-model'
+import type { ScoringModelListItem } from '@/stores/scoring-model'
 
 const store = useScoringModelStore()
+const confirm = useConfirm()
 const toast = useToast()
 const { t } = useI18n()
 const router = useRouter()
 
+const showCreateDialog = ref(false)
+const newModelName = ref('')
+const creating = ref(false)
+
 onMounted(async () => {
   try {
-    await store.fetchHistory()
+    await store.fetchModels()
   } catch {
     toast.add({ severity: 'error', summary: t('scoringModel.loadFailed'), life: 3000 })
   }
 })
+
+function makeGlobal(model: ScoringModelListItem) {
+  const current = store.models.find((m) => m.isGlobal)
+  confirm.require({
+    message: t('scoringModel.makeGlobalConfirm', { name: model.name, current: current?.name ?? '—' }),
+    header: t('scoringModel.makeGlobal'),
+    icon: 'pi pi-exclamation-triangle',
+    rejectProps: { label: t('common.cancel'), severity: 'secondary', outlined: true },
+    acceptProps: { label: t('scoringModel.makeGlobal'), severity: 'danger' },
+    accept: async () => {
+      try {
+        await store.setGlobal(model.id)
+        toast.add({
+          severity: 'success',
+          summary: t('scoringModel.makeGlobalSuccess', { name: model.name }),
+          life: 2500,
+        })
+      } catch (e) {
+        const summary =
+          (e as Error).message === 'scoring_model_has_no_revisions'
+            ? t('scoringModel.noRevisionsYet')
+            : t('scoringModel.makeGlobalFailed')
+        toast.add({ severity: 'error', summary, life: 3000 })
+      }
+    },
+  })
+}
+
+function openCreateDialog() {
+  newModelName.value = ''
+  showCreateDialog.value = true
+}
+
+async function confirmCreate() {
+  if (!newModelName.value.trim()) return
+  creating.value = true
+  try {
+    const model = await store.createModel(newModelName.value.trim())
+    showCreateDialog.value = false
+    toast.add({ severity: 'success', summary: t('scoringModel.created'), life: 2000 })
+    router.push(`/scoring-model/${model.id}`)
+  } catch {
+    toast.add({ severity: 'error', summary: t('scoringModel.createFailed'), life: 3000 })
+  } finally {
+    creating.value = false
+  }
+}
 </script>
 
 <template>
@@ -24,8 +80,11 @@ onMounted(async () => {
     <div class="page-header">
       <div>
         <h1 class="page-title">{{ t('scoringModel.title') }}</h1>
-        <p class="page-subtitle">{{ t('scoringModel.subtitle') }}</p>
+        <p class="page-subtitle">{{ t('scoringModel.modelsSubtitle') }}</p>
       </div>
+      <button class="btn-primary" @click="openCreateDialog">
+        <i class="pi pi-plus" /> {{ t('scoringModel.newModel') }}
+      </button>
     </div>
 
     <div class="surface-card table-card">
@@ -38,35 +97,77 @@ onMounted(async () => {
           <tr>
             <th class="col-id">#</th>
             <th class="col-name">{{ t('scoringModel.modelName') }}</th>
-            <th class="col-ver">{{ t('scoringModel.modelVersion') }}</th>
+            <th class="col-count">{{ t('scoringModel.merchantCount') }}</th>
+            <th class="col-count">{{ t('scoringModel.revisionCount') }}</th>
             <th class="col-date">{{ t('scoringModel.createdAt') }}</th>
             <th class="col-status">{{ t('scoringModel.status') }}</th>
+            <th class="col-actions"></th>
           </tr>
         </thead>
         <tbody>
           <tr
-            v-for="(rev, i) in store.history"
-            :key="rev.id"
+            v-for="m in store.models"
+            :key="m.id"
             class="rev-row"
-            @click="router.push(`/scoring-model/${rev.id}`)"
+            @click="router.push(`/scoring-model/${m.id}`)"
           >
-            <td class="col-id mono">{{ rev.id }}</td>
-            <td class="col-name">{{ rev.name }}</td>
-            <td class="col-ver">
-              <span class="ver-chip">v{{ rev.version }}</span>
-            </td>
-            <td class="col-date">{{ new Date(rev.createdAt).toLocaleDateString() }}</td>
+            <td class="col-id mono">{{ m.id }}</td>
+            <td class="col-name">{{ m.name }}</td>
+            <td class="col-count mono">{{ m.merchantCount }}</td>
+            <td class="col-count mono">{{ m.revisionCount }}</td>
+            <td class="col-date">{{ new Date(m.createdAt).toLocaleDateString() }}</td>
             <td class="col-status">
-              <span v-if="i === 0" class="active-badge">{{ t('scoringModel.active') }}</span>
+              <span v-if="m.isGlobal" class="global-badge">{{ t('scoringModel.global') }}</span>
+            </td>
+            <td class="col-actions" @click.stop>
+              <button
+                v-if="!m.isGlobal"
+                class="btn-make-global"
+                :disabled="m.revisionCount === 0"
+                :title="m.revisionCount === 0 ? t('scoringModel.noRevisionsYet') : undefined"
+                @click="makeGlobal(m)"
+              >
+                <i class="pi pi-globe" /> {{ t('scoringModel.makeGlobal') }}
+              </button>
             </td>
           </tr>
-          <tr v-if="!store.history.length">
-            <td colspan="5" class="state-row">{{ t('common.noData') }}</td>
+          <tr v-if="!store.models.length">
+            <td colspan="7" class="state-row">{{ t('common.noData') }}</td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
+
+  <!-- New model dialog -->
+  <Dialog
+    v-model:visible="showCreateDialog"
+    modal
+    :header="t('scoringModel.newModel')"
+    :style="{ width: '420px' }"
+  >
+    <div class="create-form">
+      <div class="field">
+        <label class="field-label">{{ t('scoringModel.modelName') }}</label>
+        <InputText
+          v-model="newModelName"
+          fluid
+          :placeholder="t('scoringModel.namePlaceholder')"
+          @keyup.enter="confirmCreate"
+        />
+      </div>
+    </div>
+    <template #footer>
+      <button class="btn-secondary" @click="showCreateDialog = false">{{ t('common.cancel') }}</button>
+      <button
+        class="btn-primary"
+        :disabled="creating || !newModelName.trim()"
+        @click="confirmCreate"
+      >
+        {{ creating ? '…' : t('scoringModel.createModel') }}
+      </button>
+    </template>
+  </Dialog>
 </template>
 
 <style scoped>
@@ -150,8 +251,10 @@ onMounted(async () => {
   font-weight: 600;
 }
 
-.col-ver {
-  width: 100px;
+.col-count {
+  width: 110px;
+  text-align: left;
+  color: var(--text-secondary);
 }
 
 .col-date {
@@ -161,7 +264,13 @@ onMounted(async () => {
 }
 
 .col-status {
-  width: 100px;
+  width: 110px;
+}
+
+.col-actions {
+  width: 200px;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .mono {
@@ -169,17 +278,7 @@ onMounted(async () => {
   font-size: 0.84rem;
 }
 
-.ver-chip {
-  display: inline-block;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--accent-2);
-  background: color-mix(in srgb, var(--accent-2) 12%, transparent);
-  padding: 0.1rem 0.4rem;
-  border-radius: 4px;
-}
-
-.active-badge {
+.global-badge {
   display: inline-block;
   font-size: 0.72rem;
   font-weight: 700;
@@ -187,6 +286,96 @@ onMounted(async () => {
   background: color-mix(in srgb, var(--success) 12%, transparent);
   padding: 0.1rem 0.5rem;
   border-radius: 4px;
+}
+
+.btn-make-global {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-make-global:hover:not(:disabled) {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.btn-make-global:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.4rem;
+  border-radius: 10px;
+  border: none;
+  background: var(--gradient-hero);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: opacity 0.15s, box-shadow 0.15s;
+  box-shadow: var(--accent-glow);
+}
+
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.2rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-secondary:hover {
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
+.create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding-top: 0.4rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.field-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary);
 }
 
 .state-row {

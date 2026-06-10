@@ -20,6 +20,7 @@ const toast = useToast()
 const store = useScoringModelStore()
 
 const modelId = Number(route.params.id)
+const revisionId = Number(route.params.revId)
 const step = ref(0) // 0-4 = input steps, 5 = result
 const loading = ref(false)
 const result = ref<ScoringTryResult | null>(null)
@@ -35,7 +36,7 @@ const STEPS = computed(() => [
 
 onMounted(async () => {
   try {
-    await store.loadRevision(modelId)
+    await store.loadRevision(revisionId)
   } catch {
     toast.add({ severity: 'error', summary: t('scoringModel.loadFailed'), life: 3000 })
   }
@@ -111,7 +112,7 @@ const isLast = computed(() => step.value === STEPS.value.length - 1)
 
 function back() {
   if (step.value > 0) step.value--
-  else router.push('/scoring-model')
+  else router.push(`/scoring-model/${modelId}`)
 }
 
 async function next() {
@@ -147,7 +148,7 @@ async function calculate() {
     built.hasJuridical    = hasJuridical.value
     built.hasDecommission = hasDecommission.value
 
-    result.value = await store.tryModel(modelId, built)
+    result.value = await store.tryModel(revisionId, built)
     inputs.value = built
     step.value = 5
   } catch {
@@ -211,7 +212,7 @@ function verdictLabel(coeff: number) {
         <h1 class="wizard-title">{{ t('scoringTry.title') }}</h1>
         <p class="wizard-subtitle">{{ t('scoringTry.subtitle') }}</p>
       </div>
-      <button class="finish-early-btn" @click="router.push('/scoring-model')">
+      <button class="finish-early-btn" @click="router.push(`/scoring-model/${modelId}`)">
         {{ t('scoringTry.backToModel') }} →
       </button>
     </div>
@@ -499,7 +500,7 @@ function verdictLabel(coeff: number) {
           <button class="btn-save-case" @click="saveTestCaseName = ''; saveDialogVisible = true">
             <i class="pi pi-bookmark" /> {{ t('scoringTry.saveAsTestCase') }}
           </button>
-          <button class="btn-primary" @click="router.push('/scoring-model')">
+          <button class="btn-primary" @click="router.push(`/scoring-model/${modelId}`)">
             {{ t('scoringTry.backToModel') }} <i class="pi pi-arrow-right" />
           </button>
         </div>

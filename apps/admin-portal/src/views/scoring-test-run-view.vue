@@ -27,7 +27,7 @@ const revisionOptions = computed(() =>
 
 onMounted(async () => {
   try {
-    await modelStore.fetchHistory()
+    await modelStore.fetchGlobalHistory()
     if (modelStore.history.length) selectedRevisionId.value = modelStore.history[0].id
   } catch {
     toast.add({ severity: 'error', summary: t('scoringModel.loadFailed'), life: 3000 })

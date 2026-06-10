@@ -245,7 +245,17 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: 'scoring-model/:id/try',
+        path: 'scoring-model/:id/revisions/:revId',
+        name: 'scoring-model-revision',
+        component: () => import('@/views/scoring-model-detail-view.vue'),
+        meta: {
+          titleKey: 'routeTitle.scoringModel',
+          breadcrumbKeys: ['breadcrumb.scoringModel', 'breadcrumb.detail'],
+          feature: 'manage_scoring_model',
+        },
+      },
+      {
+        path: 'scoring-model/:id/revisions/:revId/try',
         name: 'scoring-model-try',
         component: () => import('@/views/scoring-model-try-view.vue'),
         meta: {

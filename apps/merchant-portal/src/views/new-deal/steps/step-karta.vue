@@ -171,8 +171,8 @@ function clearTimer() {
   if (progressTimer) { clearInterval(progressTimer); progressTimer = null }
 }
 
-async function verifyCard() {
-  if (!selectedCard.value) return
+async function runScoring(): Promise<CardScoreResult | null> {
+  if (!selectedCard.value) return null
 
   scoring.value = true
   progress.value = 0
@@ -202,10 +202,12 @@ async function verifyCard() {
       decision: data.decision as ScoreDecision,
       limit: data.limit,
     }
+    return result.value
   } catch {
     clearTimer()
     progress.value = 0
     scoreError.value = t('stepKarta.scoreError')
+    return null
   } finally {
     scoring.value = false
   }
@@ -217,31 +219,22 @@ function resetSelection() {
   scoreError.value = null
 }
 
-// ── Decision display ─────────────────────────────────────────────────────────
-
-const decisionMeta = computed(() => {
-  if (!result.value) return null
-  const d = result.value.decision
-  if (d === 'approved')
-    return { label: t('stepKarta.approved'), color: 'var(--success)', bg: 'var(--success-bg)' }
-  if (d === 'manual_review')
-    return { label: t('stepKarta.manualReview'), color: 'var(--warning)', bg: 'var(--warning-bg)' }
-  return { label: t('stepKarta.declined'), color: 'var(--danger)', bg: 'var(--danger-bg)' }
-})
-
 // ── Continue ─────────────────────────────────────────────────────────────────
 
 async function next() {
-  if (!selectedCard.value || !result.value) return
+  if (!selectedCard.value || scoring.value) return
+
+  // Reuse the result if this card was already scored on a prior pass
+  const score = result.value ?? (await runScoring())
+  if (!score || !selectedCard.value) return
 
   deal.setCard(selectedCard.value)
 
-  const coefficient =
-    result.value.score >= 700 ? 1.0 : result.value.score >= 600 ? 0.8 : 0
+  const coefficient = score.score >= 700 ? 1.0 : score.score >= 600 ? 0.8 : 0
 
   // Scoring breakdown: card score + KATM-derived credit signals
   const katm = deal.sessionData.katmResult
-  const criteriaScores: Record<string, number> = { cardScore: result.value.score }
+  const criteriaScores: Record<string, number> = { cardScore: score.score }
   if (katm) {
     criteriaScores.katmScore = katm.score
     criteriaScores.activeLoans = katm.activeLoans
@@ -254,18 +247,18 @@ async function next() {
   const alreadySaved =
     clientScoring.scoringId != null &&
     /^\d+$/.test(clientScoring.scoringId) &&
-    clientScoring.scoreSum === result.value.score &&
-    clientScoring.decision === result.value.decision
+    clientScoring.scoreSum === score.score &&
+    clientScoring.decision === score.decision
 
   let scoringId: string | null = clientScoring.scoringId
   if (clientId && !alreadySaved) {
     try {
       const res = await saveScoring.mutateAsync({
         clientId,
-        scoreSum: result.value.score,
+        scoreSum: score.score,
         coefficient,
-        decision: result.value.decision,
-        platformCreditLimit: result.value.limit,
+        decision: score.decision,
+        platformCreditLimit: score.limit,
         criteriaScores,
       })
       scoringId = res.id
@@ -276,10 +269,10 @@ async function next() {
 
   clientScoring.setCompleted({
     scoringId: scoringId ?? `plum-${selectedCard.value.plumCardId}-${Date.now()}`,
-    scoreSum: result.value.score,
+    scoreSum: score.score,
     coefficient,
-    decision: result.value.decision,
-    platformCreditLimit: result.value.limit,
+    decision: score.decision,
+    platformCreditLimit: score.limit,
     criteriaScores,
   })
   deal.complete('karta')
@@ -379,32 +372,16 @@ async function next() {
       <p v-if="addError" class="add-error">{{ addError }}</p>
     </div>
 
-    <!-- Verify row -->
-    <div class="verify-row">
-      <button class="btn-ghost" :disabled="!selectedId || scoring" @click="verifyCard">
-        <i v-if="scoring" class="pi pi-spin pi-spinner" />
-        <i v-else class="pi pi-shield" />
-        {{ scoring ? $t('stepKarta.scoringCard') : $t('stepKarta.verifyCard') }}
-      </button>
-
-      <div v-if="scoring" class="progress-track">
+    <!-- Scoring progress -->
+    <div v-if="scoring" class="verify-row">
+      <span class="scoring-label">
+        <i class="pi pi-spin pi-spinner" /> {{ $t('stepKarta.scoringCard') }}
+      </span>
+      <div class="progress-track">
         <div class="progress-bar" :style="{ width: progress + '%' }" />
         <span class="progress-label font-mono">{{ Math.round(progress) }}%</span>
       </div>
     </div>
-
-    <!-- Score result -->
-    <transition name="fade">
-      <div v-if="result" class="score-result">
-        <div class="sr-score">
-          <span class="sr-label">{{ $t('stepKarta.cardScore') }}</span>
-          <span class="sr-value font-mono text-gradient">{{ result.score }}</span>
-        </div>
-        <div class="sr-decision" :style="{ color: decisionMeta?.color, background: decisionMeta?.bg }">
-          {{ decisionMeta?.label }}
-        </div>
-      </div>
-    </transition>
 
     <!-- Scoring error -->
     <transition name="fade">
@@ -412,7 +389,7 @@ async function next() {
         <i class="pi pi-exclamation-triangle" />
         <span>{{ scoreError }}</span>
         <div class="score-error-actions">
-          <button class="btn-ghost" @click="verifyCard">
+          <button class="btn-ghost" @click="next">
             <i class="pi pi-refresh" /> {{ $t('common.retry') }}
           </button>
           <button class="btn-ghost btn-muted" @click="resetSelection">
@@ -426,8 +403,9 @@ async function next() {
       <button class="btn-ghost" @click="deal.back()">
         <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
       </button>
-      <button class="btn-gradient" :disabled="!result" @click="next">
-        {{ $t('common.continue') }} <i class="pi pi-arrow-right" />
+      <button class="btn-gradient" :disabled="!selectedId || scoring" @click="next">
+        <i v-if="scoring" class="pi pi-spin pi-spinner" />
+        {{ $t('common.continue') }} <i v-if="!scoring" class="pi pi-arrow-right" />
       </button>
     </footer>
   </div>
@@ -591,6 +569,16 @@ async function next() {
   white-space: nowrap;
 }
 
+.scoring-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
 .progress-track {
   flex: 1;
   position: relative;
@@ -613,41 +601,6 @@ async function next() {
   font-size: 0.74rem;
   color: var(--text-secondary);
   font-weight: 700;
-}
-
-/* ── Score result ────────────────────────────────────────────────────────── */
-.score-result {
-  margin-top: 1.4rem;
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  background: var(--bg-surface);
-  padding: 1.3rem 1.6rem;
-  border-radius: 16px;
-}
-
-.sr-score {
-  display: flex;
-  flex-direction: column;
-}
-
-.sr-label {
-  font-size: 0.74rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-}
-
-.sr-value {
-  font-size: 2.2rem;
-  font-weight: 800;
-}
-
-.sr-decision {
-  padding: 0.4rem 1rem;
-  border-radius: 999px;
-  font-weight: 800;
-  font-size: 0.85rem;
 }
 
 /* ── Score error block ───────────────────────────────────────────────────── */

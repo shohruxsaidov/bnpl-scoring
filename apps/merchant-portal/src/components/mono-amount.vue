@@ -7,7 +7,7 @@ const props = withDefaults(
     /** value in tiyin */
     value: number
     gradient?: boolean
-    size?: 'sm' | 'md' | 'lg'
+    size?: 'sm' | 'md' | 'lg' | 'xl'
     suffix?: string
   }>(),
   { gradient: true, size: 'md', suffix: "so'm" },
@@ -16,7 +16,7 @@ const props = withDefaults(
 const display = computed(() => formatSomShort(props.value))
 const fontSize = computed(
   () =>
-    ({ sm: '0.85rem', md: '1rem', lg: '1.5rem' })[props.size],
+    ({ sm: '0.85rem', md: '1rem', lg: '1.5rem', xl: '2.4rem' })[props.size],
 )
 </script>
 

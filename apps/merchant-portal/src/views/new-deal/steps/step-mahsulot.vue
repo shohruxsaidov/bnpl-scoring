@@ -118,6 +118,11 @@ function next() {
     </div>
 
     <aside class="step-card surface-card basket">
+      <div v-if="tariff" class="limit-banner" :class="{ over: !withinLimit }">
+        <span class="lb-label">{{ $t('stepMahsulot.limit', { months: tariff.termMonths }) }}</span>
+        <MonoAmount :value="effectiveLimit" size="lg" />
+      </div>
+
       <h3>
         <i class="pi pi-shopping-cart" /> {{ $t('stepMahsulot.basket') }}
         <span class="count">{{ deal.basketCount }}</span>
@@ -155,10 +160,6 @@ function next() {
         <div v-if="tariff" class="bs-row markup-row">
           <span>{{ $t('stepMahsulot.withMarkup', { pct: tariff.markupPercent }) }}</span>
           <MonoAmount :value="totalWithMarkup" size="md" />
-        </div>
-        <div v-if="tariff" class="bs-row">
-          <span>{{ $t('stepMahsulot.limit', { months: tariff.termMonths }) }}</span>
-          <MonoAmount :value="effectiveLimit" size="md" :gradient="false" />
         </div>
         <div v-if="tariff && !withinLimit" class="bs-overlimit">
           <i class="pi pi-exclamation-triangle" />
@@ -279,18 +280,19 @@ function next() {
 }
 
 .product-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
 }
 
 .product {
   border: 1px solid var(--border-subtle);
   border-radius: 14px;
-  padding: 1.1rem;
+  padding: 0.9rem 1.2rem;
   display: flex;
-  flex-direction: column;
-  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.2rem;
   background: var(--bg-surface);
 }
 
@@ -319,13 +321,14 @@ function next() {
 .p-bottom {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.4rem;
+  gap: 1.4rem;
+  flex-shrink: 0;
 }
 
 .p-prices {
   display: flex;
   flex-direction: column;
+  align-items: flex-end;
   gap: 0.25rem;
 }
 
@@ -404,6 +407,35 @@ function next() {
   display: grid;
   place-items: center;
   padding: 0 6px;
+}
+
+.limit-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-bottom: 1.2rem;
+  padding: 0.9rem 1.2rem;
+  border: 2px solid var(--accent-2);
+  border-radius: 14px;
+  box-shadow: var(--accent-glow);
+  background: var(--bg-base);
+}
+
+.limit-banner.over {
+  border-color: var(--warning);
+  box-shadow: none;
+}
+
+.lb-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--accent-2);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.limit-banner.over .lb-label {
+  color: var(--warning);
 }
 
 .empty-basket {
@@ -549,6 +581,17 @@ function next() {
   .step-layout { grid-template-columns: 1fr; }
 }
 @media (max-width: 600px) {
-  .product-grid { grid-template-columns: 1fr; }
+  .product {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .p-bottom {
+    justify-content: space-between;
+  }
+
+  .p-prices {
+    align-items: flex-start;
+  }
 }
 </style>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import Accordion from 'primevue/accordion'
@@ -10,35 +10,89 @@ import InputNumber from 'primevue/inputnumber'
 import InputText from 'primevue/inputtext'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Dialog from 'primevue/dialog'
+import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { useScoringModelStore } from '@/stores/scoring-model'
 
 const store = useScoringModelStore()
+const confirm = useConfirm()
 const toast = useToast()
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 
-const revisionId = Number(route.params.id)
+const modelId = computed(() => Number(route.params.id))
+// Present only on the nested revision route — the view is read-only there.
+const revId = computed(() => (route.params.revId != null ? Number(route.params.revId) : null))
+const readOnly = computed(() => revId.value !== null)
+
 const localParams = ref<Record<string, unknown> | null>(null)
 const showSaveDialog = ref(false)
 const saveName = ref('')
 const saveVersion = ref('')
 const saveError = ref('')
 
-onMounted(async () => {
+async function load() {
+  localParams.value = null
   try {
-    await Promise.all([store.loadRevision(revisionId), store.fetchHistory()])
-    localParams.value = JSON.parse(JSON.stringify(store.revision!.params))
+    await store.fetchModel(modelId.value)
+    await store.fetchModelHistory(modelId.value)
+    if (revId.value !== null) {
+      await store.loadRevision(revId.value)
+    }
+    if (store.revision) {
+      localParams.value = JSON.parse(JSON.stringify(store.revision.params))
+    } else if (!readOnly.value) {
+      // Model without revisions: seed the editor from the Global Model.
+      localParams.value = await store.fetchGlobalTemplateParams()
+    }
   } catch {
     toast.add({ severity: 'error', summary: t('scoringModel.loadFailed'), life: 3000 })
   }
-})
+}
 
-const isActive = computed(() => store.history[0]?.id === revisionId)
+onMounted(load)
+watch(
+  () => route.fullPath,
+  () => {
+    if (route.name === 'scoring-model-detail' || route.name === 'scoring-model-revision') load()
+  },
+)
+
+const isActive = computed(() => store.revision != null && store.history[0]?.id === store.revision.id)
+
+async function makeGlobal() {
+  if (!store.model) return
+  const name = store.model.name
+  if (!store.models.length) await store.fetchModels().catch(() => {})
+  const current = store.models.find((m) => m.isGlobal)
+  confirm.require({
+    message: t('scoringModel.makeGlobalConfirm', { name, current: current?.name ?? '—' }),
+    header: t('scoringModel.makeGlobal'),
+    icon: 'pi pi-exclamation-triangle',
+    rejectProps: { label: t('common.cancel'), severity: 'secondary', outlined: true },
+    acceptProps: { label: t('scoringModel.makeGlobal'), severity: 'danger' },
+    accept: async () => {
+      try {
+        await store.setGlobal(modelId.value)
+        toast.add({
+          severity: 'success',
+          summary: t('scoringModel.makeGlobalSuccess', { name }),
+          life: 2500,
+        })
+      } catch (e) {
+        const summary =
+          (e as Error).message === 'scoring_model_has_no_revisions'
+            ? t('scoringModel.noRevisionsYet')
+            : t('scoringModel.makeGlobalFailed')
+        toast.add({ severity: 'error', summary, life: 3000 })
+      }
+    },
+  })
+}
 
 function openSaveDialog() {
-  saveName.value = store.revision?.name ?? ''
+  saveName.value = store.revision?.name ?? store.model?.name ?? ''
   saveVersion.value = store.revision?.version ?? ''
   saveError.value = ''
   showSaveDialog.value = true
@@ -48,10 +102,10 @@ async function confirmSave() {
   if (!localParams.value || !saveName.value || !saveVersion.value) return
   saveError.value = ''
   try {
-    await store.save(saveName.value, saveVersion.value, localParams.value)
+    await store.save(modelId.value, saveName.value, saveVersion.value, localParams.value)
     showSaveDialog.value = false
     toast.add({ severity: 'success', summary: t('scoringModel.saved'), life: 2000 })
-    router.push(`/scoring-model/${store.revision!.id}`)
+    if (readOnly.value) router.push(`/scoring-model/${modelId.value}`)
   } catch (e) {
     if ((e as Error).message === 'version_taken') {
       saveError.value = t('scoringModel.versionTaken')
@@ -128,27 +182,47 @@ function bandDescription(band: Record<string, unknown>): string {
     <!-- Page header -->
     <div class="page-header">
       <div class="header-left">
-        <button class="back-btn" @click="router.push('/scoring-model')">
+        <button
+          v-if="readOnly"
+          class="back-btn"
+          @click="router.push(`/scoring-model/${modelId}`)"
+        >
+          <i class="pi pi-arrow-left" /> {{ t('scoringModel.backToModel') }}
+        </button>
+        <button v-else class="back-btn" @click="router.push('/scoring-model')">
           <i class="pi pi-arrow-left" /> {{ t('scoringModel.backToList') }}
         </button>
-        <div v-if="store.revision" class="title-row">
-          <h1 class="page-title">{{ store.revision.name }}</h1>
-          <span class="ver-chip">v{{ store.revision.version }}</span>
-          <span v-if="isActive" class="active-badge">{{ t('scoringModel.active') }}</span>
-          <span class="rev-id">#{{ store.revision.id }}</span>
+        <div v-if="store.model" class="title-row">
+          <h1 class="page-title">{{ store.model.name }}</h1>
+          <span v-if="store.model.isGlobal" class="global-badge">{{ t('scoringModel.global') }}</span>
+          <template v-if="store.revision">
+            <span class="ver-chip">v{{ store.revision.version }}</span>
+            <span v-if="isActive" class="active-badge">{{ t('scoringModel.active') }}</span>
+            <span class="rev-id">#{{ store.revision.id }}</span>
+          </template>
+          <span v-if="readOnly" class="readonly-badge">{{ t('scoringModel.viewingRevision') }}</span>
         </div>
       </div>
       <div class="header-actions">
         <button
+          v-if="!readOnly && store.model && !store.model.isGlobal"
+          class="btn-secondary"
+          :disabled="!store.history.length"
+          :title="!store.history.length ? t('scoringModel.noRevisionsYet') : undefined"
+          @click="makeGlobal"
+        >
+          <i class="pi pi-globe" /> {{ t('scoringModel.makeGlobal') }}
+        </button>
+        <button
           v-if="store.revision"
           class="btn-secondary"
-          @click="router.push(`/scoring-model/${revisionId}/try`)"
+          @click="router.push(`/scoring-model/${modelId}/revisions/${store.revision.id}/try`)"
         >
           <i class="pi pi-play" /> {{ t('scoringModel.tryModel') }}
         </button>
         <button class="btn-primary" :disabled="store.saving || !localParams" @click="openSaveDialog">
           <i class="pi pi-plus" />
-          {{ store.saving ? '…' : t('scoringModel.saveRevision') }}
+          {{ store.saving ? '…' : t(readOnly ? 'scoringModel.restoreRevision' : 'scoringModel.saveRevision') }}
         </button>
       </div>
     </div>
@@ -210,6 +284,7 @@ function bandDescription(band: Record<string, unknown>): string {
                 <div class="enabled-wrap" @click.stop>
                   <ToggleSwitch
                     :model-value="(data as Record<string, unknown>)['Enabled'] !== false"
+                    :disabled="readOnly"
                     @update:model-value="(v: boolean) => (data as Record<string, unknown>)['Enabled'] = v"
                   />
                 </div>
@@ -221,7 +296,7 @@ function bandDescription(band: Record<string, unknown>): string {
                     v-model="(data as Record<string, unknown>)['ImportantLevel'] as number"
                     :min="0" :max="1" :step="0.5" :max-fraction-digits="1"
                     input-class="imp-input"
-                    :disabled="data['Enabled'] === false"
+                    :disabled="readOnly || data['Enabled'] === false"
                   />
                 </div>
               </div>
@@ -250,6 +325,7 @@ function bandDescription(band: Record<string, unknown>): string {
                         <InputNumber
                           v-model="(band as Record<string, unknown>)['Score'] as number"
                           :use-grouping="false"
+                          :disabled="readOnly"
                           input-class="score-input"
                         />
                       </td>
@@ -277,6 +353,7 @@ function bandDescription(band: Record<string, unknown>): string {
                         <InputNumber
                           v-model="(data['Categories'] as Record<string, { Score: number }>)[catKey].Score"
                           :use-grouping="false"
+                          :disabled="readOnly"
                           input-class="score-input"
                         />
                       </td>
@@ -303,6 +380,7 @@ function bandDescription(band: Record<string, unknown>): string {
                         <InputNumber
                           v-model="(data as Record<string, unknown>)['MatchScore'] as number"
                           :use-grouping="false"
+                          :disabled="readOnly"
                           input-class="score-input"
                         />
                       </td>
@@ -327,6 +405,7 @@ function bandDescription(band: Record<string, unknown>): string {
             <InputNumber
               v-model="(getLimitCoefficient() as Record<string, unknown>)['DefaultCoefficient'] as number"
               :min="0" :max="1" :step="0.1" :max-fraction-digits="2"
+              :disabled="readOnly"
               input-class="imp-input"
             />
           </div>
@@ -348,6 +427,7 @@ function bandDescription(band: Record<string, unknown>): string {
                 <InputNumber
                   v-model="(band as Record<string, unknown>)['From'] as number"
                   :use-grouping="false" :max-fraction-digits="0"
+                  :disabled="readOnly"
                   input-class="score-input"
                 />
               </td>
@@ -357,6 +437,7 @@ function bandDescription(band: Record<string, unknown>): string {
                   v-else
                   v-model="(band as Record<string, unknown>)['To'] as number"
                   :use-grouping="false" :max-fraction-digits="0"
+                  :disabled="readOnly"
                   input-class="score-input"
                 />
               </td>
@@ -364,6 +445,7 @@ function bandDescription(band: Record<string, unknown>): string {
                 <InputNumber
                   v-model="(band as Record<string, unknown>)['Coefficient'] as number"
                   :min="0" :max="1" :max-fraction-digits="2" :step="0.1"
+                  :disabled="readOnly"
                   input-class="score-input"
                 />
               </td>
@@ -373,6 +455,42 @@ function bandDescription(band: Record<string, unknown>): string {
       </div>
 
     </template>
+
+    <div v-else class="empty-state">{{ t('scoringModel.noActiveRevision') }}</div>
+
+    <!-- ── Revision history (model view only) ──────────────────────────────── -->
+    <div v-if="!store.loading && !readOnly && store.history.length" class="section-card">
+      <div class="section-header">
+        <h2 class="section-title">{{ t('scoringModel.revisionHistory') }}</h2>
+      </div>
+      <table class="crit-table">
+        <thead>
+          <tr>
+            <th class="col-rev-id">#</th>
+            <th class="col-desc">{{ t('scoringModel.modelName') }}</th>
+            <th class="col-range">{{ t('scoringModel.modelVersion') }}</th>
+            <th class="col-range">{{ t('scoringModel.createdAt') }}</th>
+            <th class="col-range">{{ t('scoringModel.status') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            v-for="(rev, i) in store.history"
+            :key="rev.id"
+            class="hist-row"
+            @click="router.push(`/scoring-model/${modelId}/revisions/${rev.id}`)"
+          >
+            <td class="mono col-rev-id">{{ rev.id }}</td>
+            <td class="col-desc">{{ rev.name }}</td>
+            <td class="col-range"><span class="ver-chip">v{{ rev.version }}</span></td>
+            <td class="col-range">{{ new Date(rev.createdAt).toLocaleDateString() }}</td>
+            <td class="col-range">
+              <span v-if="i === 0" class="active-badge">{{ t('scoringModel.active') }}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Save dialog -->
@@ -474,6 +592,41 @@ function bandDescription(band: Record<string, unknown>): string {
   background: color-mix(in srgb, var(--success) 12%, transparent);
   padding: 0.1rem 0.5rem;
   border-radius: 4px;
+}
+
+.global-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 12%, transparent);
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+}
+
+.readonly-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+}
+
+.empty-state {
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.hist-row {
+  cursor: pointer;
+}
+
+.col-rev-id {
+  width: 56px;
+  color: var(--text-secondary);
 }
 
 .rev-id {

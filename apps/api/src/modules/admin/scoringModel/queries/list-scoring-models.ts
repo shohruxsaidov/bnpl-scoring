@@ -1,6 +1,6 @@
-import { count, desc, eq } from "drizzle-orm"
+import { countDistinct, desc, eq } from "drizzle-orm"
 import type { Db } from "../../../../db"
-import { merchants, scoringModels } from "../../../id/db/schema"
+import { merchants, scoringModels, scoringModelRevisions } from "../../../id/db/schema"
 
 export async function listScoringModels(db: Db) {
   return db
@@ -9,10 +9,12 @@ export async function listScoringModels(db: Db) {
       name: scoringModels.name,
       isGlobal: scoringModels.isGlobal,
       createdAt: scoringModels.createdAt,
-      merchantCount: count(merchants.id),
+      merchantCount: countDistinct(merchants.id),
+      revisionCount: countDistinct(scoringModelRevisions.id),
     })
     .from(scoringModels)
     .leftJoin(merchants, eq(merchants.scoringModelId, scoringModels.id))
+    .leftJoin(scoringModelRevisions, eq(scoringModelRevisions.scoringModelId, scoringModels.id))
     .groupBy(scoringModels.id)
     .orderBy(desc(scoringModels.isGlobal), scoringModels.id)
 }
