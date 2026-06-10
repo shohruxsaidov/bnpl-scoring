@@ -69,6 +69,11 @@ const adding = ref(false)
 const newPan = ref('')
 const newExpiry = ref('')
 
+function handlePanInput(e: Event) {
+  const raw = (e.target as HTMLInputElement).value.replace(/\D/g, '').slice(0, 16)
+  newPan.value = raw.replace(/(.{4})/g, '$1 ').trimEnd()
+}
+
 // OTP phase
 const addSessionId = ref<string | null>(null)
 const maskedPhone = ref<string | null>(null)
@@ -97,8 +102,8 @@ function cancelAdd() {
 }
 
 async function requestAddCard() {
-  debugger
-  if (!(/^\d{4}\d{4}\d{4}\d{4}$/).test(newPan.value)) return
+  const rawPan = newPan.value.replace(/\s/g, '')
+  if (!/^\d{16}$/.test(rawPan)) return
   if (!newExpiry.value) return
 
   addLoading.value = true
@@ -110,7 +115,7 @@ async function requestAddCard() {
         method: 'POST',
         body: JSON.stringify({
           clientId: deal.sessionData.client?.id,
-          cardNumber: newPan.value,
+          cardNumber: rawPan,
           expiry: newExpiry.value,
         }),
       },
@@ -328,7 +333,7 @@ async function next() {
       <template v-if="!addSessionId">
         <div class="field">
           <label class="field-label">{{ $t('stepKarta.cardNumber') }}</label>
-          <InputText v-model="newPan" placeholder="8600 1234 5678 9012" class="font-mono" maxlength="19" />
+          <InputText :value="newPan" placeholder="8600 1234 5678 9012" class="font-mono" maxlength="19" inputmode="numeric" @input="handlePanInput" />
         </div>
         <div class="field" style="max-width: 140px">
           <label class="field-label">{{ $t('stepKarta.expiry') }}</label>
