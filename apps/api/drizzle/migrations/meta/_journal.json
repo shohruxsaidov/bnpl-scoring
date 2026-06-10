@@ -5,50 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1780829830134,
-      "tag": "0000_flippant_screwball",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1780843290080,
-      "tag": "0001_open_landau",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1780895216504,
-      "tag": "0002_light_dark_beast",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1780895648469,
-      "tag": "0003_tearful_colonel_america",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1780907188061,
-      "tag": "0004_woozy_lethal_legion",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1780918984993,
-      "tag": "0005_worried_blockbuster",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1781005867537,
-      "tag": "0006_workable_aqueduct",
+      "when": 1781067840237,
+      "tag": "0000_modern_martin_li",
       "breakpoints": true
     }
   ]
