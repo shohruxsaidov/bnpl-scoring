@@ -523,7 +523,7 @@ function openRegionInfo() {
   regionFormParent.value = parent ? parent.id : (rid ? rid : null)
   if (parent) {
     // stored ID is a district — prime the district dropdown
-    onRegionChange(parent.id, () => {})
+    onRegionChange(parent.id, () => { })
   }
   showRegionInfo.value = true
 }
@@ -630,7 +630,8 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
             </span>
             <span v-if="lookupParent(merchant.regionId)" class="bank-sep">·</span>
             <span class="bank-field">
-              <span class="muted">{{ lookupParent(merchant.regionId) ? $t('merchantDetail.district') : $t('merchantDetail.region') }}</span>
+              <span class="muted">{{ lookupParent(merchant.regionId) ? $t('merchantDetail.district') :
+                $t('merchantDetail.region') }}</span>
               <span>{{ lookupName(merchant.regionId) }}</span>
             </span>
           </template>
@@ -972,7 +973,9 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
     </Dialog>
 
     <!-- Product dialog (create & edit) -->
-    <Dialog v-model:visible="showProduct" modal :header="editingProductId ? $t('merchantDetail.editProduct') : $t('merchantDetail.addProduct')" :style="{ width: '460px' }">
+    <Dialog v-model:visible="showProduct" modal
+      :header="editingProductId ? $t('merchantDetail.editProduct') : $t('merchantDetail.addProduct')"
+      :style="{ width: '460px' }">
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.name') }}</label>
         <InputText v-model="productForm.name" />
@@ -1078,16 +1081,12 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
     </Dialog>
 
     <!-- Bank info dialog -->
-    <Dialog v-model:visible="showBankInfo" modal :header="$t('merchantDetail.editBankInfo')" :style="{ width: '440px' }">
+    <Dialog v-model:visible="showBankInfo" modal :header="$t('merchantDetail.editBankInfo')"
+      :style="{ width: '440px' }">
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.mfo') }}</label>
-        <InputText
-          v-model="bankForm.mfo"
-          :placeholder="$t('merchantDetail.mfoPlaceholder')"
-          maxlength="5"
-          class="font-mono"
-          @input="onMfoInput"
-        />
+        <InputText v-model="bankForm.mfo" :placeholder="$t('merchantDetail.mfoPlaceholder')" maxlength="5"
+          class="font-mono" @input="onMfoInput" />
         <span v-if="bankForm.mfo.length === 5 && !bankForm.bankName" class="field-error">
           {{ $t('merchantDetail.bankNotFound') }}
         </span>
@@ -1098,27 +1097,22 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
       </div>
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.accountNumber') }}</label>
-        <InputText
-          v-model="bankForm.accountNumber"
-          :placeholder="$t('merchantDetail.accountNumberPlaceholder')"
-          maxlength="20"
-          class="font-mono"
-        />
+        <InputText v-model="bankForm.accountNumber" :placeholder="$t('merchantDetail.accountNumberPlaceholder')"
+          maxlength="20" class="font-mono" />
       </div>
       <template #footer>
         <button class="btn-ghost" @click="showBankInfo = false">{{ $t('common.cancel') }}</button>
-        <button
-          class="btn-gradient"
+        <button class="btn-gradient"
           :disabled="bankSaving || !/^\d{5}$/.test(bankForm.mfo) || !bankForm.bankName || !/^\d{20}$/.test(bankForm.accountNumber)"
-          @click="submitBankInfo"
-        >
+          @click="submitBankInfo">
           {{ $t('common.save') }}
         </button>
       </template>
     </Dialog>
 
     <!-- Region dialog -->
-    <Dialog v-model:visible="showRegionInfo" modal :header="$t('merchantDetail.editRegion')" :style="{ width: '440px' }">
+    <Dialog v-model:visible="showRegionInfo" modal :header="$t('merchantDetail.editRegion')"
+      :style="{ width: '440px' }">
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.region') }}</label>
         <Select v-model="regionFormParent" :options="regionOptions" option-label="label" option-value="value"
@@ -1349,11 +1343,11 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
   pointer-events: none;
   display: flex;
   align-items: center;
-  top: 26px;
+  top: 38px;
   left: 10px;
 }
 
-.p-inputgroup-addon + .p-inputmask {
+.p-inputgroup-addon+.p-inputmask {
   padding-left: 3.25rem;
 }
 
