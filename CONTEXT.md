@@ -111,7 +111,7 @@ _Avoid_: Credit limit, loan amount, ceiling, max amount
 ### Credit limit
 
 **Platform Credit Limit**:
-The maximum total instalment exposure Finsum Nasiya will extend to a Client across all Merchants. Computed from KATM data and PlumGate card scoring using the global scoring model. In the Wizard flow, stored in `scoring_histories` at scoring time (a `platform_credit_limit` column on `clients` is planned but not yet implemented). In the self-service flow, stored in `user_limits`. Reduced by active Deal balances; restored automatically when a Deal is fully repaid. Only Finsum platform admin can manually refresh the base limit.
+The maximum total instalment exposure Finsum Nasiya will extend to a Client across all Merchants. Computed by the Scoring Model engine as **Limit Coefficient × Base Limit** — PlumGate card scoring plays no part (it is audit-only; see Card Score). In the Wizard flow, stored in `scoring_histories` at scoring time (a `platform_credit_limit` column on `clients` is planned but not yet implemented). In the self-service flow, stored in `user_limits`. Reduced by active Deal balances; restored automatically when a Deal is fully repaid. Only Finsum platform admin can manually refresh the base limit.
 _Avoid_: Client limit, credit score limit
 
 **Available Balance**:
@@ -137,12 +137,24 @@ A named, typed criterion within a Scoring Model Revision that contributes a weig
 _Avoid_: scoring criterion, scoring field, model parameter
 
 **Limit Coefficient**:
-The output multiplier table in a Scoring Model Revision that converts a total Score into a credit limit factor. Uses half-open `[From, To)` score bands, each mapping to a `Coefficient` (0 = denied, 0.8 = partial, 1.0 = full). Applied after all Scoring Parameters are summed. Stored as a top-level section in the model alongside `StopFactors` and `ScoringParams`.
+The output multiplier table in a Scoring Model Revision that converts a total Score into a credit limit factor. Uses half-open `[From, To)` score bands, each mapping to a `Coefficient` (0 = denied, 0.8 = partial, 1.0 = full). Applied after all Scoring Parameters are summed; the resulting coefficient multiplies the **Base Limit** to produce the Platform Credit Limit. Stored as a top-level section in the model alongside `StopFactors` and `ScoringParams`.
 _Avoid_: LimitSum, score-to-limit table, coefficient table
+
+**Base Limit**:
+The platform-wide maximum credit amount declared in a Scoring Model Revision. The Platform Credit Limit is computed as Limit Coefficient × Base Limit. A single constant for all Clients until income-derived limits become possible (INPS/GNK data is not yet available — see Skipped Parameter). Versioned and validated with the revision like every other model section. **Deliberate consequence**: while the income parameters are skipped, the maximum reachable Score is 700 — below the 750 needed for coefficient 1.0 — so the best outcome any Client can receive is 0.8 × Base Limit. Finsum sets the Base Limit with this cap in mind.
+_Avoid_: max limit, default limit, limit cap
+
+**Skipped Parameter**:
+A Scoring Parameter that contributed 0 to a scoring run because its input value was not given (`undefined`) or the parameter was disabled. Recorded per-run in the persisted breakdown. Scoring-history views must surface skipped parameters as a **warning** so reviewers can see which data was missing when the decision was made. Currently always skipped platform-wide: `IncomeSum` and `WorkExperience` (no INPS/GNK integration yet) and `PassportData` (registration address is not captured at MyID onboarding). `MonthlyAveragePayment` is additionally `Enabled: false` in the model itself. All other parameters are computed from the KATM raw payload and the Client record on every run.
+_Avoid_: missing parameter, null criterion, disabled parameter (that is the `Enabled` flag, a different cause with the same effect)
 
 **Scoring Test Case**:
 A named, global set of `ScoringInputs` with an **Expected Outcome** used to validate Scoring Model Revisions. Not tied to any specific revision — the same suite runs against any revision for comparison. Created and managed by Platform Admins. A test case also records the actual outcome of the most recent run so it can serve as a baseline for the next run.
 _Avoid_: test input, scoring profile, model test
+
+**Decision**:
+The recorded outcome of a production scoring run. Exactly four values, shared verbatim with Expected Outcome: `approved` (coefficient 1.0), `partial` (coefficient 0.8), `denied` (coefficient 0), `rejected` (a Stop Factor fired before scoring). A Deal may proceed on `approved` or `partial`; it is blocked on `denied` or `rejected`. There is no manual-review tier. Historical rows written before the engine integration carry the legacy PlumGate vocabulary (`approved` / `manual_review` / `declined`) and are read-tolerated, never rewritten.
+_Avoid_: status, verdict, manual_review (legacy), declined (legacy — use `denied` or `rejected`)
 
 **Expected Outcome**:
 The approval-tier assertion on a Scoring Test Case. One of four values: `approved` (coefficient = 1.0), `partial` (coefficient = 0.8), `denied` (coefficient = 0), or `rejected` (a Stop Factor fired before scoring). A test case **passes** when the actual outcome of running the Scoring Model engine matches the Expected Outcome.
@@ -157,8 +169,8 @@ The raw bureau score (0–999) returned by KATM in the `scoring_grade` field of 
 _Avoid_: KATM score, bureau score, scoring_grade
 
 **Card Score**:
-The scored output from PlumGate's SCORING module, derived from the Client's bank card transaction history (Uzcard or Humo). **Required** to proceed past the Karta step — the Wizard blocks until a Card Score is obtained. Contributes weighted criteria to the global scoring model. Not a replacement for KATM inputs. Not the same as the platform's Score.
-_Avoid_: PlumGate score, transaction score, card scoring result, optional scoring
+The scored output from PlumGate's SCORING module, derived from the Client's bank card transaction history (Uzcard or Humo). **Audit-only**: recorded in `criteria_scores` for traceability and shadow-comparison against the engine's decision, but it has no effect on the Score, the Limit Coefficient, or the Platform Credit Limit — the Scoring Model engine is the sole credit authority. Card registration remains **required** to proceed past the Karta step (the card is the Client's payment instrument), and the SCORING call still runs, but a PlumGate `declined` does not stop anything. Not the same as the platform's Score.
+_Avoid_: PlumGate score, transaction score, card scoring result, optional scoring, scoring input
 
 **Scoring Session**:
 A self-service scoring request initiated by a Client through the Client portal. Keyed on `users.id` — platform-wide, no Merchant scope. Created when the Client submits KATM consent (not on page open). Its UUID serves as the `claim_id` for the KATM query and stores `consent_id` + `consent_date` directly. Tracks overall status (`pending | running | completed | failed`). Permanently separate from the Wizard scoring flow, which is Agent-driven and keyed on `clients.id`.
@@ -346,6 +358,8 @@ Key decisions live in `docs/adr/` as thematic files:
 | `0016-client-web-push-notifications.md` | Web push replaces SSE for Clients; VAPID env vars; `push_subscriptions` table; manual SW; opt-in toggle in ProfileView; admin_message broadcast |
 | `0019-merchant-bank-account.md` | MFO + account number + bank name on `merchants`; CBU bank list fetched backend-side, cached on-demand in `bank_mfo_cache`; bank name denormalized at save time |
 | `0020-scoring-model-v2-structure.md` | v2 model: StopFactors (hard reject) + ScoringParams + LimitCoefficient; standardized From/To bands; half-open [From,To) semantics; discriminated union engine return type |
+| `0021-global-scoring-model.md` | One global scoring model; `tariffs.scoring_model_id` dropped; `model_revision_id` stamped per scoring run; latest revision is active |
+| `0022-scoring-engine-sole-authority.md` | Engine wired into both runtime flows via one server-side orchestrator; Card Score audit-only; Base Limit constant in revision; 0.8 cap accepted until ИНПС/ГНК; decision vocabulary `approved`/`partial`/`denied`/`rejected`; client-supplied scoring POST deleted; latest run wins |
 
 ## Example dialogue
 
