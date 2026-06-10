@@ -6,6 +6,7 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
+import InputMask from 'primevue/inputmask'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import MultiSelect from 'primevue/multiselect'
@@ -173,11 +174,11 @@ function openEmployee() {
 
 async function submitEmployee() {
   const f = employeeForm.value
-  if (!f.phone || f.password.length < 8 || !f.fullName || !f.branchId || f.roles.length === 0) return
+  if (!f.phone || f.phone.includes('_') || f.password.length < 8 || !f.fullName || !f.branchId || f.roles.length === 0) return
   employeeSaving.value = true
   try {
     await merchants.createEmployee(f.branchId, {
-      phone: f.phone,
+      phone: '998' + f.phone.replace(/\D/g, ''),
       password: f.password,
       fullName: f.fullName,
       roles: f.roles,
@@ -915,7 +916,8 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
       </div>
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.phone') }}</label>
-        <InputText v-model="employeeForm.phone" type="tel" />
+        <span class="p-inputgroup-addon">+998</span>
+        <InputMask v-model="employeeForm.phone" mask="999999999" class="w-full" />
       </div>
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.password') }}</label>
@@ -1338,6 +1340,21 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  position: relative;
+}
+
+.p-inputgroup-addon {
+  color: var(--text-secondary);
+  position: absolute;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  top: 26px;
+  left: 10px;
+}
+
+.p-inputgroup-addon + .p-inputmask {
+  padding-left: 3.25rem;
 }
 
 .field-hint {
