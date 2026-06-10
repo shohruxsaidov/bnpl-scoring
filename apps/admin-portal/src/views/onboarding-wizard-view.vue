@@ -35,7 +35,7 @@ const STEPS = computed(() => [
 
 onMounted(() => { store.fetchBankList() })
 
-const { regionOptions, districtOptions, districtsUpperId, onRegionChange } = useRegions()
+const { regionOptions, districtOptions, onRegionChange } = useRegions()
 
 const ROLE_OPTIONS = [
   { label: 'Agent', value: 'agent' },
@@ -139,11 +139,11 @@ async function submitStep3() {
 }
 
 // Step 4 – Employees
-function emptyEmp() { return { fullName: '', email: '', password: '', roles: ['agent'] as string[] } }
+function emptyEmp() { return { fullName: '', phone: '', password: '', roles: ['agent'] as string[] } }
 const emps = ref([emptyEmp()])
 
 async function submitStep4() {
-  const valid = emps.value.filter(e => e.fullName.trim() && e.email.trim() && e.password.length >= 8)
+  const valid = emps.value.filter(e => e.fullName.trim() && e.phone.trim() && e.password.length >= 8)
   if (!valid.length) { step.value = 5; return }
   saving.value = true
   try {
@@ -377,8 +377,8 @@ function finish() {
               <InputText v-model="emp.fullName" class="w-full" />
             </div>
             <div class="field">
-              <label>{{ t('onboarding.email') }}</label>
-              <InputText v-model="emp.email" type="email" class="w-full" />
+              <label>{{ t('onboarding.phone') }}</label>
+              <InputText v-model="emp.phone" type="tel" class="w-full" />
             </div>
             <div class="field">
               <label>{{ t('onboarding.password') }}</label>
