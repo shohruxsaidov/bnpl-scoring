@@ -238,6 +238,12 @@ _Avoid_: Oblast, province
 A second-level geographic unit (rayon) belonging to exactly one Region, such as "Алтынкульский район". Stored in the `regions` table with `upper_id` pointing to its parent Region. 205 entries seeded from the same source.
 _Avoid_: Rayon, sub-region, city
 
+### Platform identity
+
+**Organization**:
+The singleton record of **Finsum Nasiya's own legal requisites** — the platform operator's display name, legal name, address, phone, INN, MFO (with bank name resolved via the CBU Bank Registry), and Account Number. Exactly one exists platform-wide; it is never a Merchant. All fields are required — the record either exists complete or not at all. Managed by Platform Admins holding `manage_settings`. Its requisites print in the supplier block of every Contract; the legal name and address are entered once and rendered as-is regardless of Contract Language. While no Organization exists, Contracts print "—" for every supplier field and the admin platform shows a warning prompting completion.
+_Avoid_: company, tenant, merchant (an Organization is the operator, not a Merchant), org profile
+
 ### Bank information
 
 **Merchant Bank Account**:
@@ -306,6 +312,7 @@ _Avoid_: Notification kind, notification category
 - A **Manual Payment** that fully settles all **InstallmentScheduleRows** sets the **Deal** status to `closed`
 - A **Basket** is persisted as one or more **DealItems** on the Deal
 - A **Notification** belongs to exactly one actor; fan-out creates one **Notification** row per recipient at write time
+- The platform has at most one **Organization** (singleton); its requisites print on every **Contract**
 - A **Merchant** has at most one **Merchant Bank Account** (MFO + Account Number + bank name stored as columns on the `merchants` row)
 - A **Merchant** optionally belongs to one **Region** or **District** (`region_id` nullable FK)
 - A **Branch** optionally belongs to one **Region** or **District** (`region_id` nullable FK)

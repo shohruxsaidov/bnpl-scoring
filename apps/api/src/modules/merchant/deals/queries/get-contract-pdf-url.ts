@@ -7,6 +7,7 @@ import { recordFile, deleteFile } from "../../../../lib/file-storage"
 import { files } from "../../../../lib/file-storage/schema"
 import { generateContract, type ContractData } from "../pdf"
 import { getDealById } from "./get-deal"
+import { getOrganization } from "../../../admin/organization/queries/get-organization"
 
 export async function getContractPdfUrl(
   db: Db,
@@ -40,7 +41,19 @@ export async function getContractPdfUrl(
     }
   }
 
+  const org = await getOrganization(db)
+
   const contractData: ContractData = {
+    organization: org
+      ? {
+          legalName: org.legalName,
+          address: org.address,
+          inn: org.inn,
+          accountNumber: org.accountNumber,
+          mfo: org.mfo,
+          bankName: org.bankName,
+        }
+      : null,
     dealId: deal.id,
     createdAt: new Date(deal.createdAt),
     clientFullName: deal.clientName ?? "—",

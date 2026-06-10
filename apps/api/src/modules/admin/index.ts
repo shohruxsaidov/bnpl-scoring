@@ -18,6 +18,7 @@ import adminBuyoutRoutes from "./buyouts/routes"
 import adminClientsRoutes from "./clients/routes"
 import mxikRoutes from "../mxik/routes"
 import adminBankRoutes from "./banks/routes"
+import adminOrganizationRoutes from "./organization/routes"
 import adminScoringModelRoutes from "./scoringModel/routes"
 import adminScoringTestCasesRoutes from "./scoringTestCases/routes"
 import regionRoutes from "../regions/routes"
@@ -61,6 +62,7 @@ export default async function adminModule(app: FastifyInstance) {
   await app.register(mxikRoutes, { prefix: "/admin/mxik", preHandler: app.verifyAdminJwt })
   // CBU bank registry: any authenticated admin.
   await app.register(adminBankRoutes, { prefix: "/admin/banks" })
+  await app.register(guarded(adminOrganizationRoutes, { read: "manage_settings", write: "manage_settings" }), { prefix: "/admin/organization" })
   await app.register(guarded(adminScoringModelRoutes, { read: "manage_scoring_model", write: "manage_scoring_model" }), { prefix: "/admin/scoring-model" })
   await app.register(guarded(adminScoringTestCasesRoutes, { read: "manage_scoring_model", write: "manage_scoring_model" }), { prefix: "/admin/scoring-test-cases" })
   // Region reference: any authenticated admin.

@@ -858,7 +858,28 @@
     "language": "Til",
     "theme": "Mavzu",
     "themeLight": "Yorug'",
-    "themeDark": "Qorong'u"
+    "themeDark": "Qorong'u",
+    "organization": "Tashkilot rekvizitlari",
+    "organizationHint": "Finsum Nasiya rekvizitlari har bir shartnomada chop etiladi",
+    "orgName": "Nomi",
+    "orgNamePlaceholder": "Finsum Nasiya",
+    "orgLegalName": "Yuridik nomi",
+    "orgLegalNamePlaceholder": "Finsum Nasiya MChJ",
+    "orgAddress": "Manzil",
+    "orgAddressPlaceholder": "Toshkent sh., ...",
+    "orgPhone": "Telefon",
+    "orgInn": "STIR (INN)",
+    "orgMfo": "MFO",
+    "orgBankName": "Bank",
+    "orgAccountNumber": "Hisob raqami",
+    "bankNotFound": "Bunday MFO bilan bank topilmadi",
+    "orgSaved": "Tashkilot rekvizitlari saqlandi",
+    "orgSaveFailed": "Rekvizitlarni saqlab bo'lmadi"
+  },
+  "orgWarning": {
+    "title": "Tashkilot rekvizitlari to'ldirilmagan",
+    "message": "Rekvizitlarsiz shartnomalar chiziqchalar bilan shakllanadi. Tashkilot ma'lumotlarini to'ldiring.",
+    "action": "To'ldirish"
   },
   "dealDetail": {
     "backToDeals": "Barcha shartnomalar",

@@ -220,6 +220,19 @@ export interface BankEntry {
   bankName: string
 }
 
+// Singleton: Finsum Nasiya's own legal requisites (the platform operator).
+export interface Organization {
+  name: string
+  legalName: string
+  address: string
+  phone: string
+  inn: string
+  mfo: string
+  accountNumber: string
+  bankName: string
+  updatedAt: string
+}
+
 export interface Region {
   id: number
   upperId: number | null

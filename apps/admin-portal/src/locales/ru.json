@@ -866,7 +866,28 @@
     "language": "Язык",
     "theme": "Тема оформления",
     "themeLight": "Светлая",
-    "themeDark": "Тёмная"
+    "themeDark": "Тёмная",
+    "organization": "Реквизиты организации",
+    "organizationHint": "Реквизиты Finsum Nasiya печатаются в каждом договоре",
+    "orgName": "Название",
+    "orgNamePlaceholder": "Finsum Nasiya",
+    "orgLegalName": "Юридическое название",
+    "orgLegalNamePlaceholder": "ООО \"Finsum Nasiya\"",
+    "orgAddress": "Адрес",
+    "orgAddressPlaceholder": "г. Ташкент, ...",
+    "orgPhone": "Телефон",
+    "orgInn": "ИНН",
+    "orgMfo": "МФО",
+    "orgBankName": "Банк",
+    "orgAccountNumber": "Расчётный счёт",
+    "bankNotFound": "Банк с таким МФО не найден",
+    "orgSaved": "Реквизиты организации сохранены",
+    "orgSaveFailed": "Не удалось сохранить реквизиты"
+  },
+  "orgWarning": {
+    "title": "Реквизиты организации не заполнены",
+    "message": "Без реквизитов договоры формируются с прочерками. Заполните данные организации.",
+    "action": "Заполнить"
   },
   "dealDetail": {
     "backToDeals": "Все сделки",

@@ -9,28 +9,19 @@ const FONT_REGULAR = path.join(FONTS_DIR, 'NotoSans-Regular.ttf');
 const FONT_BOLD = path.join(FONTS_DIR, 'NotoSans-Bold.ttf');
 
 // ---------------------------------------------------------------------------
-// Hardcoded Finsum Nasiya company details (v1 — update via config later)
+// Supplier requisites come from the singleton Organization record (admin
+// settings). Legal name and address are entered once and rendered as-is in
+// both contract languages. While no Organization exists, every supplier
+// field prints '—'.
 // ---------------------------------------------------------------------------
-const COMPANY = {
-  ru: {
-    name: 'ООО "Finsum Nasiya"',
-    address: 'г. Ташкент, Мирзо-Улугбекский р-н',
-    stir: '—',
-    nds: '—',
-    account: '—',
-    mfo: '—',
-    bank: '—',
-  },
-  uz: {
-    name: 'Finsum Nasiya MChJ',
-    address: "Toshkent sh., Mirzo-Ulug'bek t.",
-    stir: '—',
-    nds: '—',
-    account: '—',
-    mfo: '—',
-    bank: '—',
-  },
-};
+export interface OrganizationRequisites {
+  legalName: string;
+  address: string;
+  inn: string;
+  accountNumber: string;
+  mfo: string;
+  bankName: string;
+}
 
 const STRINGS = {
   ru: {
@@ -135,6 +126,7 @@ const STRINGS = {
 // ---------------------------------------------------------------------------
 
 export interface ContractData {
+  organization: OrganizationRequisites | null;
   dealId: string;
   createdAt: Date;
   clientFullName: string;
@@ -361,7 +353,18 @@ function drawInfoRow(
 
 export async function generateContract(data: ContractData, lang: 'ru' | 'uz'): Promise<Buffer> {
   const t = STRINGS[lang];
-  const co = COMPANY[lang];
+  const org = data.organization;
+  const co = {
+    name: org?.legalName ?? '—',
+    address: org?.address ?? '—',
+    stir: org?.inn ?? '—',
+    // The НДС line deliberately prints the INN — Finsum records no separate
+    // VAT payer registration code (settled during the Organization design).
+    nds: org?.inn ?? '—',
+    account: org?.accountNumber ?? '—',
+    mfo: org?.mfo ?? '—',
+    bank: org?.bankName ?? '—',
+  };
 
   const qrBuffer = await QRCode.toBuffer('https://comfortnasiya.uz/offer', {
     width: 70,
