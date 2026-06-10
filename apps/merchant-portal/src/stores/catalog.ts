@@ -22,7 +22,7 @@ export const useCatalogStore = defineStore('catalog', () => {
     id ? products.value.filter((p) => p.categoryId === id) : products.value,
   )
   const activeBranches = computed(() => branches.value.filter((b) => b.active))
-  const activeTariffs = computed(() => tariffs.value.filter((t) => t.active && t.selected))
+  const activeTariffs = computed(() => tariffs.value.filter((t) => t.active))
 
   async function fetchAll() {
     loading.value = true
@@ -204,18 +204,6 @@ export const useCatalogStore = defineStore('catalog', () => {
     }
   }
 
-  async function selectTariff(id: string) {
-    await api(`/merchant/tariffs/${id}`, { method: 'POST' })
-    const t = tariffs.value.find((x) => x.id === id)
-    if (t) t.selected = true
-  }
-
-  async function deselectTariff(id: string) {
-    await api(`/merchant/tariffs/${id}`, { method: 'DELETE' })
-    const t = tariffs.value.find((x) => x.id === id)
-    if (t) t.selected = false
-  }
-
   return {
     categories,
     products,
@@ -246,7 +234,5 @@ export const useCatalogStore = defineStore('catalog', () => {
     fetchCategories,
     fetchCatalog,
     fetchTariffs,
-    selectTariff,
-    deselectTariff,
   }
 })

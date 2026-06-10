@@ -75,7 +75,7 @@ export function useClientApi() {
       scoreSum?: number | null;
       scoringDecision?: string | null;
     }) =>
-      apiFetch<{ verified: boolean; dealId: string }>('/merchant/client/myid-sign-complete', {
+      apiFetch<{ verified: boolean; dealId: string; dealNumber: string }>('/merchant/client/myid-sign-complete', {
         method: 'POST',
         body: JSON.stringify(input),
       }),

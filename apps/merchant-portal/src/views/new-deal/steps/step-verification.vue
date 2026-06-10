@@ -165,7 +165,7 @@ async function signSubmit() {
     })
 
     sessionStorage.removeItem('signing_token')
-    deal.setCreatedDealId(res.dealId)
+    deal.setCreatedDealId(res.dealId, res.dealNumber)
     deal.complete('verification')
   } catch (err: any) {
     submitError.value = err?.message ?? 'Ошибка создания сделки. Попробуйте ещё раз.'

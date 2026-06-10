@@ -18,6 +18,10 @@ function payload(request: { user: unknown }) {
   return request.user as JwtPayload
 }
 
+function formatDealNumber(n: bigint | null | undefined): string {
+  return n != null ? `CN-${String(n).padStart(7, '0')}` : '—'
+}
+
 export default async function merchantDealRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
   const db = app.db
@@ -131,7 +135,7 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
         lang: lang ?? 'ru',
       }).catch((err) => app.log.warn({ err }, 'notifyDealDecision failed'))
 
-      return reply.code(201).send({ dealId: deal.id })
+      return reply.code(201).send({ dealId: deal.id, dealNumber: formatDealNumber(deal.dealNumber) })
     },
   )
 

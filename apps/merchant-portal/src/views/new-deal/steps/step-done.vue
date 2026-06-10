@@ -9,7 +9,9 @@ const deal = useDealStore()
 const scoring = useClientScoringStore()
 const router = useRouter()
 
-const dealId = computed(() => deal.sessionData.createdDealId ?? '—')
+const dealNumber = computed(
+  () => deal.sessionData.createdDealNumber ?? deal.sessionData.createdDealId ?? '—',
+)
 const downloading = ref(false)
 const downloadError = ref<string | null>(null)
 
@@ -38,7 +40,7 @@ async function downloadContract() {
     const a = document.createElement('a')
     a.href = url
     a.target = '_blank'
-    a.download = `${id}-kontrakt.pdf`
+    a.download = `${deal.sessionData.createdDealNumber ?? id}-kontrakt.pdf`
     a.click()
   } catch {
     downloadError.value = 'Не удалось загрузить документ. Попробуйте ещё раз.'
@@ -58,7 +60,7 @@ async function downloadContract() {
 
     <div class="deal-id-box">
       <span class="dib-label">{{ $t('stepDone.dealId') }}</span>
-      <span class="dib-id font-mono text-gradient">{{ dealId }}</span>
+      <span class="dib-id font-mono text-gradient">{{ dealNumber }}</span>
     </div>
 
     <div class="actions">

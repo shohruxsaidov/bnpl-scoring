@@ -1,9 +1,5 @@
-import { Type } from '@sinclair/typebox';
-import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { listTariffsForMerchant } from './queries/list-tariffs';
-import { selectTariff } from './commands/select-tariff';
-import { deselectTariff } from './commands/deselect-tariff';
 
 type MerchantPayload = { sub: string; merchantId: string; role: string };
 
@@ -12,14 +8,10 @@ function merchantId(request: { user: unknown }) {
 }
 
 export default async function merchantTariffRoutes(app: FastifyInstance) {
-  const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
   const db = app.db;
   const preHandler = app.verifyMerchantJwt;
-  const manage = [app.verifyMerchantJwt, app.requirePermission('manage_tariffs')];
 
-  const IdParams = Type.Object({ id: Type.String() });
-
-  fastify.get('/', { preHandler }, async (request) => {
+  app.get('/', { preHandler }, async (request) => {
     const rows = await listTariffsForMerchant(db, merchantId(request));
     return {
       tariffs: rows.map((t) => ({
@@ -28,18 +20,7 @@ export default async function merchantTariffRoutes(app: FastifyInstance) {
         termMonths: t.termMonths,
         markupPercent: parseFloat(t.markupPercent),
         active: t.active,
-        selected: t.selected,
       })),
     };
-  });
-
-  fastify.post('/:id', { schema: { params: IdParams }, preHandler: manage }, async (request, reply) => {
-    await selectTariff(db, merchantId(request), BigInt(request.params.id));
-    return reply.code(204).send();
-  });
-
-  fastify.delete('/:id', { schema: { params: IdParams }, preHandler: manage }, async (request, reply) => {
-    await deselectTariff(db, merchantId(request), BigInt(request.params.id));
-    return reply.code(204).send();
   });
 }

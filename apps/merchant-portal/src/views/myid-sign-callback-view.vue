@@ -52,6 +52,7 @@ onMounted(async () => {
     // Persist the deal ID so NewDealView can advance directly to StepDone
     sessionStorage.setItem('myid_sign_complete', '1')
     sessionStorage.setItem('myid_sign_deal_id', res.dealId)
+    sessionStorage.setItem('myid_sign_deal_number', res.dealNumber)
     sessionStorage.removeItem('signing_token')
   } catch (err) {
     console.error('myid-sign-complete failed', err)

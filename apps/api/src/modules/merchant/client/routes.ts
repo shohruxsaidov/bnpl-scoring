@@ -9,6 +9,10 @@ import { createMyidSession, exchangeMyidCode } from '../../auth/client/myid';
 import { resolveAndCreateDeal } from '../deals/commands/create-deal';
 import { env } from '../../../env';
 
+function formatDealNumber(n: bigint | null | undefined): string {
+  return n != null ? `CN-${String(n).padStart(7, '0')}` : '—';
+}
+
 function normalizePhone(input: string): string {
   const digits = input.replace(/\D/g, '');
   const national = digits.startsWith('998') ? digits.slice(3) : digits;
@@ -390,7 +394,9 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
         throw err;
       }
 
-      return reply.code(201).send({ verified: true, dealId: deal.id });
+      return reply
+        .code(201)
+        .send({ verified: true, dealId: deal.id, dealNumber: formatDealNumber(deal.dealNumber) });
     },
   );
 }

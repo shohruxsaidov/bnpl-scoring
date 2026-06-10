@@ -111,7 +111,7 @@ export function useCreateDealMutation() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (input: CreateDealInput) =>
-      apiFetch<{ dealId: string }>('/merchant/deals', {
+      apiFetch<{ dealId: string; dealNumber: string }>('/merchant/deals', {
         method: 'POST',
         body: JSON.stringify(input),
       }),

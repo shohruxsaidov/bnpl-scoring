@@ -1,41 +1,18 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { onMounted } from 'vue'
 import SkeletonTable from '@/components/skeleton-table.vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
-import ToggleSwitch from 'primevue/toggleswitch'
-import { useToast } from 'primevue/usetoast'
 import { useCatalogStore } from '@/stores/catalog'
 
 const catalog = useCatalogStore()
-const toast = useToast()
-const { t } = useI18n()
 
 onMounted(() => catalog.fetchTariffs())
-
-const toggling = ref<Set<string>>(new Set())
-
-async function toggle(id: string, currentlySelected: boolean) {
-  if (toggling.value.has(id)) return
-  toggling.value.add(id)
-  try {
-    if (currentlySelected) {
-      await catalog.deselectTariff(id)
-    } else {
-      await catalog.selectTariff(id)
-    }
-  } catch {
-    toast.add({ severity: 'error', summary: t('tariffs.toggleFailed'), life: 2000 })
-  } finally {
-    toggling.value.delete(id)
-  }
-}
 </script>
 
 <template>
   <div class="admin-page">
-    <SkeletonTable v-if="catalog.loading" :rows="7" :cols="5" :has-actions="true" :has-header="true" />
+    <SkeletonTable v-if="catalog.loading" :rows="7" :cols="4" :has-header="true" />
     <template v-else>
       <div class="page-hint">
         <i class="pi pi-info-circle" />
@@ -57,15 +34,6 @@ async function toggle(id: string, currentlySelected: boolean) {
           <Column :header="$t('tariffs.markup')">
             <template #body="{ data }">
               <span class="markup font-mono">{{ data.markupPercent }}%</span>
-            </template>
-          </Column>
-          <Column :header="$t('tariffs.selected')" :style="{ width: '120px' }">
-            <template #body="{ data }">
-              <ToggleSwitch
-                :model-value="data.selected"
-                :disabled="toggling.has(data.id)"
-                @update:model-value="toggle(data.id, data.selected)"
-              />
             </template>
           </Column>
         </DataTable>

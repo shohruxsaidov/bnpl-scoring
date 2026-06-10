@@ -81,9 +81,11 @@ onMounted(() => {
     // If the callback already created the deal, advance straight to StepDone.
     const dealId = sessionStorage.getItem('myid_sign_deal_id')
     if (dealId) {
+      const dealNumber = sessionStorage.getItem('myid_sign_deal_number')
       sessionStorage.removeItem('myid_sign_deal_id')
+      sessionStorage.removeItem('myid_sign_deal_number')
       sessionStorage.removeItem('myid_sign_complete')
-      deal.setCreatedDealId(dealId)
+      deal.setCreatedDealId(dealId, dealNumber)
       deal.complete('verification') // moves currentStep → 'done'
     }
     // Flags (myid_sign_complete / myid_sign_failed) intentionally left for StepVerification

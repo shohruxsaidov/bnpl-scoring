@@ -216,11 +216,9 @@
     "name": "Nomi",
     "term": "Muddat",
     "markup": "Ustama",
-    "selected": "Ulangan",
     "mo": "oy",
-    "noTariffs": "Mavjud tariflar yo'q",
-    "hint": "Mijozlaringizga taklif qilmoqchi bo'lgan tariflarni yoqing. Tariflar platforma tomonidan boshqariladi.",
-    "toggleFailed": "Tarif holatini o'zgartirib bo'lmadi"
+    "noTariffs": "Ulangan tariflar yo'q",
+    "hint": "Sizga ulangan tariflar ro'yxati. Tariflar platforma tomonidan boshqariladi."
   },
   "employees": {
     "name": "Ismi",
@@ -562,7 +560,7 @@
   "stepDone": {
     "title": "Tayyor!",
     "subtitle": "Shartnoma yaratildi va imzolashga tayyor.",
-    "dealId": "Shartnoma ID",
+    "dealId": "Shartnoma raqami",
     "downloadContract": "Shartnomani yuklab olish",
     "downloading": "Yuklanmoqda…",
     "newDeal": "Yangi shartnoma",

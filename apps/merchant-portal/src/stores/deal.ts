@@ -61,6 +61,7 @@ interface SessionData {
   paymentDay: number
   schedule: DealPaymentSchedule[]
   createdDealId: string | null
+  createdDealNumber: string | null
 }
 
 function emptySession(): SessionData {
@@ -76,6 +77,7 @@ function emptySession(): SessionData {
     paymentDay: 5,
     schedule: [],
     createdDealId: null,
+    createdDealNumber: null,
   }
 }
 
@@ -190,8 +192,9 @@ export const useDealStore = defineStore(
       sessionData.value.schedule = rows
     }
 
-    function setCreatedDealId(id: string) {
+    function setCreatedDealId(id: string, dealNumber?: string | null) {
       sessionData.value.createdDealId = id
+      sessionData.value.createdDealNumber = dealNumber ?? null
     }
 
     return {

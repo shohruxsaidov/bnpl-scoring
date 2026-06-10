@@ -84,8 +84,6 @@ export interface Tariff {
   /** Ustama — markup percent */
   markupPercent: number
   active: boolean
-  /** Whether this merchant has selected this tariff */
-  selected: boolean
 }
 
 export interface Category {
