@@ -23,12 +23,6 @@ const breadcrumb = computed(() => {
   return keys.map((k) => t(k))
 })
 
-const today = new Date().toLocaleDateString('uz-UZ', {
-  weekday: 'short',
-  day: '2-digit',
-  month: 'short',
-  year: 'numeric',
-})
 </script>
 
 <template>
@@ -56,7 +50,6 @@ const today = new Date().toLocaleDateString('uz-UZ', {
     </button>
 
     <div class="right">
-      <span class="date font-mono">{{ today }}</span>
       <div class="bell-wrap">
         <button class="bell" :class="{ active: bellOpen }" :title="$t('topbar.notifications')"
           @click.stop="bellOpen = !bellOpen">

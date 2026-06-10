@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useDealStore } from '@/stores/deal'
 import { useClientScoringStore } from '@/stores/client-scoring'
 import { useClientApi } from '@/composables/use-client-api'
@@ -44,6 +44,29 @@ const lang = ref<'ru' | 'uz'>('ru')
 /** JWT proof of OTP consent — returned by /sign-otp/verify, sent with deal creation */
 const signingToken = ref<string | null>(null)
 
+// Resend OTP cooldown
+const RESEND_COOLDOWN_SECONDS = 60
+const resendCooldown = ref(0)
+let resendTimer: ReturnType<typeof setInterval> | null = null
+
+function stopResendTimer() {
+  if (resendTimer) {
+    clearInterval(resendTimer)
+    resendTimer = null
+  }
+}
+
+function startResendCooldown() {
+  stopResendTimer()
+  resendCooldown.value = RESEND_COOLDOWN_SECONDS
+  resendTimer = setInterval(() => {
+    resendCooldown.value -= 1
+    if (resendCooldown.value <= 0) stopResendTimer()
+  }, 1000)
+}
+
+onUnmounted(stopResendTimer)
+
 // Resume after MyID sign callback
 onMounted(() => {
   const complete = sessionStorage.getItem('myid_sign_complete')
@@ -70,6 +93,7 @@ async function sendSigningOtp() {
   const res = await sendSigningOtpMutation.mutateAsync(phone)
   if (res.devOtp) devOtp.value = res.devOtp
   signPhase.value = 'otp_sent'
+  startResendCooldown()
 }
 
 async function verifySigningOtp() {
@@ -281,8 +305,12 @@ async function signSubmit() {
             <i v-else class="pi pi-check" />
             {{ $t('stepVerification.confirmOtp') }}
           </button>
-          <button class="btn-ghost resend" @click="sendSigningOtp">
-            {{ $t('stepVerification.resendOtp') }}
+          <button class="btn-ghost resend" :disabled="resendCooldown > 0 || sendSigningOtpMutation.isPending.value"
+            @click="sendSigningOtp">
+            <i v-if="sendSigningOtpMutation.isPending.value" class="pi pi-spin pi-spinner" />
+            {{ resendCooldown > 0
+              ? $t('stepVerification.resendIn', { seconds: resendCooldown })
+              : $t('stepVerification.resendOtp') }}
           </button>
         </div>
         <p v-if="otpError" class="otp-error">
@@ -616,6 +644,11 @@ async function signSubmit() {
 .resend {
   font-size: 0.78rem;
   margin-left: auto;
+}
+
+.resend:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .otp-error {

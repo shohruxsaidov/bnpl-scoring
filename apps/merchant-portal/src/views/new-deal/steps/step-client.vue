@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import Checkbox from 'primevue/checkbox'
@@ -53,6 +53,29 @@ const otpCode = ref('')
 const otpError = ref('')
 const regToken = ref('')
 const devOtp = ref<string | null>(null)
+
+// Resend OTP cooldown
+const RESEND_COOLDOWN_SECONDS = 60
+const resendCooldown = ref(0)
+let resendTimer: ReturnType<typeof setInterval> | null = null
+
+function stopResendTimer() {
+  if (resendTimer) {
+    clearInterval(resendTimer)
+    resendTimer = null
+  }
+}
+
+function startResendCooldown() {
+  stopResendTimer()
+  resendCooldown.value = RESEND_COOLDOWN_SECONDS
+  resendTimer = setInterval(() => {
+    resendCooldown.value -= 1
+    if (resendCooldown.value <= 0) stopResendTimer()
+  }, 1000)
+}
+
+onUnmounted(stopResendTimer)
 
 // PINFL (entered after OTP is verified)
 const pinfl = ref('')
@@ -132,8 +155,22 @@ async function sendOtp() {
     const data = await sendOtpMutation.mutateAsync(phone)
     devOtp.value = data.devOtp ?? null
     phase.value = 'otp_verify'
+    startResendCooldown()
   } catch {
     otpPhoneError.value = t('stepClient.otpSendFailed')
+  }
+}
+
+async function resendOtp() {
+  if (resendCooldown.value > 0 || otpLoading.value) return
+  otpError.value = ''
+  otpCode.value = ''
+  try {
+    const data = await sendOtpMutation.mutateAsync(normalizePhone(otpPhone.value))
+    devOtp.value = data.devOtp ?? null
+    startResendCooldown()
+  } catch {
+    otpError.value = t('stepClient.otpSendFailed')
   }
 }
 
@@ -221,6 +258,8 @@ function resetSearch() {
   otpError.value = ''
   regToken.value = ''
   devOtp.value = null
+  stopResendTimer()
+  resendCooldown.value = 0
   pinfl.value = ''
   pinflError.value = ''
   katmConsent.value = false
@@ -380,6 +419,13 @@ const clientFullName = computed(() =>
         <i v-if="otpVerifying" class="pi pi-spin pi-spinner" />
         <i v-else class="pi pi-check" />
         {{ $t('stepClient.verifyOtp') }}
+      </button>
+      <button class="btn-link resend-btn" :disabled="resendCooldown > 0 || otpLoading" @click="resendOtp">
+        <i v-if="otpLoading" class="pi pi-spin pi-spinner" />
+        <i v-else class="pi pi-refresh" />
+        {{ resendCooldown > 0
+          ? $t('stepClient.resendIn', { seconds: resendCooldown })
+          : $t('stepClient.resendOtp') }}
       </button>
     </div>
 
@@ -1080,6 +1126,16 @@ const clientFullName = computed(() =>
 
 .btn-link:hover {
   text-decoration: underline;
+}
+
+.resend-btn {
+  align-self: flex-start;
+}
+
+.resend-btn:disabled {
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  text-decoration: none;
 }
 
 /* ── Transition ── */
