@@ -502,7 +502,9 @@ export async function generateContract(data: ContractData, lang: 'ru' | 'uz'): P
   y = sectionTitle(doc, t.section2, y);
 
   const halfW = (CONTENT_W - 16) / 2;
-  const maxMonthly = Math.round(data.totalPayable / data.termMonths);
+  const maxMonthly = data.schedule.length
+    ? Math.max(...data.schedule.map((row) => row.amount))
+    : Math.round(data.totalPayable / data.termMonths);
   const leftRows: Array<[string, string]> = [
     [t.installmentTotal, `${fmt(data.totalPayable)} ${t.currency}`],
     [t.duration, `${data.termMonths} ${t.durationUnit}`],

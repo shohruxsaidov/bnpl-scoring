@@ -22,7 +22,8 @@ const schedule = computed<DealPaymentSchedule[]>(() => {
   const t = tariff.value
   if (!t || !day.value) return []
   const months = t.termMonths
-  const perMonth = Math.round(totalPayable.value / months)
+  const perMonth = Math.floor(totalPayable.value / months)
+  const firstMonth = totalPayable.value - perMonth * (months - 1)
   const rows: DealPaymentSchedule[] = []
   const today = new Date()
   const selectedDay = day.value
@@ -39,10 +40,7 @@ const schedule = computed<DealPaymentSchedule[]>(() => {
       i === 0
         ? firstPayment
         : new Date(firstPayment.getFullYear(), firstPayment.getMonth() + i, selectedDay)
-    const amount =
-      i === months - 1
-        ? totalPayable.value - perMonth * (months - 1)
-        : perMonth
+    const amount = i === 0 ? firstMonth : perMonth
     rows.push({ index: i + 1, dueDate: d.toISOString(), amount, paid: false, paidAt: null })
   }
   return rows
