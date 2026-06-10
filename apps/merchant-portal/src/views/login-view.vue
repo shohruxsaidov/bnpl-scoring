@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
-import InputText from 'primevue/inputtext'
 import InputMask from 'primevue/inputmask'
 import Password from 'primevue/password'
 import Dialog from 'primevue/dialog'
@@ -182,7 +181,8 @@ async function pickRole(role: EmployeeRole) {
         <div class="field">
           <label class="field-label" for="phone">{{ $t('login.phone') }}</label>
           <span class="p-inputgroup-addon">+998</span>
-          <InputMask id="phone" v-model="phone" v-bind="phoneAttrs" mask="999999999" :invalid="!!errors.phone" autocomplete="tel" class="w-full" />
+          <InputMask id="phone" v-model="phone" v-bind="phoneAttrs" mask="999999999" :invalid="!!errors.phone"
+            autocomplete="tel" class="w-full" />
           <span v-if="errors.phone" class="field-error">{{ errors.phone }}</span>
         </div>
 
@@ -684,8 +684,8 @@ async function pickRole(role: EmployeeRole) {
   align-items: center;
 }
 
-.p-inputgroup-addon + :deep(.p-inputtext),
-.p-inputgroup-addon + :deep(.p-inputmask) {
+.p-inputgroup-addon+ :deep(.p-inputtext),
+.p-inputgroup-addon+ :deep(.p-inputmask) {
   padding-left: 3.25rem;
 }
 
