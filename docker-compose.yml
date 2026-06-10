@@ -39,9 +39,6 @@ services:
     restart: unless-stopped
     ports:
       - '${ADMIN_PORT:-4001}:80'
-    depends_on:
-      api:
-        condition: service_healthy
 
   merchant-portal:
     build:
@@ -54,6 +51,3 @@ services:
     restart: unless-stopped
     ports:
       - '${MERCHANT_PORT:-4002}:80'
-    depends_on:
-      api:
-        condition: service_healthy
