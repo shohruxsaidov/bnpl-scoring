@@ -143,12 +143,12 @@ function emptyEmp() { return { fullName: '', phone: '', password: '', roles: ['a
 const emps = ref([emptyEmp()])
 
 async function submitStep4() {
-  const valid = emps.value.filter(e => e.fullName.trim() && e.phone.trim() && e.password.length >= 8)
+  const valid = emps.value.filter(e => e.fullName.trim() && e.phone.trim() && !e.phone.includes('_') && e.password.length >= 8)
   if (!valid.length) { step.value = 5; return }
   saving.value = true
   try {
     for (const emp of valid) {
-      await store.createEmployee(branchId.value!, emp)
+      await store.createEmployee(branchId.value!, { ...emp, phone: '998' + emp.phone.replace(/\D/g, '') })
     }
     step.value = 5
   } catch {
@@ -378,7 +378,8 @@ function finish() {
             </div>
             <div class="field">
               <label>{{ t('onboarding.phone') }}</label>
-              <InputText v-model="emp.phone" type="tel" class="w-full" />
+              <span class="p-inputgroup-addon">+998</span>
+              <InputMask v-model="emp.phone" mask="999999999" class="w-full" />
             </div>
             <div class="field">
               <label>{{ t('onboarding.password') }}</label>
