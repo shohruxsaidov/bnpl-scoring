@@ -45,7 +45,7 @@ async function checkOrganization() {
 
 function goToOrganizationForm() {
   toast.removeGroup('org-missing')
-  router.push({ name: 'settings' })
+  router.push({ name: 'settings-organization' })
 }
 
 onMounted(() => {

@@ -115,6 +115,26 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'settings/organization',
+        name: 'settings-organization',
+        component: () => import('@/views/settings-organization-view.vue'),
+        meta: {
+          titleKey: 'routeTitle.settingsOrganization',
+          breadcrumbKeys: ['breadcrumb.settings', 'breadcrumb.settingsOrganization'],
+          feature: 'manage_settings',
+        },
+      },
+      {
+        path: 'settings/interface',
+        name: 'settings-interface',
+        component: () => import('@/views/settings-interface-view.vue'),
+        meta: {
+          titleKey: 'routeTitle.settingsInterface',
+          breadcrumbKeys: ['breadcrumb.settings', 'breadcrumb.settingsInterface'],
+          feature: 'manage_settings',
+        },
+      },
+      {
         path: 'tariffs',
         name: 'tariffs',
         component: () => import('@/views/tariffs-view.vue'),

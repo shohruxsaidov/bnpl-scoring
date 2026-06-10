@@ -1,6 +1,6 @@
 # ADR 0021 — Global Scoring Model Only (No Per-Tariff Pinning)
 
-**Status**: Accepted
+**Status**: Superseded in part by ADR-0023 (per-merchant model assignment; §3 revision stamping and §4 latest-is-active remain in force)
 **Date**: 2026-06-10
 
 ## Context

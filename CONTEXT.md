@@ -97,7 +97,7 @@ A named grouping of Products managed by an Employee with the Merchant Admin Role
 _Avoid_: Product type, product category label
 
 **Tariff**:
-A credit plan that defines a name, number of instalment months, Ustama rate, and Credit Range. Created and managed exclusively by the Finsum platform admin. Merchant Admins select which active Tariffs to expose to their clients — they cannot create or modify Tariff parameters. A Tariff is purely a pricing construct: it plays no role in scoring, which always uses the active **Scoring Model Revision** globally.
+A credit plan that defines a name, number of instalment months, Ustama rate, and Credit Range. Created and managed exclusively by the Finsum platform admin. Merchant Admins select which active Tariffs to expose to their clients — they cannot create or modify Tariff parameters. A Tariff is purely a pricing construct: it plays no role in scoring, which resolves its **Scoring Model** from the Merchant (or the **Global Model**), never from the Tariff.
 _Avoid_: Plan, scheme, package
 
 **Ustama**:
@@ -111,7 +111,7 @@ _Avoid_: Credit limit, loan amount, ceiling, max amount
 ### Credit limit
 
 **Platform Credit Limit**:
-The maximum total instalment exposure Finsum Nasiya will extend to a Client across all Merchants. Computed by the Scoring Model engine as **Limit Coefficient × Base Limit** — PlumGate card scoring plays no part (it is audit-only; see Card Score). In the Wizard flow, stored in `scoring_histories` at scoring time (a `platform_credit_limit` column on `clients` is planned but not yet implemented). In the self-service flow, stored in `user_limits`. Reduced by active Deal balances; restored automatically when a Deal is fully repaid. Only Finsum platform admin can manually refresh the base limit.
+The maximum total instalment exposure Finsum Nasiya will extend to a Client across all Merchants. A single number per Client: each scoring run computes it with the Scoring Model resolved for that run (the Merchant's assigned model, else the Global Model), and the most recent run's result is the Client's current limit — even when consecutive runs at different Merchants resolve to different models. Computed by the Scoring Model engine as **Limit Coefficient × Base Limit** — PlumGate card scoring plays no part (it is audit-only; see Card Score). In the Wizard flow, stored in `scoring_histories` at scoring time (a `platform_credit_limit` column on `clients` is planned but not yet implemented). In the self-service flow, stored in `user_limits`. Reduced by active Deal balances; restored automatically when a Deal is fully repaid. Only Finsum platform admin can manually refresh the base limit.
 _Avoid_: Client limit, credit score limit
 
 **Available Balance**:
@@ -120,8 +120,16 @@ _Avoid_: Remaining limit, free limit
 
 ### Scoring
 
+**Scoring Model**:
+A named scoring configuration owned by Finsum Nasiya, materialised as an append-only family of Scoring Model Revisions. A Merchant may optionally be assigned a Scoring Model; Merchants without one (and all self-service runs) score against the **Global Model**. Scoring always resolves to the assigned model's latest revision — Merchants never reference an individual revision, so model edits take effect for all assigned Merchants immediately.
+_Avoid_: scoring scheme, model family, merchant model (it is owned by Finsum, only assigned to a Merchant)
+
+**Global Model**:
+The single Scoring Model marked as the platform-wide default. Exactly one Scoring Model is Global at all times: marking another model Global atomically unmarks the previous one, the mark cannot be removed without choosing a successor, and the Global Model cannot be deleted. Used for every scoring run that has no Merchant-assigned model, including all self-service runs.
+_Avoid_: globally active model (the "active" revision is a different concept), default model, fallback model
+
 **Scoring Model Revision**:
-An immutable, versioned snapshot of the full scoring configuration (Stop Factors, Scoring Parameters, Limit Coefficient table) owned by Finsum Nasiya. Revisions are append-only; the most recently created revision is the **active** one and is applied globally to every scoring run, regardless of Merchant or Tariff. Saving a new revision makes it live immediately for all subsequent scoring. Each scoring run records which revision produced its decision.
+An immutable, versioned snapshot of the full scoring configuration (Stop Factors, Scoring Parameters, Limit Coefficient table) belonging to one Scoring Model. Revisions are append-only; within each model the most recently created revision is the **active** one. Saving a new revision makes it live immediately for all subsequent scoring runs that resolve to its model. Each scoring run records which revision produced its decision.
 _Avoid_: scoring model version, model config, per-tariff model
 
 **Score**:
@@ -294,7 +302,8 @@ _Avoid_: Notification kind, notification category
 - A **Deal** belongs to one **Merchant** and one **Branch**
 - A **Merchant** selects active **Tariffs** from the Finsum global Tariff catalog
 - A **Tariff** defines months, **Ustama** rate, and a **Credit Range** (min + max Basket total)
-- Scoring always uses the single active **Scoring Model Revision** platform-wide; Tariffs play no role in scoring
+- A **Merchant** is optionally assigned one **Scoring Model**; scoring resolves to the assigned model, else the **Global Model** (exactly one exists at all times). Self-service runs always use the Global Model. Tariffs play no role in scoring
+- A **Scoring Model** has one or more **Scoring Model Revisions** (append-only; latest per model is active)
 - A **Deal** contains one **Basket** and one **Tariff**
 - A **Basket** contains one or more **Products** with quantities; total must fall within the Tariff's **Credit Range** and must not exceed the Client's **Available Balance**
 - A **Product** belongs to exactly one **Category**; a **Category** is owned by a **Merchant**
@@ -365,8 +374,9 @@ Key decisions live in `docs/adr/` as thematic files:
 | `0016-client-web-push-notifications.md` | Web push replaces SSE for Clients; VAPID env vars; `push_subscriptions` table; manual SW; opt-in toggle in ProfileView; admin_message broadcast |
 | `0019-merchant-bank-account.md` | MFO + account number + bank name on `merchants`; CBU bank list fetched backend-side, cached on-demand in `bank_mfo_cache`; bank name denormalized at save time |
 | `0020-scoring-model-v2-structure.md` | v2 model: StopFactors (hard reject) + ScoringParams + LimitCoefficient; standardized From/To bands; half-open [From,To) semantics; discriminated union engine return type |
-| `0021-global-scoring-model.md` | One global scoring model; `tariffs.scoring_model_id` dropped; `model_revision_id` stamped per scoring run; latest revision is active |
+| `0021-global-scoring-model.md` | (superseded in part by 0023) `tariffs.scoring_model_id` dropped; `model_revision_id` stamped per scoring run; latest revision is active |
 | `0022-scoring-engine-sole-authority.md` | Engine wired into both runtime flows via one server-side orchestrator; Card Score audit-only; Base Limit constant in revision; 0.8 cap accepted until ИНПС/ГНК; decision vocabulary `approved`/`partial`/`denied`/`rejected`; client-supplied scoring POST deleted; latest run wins |
+| `0023-per-merchant-scoring-model.md` | `scoring_models` parent entity; Merchant optionally assigned a model (never a revision); exactly one Global Model (atomic switch, no delete); resolution `merchant.model ?? global` → latest revision; one limit per Client, last run wins |
 
 ## Example dialogue
 
