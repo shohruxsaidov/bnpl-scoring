@@ -74,6 +74,11 @@ function handlePanInput(e: Event) {
   newPan.value = raw.replace(/(.{4})/g, '$1 ').trimEnd()
 }
 
+function handleExpiryInput(e: Event) {
+  const raw = (e.target as HTMLInputElement).value.replace(/\D/g, '').slice(0, 4)
+  newExpiry.value = raw.length > 2 ? `${raw.slice(0, 2)}/${raw.slice(2)}` : raw
+}
+
 // OTP phase
 const addSessionId = ref<string | null>(null)
 const maskedPhone = ref<string | null>(null)
@@ -337,7 +342,7 @@ async function next() {
         </div>
         <div class="field" style="max-width: 140px">
           <label class="field-label">{{ $t('stepKarta.expiry') }}</label>
-          <InputText v-model="newExpiry" placeholder="08/27" class="font-mono" maxlength="5" />
+          <InputText :value="newExpiry" placeholder="08/27" class="font-mono" maxlength="5" inputmode="numeric" @input="handleExpiryInput" />
         </div>
         <div class="add-actions">
           <button class="btn-ghost" :disabled="addLoading" @click="cancelAdd">
