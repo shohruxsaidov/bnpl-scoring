@@ -379,7 +379,12 @@
     "resumeClient": "Mijoz: {name}",
     "resumeStep": "Joriy qadam: {step}",
     "resumeContinue": "Davom ettirish",
-    "resumeStartFresh": "Yangidan boshlash"
+    "resumeStartFresh": "Yangidan boshlash",
+    "closeDeal": "Bitimni yopish",
+    "closeConfirmTitle": "Bitim yopilsinmi?",
+    "closeConfirmBody": "Kiritilgan ma'lumotlar ({name}) o'chiriladi va bitimni qayta tiklab bo'lmaydi.",
+    "closeConfirmCancel": "Bekor qilish",
+    "closeConfirmAction": "Bitimni yopish"
   },
   "stepClient": {
     "title": "Mijoz",

@@ -290,7 +290,7 @@ function next() {
 .chip {
   padding: 0.4rem 0.9rem;
   border-radius: 999px;
-  border: 1px solid var(--border-subtle);
+  border: none;
   background: var(--bg-surface);
   color: var(--text-secondary);
   font-weight: 700;
@@ -628,8 +628,11 @@ function next() {
 }
 
 @media (max-width: 900px) {
-  .step-layout { grid-template-columns: 1fr; }
+  .step-layout {
+    grid-template-columns: 1fr;
+  }
 }
+
 @media (max-width: 600px) {
   .product {
     flex-direction: column;

@@ -379,7 +379,12 @@
     "resumeClient": "Клиент: {name}",
     "resumeStep": "Текущий шаг: {step}",
     "resumeContinue": "Продолжить",
-    "resumeStartFresh": "Начать заново"
+    "resumeStartFresh": "Начать заново",
+    "closeDeal": "Закрыть сделку",
+    "closeConfirmTitle": "Закрыть сделку?",
+    "closeConfirmBody": "Введённые данные ({name}) будут удалены, и сделку нельзя будет восстановить.",
+    "closeConfirmCancel": "Отмена",
+    "closeConfirmAction": "Закрыть сделку"
   },
   "stepClient": {
     "title": "Клиент",

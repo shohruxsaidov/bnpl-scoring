@@ -46,6 +46,19 @@ function startFresh() {
   scoring.reset()
 }
 
+// ── Close deal ──────────────────────────────────────────────────────────────
+const showCloseDialog = ref(false)
+
+/** A draft worth discarding exists and the deal hasn't been submitted. */
+const canCloseDeal = computed(
+  () => hasInProgressDeal.value && deal.currentStep !== 'done',
+)
+
+function confirmCloseDeal() {
+  showCloseDialog.value = false
+  startFresh()
+}
+
 // ── Step labels ─────────────────────────────────────────────────────────────
 const STEP_LABEL_KEYS: Record<string, string> = {
   client: 'deal.stepClient',
@@ -180,17 +193,39 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
       </template>
     </Dialog>
 
+    <!-- ── Close deal confirmation ───────────────────────────────────────── -->
+    <Dialog v-model:visible="showCloseDialog" :header="t('deal.closeConfirmTitle')" modal
+      :style="{ width: '26rem' }">
+      <p class="close-confirm-body">{{ t('deal.closeConfirmBody', { name: resumeClientName }) }}</p>
+      <template #footer>
+        <button class="p-button p-button-outlined p-button-sm" @click="showCloseDialog = false">
+          {{ t('deal.closeConfirmCancel') }}
+        </button>
+        <button class="p-button p-button-danger p-button-sm" @click="confirmCloseDeal">
+          <i class="pi pi-times" />
+          {{ t('deal.closeConfirmAction') }}
+        </button>
+      </template>
+    </Dialog>
+
     <!-- ── Step indicator ────────────────────────────────────────────────── -->
     <div class="stepper surface-card">
-      <div v-for="(step, idx) in deal.steps" :key="step.key" class="step" :class="stepState(idx, step.key)">
-        <div class="step-icon">
-          <i v-if="stepState(idx, step.key) === 'done'" class="pi pi-check" />
-          <i v-else :class="step.icon" />
-        </div>
-        <span class="step-label">{{ stepLabel(step.key) }}</span>
-        <div v-if="idx < deal.steps.length - 1" class="connector" />
+      <div v-if="canCloseDeal" class="stepper-bar">
+        <button class="close-deal-btn" @click="showCloseDialog = true">
+          <i class="pi pi-times" /> {{ t('deal.closeDeal') }}
+        </button>
       </div>
-      <div class="step-mobile-label">{{ mobileStepLabel }}</div>
+      <div class="steps-row">
+        <div v-for="(step, idx) in deal.steps" :key="step.key" class="step" :class="stepState(idx, step.key)">
+          <div class="step-icon">
+            <i v-if="stepState(idx, step.key) === 'done'" class="pi pi-check" />
+            <i v-else :class="step.icon" />
+          </div>
+          <span class="step-label">{{ stepLabel(step.key) }}</span>
+          <div v-if="idx < deal.steps.length - 1" class="connector" />
+        </div>
+        <div class="step-mobile-label">{{ mobileStepLabel }}</div>
+      </div>
     </div>
 
     <!-- ── Active step ───────────────────────────────────────────────────── -->
@@ -216,9 +251,52 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
 /* ── Stepper ───────────────────────────────────────────────────────────────*/
 .stepper {
   display: flex;
+  flex-direction: column;
+  padding: 1rem 1.8rem 1.5rem;
+}
+
+.stepper-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.6rem;
+}
+
+.steps-row {
+  display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  padding: 1.5rem 1.8rem;
+}
+
+/* Without the close button, keep the original vertical padding */
+.stepper:not(:has(.stepper-bar)) {
+  padding-top: 1.5rem;
+}
+
+.close-deal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.close-deal-btn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.close-confirm-body {
+  margin: 0;
+  padding: 0.5rem 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
 }
 
 .step {
@@ -323,8 +401,10 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
 
 @media (max-width: 450px) {
   .stepper {
-    flex-wrap: wrap;
     padding: 0.85rem 1rem 0.7rem;
+  }
+  .steps-row {
+    flex-wrap: wrap;
     gap: 0;
   }
   .step { gap: 0.3rem; }
