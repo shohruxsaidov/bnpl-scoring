@@ -499,6 +499,7 @@
     "basePrice": "Ustamasiz:",
     "withMarkup": "Ustama bilan ({pct}%)",
     "limit": "Limit ({months} oy)",
+    "remaining": "Qoldi",
     "overLimit": "Limitdan {amount} so'mga oshib ketdi",
     "belowTariffMin": "Savat summasi tarif minimumidan kam — kamida {amount} so'm bo'lishi kerak",
     "aboveTariffMax": "Savat summasi tarif maksimumidan oshdi — ko'pi bilan {amount} so'm bo'lishi kerak",

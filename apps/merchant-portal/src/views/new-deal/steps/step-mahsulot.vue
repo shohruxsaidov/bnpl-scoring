@@ -53,6 +53,11 @@ const effectiveLimit = computed(
 
 const withinLimit = computed(() => totalWithMarkup.value <= effectiveLimit.value)
 
+/** How much of the limit is still available after the current basket */
+const remainingLimit = computed(() =>
+  Math.max(effectiveLimit.value - totalWithMarkup.value, 0),
+)
+
 /** Credit Range check on the base basket total (pre-markup, tiyin) */
 const rangeWarning = computed(() => {
   const t = tariff.value
@@ -132,6 +137,10 @@ function next() {
       <div v-if="tariff" class="limit-banner" :class="{ over: !withinLimit }">
         <span class="lb-label">{{ $t('stepMahsulot.limit', { months: tariff.termMonths }) }}</span>
         <MonoAmount :value="effectiveLimit" size="lg" />
+        <div class="lb-remaining">
+          <span>{{ $t('stepMahsulot.remaining') }}</span>
+          <MonoAmount :value="remainingLimit" size="sm" :gradient="false" />
+        </div>
       </div>
 
       <h3>
@@ -452,6 +461,30 @@ function next() {
 }
 
 .limit-banner.over .lb-label {
+  color: var(--warning);
+}
+
+.lb-remaining {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.45rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.lb-remaining :deep(.mono-amount) {
+  color: var(--text-secondary);
+}
+
+.limit-banner.over .lb-remaining {
+  color: var(--warning);
+}
+
+.limit-banner.over .lb-remaining :deep(.mono-amount) {
   color: var(--warning);
 }
 
