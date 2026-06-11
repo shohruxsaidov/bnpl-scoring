@@ -2,7 +2,6 @@
 import { ref, computed, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
-import Checkbox from 'primevue/checkbox'
 import { useDealStore } from '@/stores/deal'
 import type { KatmSummary } from '@/stores/deal'
 import { useClientApi } from '@/composables/use-client-api'
@@ -87,11 +86,10 @@ const isNewClient = ref(deal.sessionData.isNewClient)
 // MyID
 const myidError = ref('')
 
-// KATM
-const katmConsent = ref(deal.sessionData.katmConsent)
+// KATM — queried implicitly when the merchant presses "Continue"
 const katmLoading = ref(false)
 const katmError = ref('')
-const katmDone = ref(!!deal.sessionData.katmConsent && !!deal.sessionData.client)
+const katmDone = ref(!!deal.sessionData.katmResult && !!deal.sessionData.client)
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function validatePinfl(): boolean {
@@ -228,8 +226,8 @@ function confirmNewClient() {
   phase.value = 'katm'
 }
 
-async function queryKatm() {
-  if (!katmConsent.value || !confirmedClient.value) return
+async function queryKatm(): Promise<boolean> {
+  if (!confirmedClient.value) return false
   katmLoading.value = true
   katmError.value = ''
   try {
@@ -239,8 +237,10 @@ async function queryKatm() {
     })
     deal.setKatmResult(result)
     katmDone.value = true
+    return true
   } catch {
     katmError.value = t('stepClient.katmError')
+    return false
   } finally {
     katmLoading.value = false
   }
@@ -262,23 +262,23 @@ function resetSearch() {
   resendCooldown.value = 0
   pinfl.value = ''
   pinflError.value = ''
-  katmConsent.value = false
   katmDone.value = false
   katmError.value = ''
   myidError.value = ''
 }
 
-function onNext() {
-  if (!confirmedClient.value || !katmDone.value) return
+async function onNext() {
+  if (!confirmedClient.value || katmLoading.value) return
+  if (!katmDone.value && !(await queryKatm())) return
   deal.setClient(confirmedClient.value, {
     isNew: isNewClient.value,
     myidVerified: isNewClient.value,
   })
-  deal.setKatmConsent(katmConsent.value)
+  deal.setKatmConsent(true)
   deal.complete('client')
 }
 
-const canContinue = computed(() => !!confirmedClient.value && katmDone.value)
+const canContinue = computed(() => phase.value === 'katm' && !!confirmedClient.value)
 const clientFullName = computed(() =>
   confirmedClient.value ? `${confirmedClient.value.firstName} ${confirmedClient.value.lastName}` : ''
 )
@@ -495,20 +495,6 @@ const clientFullName = computed(() =>
         <span v-else class="tag tag-success tag-sm">{{ $t('stepClient.existingClient') }}</span>
       </div>
 
-      <div class="katm-box">
-        <label class="consent">
-          <Checkbox v-model="katmConsent" binary />
-          <span>{{ $t('stepClient.katmConsent', { katm: $t('stepClient.katmConsentBold') }) }}</span>
-        </label>
-        <button class="btn-ghost" :disabled="!katmConsent || katmLoading || katmDone" @click="queryKatm">
-          <i v-if="katmLoading" class="pi pi-spin pi-spinner" />
-          <i v-else-if="katmDone" class="pi pi-check" />
-          <i v-else class="pi pi-database" />
-          {{ katmLoading ? $t('stepClient.queryingKatm') : katmDone ? $t('stepClient.katmDone') :
-            $t('stepClient.queryKatm') }}
-        </button>
-      </div>
-
       <transition name="fade">
         <div v-if="katmDone" class="katm-result">
           <i class="pi pi-check-circle" />
@@ -520,7 +506,7 @@ const clientFullName = computed(() =>
         <div v-if="katmError" class="katm-error">
           <i class="pi pi-exclamation-triangle" />
           {{ katmError }}
-          <button class="btn-ghost btn-sm" @click="queryKatm">
+          <button class="btn-ghost btn-sm" :disabled="katmLoading" @click="onNext">
             <i class="pi pi-refresh" /> {{ $t('common.retry') }}
           </button>
         </div>
@@ -530,8 +516,10 @@ const clientFullName = computed(() =>
     <!-- ── Footer ────────────────────────────────────────────────────────── -->
     <footer class="sc-foot">
       <span class="hint">{{ $t('stepClient.stepOf') }}</span>
-      <button class="btn-gradient" :disabled="!canContinue" @click="onNext">
-        {{ $t('common.continue') }} <i class="pi pi-arrow-right" />
+      <button class="btn-gradient" :disabled="!canContinue || katmLoading" @click="onNext">
+        <i v-if="katmLoading" class="pi pi-spin pi-spinner" />
+        {{ katmLoading ? $t('stepClient.queryingKatm') : $t('common.continue') }}
+        <i v-if="!katmLoading" class="pi pi-arrow-right" />
       </button>
     </footer>
   </div>
@@ -1000,24 +988,6 @@ const clientFullName = computed(() =>
 }
 
 /* ── KATM ── */
-.katm-box {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  background: var(--bg-surface);
-  padding: 1.1rem 1.3rem;
-  border-radius: 14px;
-}
-
-.consent {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  font-size: 0.88rem;
-  cursor: pointer;
-}
-
 .btn-ghost {
   display: inline-flex;
   align-items: center;
@@ -1164,11 +1134,6 @@ const clientFullName = computed(() =>
 
   .step-card {
     padding: 1rem;
-  }
-
-  .katm-box {
-    flex-direction: column;
-    align-items: flex-start;
   }
 }
 </style>
