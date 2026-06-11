@@ -512,10 +512,8 @@
     "installmentSchedule": "График рассрочки",
     "totalPayable": "Итого к оплате",
     "num": "#",
-    "month": "Месяц",
     "dueDate": "Дата платежа",
     "amount": "Сумма",
-    "monthN": "Месяц {n}",
     "back": "Назад",
     "continue": "Продолжить"
   },

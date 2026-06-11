@@ -23,7 +23,8 @@ onMounted(async () => {
   }
 
   // Validate we still have the deal data in the persisted store
-  if (!deal.sessionData.client?.id || !deal.sessionData.tariff) {
+  const paymentDay = deal.sessionData.paymentDay
+  if (!deal.sessionData.client?.id || !deal.sessionData.tariff || !paymentDay) {
     router.replace({ name: 'deals-create' })
     return
   }
@@ -44,7 +45,7 @@ onMounted(async () => {
       clientId: deal.sessionData.client.id,
       tariffId: deal.sessionData.tariff.id,
       basket,
-      paymentDay: deal.sessionData.paymentDay,
+      paymentDay,
       scoreSum: scoring.scoreSum,
       scoringDecision: scoring.decision,
     })

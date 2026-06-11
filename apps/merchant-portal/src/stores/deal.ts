@@ -58,7 +58,7 @@ interface SessionData {
   selectedCard: Card | null
   tariff: Tariff | null
   basket: BasketItem[]
-  paymentDay: number
+  paymentDay: number | null
   schedule: DealPaymentSchedule[]
   createdDealId: string | null
   createdDealNumber: string | null
@@ -74,7 +74,7 @@ function emptySession(): SessionData {
     selectedCard: null,
     tariff: null,
     basket: [],
-    paymentDay: 5,
+    paymentDay: null,
     schedule: [],
     createdDealId: null,
     createdDealNumber: null,

@@ -141,6 +141,8 @@ function fmtDate(iso: string) {
 
 async function signSubmit() {
   if (!signingToken.value) return
+  const paymentDay = sd.value.paymentDay
+  if (!paymentDay) return
   submitting.value = true
   submitError.value = ''
   try {
@@ -153,7 +155,7 @@ async function signSubmit() {
       clientId: sd.value.client?.id ?? '',
       tariffId: sd.value.tariff?.id ?? '',
       basket,
-      paymentDay: sd.value.paymentDay,
+      paymentDay,
       signingToken: signingToken.value,
       scoreSum: scoring.scoreSum,
       scoringDecision: scoring.decision,

@@ -512,10 +512,8 @@
     "installmentSchedule": "Bo'lib to'lash jadvali",
     "totalPayable": "Jami to'lanadigan",
     "num": "#",
-    "month": "Oy",
     "dueDate": "To'lov sanasi",
     "amount": "Summa",
-    "monthN": "{n}-oy",
     "back": "Orqaga",
     "continue": "Davom etish"
   },

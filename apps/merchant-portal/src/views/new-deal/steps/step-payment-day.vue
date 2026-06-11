@@ -29,11 +29,16 @@ const schedule = computed<DealPaymentSchedule[]>(() => {
   const selectedDay = day.value
 
   let firstPayment: Date
-  if ((selectedDay + 15 < 28 && selectedDay + 15 >= today.getDate()) || selectedDay < today.getDate()) {
+  const todayDate = today.getDate()
+  const diff = selectedDay - todayDate
+  if (diff < 1 || diff < 15) {
     firstPayment = new Date(today.getFullYear(), today.getMonth() + 1, selectedDay)
   } else {
     firstPayment = new Date(today.getFullYear(), today.getMonth(), selectedDay)
   }
+
+
+
 
   for (let i = 0; i < months; i++) {
     const d =
@@ -47,6 +52,7 @@ const schedule = computed<DealPaymentSchedule[]>(() => {
 })
 
 function next() {
+  if (!day.value) return
   deal.setPaymentDay(day.value)
   deal.setSchedule(schedule.value)
   deal.complete('payment')
@@ -79,7 +85,7 @@ function fmtDate(iso: string) {
       </div>
     </div>
 
-    <div class="schedule">
+    <div v-if="day" class="schedule">
       <div class="sch-head">
         <h3>{{ $t('stepPayment.installmentSchedule') }}</h3>
         <div class="sch-total">
@@ -91,13 +97,11 @@ function fmtDate(iso: string) {
       <div class="sch-table">
         <div class="sch-row sch-head-row">
           <span>{{ $t('stepPayment.num') }}</span>
-          <span>{{ $t('stepPayment.month') }}</span>
           <span>{{ $t('stepPayment.dueDate') }}</span>
           <span class="ta-right">{{ $t('stepPayment.amount') }}</span>
         </div>
         <div v-for="row in schedule" :key="row.index" class="sch-row">
           <span class="font-mono">{{ row.index }}</span>
-          <span>{{ $t('stepPayment.monthN', { n: row.index }) }}</span>
           <span class="font-mono">{{ fmtDate(row.dueDate) }}</span>
           <span class="ta-right">
             <MonoAmount :value="row.amount" size="sm" :gradient="false" />
@@ -110,7 +114,7 @@ function fmtDate(iso: string) {
       <button class="btn-ghost" @click="deal.back()">
         <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
       </button>
-      <button class="btn-gradient" @click="next">
+      <button class="btn-gradient" :disabled="!day" @click="next">
         {{ $t('common.continue') }} <i class="pi pi-arrow-right" />
       </button>
     </footer>
@@ -207,7 +211,7 @@ function fmtDate(iso: string) {
 
 .sch-row {
   display: grid;
-  grid-template-columns: 50px 1fr 1.4fr 1fr;
+  grid-template-columns: 50px 1.4fr 1fr;
   padding: 0.7rem 0.6rem;
   border-bottom: 1px solid var(--border-subtle);
   font-size: 0.84rem;
@@ -251,11 +255,7 @@ function fmtDate(iso: string) {
   }
 
   .sch-row {
-    grid-template-columns: 40px 1fr 1fr;
-  }
-
-  .sch-row> :nth-child(3) {
-    display: none;
+    grid-template-columns: 40px 1.4fr 1fr;
   }
 }
 </style>
