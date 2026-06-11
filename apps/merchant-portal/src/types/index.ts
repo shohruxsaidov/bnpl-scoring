@@ -83,7 +83,26 @@ export interface Tariff {
   termMonths: number
   /** Ustama — markup percent */
   markupPercent: number
+  /** Credit Range bounds in tiyin; null = unbounded */
+  minAmount: number | null
+  maxAmount: number | null
   active: boolean
+}
+
+/** One tariff's repayment preview from the Tariff Calculator quote endpoint. All amounts in tiyin. */
+export interface TariffQuote {
+  tariffId: string
+  name: string
+  termMonths: number
+  markupPercent: number
+  minAmount: number | null
+  maxAmount: number | null
+  inRange: boolean
+  totalPayable: number
+  ustamaAmount: number
+  monthlyAmount: number
+  lastMonthlyAmount: number
+  installments: number[]
 }
 
 export interface Category {

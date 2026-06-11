@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm"
 import type { Db } from "../../../../db"
 import { deals, dealItems, dealPaymentSchedules, scoringHistories, buyouts } from "../../../deals/db/schema"
+import { calcTotalPayable, splitInstallments } from "../../../deals/installments"
 import { clients, tariffs, products } from "../../../id/db/schema"
 
 export interface CreateDealInput {
@@ -75,8 +76,13 @@ export async function resolveAndCreateDeal(db: Db, input: ResolveAndCreateDealIn
     }
   })
 
+  if (tariff.minAmount != null && amount < tariff.minAmount)
+    throw Object.assign(new Error("amount_below_tariff_min"), { code: "amount_below_tariff_min" })
+  if (tariff.maxAmount != null && amount > tariff.maxAmount)
+    throw Object.assign(new Error("amount_above_tariff_max"), { code: "amount_above_tariff_max" })
+
   const markupPercent = parseFloat(tariff.markupPercent)
-  const totalPayable = BigInt(Math.round(Number(amount) * (1 + markupPercent / 100)))
+  const totalPayable = calcTotalPayable(amount, markupPercent)
 
   return createDeal(db, {
     merchantId: input.merchantId,
@@ -138,14 +144,11 @@ export async function createDeal(db: Db, input: CreateDealInput) {
       )
     }
 
-    const monthlyRaw = Number(input.totalPayable) / input.termMonths
-    const monthly = Math.round(monthlyRaw)
-    const lastMonthly = Number(input.totalPayable) - monthly * (input.termMonths - 1)
+    const installments = splitInstallments(input.totalPayable, input.termMonths)
 
     const now = new Date()
-    const scheduleRows = Array.from({ length: input.termMonths }, (_, i) => {
+    const scheduleRows = installments.map((amount, i) => {
       const due = new Date(now.getFullYear(), now.getMonth() + i + 1, input.paymentDay)
-      const amount = i === input.termMonths - 1 ? lastMonthly : monthly
       return {
         dealId: deal.id,
         index: i + 1,

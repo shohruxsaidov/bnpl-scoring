@@ -4,6 +4,7 @@ import { useDealStore } from '@/stores/deal'
 import { useCatalogStore } from '@/stores/catalog'
 import { useClientScoringStore } from '@/stores/client-scoring'
 import MonoAmount from '@/components/mono-amount.vue'
+import { formatSomShort } from '@/utils/money'
 import type { Tariff } from '@/types'
 
 const deal = useDealStore()
@@ -15,6 +16,20 @@ onMounted(() => catalog.fetchTariffs())
 const limit = computed(() => scoring.platformCreditLimit ?? 0)
 
 const selectedId = ref<string | null>(deal.sessionData.tariff?.id ?? null)
+
+// Credit Range filter: hide tariffs whose minimum exceeds what the client
+// could possibly spend under that tariff (limit × term months)
+const visibleTariffs = computed(() =>
+  catalog.activeTariffs.filter(
+    (t) => t.minAmount == null || t.minAmount <= limit.value * t.termMonths,
+  ),
+)
+
+function formatRange(t: Tariff) {
+  const min = t.minAmount != null ? formatSomShort(t.minAmount) : '0'
+  const max = t.maxAmount != null ? formatSomShort(t.maxAmount) : '∞'
+  return `${min} – ${max}`
+}
 
 function select(t: Tariff) {
   selectedId.value = t.id
@@ -48,7 +63,7 @@ function next() {
     </header>
 
     <div class="tariffs">
-      <button v-for="t in catalog.activeTariffs" :key="t.id" class="tariff-card"
+      <button v-for="t in visibleTariffs" :key="t.id" class="tariff-card"
         :class="{ selected: selectedId === t.id }" @click="select(t)">
         <div class="tc-head">
           <span class="tc-name">{{ t.name }}</span>
@@ -63,6 +78,10 @@ function next() {
         <div class="tc-limit">
           <span class="tcl-label">{{ $t('stepTarif.limit') }}</span>
           <MonoAmount :value="limit * t.termMonths" size="sm" :gradient="false" />
+        </div>
+        <div v-if="t.minAmount != null || t.maxAmount != null" class="tc-limit">
+          <span class="tcl-label">{{ $t('stepTarif.range') }}</span>
+          <span class="font-mono">{{ formatRange(t) }}</span>
         </div>
       </button>
     </div>

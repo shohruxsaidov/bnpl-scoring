@@ -510,7 +510,12 @@
     "merchants": "Bu tarifni ulagan merchantlar",
     "merchantsEmpty": "Hech bir merchant bu tarifni ulamagan",
     "merchantsLoadFailed": "Merchantlarni yuklab bo'lmadi",
-    "addedAt": "Ulanish sanasi"
+    "addedAt": "Ulanish sanasi",
+    "creditRange": "Summa oralig'i",
+    "creditMin": "Min. summa (so'm)",
+    "creditMax": "Maks. summa (so'm)",
+    "unbounded": "Cheklanmagan",
+    "rangeInvalid": "Min. summa maks. summadan oshmasligi kerak"
   },
   "blacklist": {
     "listTitle": "Bloklangan identifikatorlar",

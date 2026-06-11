@@ -13,6 +13,8 @@ function serialize(t: NonNullable<Awaited<ReturnType<typeof getTariff>>>) {
     name: t.name,
     termMonths: t.termMonths,
     markupPercent: parseFloat(t.markupPercent),
+    minAmount: t.minAmount != null ? Number(t.minAmount) : null,
+    maxAmount: t.maxAmount != null ? Number(t.maxAmount) : null,
     active: t.active,
     createdAt: t.createdAt.toISOString(),
   }
@@ -25,10 +27,15 @@ export default async function adminTariffRoutes(app: FastifyInstance) {
 
   const IdParams = Type.Object({ id: Type.String() })
 
+  // Credit Range bounds arrive as integer tiyin; null clears a bound
+  const AmountBound = Type.Union([Type.Integer({ minimum: 0 }), Type.Null()])
+
   const CreateBody = Type.Object({
     name: Type.String({ minLength: 1 }),
     termMonths: Type.Integer({ minimum: 1, maximum: 120 }),
     markupPercent: Type.Number({ minimum: 0, maximum: 100 }),
+    minAmount: Type.Optional(AmountBound),
+    maxAmount: Type.Optional(AmountBound),
   })
 
   const UpdateBody = Type.Partial(
@@ -36,9 +43,16 @@ export default async function adminTariffRoutes(app: FastifyInstance) {
       name: Type.String({ minLength: 1 }),
       termMonths: Type.Integer({ minimum: 1, maximum: 120 }),
       markupPercent: Type.Number({ minimum: 0, maximum: 100 }),
+      minAmount: AmountBound,
+      maxAmount: AmountBound,
       active: Type.Boolean(),
     }),
   )
+
+  function toBound(value: number | null | undefined): bigint | null | undefined {
+    if (value === undefined) return undefined
+    return value === null ? null : BigInt(value)
+  }
 
   fastify.get("/", { preHandler }, async () => {
     const rows = await listTariffs(db)
@@ -46,16 +60,33 @@ export default async function adminTariffRoutes(app: FastifyInstance) {
   })
 
   fastify.post("/", { schema: { body: CreateBody }, preHandler }, async (request, reply) => {
-    const { markupPercent, ...rest } = request.body
-    const tariff = await createTariff(db, { ...rest, markupPercent: markupPercent.toFixed(2) })
+    const { markupPercent, minAmount, maxAmount, ...rest } = request.body
+    if (minAmount != null && maxAmount != null && minAmount > maxAmount)
+      return reply.code(400).sendError("invalid_credit_range")
+    const tariff = await createTariff(db, {
+      ...rest,
+      markupPercent: markupPercent.toFixed(2),
+      minAmount: toBound(minAmount),
+      maxAmount: toBound(maxAmount),
+    })
     return reply.code(201).send({ tariff: serialize(tariff) })
   })
 
   fastify.patch("/:id", { schema: { params: IdParams, body: UpdateBody }, preHandler }, async (request, reply) => {
-    const { markupPercent, ...rest } = request.body
+    const { markupPercent, minAmount, maxAmount, ...rest } = request.body
+    if (minAmount !== undefined || maxAmount !== undefined) {
+      const current = await getTariff(db, BigInt(request.params.id))
+      if (!current) return reply.code(404).sendError("not_found")
+      const effectiveMin = minAmount !== undefined ? minAmount : current.minAmount
+      const effectiveMax = maxAmount !== undefined ? maxAmount : current.maxAmount
+      if (effectiveMin != null && effectiveMax != null && BigInt(effectiveMin) > BigInt(effectiveMax))
+        return reply.code(400).sendError("invalid_credit_range")
+    }
     const input = {
       ...rest,
       ...(markupPercent !== undefined && { markupPercent: markupPercent.toFixed(2) }),
+      ...(minAmount !== undefined && { minAmount: toBound(minAmount) }),
+      ...(maxAmount !== undefined && { maxAmount: toBound(maxAmount) }),
     }
     const tariff = await updateTariff(db, BigInt(request.params.id), input)
     if (!tariff) return reply.code(404).sendError("not_found")

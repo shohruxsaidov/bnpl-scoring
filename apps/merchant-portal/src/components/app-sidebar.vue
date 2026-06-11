@@ -24,6 +24,7 @@ const mainNav = computed<NavItem[]>(() => [
   { label: t('nav.dashboard'), icon: 'pi pi-th-large', to: '/', show: true },
   { label: t('nav.deals'), icon: 'pi pi-briefcase', to: '/deals', show: auth.can('view_deals') },
   { label: t('nav.newDeal'), icon: 'pi pi-plus-circle', to: '/deals/create', show: auth.can('create_deal') },
+  { label: t('nav.calculator'), icon: 'pi pi-calculator', to: '/calculator', show: auth.can('create_deal') },
   { label: t('nav.notifications'), icon: 'pi pi-bell', to: '/notifications', show: auth.can('view_notifications') },
   { label: t('nav.settings'), icon: 'pi pi-cog', to: '/settings', show: true },
 ])

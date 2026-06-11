@@ -105,8 +105,16 @@ The flat markup percentage added to each Product's tan narxi when sold on credit
 _Avoid_: Interest rate, APR, commission, fee
 
 **Credit Range**:
-The minimum and maximum allowed Basket total under a given Tariff. A Basket total must fall within the Credit Range for the Tariff to be selectable.
+The minimum and maximum allowed Basket total under a given Tariff. Either bound may be absent, meaning the Tariff is unbounded on that side; legacy Tariffs have no bounds at all. Enforced when the Basket is built (the Agent cannot proceed past the Mahsulot step with a total outside the chosen Tariff's range) and again at Deal creation. Tariffs whose minimum exceeds the Client's Available Balance are not offered in the Tarif step.
 _Avoid_: Credit limit, loan amount, ceiling, max amount
+
+**Tariff Calculator** (uz: Tariff kalkulyator):
+A standalone Merchant App page where an Agent enters a hypothetical purchase amount and sees a Tariff Quote for every merchant-active Tariff side by side, to advise a Client before starting the Wizard. Purely informational: it involves no Client, runs no scoring, and creates no Deal. Tariffs whose Credit Range excludes the entered amount are flagged as unavailable, not hidden. Accessible to anyone holding the `create_deal` Feature.
+_Avoid_: Price calculator, loan calculator, simulator, credit calculator
+
+**Tariff Quote**:
+The computed repayment preview for one Tariff and one amount: the per-month instalment amounts (the final month absorbs the rounding remainder), the total payable, and the Ustama amount in so'm. Guaranteed to match the instalment schedule a real Deal with the same amount and Tariff would produce. Carries no due dates — those depend on the payment day and signing date, which exist only on a real Deal.
+_Avoid_: Estimate, simulation, preview schedule, offer
 
 ### Credit limit
 
@@ -115,7 +123,7 @@ The maximum total instalment exposure Finsum Nasiya will extend to a Client acro
 _Avoid_: Client limit, credit score limit
 
 **Available Balance**:
-The portion of a Client's Platform Credit Limit not currently committed to active Deals. Shown to Agents during the Wizard as a single number — no cross-merchant Deal breakdown is visible. In the Tarif step, only Tariffs whose Credit Range max ≤ Available Balance are shown.
+The portion of a Client's Platform Credit Limit not currently committed to active Deals. Shown to Agents during the Wizard as a single number — no cross-merchant Deal breakdown is visible. In the Tarif step, only Tariffs whose Credit Range min ≤ Available Balance are shown — the Client must be able to afford at least the Tariff's minimum.
 _Avoid_: Remaining limit, free limit
 
 ### Scoring

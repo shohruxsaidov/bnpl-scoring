@@ -53,6 +53,16 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'calculator',
+        name: 'calculator',
+        component: () => import('@/views/calculator-view.vue'),
+        meta: {
+          titleKey: 'routeTitle.calculator',
+          breadcrumbKeys: ['breadcrumb.calculator'],
+          feature: 'create_deal',
+        },
+      },
+      {
         path: 'deals/:id',
         name: 'deal-detail',
         component: () => import('@/views/deals/deal-detail-view.vue'),

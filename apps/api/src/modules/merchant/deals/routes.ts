@@ -116,6 +116,8 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
       } catch (err: any) {
         if (err.code === 'tariff_not_found') return reply.code(400).sendError('tariff_not_found')
         if (err.code === 'product_not_found') return reply.code(400).sendError('product_not_found')
+        if (err.code === 'amount_below_tariff_min') return reply.code(400).sendError('amount_below_tariff_min')
+        if (err.code === 'amount_above_tariff_max') return reply.code(400).sendError('amount_above_tariff_max')
         throw err
       }
 

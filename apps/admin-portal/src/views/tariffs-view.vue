@@ -15,7 +15,15 @@ import { toTypedSchema } from '@vee-validate/zod'
 import { z } from 'zod'
 import { useRouter } from 'vue-router'
 import { useTariffsStore } from '@/stores/tariffs'
+import { formatSomShort } from '@/utils/money'
 import type { Tariff } from '@/types'
+
+function rangeLabel(tariff: Tariff): string {
+  if (tariff.minAmount == null && tariff.maxAmount == null) return '—'
+  const min = tariff.minAmount != null ? formatSomShort(tariff.minAmount) : '0'
+  const max = tariff.maxAmount != null ? formatSomShort(tariff.maxAmount) : '∞'
+  return `${min} – ${max}`
+}
 
 const tariffs = useTariffsStore()
 const toast = useToast()
@@ -47,21 +55,31 @@ async function openMerchants(tariff: Tariff) {
 }
 
 const schema = toTypedSchema(
-  z.object({
-    name: z.string().min(1, t('tariffs.nameRequired')),
-    termMonths: z.number().int().min(1).max(120),
-    markupPercent: z.number().min(0).max(100),
-  }),
+  z
+    .object({
+      name: z.string().min(1, t('tariffs.nameRequired')),
+      termMonths: z.number().int().min(1).max(120),
+      markupPercent: z.number().min(0).max(100),
+      // Credit Range entered in so'm; null/undefined = unbounded
+      minSom: z.number().min(0).nullish(),
+      maxSom: z.number().min(0).nullish(),
+    })
+    .refine((v) => v.minSom == null || v.maxSom == null || v.minSom <= v.maxSom, {
+      message: t('tariffs.rangeInvalid'),
+      path: ['maxSom'],
+    }),
 )
 
 const { handleSubmit, errors, defineField, resetForm, setValues } = useForm({
   validationSchema: schema,
-  initialValues: { name: '', termMonths: 6, markupPercent: 8 },
+  initialValues: { name: '', termMonths: 6, markupPercent: 8, minSom: null, maxSom: null },
 })
 
 const [name, nameAttrs] = defineField('name')
 const [termMonths, termMonthsAttrs] = defineField('termMonths')
 const [markupPercent, markupPercentAttrs] = defineField('markupPercent')
+const [minSom, minSomAttrs] = defineField('minSom')
+const [maxSom, maxSomAttrs] = defineField('maxSom')
 
 onMounted(() => {
   tariffs.fetchAll().catch(() => toast.add({ severity: 'error', summary: t('tariffs.loadFailed'), life: 3000 }))
@@ -79,18 +97,24 @@ function openEdit(tariff: Tariff) {
     name: tariff.name,
     termMonths: tariff.termMonths,
     markupPercent: tariff.markupPercent,
+    minSom: tariff.minAmount != null ? tariff.minAmount / 100 : null,
+    maxSom: tariff.maxAmount != null ? tariff.maxAmount / 100 : null,
   })
   showDialog.value = true
 }
 
 const submit = handleSubmit(async (values) => {
   saving.value = true
+  const minAmount = values.minSom != null ? Math.round(values.minSom * 100) : null
+  const maxAmount = values.maxSom != null ? Math.round(values.maxSom * 100) : null
   try {
     if (editingId.value) {
       await tariffs.update(editingId.value, {
         name: values.name,
         termMonths: values.termMonths,
         markupPercent: values.markupPercent,
+        minAmount,
+        maxAmount,
       })
       toast.add({ severity: 'success', summary: t('tariffs.updated'), life: 2000 })
     } else {
@@ -98,6 +122,8 @@ const submit = handleSubmit(async (values) => {
         name: values.name,
         termMonths: values.termMonths,
         markupPercent: values.markupPercent,
+        minAmount,
+        maxAmount,
       })
       toast.add({ severity: 'success', summary: t('tariffs.created'), life: 2000 })
     }
@@ -155,6 +181,11 @@ function remove(tariff: Tariff) {
         <Column :header="$t('tariffs.markup')">
           <template #body="{ data }">
             <span class="markup font-mono">{{ data.markupPercent }}%</span>
+          </template>
+        </Column>
+        <Column :header="$t('tariffs.creditRange')">
+          <template #body="{ data }">
+            <span class="font-mono">{{ rangeLabel(data) }}</span>
           </template>
         </Column>
         <Column :header="$t('tariffs.active')">
@@ -235,6 +266,17 @@ function remove(tariff: Tariff) {
           <div class="field">
             <label class="field-label">{{ $t('tariffs.markupPercent') }}</label>
             <InputNumber v-model="markupPercent" v-bind="markupPercentAttrs" :min="0" :max="100" :max-fraction-digits="2" fluid />
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label class="field-label">{{ $t('tariffs.creditMin') }}</label>
+            <InputNumber v-model="minSom" v-bind="minSomAttrs" :min="0" :max-fraction-digits="0" :placeholder="$t('tariffs.unbounded')" fluid />
+          </div>
+          <div class="field">
+            <label class="field-label">{{ $t('tariffs.creditMax') }}</label>
+            <InputNumber v-model="maxSom" v-bind="maxSomAttrs" :min="0" :max-fraction-digits="0" :placeholder="$t('tariffs.unbounded')" fluid />
+            <small v-if="errors.maxSom" class="field-error">{{ errors.maxSom }}</small>
           </div>
         </div>
       </form>

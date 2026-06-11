@@ -163,6 +163,9 @@ export interface Tariff {
   name: string
   termMonths: number
   markupPercent: number
+  /** Credit Range bounds in tiyin; null = unbounded */
+  minAmount: number | null
+  maxAmount: number | null
   active: boolean
   selected?: boolean
 }

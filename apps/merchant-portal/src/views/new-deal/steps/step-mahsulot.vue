@@ -53,8 +53,19 @@ const effectiveLimit = computed(
 
 const withinLimit = computed(() => totalWithMarkup.value <= effectiveLimit.value)
 
+/** Credit Range check on the base basket total (pre-markup, tiyin) */
+const rangeWarning = computed(() => {
+  const t = tariff.value
+  if (!t || total.value === 0) return null
+  if (t.minAmount != null && total.value < t.minAmount)
+    return { key: 'belowTariffMin', amount: t.minAmount }
+  if (t.maxAmount != null && total.value > t.maxAmount)
+    return { key: 'aboveTariffMax', amount: t.maxAmount }
+  return null
+})
+
 const canProceed = computed(
-  () => !!tariff.value && total.value > 0 && withinLimit.value,
+  () => !!tariff.value && total.value > 0 && withinLimit.value && rangeWarning.value == null,
 )
 
 function next() {
@@ -165,6 +176,12 @@ function next() {
           <i class="pi pi-exclamation-triangle" />
           {{ $t('stepMahsulot.overLimit', {
             amount: ((totalWithMarkup - effectiveLimit) / 100).toLocaleString('uz-UZ'),
+          }) }}
+        </div>
+        <div v-if="rangeWarning" class="bs-overlimit">
+          <i class="pi pi-exclamation-triangle" />
+          {{ $t(`stepMahsulot.${rangeWarning.key}`, {
+            amount: (rangeWarning.amount / 100).toLocaleString('uz-UZ'),
           }) }}
         </div>
       </div>
