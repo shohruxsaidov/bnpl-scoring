@@ -61,6 +61,7 @@ export const uz: Record<string, string> = {
   tariff_not_found: "Tarif topilmadi",
   amount_below_tariff_min: "Savat summasi tarifning minimal summasidan kam",
   amount_above_tariff_max: "Savat summasi tarifning maksimal summasidan oshib ketdi",
+  invalid_credit_range: "Minimal summa maksimal summadan oshmasligi kerak",
 
   // scoring models
   scoring_model_not_found: "Skoring modeli topilmadi",

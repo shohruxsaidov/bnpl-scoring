@@ -34,10 +34,10 @@ function model(version: string, overrides: Partial<ScoringModel['criteria']> = {
 }
 
 const STANDARD_TARIFFS: Tariff[] = [
-  { id: 'trf_3', name: '3 oy · Ustama 5%', termMonths: 3, markupPercent: 5, active: true },
-  { id: 'trf_6', name: '6 oy · Ustama 8%', termMonths: 6, markupPercent: 8, active: true },
-  { id: 'trf_9', name: '9 oy · Ustama 11%', termMonths: 9, markupPercent: 11, active: true },
-  { id: 'trf_12', name: '12 oy · Ustama 14%', termMonths: 12, markupPercent: 14, active: false },
+  { id: 'trf_3', name: '3 oy · Ustama 5%', termMonths: 3, markupPercent: 5, minAmount: null, maxAmount: null, active: true },
+  { id: 'trf_6', name: '6 oy · Ustama 8%', termMonths: 6, markupPercent: 8, minAmount: null, maxAmount: null, active: true },
+  { id: 'trf_9', name: '9 oy · Ustama 11%', termMonths: 9, markupPercent: 11, minAmount: null, maxAmount: null, active: true },
+  { id: 'trf_12', name: '12 oy · Ustama 14%', termMonths: 12, markupPercent: 14, minAmount: null, maxAmount: null, active: false },
 ]
 
 const TENANTS: Tenant[] = [

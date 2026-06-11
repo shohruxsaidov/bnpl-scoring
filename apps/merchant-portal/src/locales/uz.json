@@ -73,7 +73,8 @@
     "employees": "Xodimlar",
     "branches": "Filiallar",
     "changePassword": "Parolni o'zgartirish",
-    "settings": "Sozlamalar"
+    "settings": "Sozlamalar",
+    "calculator": "Tarif kalkulyatori"
   },
   "breadcrumb": {
     "dashboard": "Bosh sahifa",
@@ -87,7 +88,8 @@
     "tariffs": "Tariflar",
     "employees": "Xodimlar",
     "branches": "Filiallar",
-    "settings": "Sozlamalar"
+    "settings": "Sozlamalar",
+    "calculator": "Tarif kalkulyatori"
   },
   "nav": {
     "dashboard": "Bosh sahifa",
@@ -102,7 +104,8 @@
     "logout": "Chiqish",
     "toggleSidebar": "Yon panelni almashtirish",
     "branches": "Filiallar",
-    "settings": "Sozlamalar"
+    "settings": "Sozlamalar",
+    "calculator": "Tarif kalkulyatori"
   },
   "role": {
     "merchantAdmin": "Merchant Admin",
@@ -652,5 +655,25 @@
     "district": "Tuman",
     "selectDistrict": "Tumanni tanlang",
     "optional": "ixtiyoriy"
+  },
+  "calculator": {
+    "title": "Tarif kalkulyatori",
+    "subtitle": "Mahsulot narxini kiriting — har bir tarif bo'yicha oylik to'lovni ko'ring",
+    "amountLabel": "Mahsulot narxi",
+    "amountPlaceholder": "Masalan, 5 000 000",
+    "months": "oy",
+    "ustama": "Ustama",
+    "monthly": "Oylik to'lov",
+    "total": "Jami to'lov",
+    "ustamaAmount": "Ustama summasi",
+    "outOfRange": "Bu summa uchun mavjud emas",
+    "breakdownTitle": "{name} — to'lov jadvali",
+    "monthN": "{n}-oy",
+    "empty": "Narxni kiriting — barcha tariflar bo'yicha hisob-kitob chiqadi",
+    "loadFailed": "Hisob-kitobni yuklab bo'lmadi",
+    "disclaimer": "Hisob-kitob ma'lumot uchun. Haqiqiy imkoniyat mijozning kredit limitiga bog'liq — u skoring paytida aniqlanadi.",
+    "thNum": "№",
+    "thMonth": "Oy",
+    "thAmount": "To'lov summasi"
   }
 }

@@ -147,16 +147,32 @@ function rangeHint(q: TariffQuote): string {
 
       <div v-if="expanded" class="surface-card breakdown">
         <h3>{{ $t('calculator.breakdownTitle', { name: expanded.name }) }}</h3>
-        <div class="bd-grid">
-          <div v-for="(amt, i) in expanded.installments" :key="i" class="bd-row">
-            <span class="bd-month">{{ $t('calculator.monthN', { n: i + 1 }) }}</span>
-            <MonoAmount :value="amt" size="sm" :gradient="false" />
-          </div>
-        </div>
-        <div class="bd-total">
-          <span>{{ $t('calculator.total') }}</span>
-          <MonoAmount :value="expanded.totalPayable" size="md" />
-        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>{{ $t('calculator.thNum') }}</th>
+              <th>{{ $t('calculator.thMonth') }}</th>
+              <th class="amount-col">{{ $t('calculator.thAmount') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(amt, i) in expanded.installments" :key="i">
+              <td class="font-mono muted">{{ i + 1 }}</td>
+              <td>{{ $t('calculator.monthN', { n: i + 1 }) }}</td>
+              <td class="amount-col">
+                <MonoAmount :value="amt" size="sm" :gradient="false" />
+              </td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2" class="total-label">{{ $t('calculator.total') }}</td>
+              <td class="amount-col">
+                <MonoAmount :value="expanded.totalPayable" size="md" />
+              </td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
 
       <p class="disclaimer">
@@ -356,35 +372,49 @@ function rangeHint(q: TariffQuote): string {
   font-weight: 800;
 }
 
-.bd-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 0.5rem 1.6rem;
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
 }
 
-.bd-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.6rem;
-  padding: 0.45rem 0;
-  border-bottom: 1px dashed var(--border-subtle);
+.data-table th {
+  text-align: left;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
-.bd-month {
-  font-size: 0.82rem;
-  font-weight: 600;
+.data-table td {
+  padding: 0.75rem 0.9rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.data-table .muted {
   color: var(--text-secondary);
 }
 
-.bd-total {
-  margin-top: 1.1rem;
-  padding-top: 0.9rem;
+.amount-col {
+  text-align: right;
+}
+
+.data-table tfoot td {
+  border-bottom: none;
   border-top: 1px solid var(--border-subtle);
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  font-size: 0.86rem;
+  padding: 0.85rem 0.9rem;
+}
+
+.total-label {
   font-weight: 700;
   color: var(--text-secondary);
 }

@@ -61,6 +61,7 @@ export const ru: Record<string, string> = {
   tariff_not_found: "Тариф не найден",
   amount_below_tariff_min: "Сумма корзины меньше минимальной суммы тарифа",
   amount_above_tariff_max: "Сумма корзины превышает максимальную сумму тарифа",
+  invalid_credit_range: "Минимальная сумма не может превышать максимальную",
 
   // scoring models
   scoring_model_not_found: "Скоринговая модель не найдена",
