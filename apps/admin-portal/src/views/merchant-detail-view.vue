@@ -10,10 +10,13 @@ import InputMask from 'primevue/inputmask'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import MultiSelect from 'primevue/multiselect'
+import RadioButton from 'primevue/radiobutton'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
+import { useAuthStore } from '@/stores/auth'
 import { useMerchantsStore } from '@/stores/merchants'
+import { useScoringModelStore, type ScoringModelListItem } from '@/stores/scoring-model'
 import { useMxik, type MxikEntry, type MxikPackage } from '@/composables/use-mxik'
 import { useRegions } from '@/composables/use-regions'
 import { formatDateTime } from '@/utils/money'
@@ -23,17 +26,24 @@ const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 const toast = useToast()
+const auth = useAuthStore()
 const merchants = useMerchantsStore()
+const scoringModels = useScoringModelStore()
 
 const merchantId = computed(() => route.params.id as string)
 const merchant = computed(() => merchants.byId(merchantId.value))
 
-const tabs = ['Branches', 'Employees', 'Products', 'Categories', 'Documents', 'Tariffs'] as const
-type Tab = (typeof tabs)[number]
+const allTabs = ['Branches', 'Employees', 'Products', 'Categories', 'Documents', 'Tariffs', 'ScoringModel'] as const
+type Tab = (typeof allTabs)[number]
+
+// The models list endpoint is permission-gated; hide the tab like the sidebar does.
+const tabs = computed<readonly Tab[]>(() =>
+  auth.can('manage_scoring_model') ? allTabs : allTabs.filter((t) => t !== 'ScoringModel'),
+)
 
 function tabFromQuery(): Tab {
   const q = (route.query.tab as string)?.toLowerCase()
-  return tabs.find((t) => t.toLowerCase() === q) ?? 'Branches'
+  return tabs.value.find((t) => t.toLowerCase() === q) ?? 'Branches'
 }
 const activeTab = ref<Tab>(tabFromQuery())
 
@@ -44,6 +54,7 @@ const TAB_LABEL_KEYS: Record<Tab, string> = {
   Categories: 'merchantDetail.tabCategories',
   Documents: 'merchantDetail.tabDocuments',
   Tariffs: 'merchantDetail.tabTariffs',
+  ScoringModel: 'merchantDetail.tabScoringModel',
 }
 
 function tabLabel(tab: Tab): string {
@@ -372,7 +383,7 @@ watch(activeTab, (tab) => {
 watch(
   () => route.query.tab,
   (q) => {
-    const matched = tabs.find((t) => t.toLowerCase() === (q as string)?.toLowerCase())
+    const matched = tabs.value.find((t) => t.toLowerCase() === (q as string)?.toLowerCase())
     if (matched && matched !== activeTab.value) activeTab.value = matched
   },
 )
@@ -557,6 +568,61 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
     notifyError('merchantDetail.updateFailed')
   } finally {
     tariffToggling.value.delete(tariffId)
+  }
+}
+
+// --- Scoring model -------------------------------------------------------------
+// Radio value 0 is the "no assignment" sentinel: the merchant follows whichever
+// model is currently flagged Global (PATCH sends scoringModelId: null).
+const DEFAULT_MODEL_ROW = 0
+
+interface ScoringModelRow {
+  key: string
+  radioValue: number
+  model: ScoringModelListItem | null
+}
+
+const scoringModelRows = computed<ScoringModelRow[]>(() => [
+  { key: 'default', radioValue: DEFAULT_MODEL_ROW, model: null },
+  ...scoringModels.models.map((m) => ({ key: String(m.id), radioValue: m.id, model: m })),
+])
+
+const assignedModelRadio = computed(() => merchant.value?.scoringModelId ?? DEFAULT_MODEL_ROW)
+const globalModel = computed(() => scoringModels.models.find((m) => m.isGlobal) ?? null)
+
+// What the engine will actually use: the assigned model if it has a revision,
+// otherwise the Global Model (mirrors resolve-model.ts).
+const effectiveModel = computed(() => {
+  const assigned = scoringModels.models.find((m) => m.id === merchant.value?.scoringModelId)
+  if (assigned && assigned.revisionCount > 0) return assigned
+  return globalModel.value
+})
+
+const modelAssigning = ref(false)
+const modelsRequested = ref(false)
+
+watch(
+  activeTab,
+  (tab) => {
+    if (tab !== 'ScoringModel' || modelsRequested.value) return
+    modelsRequested.value = true
+    scoringModels.fetchModels().catch(() => notifyError('merchantDetail.loadFailed'))
+  },
+  { immediate: true },
+)
+
+async function assignScoringModel(radioValue: number) {
+  if (modelAssigning.value || radioValue === assignedModelRadio.value) return
+  modelAssigning.value = true
+  try {
+    await merchants.update(merchantId.value, {
+      scoringModelId: radioValue === DEFAULT_MODEL_ROW ? null : radioValue,
+    })
+    toast.add({ severity: 'success', summary: t('merchantDetail.scoringModelSaved'), life: 2000 })
+  } catch {
+    notifyError('merchantDetail.updateFailed')
+  } finally {
+    modelAssigning.value = false
   }
 }
 </script>
@@ -844,7 +910,7 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
     </section>
 
     <!-- Tariffs -->
-    <section v-else class="tab-body">
+    <section v-else-if="activeTab === 'Tariffs'" class="tab-body">
       <div class="tab-head">
         <h3 class="section-title">{{ $t('merchantDetail.tariffs') }}</h3>
       </div>
@@ -873,6 +939,58 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
           </Column>
         </DataTable>
       </div>
+    </section>
+
+    <!-- Scoring model -->
+    <section v-else class="tab-body">
+      <div class="tab-head">
+        <h3 class="section-title">{{ $t('merchantDetail.scoringModel') }}</h3>
+      </div>
+      <div class="surface-card table-wrap">
+        <DataTable :value="scoringModelRows" data-key="key" size="small" :loading="scoringModels.loading">
+          <Column :header="$t('merchantDetail.name')">
+            <template #body="{ data }">
+              <template v-if="data.model === null">
+                <span class="t-name-sm">{{ $t('merchantDetail.scoringModelDefault') }}</span>
+                <span v-if="globalModel" class="model-sub muted">
+                  {{ $t('merchantDetail.scoringModelCurrentGlobal', { name: globalModel.name }) }}
+                </span>
+              </template>
+              <template v-else>
+                <RouterLink class="doc-link t-name-sm" :to="`/scoring-model/${data.model.id}`">
+                  {{ data.model.name }}
+                </RouterLink>
+                <Tag v-if="data.model.isGlobal" class="model-tag"
+                  :value="$t('merchantDetail.scoringModelGlobalTag')" severity="info" />
+                <Tag v-if="data.model.revisionCount === 0" class="model-tag"
+                  :value="$t('merchantDetail.scoringModelNoRevisions')" severity="warn" />
+              </template>
+            </template>
+          </Column>
+          <Column :header="$t('merchantDetail.scoringModelRevisions')" style="width: 110px">
+            <template #body="{ data }">
+              <span v-if="data.model" class="font-mono">{{ data.model.revisionCount }}</span>
+              <span v-else class="muted">—</span>
+            </template>
+          </Column>
+          <Column :header="$t('merchantDetail.scoringModelCreated')" style="width: 170px">
+            <template #body="{ data }">
+              <span v-if="data.model" class="font-mono muted">{{ formatDateTime(data.model.createdAt) }}</span>
+              <span v-else class="muted">—</span>
+            </template>
+          </Column>
+          <Column :header="$t('merchantDetail.scoringModelAssigned')" style="width: 110px">
+            <template #body="{ data }">
+              <RadioButton :model-value="assignedModelRadio" :value="data.radioValue" :disabled="modelAssigning"
+                name="scoring-model" @update:model-value="assignScoringModel(data.radioValue)" />
+            </template>
+          </Column>
+        </DataTable>
+      </div>
+      <p v-if="effectiveModel" class="effective-line muted">
+        <i class="pi pi-info-circle" />
+        {{ $t('merchantDetail.scoringModelEffective', { name: effectiveModel.name }) }}
+      </p>
     </section>
 
     <!-- Branch dialog -->
@@ -1512,6 +1630,24 @@ async function toggleTariff(tariffId: string, currentlySelected: boolean) {
 .markup {
   color: var(--accent-2);
   font-weight: 700;
+}
+
+.model-sub {
+  display: block;
+  font-size: 0.75rem;
+  margin-top: 0.15rem;
+}
+
+.model-tag {
+  margin-left: 0.5rem;
+}
+
+.effective-line {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  margin: 0;
 }
 
 .icon-btn {

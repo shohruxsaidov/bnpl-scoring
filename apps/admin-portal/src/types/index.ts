@@ -211,6 +211,7 @@ export interface Merchant {
   accountNumber: string | null
   bankName: string | null
   regionId: number | null
+  scoringModelId: number | null
   active: boolean
   createdAt: string
 }
