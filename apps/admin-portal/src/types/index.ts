@@ -228,6 +228,7 @@ export interface BankEntry {
 export interface Organization {
   name: string
   legalName: string
+  directorName: string | null
   address: string
   phone: string
   inn: string

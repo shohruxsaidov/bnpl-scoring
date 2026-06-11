@@ -8,6 +8,7 @@ import { apiFetch as api } from '@/utils/apiFetch'
 export interface OrganizationInput {
   name: string
   legalName: string
+  directorName: string | null
   address: string
   phone: string
   inn: string

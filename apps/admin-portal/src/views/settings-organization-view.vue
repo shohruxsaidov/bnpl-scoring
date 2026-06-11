@@ -14,6 +14,7 @@ const merchants = useMerchantsStore()
 const orgForm = ref({
   name: '',
   legalName: '',
+  directorName: '',
   address: '',
   phone: '',
   inn: '',
@@ -55,6 +56,7 @@ async function submitOrganization() {
     await orgStore.save({
       name: f.name.trim(),
       legalName: f.legalName.trim(),
+      directorName: f.directorName.trim() || null,
       address: f.address.trim(),
       phone: f.phone.trim(),
       inn: f.inn,
@@ -77,6 +79,7 @@ onMounted(async () => {
     orgForm.value = {
       name: org.name,
       legalName: org.legalName,
+      directorName: org.directorName ?? '',
       address: org.address,
       phone: org.phone,
       inn: org.inn,
@@ -108,6 +111,11 @@ onMounted(async () => {
         <div class="field">
           <label class="field-label">{{ $t('settings.orgLegalName') }}</label>
           <InputText v-model="orgForm.legalName" :placeholder="$t('settings.orgLegalNamePlaceholder')" maxlength="200" />
+        </div>
+        <div class="field">
+          <label class="field-label">{{ $t('settings.orgDirectorName') }}</label>
+          <InputText v-model="orgForm.directorName" :placeholder="$t('settings.orgDirectorNamePlaceholder')"
+            maxlength="200" />
         </div>
         <div class="field">
           <label class="field-label">{{ $t('settings.orgAddress') }}</label>

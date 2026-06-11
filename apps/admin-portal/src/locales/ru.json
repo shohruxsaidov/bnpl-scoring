@@ -916,6 +916,8 @@
     "orgNamePlaceholder": "Finsum Nasiya",
     "orgLegalName": "Юридическое название",
     "orgLegalNamePlaceholder": "ООО \"Finsum Nasiya\"",
+    "orgDirectorName": "ФИО директора",
+    "orgDirectorNamePlaceholder": "Иванов Иван Иванович",
     "orgAddress": "Адрес",
     "orgAddressPlaceholder": "г. Ташкент, ...",
     "orgPhone": "Телефон",
