@@ -25,6 +25,16 @@ const visibleTariffs = computed(() =>
   ),
 )
 
+/**
+ * Max product (base price) the client can buy under this tariff: the
+ * markup-inclusive total must fit in limit × term (see step-mahsulot),
+ * and the base total must not exceed the tariff's Credit Range max.
+ */
+function maxProduct(t: Tariff): number {
+  const cap = Math.floor((limit.value * t.termMonths) / (1 + t.markupPercent / 100))
+  return t.maxAmount != null ? Math.min(cap, t.maxAmount) : cap
+}
+
 function formatRange(t: Tariff) {
   const min = t.minAmount != null ? formatSomShort(t.minAmount) : '0'
   const max = t.maxAmount != null ? formatSomShort(t.maxAmount) : '∞'
@@ -74,6 +84,10 @@ function next() {
         </div>
         <div class="tc-markup">
           {{ $t('stepTarif.ustama') }} <strong>{{ t.markupPercent }}%</strong>
+        </div>
+        <div class="tc-limit">
+          <span class="tcl-label">{{ $t('stepTarif.maxProduct') }}</span>
+          <MonoAmount :value="maxProduct(t)" size="md" />
         </div>
         <div class="tc-limit">
           <span class="tcl-label">{{ $t('stepTarif.limit') }}</span>
