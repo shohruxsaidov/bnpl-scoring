@@ -22,7 +22,10 @@ const schedule = computed<DealPaymentSchedule[]>(() => {
   const t = tariff.value
   if (!t || !day.value) return []
   const months = t.termMonths
-  const perMonth = Math.floor(totalPayable.value / months)
+  // Amounts are in tiyin: keep installments in whole so'm (multiples of 100)
+  // and put the rounding remainder into the first payment, so the rows
+  // always add up to the displayed total.
+  const perMonth = Math.floor(totalPayable.value / months / 100) * 100
   const firstMonth = totalPayable.value - perMonth * (months - 1)
   const rows: DealPaymentSchedule[] = []
   const today = new Date()

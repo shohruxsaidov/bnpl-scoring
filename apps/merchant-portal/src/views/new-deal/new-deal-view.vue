@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
-import { useDealStore } from '@/stores/deal'
+import { useDealStore, DEAL_STEPS, type DealStepKey } from '@/stores/deal'
 import { useClientScoringStore } from '@/stores/client-scoring'
 import StepClient from './steps/step-client.vue'
 import StepKarta from './steps/step-karta.vue'
@@ -104,6 +105,51 @@ onMounted(() => {
   deal.reset()
   scoring.reset()
 })
+
+// ── Step ↔ URL sync (browser back/forward navigates between steps) ─────────
+const route = useRoute()
+const router = useRouter()
+
+function stepIndex(key: string): number {
+  return DEAL_STEPS.findIndex((s) => s.key === key)
+}
+
+onMounted(() => {
+  if (route.query.step !== deal.currentStep) {
+    router.replace({ query: { ...route.query, step: deal.currentStep } })
+  }
+})
+
+// Store → URL: each step change becomes a history entry.
+watch(
+  () => deal.currentStep,
+  (step) => {
+    if (route.name !== 'deals-create' || route.query.step === step) return
+    router.push({ query: { ...route.query, step } })
+  },
+)
+
+// URL → store: browser back/forward (or a hand-edited query) moves the wizard.
+watch(
+  () => route.query.step,
+  (q) => {
+    if (route.name !== 'deals-create') return
+    const step = typeof q === 'string' ? (q as DealStepKey) : null
+    if (!step || step === deal.currentStep) return
+
+    const idx = stepIndex(step)
+    const reachable =
+      idx !== -1 && (idx < deal.currentIndex || deal.completed[step])
+
+    // Once the deal is submitted, or the target step is unreachable,
+    // snap the URL back to the actual step instead of moving the wizard.
+    if (deal.currentStep === 'done' || !reachable) {
+      router.replace({ query: { ...route.query, step: deal.currentStep } })
+      return
+    }
+    deal.goTo(step)
+  },
+)
 
 function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
   if (deal.completed[key as keyof typeof deal.completed]) return 'done'
