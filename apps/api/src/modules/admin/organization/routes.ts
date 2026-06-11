@@ -8,6 +8,7 @@ function serialize(o: NonNullable<Awaited<ReturnType<typeof getOrganization>>>) 
   return {
     name: o.name,
     legalName: o.legalName,
+    directorName: o.directorName,
     address: o.address,
     phone: o.phone,
     inn: o.inn,
@@ -25,6 +26,7 @@ export default async function adminOrganizationRoutes(app: FastifyInstance) {
   const UpsertBody = Type.Object({
     name: Type.String({ minLength: 1, maxLength: 200 }),
     legalName: Type.String({ minLength: 1, maxLength: 200 }),
+    directorName: Type.Optional(Type.String({ maxLength: 200 })),
     address: Type.String({ minLength: 1 }),
     phone: Type.String({ minLength: 1, maxLength: 20 }),
     inn: Type.String({ pattern: "^\\d{9}$" }),
@@ -39,7 +41,10 @@ export default async function adminOrganizationRoutes(app: FastifyInstance) {
   })
 
   fastify.put("/", { schema: { body: UpsertBody } }, async (request) => {
-    const row = await upsertOrganization(db, request.body)
+    const row = await upsertOrganization(db, {
+      ...request.body,
+      directorName: request.body.directorName?.trim() || null,
+    })
     return { organization: serialize(row) }
   })
 }

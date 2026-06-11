@@ -9,6 +9,7 @@ export const organization = pgTable(
     id: integer('id').primaryKey().default(1),
     name: varchar('name', { length: 200 }).notNull(),
     legalName: varchar('legal_name', { length: 200 }).notNull(),
+    directorName: varchar('director_name', { length: 200 }),
     address: text('address').notNull(),
     phone: varchar('phone', { length: 20 }).notNull(),
     inn: varchar('inn', { length: 9 }).notNull(),

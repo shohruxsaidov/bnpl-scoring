@@ -454,7 +454,7 @@
   },
   "stepKarta": {
     "title": "Karta",
-    "subtitle": "Mijoz kartasini tanlang va Plumgate karta skoringini ishga tushiring.",
+    "subtitle": "Mijoz kartasini tanlang va karta skoringini ishga tushiring.",
     "loadingCards": "Kartalar yuklanmoqda…",
     "loadCardsError": "Kartalarni yuklashda xatolik. Qayta urinib ko'ring.",
     "addCard": "Karta qo'shish",

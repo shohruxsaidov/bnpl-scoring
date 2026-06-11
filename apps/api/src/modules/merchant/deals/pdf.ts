@@ -16,6 +16,7 @@ const FONT_BOLD = path.join(FONTS_DIR, 'NotoSans-Bold.ttf');
 // ---------------------------------------------------------------------------
 export interface OrganizationRequisites {
   legalName: string;
+  directorName: string | null;
   address: string;
   inn: string;
   accountNumber: string;
@@ -34,6 +35,7 @@ const STRINGS = {
     nds: 'Регистрационный код плательщика НДС:',
     account: 'Расчётный счет:',
     mfo: 'МФО банка:',
+    director: 'Директор:',
     buyer: 'Покупатель:',
     passport: 'Паспортные данные:',
     pinfl: 'ПИНФЛ:',
@@ -82,6 +84,7 @@ const STRINGS = {
     nds: "QQS to'lovchining registratsiya raqami:",
     account: 'Hisob raqami:',
     mfo: 'Bank MFO:',
+    director: 'Direktor:',
     buyer: 'Xaridor:',
     passport: "Pasport ma'lumotlar:",
     pinfl: 'JShShIR:',
@@ -364,6 +367,7 @@ export async function generateContract(data: ContractData, lang: 'ru' | 'uz'): P
     account: org?.accountNumber ?? '—',
     mfo: org?.mfo ?? '—',
     bank: org?.bankName ?? '—',
+    director: org?.directorName ?? '—',
   };
 
   const qrBuffer = await QRCode.toBuffer('https://comfortnasiya.uz/offer', {
@@ -423,6 +427,7 @@ export async function generateContract(data: ContractData, lang: 'ru' | 'uz'): P
     [t.nds, co.nds],
     [t.account, co.account],
     [t.mfo, co.mfo !== '—' ? `${co.mfo} ${co.bank}` : '—'],
+    [t.director, co.director],
   ];
   const clientLines: Array<[string, string]> = [
     [t.buyer, data.clientFullName],

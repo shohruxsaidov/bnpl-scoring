@@ -282,10 +282,10 @@ function finish() {
               @change="onRegionChange(mRegion, (v) => { m.regionId = v })" />
           </div>
           <div class="field">
-            <label>{{ t('onboarding.district') }} <span class="optional-hint">({{ t('onboarding.skip') }})</span></label>
+            <label>{{ t('onboarding.district') }} <span class="optional-hint">({{ t('onboarding.skip')
+                }})</span></label>
             <Select v-model="m.regionId" :options="districtOptions" option-label="label" option-value="value"
-              :placeholder="t('onboarding.selectDistrict')" filter show-clear class="w-full"
-              :disabled="!mRegion" />
+              :placeholder="t('onboarding.selectDistrict')" filter show-clear class="w-full" :disabled="!mRegion" />
           </div>
         </div>
         <div class="actions">
@@ -304,8 +304,7 @@ function finish() {
           <div class="field col-span-2">
             <label>{{ t('onboarding.bank') }}</label>
             <Select v-model="ba.mfo" :options="bankOptions" option-label="label" option-value="value"
-              :placeholder="t('onboarding.selectBank')" filter class="w-full"
-              :class="{ 'p-invalid': baErrors.mfo }" />
+              :placeholder="t('onboarding.selectBank')" filter class="w-full" :class="{ 'p-invalid': baErrors.mfo }" />
             <small v-if="baErrors.mfo" class="error-msg">{{ t('onboarding.bankRequired') }}</small>
           </div>
           <div class="field col-span-2">
@@ -352,10 +351,10 @@ function finish() {
               @change="onRegionChange(bRegion, (v) => { b.regionId = v })" />
           </div>
           <div class="field">
-            <label>{{ t('onboarding.district') }} <span class="optional-hint">({{ t('onboarding.skip') }})</span></label>
+            <label>{{ t('onboarding.district') }} <span class="optional-hint">({{ t('onboarding.skip')
+                }})</span></label>
             <Select v-model="b.regionId" :options="districtOptions" option-label="label" option-value="value"
-              :placeholder="t('onboarding.selectDistrict')" filter show-clear class="w-full"
-              :disabled="!bRegion" />
+              :placeholder="t('onboarding.selectDistrict')" filter show-clear class="w-full" :disabled="!bRegion" />
           </div>
         </div>
         <div class="actions">
@@ -556,7 +555,7 @@ function finish() {
 
 .step.current .step-icon {
   background: var(--gradient-hero);
-  border-color: transparent;
+  border: none;
   color: #fff;
   box-shadow: var(--accent-glow);
 }

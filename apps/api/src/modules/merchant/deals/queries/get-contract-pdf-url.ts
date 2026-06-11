@@ -48,6 +48,7 @@ export async function getContractPdfUrl(
     organization: org
       ? {
           legalName: org.legalName,
+          directorName: org.directorName,
           address: org.address,
           inn: org.inn,
           accountNumber: org.accountNumber,
