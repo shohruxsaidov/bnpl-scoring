@@ -9,9 +9,13 @@ export function calcTotalPayable(amount: bigint, markupPercent: number): bigint 
   return BigInt(Math.round(Number(amount) * (1 + markupPercent / 100)))
 }
 
-/** Equal monthly installments; the final month absorbs the rounding remainder. */
+/**
+ * Equal monthly installments in whole so'm (multiples of 100 tiyin); the
+ * first month absorbs the rounding remainder, so the displayed rows always
+ * add up to the total payable.
+ */
 export function splitInstallments(totalPayable: bigint, termMonths: number): number[] {
-  const monthly = Math.round(Number(totalPayable) / termMonths)
-  const last = Number(totalPayable) - monthly * (termMonths - 1)
-  return Array.from({ length: termMonths }, (_, i) => (i === termMonths - 1 ? last : monthly))
+  const monthly = Math.floor(Number(totalPayable) / termMonths / 100) * 100
+  const first = Number(totalPayable) - monthly * (termMonths - 1)
+  return Array.from({ length: termMonths }, (_, i) => (i === 0 ? first : monthly))
 }
