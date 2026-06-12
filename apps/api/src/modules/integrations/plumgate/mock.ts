@@ -12,6 +12,7 @@ const MOCK_CARDS: PlumCard[] = [
     expiry: '08/27',
     bank: 'Uzcard',
     pcType: 'uzcard',
+    userCardId: 'mock-card-uzcard-001',
   },
   {
     plumCardId: 'mock-card-humo-002',
@@ -20,6 +21,7 @@ const MOCK_CARDS: PlumCard[] = [
     expiry: '03/26',
     bank: 'Humo',
     pcType: 'humo',
+    userCardId: 'mock-card-humo-002',
   },
 ]
 
@@ -46,6 +48,7 @@ export async function mockAddCard(params: {
 
   pendingSessions.set(sessionId, {
     plumCardId: `mock-card-${Date.now()}`,
+    userCardId: `mock-card-${Date.now()}`,
     maskedPan: masked,
     holderName: 'MOCK HOLDER',
     expiry,

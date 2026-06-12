@@ -105,6 +105,7 @@ interface PlumHumoScoreResponse {
 // ---------------------------------------------------------------------------
 
 export interface PlumCard {
+  userCardId: string; // vendor's card ID, used for subsequent API calls
   plumCardId: string; // userCardId
   maskedPan: string;
   holderName: string;
@@ -168,6 +169,7 @@ function normalisePcType(raw: string): 'uzcard' | 'humo' {
 function toPlumCard(r: PlumCardItem): PlumCard {
   const pcType = normalisePcType(`${r.pcType}`);
   return {
+    userCardId: r.cardId,
     plumCardId: r.cardId,
     maskedPan: r.number,
     holderName: r.owner,
