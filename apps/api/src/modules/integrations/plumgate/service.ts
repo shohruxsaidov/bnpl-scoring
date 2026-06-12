@@ -550,14 +550,17 @@ async function scoreHumo(db: Db, userCardId: string): Promise<PlumScoreResult> {
           responseTimestamp: new Date(),
         });
 
-        return {
+        const result = {
           score: data.avgScore,
           limit: scoreToLimit(data.avgScore, data.creditLimit),
           decision: scoreToDecision(data.avgScore),
         };
+        console.log('[plum] scoreHumo result:', JSON.stringify(result));
+        return result;
       }
     } catch (err) {
       const toLog = await parsePlumError(err);
+      console.log(`[plum] scoreHumo HumoScoringAvg attempt ${attempt} failed:`, toLog.message);
       logIntegration(db, {
         integration: 'plumgate',
         methodName: 'HumoScoringAvg',
