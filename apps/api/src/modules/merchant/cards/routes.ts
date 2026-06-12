@@ -110,36 +110,50 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
     '/score',
     { schema: { body: ScoreBody }, preHandler: app.verifyMerchantJwt },
     async (request, reply) => {
+      console.log('[score] ── incoming request ──')
+      console.log('[score] body:', JSON.stringify(request.body))
       const p = request.user as { sub: string; merchantId: string }
+      console.log('[score] user:', JSON.stringify(p))
       const { plumCardId, pcType, clientId, dealSessionId } = request.body
+      console.log('[score] requireClient, clientId:', clientId)
       await requireClient(clientId)
+      console.log('[score] requireClient OK')
 
       let session
       try {
+        console.log('[score] loading session:', dealSessionId, 'for sub:', p.sub)
         session = await loadOwnedActiveSession(db, dealSessionId, BigInt(p.sub))
+        console.log('[score] session loaded:', JSON.stringify({ id: session.id, status: session.status, stepData: session.stepData }, (_, v) => typeof v === 'bigint' ? v.toString() : v))
       } catch (err: any) {
+        console.log('[score] session load failed, code:', err.code, 'message:', err.message)
         if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found')
         if (err.code === 'session_not_active') return reply.code(409).sendError('session_not_active')
         throw err
       }
 
+      console.log('[score] calling scoreCard, plumCardId:', plumCardId, 'pcType:', pcType)
       const result = await scoreCard(db, { plumCardId, pcType })   // { score, limit, decision }
+      console.log('[score] scoreCard result:', JSON.stringify(result))
 
       const coefficient = result.score >= 700 ? 1.0 : result.score >= 600 ? 0.8 : 0
+      console.log('[score] coefficient:', coefficient)
 
       // Scoring breakdown: card score + KATM-derived credit signals from the session
       const katm = (session.stepData as SessionStepData).katm
+      console.log('[score] katm from session:', JSON.stringify(katm))
       const criteriaScores: Record<string, number> = { cardScore: result.score }
       if (katm) {
         criteriaScores['katmScore'] = katm.score
         criteriaScores['activeLoans'] = katm.activeLoans
         criteriaScores['overdueCount'] = katm.overdueCount
       }
+      console.log('[score] criteriaScores:', JSON.stringify(criteriaScores))
 
       // Record the run so it appears in the admin history even if no deal is
       // ever created; non-blocking — the wizard may continue if recording fails
       let scoringId: string | null = null
       try {
+        console.log('[score] createScoring, merchantId:', p.merchantId, 'clientId:', clientId, 'limit:', Math.round(result.limit))
         const res = await createScoring(db, {
           merchantId: BigInt(p.merchantId),
           clientId: BigInt(clientId),
@@ -150,10 +164,13 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
           criteriaScores,
         })
         scoringId = res.id
+        console.log('[score] createScoring OK, scoringId:', scoringId)
       } catch (err) {
+        console.log('[score] createScoring FAILED:', err)
         request.log.warn({ err }, 'scoring history record failed')
       }
 
+      console.log('[score] stampScoring onto session:', session.id?.toString?.() ?? session.id)
       await stampScoring(db, session, {
         cardId: plumCardId,
         scoringId,
@@ -163,8 +180,11 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
         platformCreditLimit: result.limit,
         criteriaScores,
       })
+      console.log('[score] stampScoring OK')
 
-      return { ...result, scoringId, coefficient, criteriaScores }
+      const response = { ...result, scoringId, coefficient, criteriaScores }
+      console.log('[score] responding:', JSON.stringify(response))
+      return response
     },
   )
 }
