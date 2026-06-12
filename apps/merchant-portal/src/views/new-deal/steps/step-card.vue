@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import { useDealStore } from '@/stores/deal'
@@ -86,6 +86,29 @@ const otpCode = ref('')
 const addLoading = ref(false)
 const addError = ref<string | null>(null)
 
+// Resend OTP cooldown
+const RESEND_COOLDOWN_SECONDS = 60
+const resendCooldown = ref(0)
+let resendTimer: ReturnType<typeof setInterval> | null = null
+
+function stopResendTimer() {
+  if (resendTimer) {
+    clearInterval(resendTimer)
+    resendTimer = null
+  }
+}
+
+function startResendCooldown() {
+  stopResendTimer()
+  resendCooldown.value = RESEND_COOLDOWN_SECONDS
+  resendTimer = setInterval(() => {
+    resendCooldown.value -= 1
+    if (resendCooldown.value <= 0) stopResendTimer()
+  }, 1000)
+}
+
+onUnmounted(stopResendTimer)
+
 function openAddForm() {
   adding.value = true
   addSessionId.value = null
@@ -104,6 +127,8 @@ function cancelAdd() {
   newPan.value = ''
   newExpiry.value = ''
   addError.value = null
+  stopResendTimer()
+  resendCooldown.value = 0
 }
 
 async function requestAddCard() {
@@ -127,11 +152,18 @@ async function requestAddCard() {
     )
     addSessionId.value = data.sessionId
     maskedPhone.value = data.maskedPhone
+    startResendCooldown()
   } catch {
     addError.value = t('stepCard.addCardError')
   } finally {
     addLoading.value = false
   }
+}
+
+async function resendOtp() {
+  if (resendCooldown.value > 0 || addLoading.value) return
+  otpCode.value = ''
+  await requestAddCard()
 }
 
 async function confirmOtp() {
@@ -372,6 +404,12 @@ async function next() {
             {{ $t('stepCard.confirm') }}
           </button>
         </div>
+        <button class="btn-link resend-btn" :disabled="resendCooldown > 0 || addLoading" @click="resendOtp">
+          <i class="pi pi-refresh" />
+          {{ resendCooldown > 0
+            ? $t('stepCard.resendIn', { seconds: resendCooldown })
+            : $t('stepCard.resendOtp') }}
+        </button>
       </template>
 
       <p v-if="addError" class="add-error">{{ addError }}</p>
@@ -571,6 +609,35 @@ async function next() {
   margin: 0;
   font-size: 0.82rem;
   color: var(--danger);
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--accent-1);
+  font-size: 0.84rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
+  padding: 0;
+}
+
+.btn-link:hover {
+  text-decoration: underline;
+}
+
+.resend-btn {
+  align-self: flex-end;
+  padding-bottom: 0.7rem;
+}
+
+.resend-btn:disabled {
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  text-decoration: none;
 }
 
 /* ── Verify row ──────────────────────────────────────────────────────────── */

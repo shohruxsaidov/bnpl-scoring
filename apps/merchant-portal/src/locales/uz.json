@@ -481,6 +481,8 @@
     "otpSentTo": "Kod {phone} raqamiga yuborildi",
     "otpCode": "SMS kod",
     "confirm": "Tasdiqlash",
+    "resendOtp": "Kodni qayta yuborish",
+    "resendIn": "Qayta yuborish {seconds} soniyadan keyin",
     "addCardError": "Karta qo'shishda xatolik. Ma'lumotlarni tekshirib, qayta urinib ko'ring.",
     "otpError": "Kod noto'g'ri. Qayta urinib ko'ring.",
     "scoringCard": "Karta skoringi…",
