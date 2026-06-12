@@ -32,11 +32,11 @@ export const dealSessions = pgTable('deal_sessions', {
   agentId: bigint('agent_id', { mode: 'bigint' }).notNull().references(() => merchantUsers.id),
   // Set once the Клиент step is saved
   clientId: bigint('client_id', { mode: 'bigint' }).references(() => clients.id),
-  // The step the Agent is currently on: 'client' | 'karta' | 'tarif' | 'mahsulot' | 'payment' | 'verification'
+  // The step the Agent is currently on: 'client' | 'card' | 'tariff' | 'products' | 'payment' | 'verification'
   currentStep: varchar('current_step', { length: 20 }).notNull().default('client'),
   // 'active' | 'completed' | 'abandoned'
   status: varchar('status', { length: 10 }).notNull().default('active'),
-  // Mutable resume snapshot, keyed by step ('client', 'karta', …) plus
+  // Mutable resume snapshot, keyed by step ('client', 'card', …) plus
   // server-stamped 'katm' and 'scoring' blocks. IDs + non-reconstructable
   // snapshots only — no Client PII (the clients row is the PII home).
   stepData: jsonb('step_data').notNull().default({}),

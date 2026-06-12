@@ -52,32 +52,32 @@ function coded(code: string): Error & { code: string } {
  */
 export async function createDealFromSession(db: Db, session: DealSessionRow) {
   const data = (session.stepData ?? {}) as SessionStepData
-  const { client, tarif, mahsulot, payment, verification, scoring, katm } = data
+  const { client, tariff, products: productsStep, payment, verification, scoring, katm } = data
 
   // Deal creation requires every step saved; the invalidation rule (a redone
   // step clears everything after it) guarantees верификация is the latest.
-  if (!client || !tarif || !mahsulot?.lines?.length || !payment || !verification) {
+  if (!client || !tariff || !productsStep?.lines?.length || !payment || !verification) {
     throw coded("session_incomplete")
   }
   if (!scoring) throw coded("scoring_missing")
   if (scoring.decision === "declined") throw coded("scoring_declined")
 
   // Products must still exist and be active — stale session fails hard and the
-  // Agent redoes the Mahsulot step (ADR-0024)
-  const productIds = mahsulot.lines.map((l) => BigInt(l.productId))
+  // Agent redoes the Products step (ADR-0024)
+  const productIds = productsStep.lines.map((l) => BigInt(l.productId))
   const productRows = await db
     .select({ id: products.id, active: products.active })
     .from(products)
     .where(inArray(products.id, productIds))
   const alive = new Set(productRows.filter((p) => p.active).map((p) => p.id.toString()))
-  for (const line of mahsulot.lines) {
+  for (const line of productsStep.lines) {
     if (!alive.has(line.productId)) throw coded("product_not_found")
   }
 
   // Amounts from the session's price snapshots — the signed contract equals
   // what the Client OTP-consented to, even if prices changed since
   let amount = BigInt(0)
-  const basket = mahsulot.lines.map((line) => {
+  const basket = productsStep.lines.map((line) => {
     amount += BigInt(Math.round(parseFloat(line.price) * 100)) * BigInt(line.quantity)
     return {
       productId: BigInt(line.productId),
@@ -90,26 +90,26 @@ export async function createDealFromSession(db: Db, session: DealSessionRow) {
     }
   })
 
-  const minAmount = tarif.minAmount != null ? BigInt(tarif.minAmount) : null
-  const maxAmount = tarif.maxAmount != null ? BigInt(tarif.maxAmount) : null
+  const minAmount = tariff.minAmount != null ? BigInt(tariff.minAmount) : null
+  const maxAmount = tariff.maxAmount != null ? BigInt(tariff.maxAmount) : null
   if (minAmount != null && amount < minAmount) throw coded("amount_below_tariff_min")
   if (maxAmount != null && amount > maxAmount) throw coded("amount_above_tariff_max")
 
-  const totalPayable = calcTotalPayable(amount, tarif.markupPercent)
+  const totalPayable = calcTotalPayable(amount, tariff.markupPercent)
 
   return createDeal(db, {
     merchantId: session.merchantId,
     branchId: session.branchId,
     agentId: session.agentId,
     clientId: BigInt(client.clientId),
-    tariffId: BigInt(tarif.tariffId),
+    tariffId: BigInt(tariff.tariffId),
     dealSessionId: session.id,
     basket,
     paymentDay: payment.paymentDay,
     amount,
     totalPayable,
-    termMonths: tarif.termMonths,
-    markupPercent: tarif.markupPercent,
+    termMonths: tariff.termMonths,
+    markupPercent: tariff.markupPercent,
     scoreSum: scoring.scoreSum,
     scoringDecision: scoring.decision,
     coefficient: scoring.coefficient,

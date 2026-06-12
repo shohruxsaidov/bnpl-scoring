@@ -87,7 +87,7 @@ async function next() {
   saving.value = true
   saveError.value = ''
   try {
-    await saveSessionStep(deal.dealSessionId!, 'mahsulot', {
+    await saveSessionStep(deal.dealSessionId!, 'products', {
       lines: deal.sessionData.basket.map((item) => ({
         productId: item.product.id,
         quantity: item.quantity,
@@ -100,7 +100,7 @@ async function next() {
     saving.value = false
   }
 
-  deal.complete('mahsulot')
+  deal.complete('products')
 }
 </script>
 
@@ -109,15 +109,15 @@ async function next() {
     <div class="step-card surface-card catalog">
       <header class="sc-head">
         <div>
-          <h2>{{ $t('stepMahsulot.title') }}</h2>
-          <p>{{ $t('stepMahsulot.subtitle') }}</p>
+          <h2>{{ $t('stepProducts.title') }}</h2>
+          <p>{{ $t('stepProducts.subtitle') }}</p>
         </div>
       </header>
 
       <div class="search-row">
         <i class="pi pi-search search-icon" />
         <input v-model="searchQuery" type="text" class="search-input"
-          :placeholder="$t('stepMahsulot.searchPlaceholder')" />
+          :placeholder="$t('stepProducts.searchPlaceholder')" />
         <button v-if="searchQuery" class="search-clear" @click="searchQuery = ''">
           <i class="pi pi-times" />
         </button>
@@ -125,7 +125,7 @@ async function next() {
 
       <div class="chips">
         <button class="chip" :class="{ active: activeCategory === null }" @click="activeCategory = null">
-          {{ $t('stepMahsulot.all') }}
+          {{ $t('stepProducts.all') }}
         </button>
         <button v-for="c in catalog.categories" :key="c.id" class="chip" :class="{ active: activeCategory === c.id }"
           @click="activeCategory = c.id">
@@ -147,12 +147,12 @@ async function next() {
                 <span v-if="tariff" class="p-markup">+{{ tariff.markupPercent }}%</span>
               </div>
               <span v-if="tariff && tariff.markupPercent > 0" class="p-base">
-                {{ $t('stepMahsulot.basePrice') }}
+                {{ $t('stepProducts.basePrice') }}
                 <MonoAmount :value="basePrice(p.price)" size="sm" :gradient="false" />
               </span>
             </div>
             <button class="add-btn" @click="deal.addToBasket(p)">
-              <i class="pi pi-plus" /> {{ $t('stepMahsulot.add') }}
+              <i class="pi pi-plus" /> {{ $t('stepProducts.add') }}
             </button>
           </div>
         </div>
@@ -161,22 +161,22 @@ async function next() {
 
     <aside class="step-card surface-card basket">
       <div v-if="tariff" class="limit-banner" :class="{ over: !withinLimit }">
-        <span class="lb-label">{{ $t('stepMahsulot.limit', { months: tariff.termMonths }) }}</span>
+        <span class="lb-label">{{ $t('stepProducts.limit', { months: tariff.termMonths }) }}</span>
         <MonoAmount :value="effectiveLimit" size="lg" />
         <div class="lb-remaining">
-          <span>{{ $t('stepMahsulot.remaining') }}</span>
+          <span>{{ $t('stepProducts.remaining') }}</span>
           <MonoAmount :value="remainingLimit" size="sm" :gradient="false" />
         </div>
       </div>
 
       <h3>
-        <i class="pi pi-shopping-cart" /> {{ $t('stepMahsulot.basket') }}
+        <i class="pi pi-shopping-cart" /> {{ $t('stepProducts.basket') }}
         <span class="count">{{ deal.basketCount }}</span>
       </h3>
 
       <div v-if="deal.sessionData.basket.length === 0" class="empty-basket">
         <i class="pi pi-inbox" />
-        <span>{{ $t('stepMahsulot.noProducts') }}</span>
+        <span>{{ $t('stepProducts.noProducts') }}</span>
       </div>
 
       <div v-else class="basket-items">
@@ -204,18 +204,18 @@ async function next() {
 
       <div class="basket-summary">
         <div v-if="tariff" class="bs-row markup-row">
-          <span>{{ $t('stepMahsulot.withMarkup', { pct: tariff.markupPercent }) }}</span>
+          <span>{{ $t('stepProducts.withMarkup', { pct: tariff.markupPercent }) }}</span>
           <MonoAmount :value="totalWithMarkup" size="md" />
         </div>
         <div v-if="tariff && !withinLimit" class="bs-overlimit">
           <i class="pi pi-exclamation-triangle" />
-          {{ $t('stepMahsulot.overLimit', {
+          {{ $t('stepProducts.overLimit', {
             amount: ((totalWithMarkup - effectiveLimit) / 100).toLocaleString('uz-UZ'),
           }) }}
         </div>
         <div v-if="rangeWarning" class="bs-overlimit">
           <i class="pi pi-exclamation-triangle" />
-          {{ $t(`stepMahsulot.${rangeWarning.key}`, {
+          {{ $t(`stepProducts.${rangeWarning.key}`, {
             amount: (rangeWarning.amount / 100).toLocaleString('uz-UZ'),
           }) }}
         </div>

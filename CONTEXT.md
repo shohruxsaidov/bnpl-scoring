@@ -67,7 +67,7 @@ A one-time code sent to the Client's phone at the Верификация step, u
 _Avoid_: Signing password, PIN, authentication code
 
 **Wizard**:
-The 7-step Merchant App flow a Sales Agent follows to issue a Deal: Клиент → Karta → Tarif → Mahsulot → To'lov kuni → Верификация → Готово. Opening the Wizard creates a Deal Session; the Deal itself is created only at the Верификация step.
+The 7-step Merchant App flow a Sales Agent follows to issue a Deal: Клиент → Card → Tariff → Products → To'lov kuni → Верификация → Готово. The canonical step identifiers are English (`client`, `card`, `tariff`, `products`, `payment`, `verification`); on-screen labels stay localized (Karta, Tarif, Mahsulot, …). Opening the Wizard creates a Deal Session; the Deal itself is created only at the Верификация step.
 _Avoid_: Form, flow, checkout
 
 **Deal Session**:
@@ -81,7 +81,7 @@ _Avoid_: Cart, order, product list
 ### Products & pricing
 
 **Product**:
-An individual item the Merchant sells on credit — has a name, tan narxi (base cost price), MXIK code, package code, and belongs to one Category. Created by the Platform Admin or a Merchant Admin on behalf of the Merchant; both actors can edit products within their scope. Shown to the Sales Agent in the Mahsulot step of the Wizard.
+An individual item the Merchant sells on credit — has a name, tan narxi (base cost price), MXIK code, package code, and belongs to one Category. Created by the Platform Admin or a Merchant Admin on behalf of the Merchant; both actors can edit products within their scope. Shown to the Sales Agent in the Products step of the Wizard.
 _Avoid_: Catalog Item, SKU (use only as synonym), item
 
 **MXIK Code**:
@@ -109,7 +109,7 @@ The flat markup percentage added to each Product's tan narxi when sold on credit
 _Avoid_: Interest rate, APR, commission, fee
 
 **Credit Range**:
-The minimum and maximum allowed Basket total under a given Tariff. Either bound may be absent, meaning the Tariff is unbounded on that side; legacy Tariffs have no bounds at all. Enforced when the Basket is built (the Agent cannot proceed past the Mahsulot step with a total outside the chosen Tariff's range) and again at Deal creation. Tariffs whose minimum exceeds the Client's Available Balance are not offered in the Tarif step.
+The minimum and maximum allowed Basket total under a given Tariff. Either bound may be absent, meaning the Tariff is unbounded on that side; legacy Tariffs have no bounds at all. Enforced when the Basket is built (the Agent cannot proceed past the Products step with a total outside the chosen Tariff's range) and again at Deal creation. Tariffs whose minimum exceeds the Client's Available Balance are not offered in the Tariff step.
 _Avoid_: Credit limit, loan amount, ceiling, max amount
 
 **Tariff Calculator** (uz: Tariff kalkulyator):
@@ -127,7 +127,7 @@ The maximum total instalment exposure Finsum Nasiya will extend to a Client acro
 _Avoid_: Client limit, credit score limit
 
 **Available Balance**:
-The portion of a Client's Platform Credit Limit not currently committed to active Deals. Shown to Agents during the Wizard as a single number — no cross-merchant Deal breakdown is visible. In the Tarif step, only Tariffs whose Credit Range min ≤ Available Balance are shown — the Client must be able to afford at least the Tariff's minimum.
+The portion of a Client's Platform Credit Limit not currently committed to active Deals. Shown to Agents during the Wizard as a single number — no cross-merchant Deal breakdown is visible. In the Tariff step, only Tariffs whose Credit Range min ≤ Available Balance are shown — the Client must be able to afford at least the Tariff's minimum.
 _Avoid_: Remaining limit, free limit
 
 ### Scoring
@@ -189,7 +189,7 @@ The raw bureau score (0–999) returned by KATM in the `scoring_grade` field of 
 _Avoid_: KATM score, bureau score, scoring_grade
 
 **Card Score**:
-The scored output from PlumGate's SCORING module, derived from the Client's bank card transaction history (Uzcard or Humo). **Audit-only**: recorded in `criteria_scores` for traceability and shadow-comparison against the engine's decision, but it has no effect on the Score, the Limit Coefficient, or the Platform Credit Limit — the Scoring Model engine is the sole credit authority. Card registration remains **required** to proceed past the Karta step (the card is the Client's payment instrument), and the SCORING call still runs, but a PlumGate `declined` does not stop anything. Not the same as the platform's Score.
+The scored output from PlumGate's SCORING module, derived from the Client's bank card transaction history (Uzcard or Humo). **Audit-only**: recorded in `criteria_scores` for traceability and shadow-comparison against the engine's decision, but it has no effect on the Score, the Limit Coefficient, or the Platform Credit Limit — the Scoring Model engine is the sole credit authority. Card registration remains **required** to proceed past the Card step (the card is the Client's payment instrument), and the SCORING call still runs, but a PlumGate `declined` does not stop anything. Not the same as the platform's Score.
 _Avoid_: PlumGate score, transaction score, card scoring result, optional scoring, scoring input
 
 **Scoring Session**:
@@ -322,7 +322,7 @@ _Avoid_: Notification kind, notification category
 - A **Client** has one **Platform Credit Limit** and an **Available Balance** derived from it
 - A **Deal** produces exactly one **Contract**
 - A **Contract** produces exactly one **Buyout** obligation toward the Merchant
-- A **Deal** carries one **Score** result (stored in `client_scorings`) — set during the Tarif step
+- A **Deal** carries one **Score** result (stored in `client_scorings`) — set during the Tariff step
 - A `users` row has at most one **User Limit** (upserted from self-service Scoring Sessions)
 - A **Scoring Session** belongs to one `users` row and produces exactly two **Scoring Pipelines** (`katm`, `card_scoring`)
 - A **Scoring Pipeline** belongs to exactly one **Scoring Session**
@@ -354,7 +354,7 @@ Three separate tables back the three auth flows:
 
 ## Flagged ambiguities
 
-- "Soft skip" appeared in the Card Score definition — resolved: **Card Score is required**. The Wizard blocks at the Karta step until PlumGate scoring returns a result. There is no skip path.
+- "Soft skip" appeared in the Card Score definition — resolved: **Card Score is required**. The Wizard blocks at the Card step until PlumGate scoring returns a result. There is no skip path.
 
 - "Договор", "Сделка", and "Контракт" all appeared in the UI — resolved: **Договор = Deal** (the financing record), **Сделка** is a synonym for Deal used in tab labels only, **Контракт = Contract** (the generated legal document). Never use "Contract" for the Deal itself.
 - "Tenant" was used throughout the codebase — resolved: replaced by **Merchant** (business entity) and **Branch** (single location). `tenant_id` → `merchant_id`; `branch_id` added to Deals and Employees.

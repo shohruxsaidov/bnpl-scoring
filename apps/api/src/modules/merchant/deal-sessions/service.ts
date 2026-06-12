@@ -5,7 +5,7 @@ import { clients, products, tariffs } from '../../id/db/schema'
 
 // Wizard steps in order. 'done' is a frontend-only pseudo-step; the session's
 // currentStep never goes past 'verification' — completion is a status change.
-export const WIZARD_STEPS = ['client', 'karta', 'tarif', 'mahsulot', 'payment', 'verification'] as const
+export const WIZARD_STEPS = ['client', 'card', 'tariff', 'products', 'payment', 'verification'] as const
 export type WizardStep = (typeof WIZARD_STEPS)[number]
 
 export function isWizardStep(s: string): s is WizardStep {
@@ -46,9 +46,9 @@ export interface ScoringStamp {
 
 export interface SessionStepData {
   client?: { clientId: string; isNewClient: boolean; myidVerified: boolean; katmConsent: boolean }
-  karta?: { cardId: string; maskedPan: string; pcType: string; bank: string; holderName: string; expiry: string }
+  card?: { cardId: string; maskedPan: string; pcType: string; bank: string; holderName: string; expiry: string }
   // Tariff params snapshotted server-side at save time (amounts in tiyin, as strings)
-  tarif?: {
+  tariff?: {
     tariffId: string
     name: string
     termMonths: number
@@ -58,7 +58,7 @@ export interface SessionStepData {
   }
   // Basket lines with server-snapshotted prices — what the Client consents to is
   // what the Deal is built from, even if the Product is edited afterwards
-  mahsulot?: {
+  products?: {
     lines: Array<{
       productId: string
       productName: string
@@ -179,8 +179,8 @@ export async function saveStep(
     if (next.katm && next.katm.clientId !== clientId) delete next.katm
     if (next.scoring) delete next.scoring
   }
-  if (step === 'karta') {
-    const cardId = (saved as NonNullable<SessionStepData['karta']>).cardId
+  if (step === 'card') {
+    const cardId = (saved as NonNullable<SessionStepData['card']>).cardId
     if (next.scoring && next.scoring.cardId !== cardId) delete next.scoring
   }
 
@@ -255,7 +255,7 @@ async function buildStepPayload(
       }
     }
 
-    case 'karta': {
+    case 'card': {
       const cardId = str(body['cardId'])
       const maskedPan = str(body['maskedPan'])
       if (!cardId || !maskedPan) throw err('invalid_step_payload')
@@ -269,7 +269,7 @@ async function buildStepPayload(
       }
     }
 
-    case 'tarif': {
+    case 'tariff': {
       const tariffId = str(body['tariffId'])
       if (!tariffId || !/^\d+$/.test(tariffId)) throw err('invalid_step_payload')
       const [tariff] = await db.select().from(tariffs).where(eq(tariffs.id, BigInt(tariffId))).limit(1)
@@ -284,7 +284,7 @@ async function buildStepPayload(
       }
     }
 
-    case 'mahsulot': {
+    case 'products': {
       const rawLines = Array.isArray(body['lines']) ? (body['lines'] as unknown[]) : []
       if (rawLines.length === 0) throw err('invalid_step_payload')
       const lines = rawLines.map((l) => {

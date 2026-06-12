@@ -37,7 +37,7 @@ async function fetchCards() {
       if (!stillExists) deal.setCard(null as unknown as Card)
     }
   } catch {
-    loadCardsError.value = t('stepKarta.loadCardsError')
+    loadCardsError.value = t('stepCard.loadCardsError')
   } finally {
     loadingCards.value = false
   }
@@ -128,7 +128,7 @@ async function requestAddCard() {
     addSessionId.value = data.sessionId
     maskedPhone.value = data.maskedPhone
   } catch {
-    addError.value = t('stepKarta.addCardError')
+    addError.value = t('stepCard.addCardError')
   } finally {
     addLoading.value = false
   }
@@ -152,7 +152,7 @@ async function confirmOtp() {
     result.value = null
     cancelAdd()
   } catch {
-    addError.value = t('stepKarta.otpError')
+    addError.value = t('stepCard.otpError')
   } finally {
     addLoading.value = false
   }
@@ -222,7 +222,7 @@ async function runScoring(): Promise<CardScoreResult | null> {
   } catch {
     clearTimer()
     progress.value = 0
-    scoreError.value = t('stepKarta.scoreError')
+    scoreError.value = t('stepCard.scoreError')
     return null
   } finally {
     scoring.value = false
@@ -255,7 +255,7 @@ async function next() {
   saving.value = true
   saveError.value = null
   try {
-    await saveSessionStep(deal.dealSessionId!, 'karta', {
+    await saveSessionStep(deal.dealSessionId!, 'card', {
       cardId: selectedCard.value.plumCardId,
       maskedPan: selectedCard.value.maskedPan,
       pcType: selectedCard.value.pcType,
@@ -280,7 +280,7 @@ async function next() {
     platformCreditLimit: server.limit,
     criteriaScores: server.criteriaScores,
   })
-  deal.complete('karta')
+  deal.complete('card')
 }
 </script>
 
@@ -288,15 +288,15 @@ async function next() {
   <div class="step-card surface-card">
     <header class="sc-head">
       <div>
-        <h2>{{ $t('stepKarta.title') }}</h2>
-        <p>{{ $t('stepKarta.subtitle') }}</p>
+        <h2>{{ $t('stepCard.title') }}</h2>
+        <p>{{ $t('stepCard.subtitle') }}</p>
       </div>
     </header>
 
     <!-- Loading cards -->
     <div v-if="loadingCards" class="state-row">
       <i class="pi pi-spin pi-spinner" />
-      <span>{{ $t('stepKarta.loadingCards') }}</span>
+      <span>{{ $t('stepCard.loadingCards') }}</span>
     </div>
 
     <!-- Load error -->
@@ -305,7 +305,7 @@ async function next() {
       <span>{{ loadCardsError }}</span>
       <button class="btn-ghost" @click="fetchCards">{{ $t('common.retry') }}</button>
       <button class="btn-ghost" style="margin-left: auto" @click="openAddForm">
-        <i class="pi pi-plus" /> {{ $t('stepKarta.addCard') }}
+        <i class="pi pi-plus" /> {{ $t('stepCard.addCard') }}
       </button>
     </div>
 
@@ -326,7 +326,7 @@ async function next() {
 
       <button v-if="!adding" class="add-card" @click="openAddForm">
         <i class="pi pi-plus" />
-        <span>{{ $t('stepKarta.addCard') }}</span>
+        <span>{{ $t('stepCard.addCard') }}</span>
       </button>
     </div>
 
@@ -335,20 +335,20 @@ async function next() {
       <!-- Phase 1: card details -->
       <template v-if="!addSessionId">
         <div class="field">
-          <label class="field-label">{{ $t('stepKarta.cardNumber') }}</label>
+          <label class="field-label">{{ $t('stepCard.cardNumber') }}</label>
           <InputText :value="newPan" placeholder="8600 1234 5678 9012" class="font-mono" maxlength="19" inputmode="numeric" @input="handlePanInput" />
         </div>
         <div class="field" style="max-width: 140px">
-          <label class="field-label">{{ $t('stepKarta.expiry') }}</label>
+          <label class="field-label">{{ $t('stepCard.expiry') }}</label>
           <InputText :value="newExpiry" placeholder="08/27" class="font-mono" maxlength="5" inputmode="numeric" @input="handleExpiryInput" />
         </div>
         <div class="add-actions">
           <button class="btn-ghost" :disabled="addLoading" @click="cancelAdd">
-            {{ $t('stepKarta.cancel') }}
+            {{ $t('stepCard.cancel') }}
           </button>
           <button class="btn-gradient" :disabled="addLoading" @click="requestAddCard">
             <i v-if="addLoading" class="pi pi-spin pi-spinner" />
-            {{ $t('stepKarta.sendOtp') }}
+            {{ $t('stepCard.sendOtp') }}
           </button>
         </div>
       </template>
@@ -357,19 +357,19 @@ async function next() {
       <template v-else>
         <div class="otp-hint">
           <i class="pi pi-mobile" />
-          {{ $t('stepKarta.otpSentTo', { phone: maskedPhone }) }}
+          {{ $t('stepCard.otpSentTo', { phone: maskedPhone }) }}
         </div>
         <div class="field" style="max-width: 200px">
-          <label class="field-label">{{ $t('stepKarta.otpCode') }}</label>
+          <label class="field-label">{{ $t('stepCard.otpCode') }}</label>
           <InputText v-model="otpCode" placeholder="• • • • • •" class="font-mono" maxlength="8" />
         </div>
         <div class="add-actions">
           <button class="btn-ghost" :disabled="addLoading" @click="cancelAdd">
-            {{ $t('stepKarta.cancel') }}
+            {{ $t('stepCard.cancel') }}
           </button>
           <button class="btn-gradient" :disabled="addLoading || otpCode.length < 4" @click="confirmOtp">
             <i v-if="addLoading" class="pi pi-spin pi-spinner" />
-            {{ $t('stepKarta.confirm') }}
+            {{ $t('stepCard.confirm') }}
           </button>
         </div>
       </template>
@@ -380,7 +380,7 @@ async function next() {
     <!-- Scoring progress -->
     <div v-if="scoring" class="verify-row">
       <span class="scoring-label">
-        <i class="pi pi-spin pi-spinner" /> {{ $t('stepKarta.scoringCard') }}
+        <i class="pi pi-spin pi-spinner" /> {{ $t('stepCard.scoringCard') }}
       </span>
       <div class="progress-track">
         <div class="progress-bar" :style="{ width: progress + '%' }" />
@@ -398,7 +398,7 @@ async function next() {
             <i class="pi pi-refresh" /> {{ $t('common.retry') }}
           </button>
           <button class="btn-ghost btn-muted" @click="resetSelection">
-            {{ $t('stepKarta.useDifferentCard') }}
+            {{ $t('stepCard.useDifferentCard') }}
           </button>
         </div>
       </div>

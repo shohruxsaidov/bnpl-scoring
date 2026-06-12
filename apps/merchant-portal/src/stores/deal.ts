@@ -14,9 +14,9 @@ import { buildSchedulePreview } from '@/utils/schedule-preview'
 
 export type DealStepKey =
   | 'client'
-  | 'karta'
-  | 'tarif'
-  | 'mahsulot'
+  | 'card'
+  | 'tariff'
+  | 'products'
   | 'payment'
   | 'verification'
   | 'done'
@@ -29,9 +29,9 @@ export interface DealStep {
 
 export const DEAL_STEPS: DealStep[] = [
   { key: 'client', label: 'Клиент', icon: 'pi pi-user' },
-  { key: 'karta', label: 'Karta', icon: 'pi pi-credit-card' },
-  { key: 'tarif', label: 'Tarif', icon: 'pi pi-percentage' },
-  { key: 'mahsulot', label: 'Mahsulot', icon: 'pi pi-shopping-bag' },
+  { key: 'card', label: 'Karta', icon: 'pi pi-credit-card' },
+  { key: 'tariff', label: 'Tarif', icon: 'pi pi-percentage' },
+  { key: 'products', label: 'Mahsulot', icon: 'pi pi-shopping-bag' },
   { key: 'payment', label: "To'lov kuni", icon: 'pi pi-calendar' },
   { key: 'verification', label: 'Верификация', icon: 'pi pi-shield' },
   { key: 'done', label: 'Готово', icon: 'pi pi-check-circle' },
@@ -86,9 +86,9 @@ function emptySession(): SessionData {
 function emptyCompleted(): Record<DealStepKey, boolean> {
   return {
     client: false,
-    karta: false,
-    tarif: false,
-    mahsulot: false,
+    card: false,
+    tariff: false,
+    products: false,
     payment: false,
     verification: false,
     done: false,
@@ -161,32 +161,32 @@ export const useDealStore = defineStore(
         }
       }
 
-      if (data.karta) {
+      if (data.card) {
         fresh.selectedCard = {
-          id: data.karta.cardId,
-          plumCardId: data.karta.cardId,
-          pcType: data.karta.pcType,
-          maskedPan: data.karta.maskedPan,
-          holderName: data.karta.holderName,
-          expiry: data.karta.expiry,
-          bank: data.karta.bank,
+          id: data.card.cardId,
+          plumCardId: data.card.cardId,
+          pcType: data.card.pcType,
+          maskedPan: data.card.maskedPan,
+          holderName: data.card.holderName,
+          expiry: data.card.expiry,
+          bank: data.card.bank,
         }
       }
 
-      if (data.tarif) {
+      if (data.tariff) {
         fresh.tariff = {
-          id: data.tarif.tariffId,
-          name: data.tarif.name,
-          termMonths: data.tarif.termMonths,
-          markupPercent: data.tarif.markupPercent,
-          minAmount: data.tarif.minAmount != null ? parseInt(data.tarif.minAmount, 10) : null,
-          maxAmount: data.tarif.maxAmount != null ? parseInt(data.tarif.maxAmount, 10) : null,
+          id: data.tariff.tariffId,
+          name: data.tariff.name,
+          termMonths: data.tariff.termMonths,
+          markupPercent: data.tariff.markupPercent,
+          minAmount: data.tariff.minAmount != null ? parseInt(data.tariff.minAmount, 10) : null,
+          maxAmount: data.tariff.maxAmount != null ? parseInt(data.tariff.maxAmount, 10) : null,
           active: true,
         }
       }
 
-      if (data.mahsulot) {
-        fresh.basket = data.mahsulot.lines.map((line) => ({
+      if (data.products) {
+        fresh.basket = data.products.lines.map((line) => ({
           product: {
             id: line.productId,
             merchantId: '',
@@ -219,9 +219,9 @@ export const useDealStore = defineStore(
 
       const done = emptyCompleted()
       done.client = !!data.client
-      done.karta = !!data.karta
-      done.tarif = !!data.tarif
-      done.mahsulot = !!data.mahsulot
+      done.card = !!data.card
+      done.tariff = !!data.tariff
+      done.products = !!data.products
       done.payment = !!data.payment
       done.verification = false // verification completes only when the Deal is created
       completed.value = done

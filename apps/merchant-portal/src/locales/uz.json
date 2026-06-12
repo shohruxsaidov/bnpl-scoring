@@ -369,9 +369,9 @@
   },
   "deal": {
     "stepClient": "Mijoz",
-    "stepKarta": "Karta",
-    "stepTarif": "Tarif",
-    "stepMahsulot": "Mahsulot",
+    "stepCard": "Karta",
+    "stepTariff": "Tarif",
+    "stepProducts": "Mahsulot",
     "stepPayment": "To'lov kuni",
     "stepVerification": "Tekshiruv",
     "stepDone": "Tayyor",
@@ -454,7 +454,7 @@
     "myidReload": "Qayta yuklash",
     "myidNewSession": "Qayta sessiya yaratish"
   },
-  "stepKarta": {
+  "stepCard": {
     "title": "Karta",
     "subtitle": "Mijoz kartasini tanlang va karta skoringini ishga tushiring.",
     "loadingCards": "Kartalar yuklanmoqda…",
@@ -481,7 +481,7 @@
     "back": "Orqaga",
     "continue": "Davom etish"
   },
-  "stepTarif": {
+  "stepTariff": {
     "title": "Tarif",
     "subtitle": "Kredit rejasini tanlang. Tasdiqlangan limitdan tashqaridagi rejalar o'chirilgan.",
     "score": "Ball",
@@ -494,7 +494,7 @@
     "back": "Orqaga",
     "continue": "Davom etish"
   },
-  "stepMahsulot": {
+  "stepProducts": {
     "title": "Mahsulot",
     "subtitle": "Mahsulot katalogidan savatni yig'ing.",
     "all": "Barchasi",

@@ -13,9 +13,9 @@ import {
 } from '@/composables/use-deal-session-api'
 import type { ScoreDecision } from '@/types'
 import StepClient from './steps/step-client.vue'
-import StepKarta from './steps/step-karta.vue'
-import StepTarif from './steps/step-tarif.vue'
-import StepMahsulot from './steps/step-mahsulot.vue'
+import StepCard from './steps/step-card.vue'
+import StepTariff from './steps/step-tariff.vue'
+import StepProducts from './steps/step-products.vue'
 import StepPaymentDay from './steps/step-payment-day.vue'
 import StepVerification from './steps/step-verification.vue'
 import StepDone from './steps/step-done.vue'
@@ -128,9 +128,9 @@ async function confirmCloseDeal() {
 // ── Step labels ─────────────────────────────────────────────────────────────
 const STEP_LABEL_KEYS: Record<string, string> = {
   client: 'deal.stepClient',
-  karta: 'deal.stepKarta',
-  tarif: 'deal.stepTarif',
-  mahsulot: 'deal.stepMahsulot',
+  card: 'deal.stepCard',
+  tariff: 'deal.stepTariff',
+  products: 'deal.stepProducts',
   payment: 'deal.stepPayment',
   verification: 'deal.stepVerification',
   done: 'deal.stepDone',
@@ -333,9 +333,9 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
     <!-- ── Active step (rendered only once the server session is resolved) ── -->
     <div v-if="ready" class="step-body">
       <StepClient v-if="deal.currentStep === 'client'" />
-      <StepKarta v-else-if="deal.currentStep === 'karta'" />
-      <StepTarif v-else-if="deal.currentStep === 'tarif'" />
-      <StepMahsulot v-else-if="deal.currentStep === 'mahsulot'" />
+      <StepCard v-else-if="deal.currentStep === 'card'" />
+      <StepTariff v-else-if="deal.currentStep === 'tariff'" />
+      <StepProducts v-else-if="deal.currentStep === 'products'" />
       <StepPaymentDay v-else-if="deal.currentStep === 'payment'" />
       <StepVerification v-else-if="deal.currentStep === 'verification'" />
       <StepDone v-else-if="deal.currentStep === 'done'" />

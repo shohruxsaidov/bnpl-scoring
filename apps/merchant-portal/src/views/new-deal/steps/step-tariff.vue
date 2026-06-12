@@ -60,7 +60,7 @@ async function next() {
   saving.value = true
   saveError.value = ''
   try {
-    await saveSessionStep(deal.dealSessionId!, 'tarif', { tariffId: t.id })
+    await saveSessionStep(deal.dealSessionId!, 'tariff', { tariffId: t.id })
   } catch {
     saveError.value = tr('deal.stepSaveError')
     return
@@ -69,7 +69,7 @@ async function next() {
   }
 
   deal.setTariff(t)
-  deal.complete('tarif')
+  deal.complete('tariff')
 }
 </script>
 
@@ -77,15 +77,15 @@ async function next() {
   <div class="step-card surface-card">
     <header class="sc-head">
       <div>
-        <h2>{{ $t('stepTarif.title') }}</h2>
-        <p>{{ $t('stepTarif.subtitle') }}</p>
+        <h2>{{ $t('stepTariff.title') }}</h2>
+        <p>{{ $t('stepTariff.subtitle') }}</p>
       </div>
       <div class="limit-banner">
         <div class="lb-icon">
           <i class="pi pi-wallet" />
         </div>
         <div class="lb-body">
-          <span class="lb-label">{{ $t('stepTarif.approvedLimit') }}</span>
+          <span class="lb-label">{{ $t('stepTariff.approvedLimit') }}</span>
           <MonoAmount :value="limit" size="xl" />
         </div>
       </div>
@@ -99,21 +99,21 @@ async function next() {
           <i v-if="selectedId === t.id" class="pi pi-check-circle" />
         </div>
         <div class="tc-term">
-          <i class="pi pi-calendar" /> {{ t.termMonths }} {{ $t('stepTarif.months') }}
+          <i class="pi pi-calendar" /> {{ t.termMonths }} {{ $t('stepTariff.months') }}
         </div>
         <div class="tc-markup">
-          {{ $t('stepTarif.ustama') }} <strong>{{ t.markupPercent }}%</strong>
+          {{ $t('stepTariff.ustama') }} <strong>{{ t.markupPercent }}%</strong>
         </div>
         <div class="tc-limit">
-          <span class="tcl-label">{{ $t('stepTarif.maxProduct') }}</span>
+          <span class="tcl-label">{{ $t('stepTariff.maxProduct') }}</span>
           <MonoAmount :value="maxProduct(t)" size="md" />
         </div>
         <div class="tc-limit">
-          <span class="tcl-label">{{ $t('stepTarif.limit') }}</span>
+          <span class="tcl-label">{{ $t('stepTariff.limit') }}</span>
           <MonoAmount :value="limit * t.termMonths" size="sm" :gradient="false" />
         </div>
         <div v-if="t.minAmount != null || t.maxAmount != null" class="tc-limit">
-          <span class="tcl-label">{{ $t('stepTarif.range') }}</span>
+          <span class="tcl-label">{{ $t('stepTariff.range') }}</span>
           <span class="font-mono">{{ formatRange(t) }}</span>
         </div>
       </button>

@@ -369,9 +369,9 @@
   },
   "deal": {
     "stepClient": "Клиент",
-    "stepKarta": "Карта",
-    "stepTarif": "Тариф",
-    "stepMahsulot": "Товар",
+    "stepCard": "Карта",
+    "stepTariff": "Тариф",
+    "stepProducts": "Товар",
     "stepPayment": "День оплаты",
     "stepVerification": "Верификация",
     "stepDone": "Готово",
@@ -454,7 +454,7 @@
     "myidReload": "Перезагрузить",
     "myidNewSession": "Создать новую сессию"
   },
-  "stepKarta": {
+  "stepCard": {
     "title": "Карта",
     "subtitle": "Выберите карту клиента и запустите карточный скоринг.",
     "loadingCards": "Загрузка карт…",
@@ -481,7 +481,7 @@
     "back": "Назад",
     "continue": "Продолжить"
   },
-  "stepTarif": {
+  "stepTariff": {
     "title": "Тариф",
     "subtitle": "Выберите кредитный план. Планы вне одобренного лимита отключены.",
     "score": "Балл",
@@ -494,7 +494,7 @@
     "back": "Назад",
     "continue": "Продолжить"
   },
-  "stepMahsulot": {
+  "stepProducts": {
     "title": "Товар",
     "subtitle": "Соберите корзину из каталога товаров.",
     "all": "Все",

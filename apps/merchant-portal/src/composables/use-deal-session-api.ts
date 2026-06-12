@@ -36,8 +36,8 @@ export interface SessionScoring {
 
 export interface SessionStepData {
   client?: { clientId: string; isNewClient: boolean; myidVerified: boolean; katmConsent: boolean }
-  karta?: { cardId: string; maskedPan: string; pcType: 'uzcard' | 'humo'; bank: string; holderName: string; expiry: string }
-  tarif?: {
+  card?: { cardId: string; maskedPan: string; pcType: 'uzcard' | 'humo'; bank: string; holderName: string; expiry: string }
+  tariff?: {
     tariffId: string
     name: string
     termMonths: number
@@ -45,7 +45,7 @@ export interface SessionStepData {
     minAmount: string | null
     maxAmount: string | null
   }
-  mahsulot?: {
+  products?: {
     lines: Array<{
       productId: string
       productName: string
