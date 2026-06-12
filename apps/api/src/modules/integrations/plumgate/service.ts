@@ -373,6 +373,7 @@ export async function scoreCard(
   db: Db,
   params: { plumCardId: string; pcType: 'uzcard' | 'humo' },
 ): Promise<PlumScoreResult> {
+  console.log('[plum] scoreCard called:', JSON.stringify(params), 'PLUM_MOCK:', env.PLUM_MOCK);
   if (env.PLUM_MOCK) return mockScoreCard(params);
   return params.pcType === 'humo'
     ? scoreHumo(db, params.plumCardId)
@@ -386,6 +387,7 @@ async function scoreUzcard(db: Db, userCardId: string): Promise<PlumScoreResult>
 
   // Step 1: createScoringCard
   const createBody = { userCardId, templateId: env.PLUM_TEMPLATE_ID };
+  console.log('[plum] scoreUzcard createScoringCard request:', JSON.stringify(createBody));
   let scoringId: string;
 
   const createRequestTimestamp = new Date();
@@ -394,6 +396,7 @@ async function scoreUzcard(db: Db, userCardId: string): Promise<PlumScoreResult>
       .post('Scoring/createScoringCard', { json: createBody })
       .json<PlumScoringCreateResponse>();
 
+    console.log('[plum] scoreUzcard createScoringCard response:', JSON.stringify(data));
     logIntegration(db, {
       integration: 'plumgate',
       methodName: 'createScoringCard',
@@ -434,6 +437,7 @@ async function scoreUzcard(db: Db, userCardId: string): Promise<PlumScoreResult>
         .get('Scoring/scoringGetPoint', { searchParams: pollParams })
         .json<PlumUzcardScoreResponse>();
 
+      console.log(`[plum] scoreUzcard scoringGetPoint attempt ${attempt}:`, JSON.stringify(data));
       if (data.score != null) {
         logIntegration(db, {
           integration: 'plumgate',
@@ -447,14 +451,17 @@ async function scoreUzcard(db: Db, userCardId: string): Promise<PlumScoreResult>
           responseTimestamp: new Date(),
         });
 
-        return {
+        const result = {
           score: data.score,
           limit: scoreToLimit(data.score, data.creditLimit),
           decision: scoreToDecision(data.score),
         };
+        console.log('[plum] scoreUzcard result:', JSON.stringify(result));
+        return result;
       }
     } catch (err) {
       const toLog = await parsePlumError(err);
+      console.log(`[plum] scoreUzcard scoringGetPoint attempt ${attempt} failed:`, toLog.message);
       // Log each failed poll attempt but keep looping
       logIntegration(db, {
         integration: 'plumgate',
@@ -480,6 +487,7 @@ async function scoreHumo(db: Db, userCardId: string): Promise<PlumScoreResult> {
 
   // Step 1: HumoScoring
   const createBody = { userCardId, templateId: env.PLUM_TEMPLATE_ID };
+  console.log('[plum] scoreHumo HumoScoring request:', JSON.stringify(createBody));
   let sessionId: string;
 
   const createRequestTimestamp = new Date();
@@ -488,6 +496,7 @@ async function scoreHumo(db: Db, userCardId: string): Promise<PlumScoreResult> {
       .post('Scoring/HumoScoring', { json: createBody })
       .json<PlumScoringCreateResponse>();
 
+    console.log('[plum] scoreHumo HumoScoring response:', JSON.stringify(data));
     logIntegration(db, {
       integration: 'plumgate',
       methodName: 'HumoScoring',
@@ -527,6 +536,7 @@ async function scoreHumo(db: Db, userCardId: string): Promise<PlumScoreResult> {
         .post('Scoring/HumoScoringAvg', { json: avgBody })
         .json<PlumHumoScoreResponse>();
 
+      console.log(`[plum] scoreHumo HumoScoringAvg attempt ${attempt}:`, JSON.stringify(data));
       if (data.avgScore != null) {
         logIntegration(db, {
           integration: 'plumgate',
