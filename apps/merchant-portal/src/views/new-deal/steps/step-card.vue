@@ -235,7 +235,7 @@ async function runScoring(): Promise<CardScoreResult | null> {
       {
         method: 'POST',
         body: JSON.stringify({
-          plumCardId: selectedCard.value.plumCardId,
+          plumCardId: selectedCard.value.id,
           pcType: selectedCard.value.pcType,
           clientId: deal.sessionData.client.id,
           dealSessionId: deal.dealSessionId,

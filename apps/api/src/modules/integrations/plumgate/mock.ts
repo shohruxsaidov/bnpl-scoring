@@ -12,7 +12,7 @@ const MOCK_CARDS: PlumCard[] = [
     expiry: '08/27',
     bank: 'Uzcard',
     pcType: 'uzcard',
-    userCardId: 1,
+    id: 1,
   },
   {
     plumCardId: 'mock-card-humo-002',
@@ -21,7 +21,7 @@ const MOCK_CARDS: PlumCard[] = [
     expiry: '03/26',
     bank: 'Humo',
     pcType: 'humo',
-    userCardId: 2,
+    id: 2,
   },
 ];
 
@@ -48,7 +48,7 @@ export async function mockAddCard(params: {
 
   pendingSessions.set(sessionId, {
     plumCardId: `mock-card-${Date.now()}`,
-    userCardId: Date.now(), // just a unique number for the mock, not used in logic
+    id: Date.now(), // just a unique number for the mock, not used in logic
     maskedPan: masked,
     holderName: 'MOCK HOLDER',
     expiry,
