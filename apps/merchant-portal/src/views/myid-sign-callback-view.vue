@@ -3,38 +3,27 @@ import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useClientApi } from '@/composables/use-client-api'
 import { useDealStore } from '@/stores/deal'
-import { useClientScoringStore } from '@/stores/client-scoring'
 
 const router = useRouter()
 const { myidSignCompleteMutation } = useClientApi()
 const deal = useDealStore()
-const scoring = useClientScoringStore()
 
 onMounted(async () => {
   const params = new URLSearchParams(window.location.search)
   const code = params.get('auth_code')
   const signingSessionToken = sessionStorage.getItem('myid_sign_session_token')
   const signingToken = sessionStorage.getItem('signing_token')
+  // The deal is built FROM the Deal Session (ADR-0024); its id survived the
+  // redirect in the persisted wizard store
+  const dealSessionId = deal.dealSessionId
 
-  // Can't proceed without all three tokens
-  if (!code || !signingSessionToken || !signingToken) {
-    router.replace({ name: 'deals-create' })
-    return
-  }
-
-  // Validate we still have the deal data in the persisted store
-  const paymentDay = deal.sessionData.paymentDay
-  if (!deal.sessionData.client?.id || !deal.sessionData.tariff || !paymentDay) {
+  // Can't proceed without all the pieces
+  if (!code || !signingSessionToken || !signingToken || !dealSessionId) {
     router.replace({ name: 'deals-create' })
     return
   }
 
   sessionStorage.removeItem('myid_sign_session_token')
-
-  const basket = (deal.sessionData.basket ?? []).map((item) => ({
-    productId: item.product.id,
-    quantity: item.quantity,
-  }))
 
   // Single call: verify MyID face scan + create deal atomically
   try {
@@ -42,12 +31,7 @@ onMounted(async () => {
       signingSessionToken,
       myidCode: code,
       signingToken,
-      clientId: deal.sessionData.client.id,
-      tariffId: deal.sessionData.tariff.id,
-      basket,
-      paymentDay,
-      scoreSum: scoring.scoreSum,
-      scoringDecision: scoring.decision,
+      dealSessionId,
     })
 
     // Persist the deal ID so NewDealView can advance directly to StepDone

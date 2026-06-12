@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useDealStore } from '@/stores/deal'
+import { saveSessionStep } from '@/composables/use-deal-session-api'
+import { buildSchedulePreview } from '@/utils/schedule-preview'
 import MonoAmount from '@/components/mono-amount.vue'
 import type { DealPaymentSchedule } from '@/types'
 
 const deal = useDealStore()
+const { t: tr } = useI18n()
 
 const day = ref(deal.sessionData.paymentDay)
 const days = Array.from({ length: 28 }, (_, i) => i + 1)
@@ -21,41 +25,27 @@ const totalPayable = computed(() => {
 const schedule = computed<DealPaymentSchedule[]>(() => {
   const t = tariff.value
   if (!t || !day.value) return []
-  const months = t.termMonths
-  // Amounts are in tiyin: keep installments in whole so'm (multiples of 100)
-  // and put the rounding remainder into the first payment, so the rows
-  // always add up to the displayed total.
-  const perMonth = Math.floor(totalPayable.value / months / 100) * 100
-  const firstMonth = totalPayable.value - perMonth * (months - 1)
-  const rows: DealPaymentSchedule[] = []
-  const today = new Date()
-  const selectedDay = day.value
-
-  let firstPayment: Date
-  const todayDate = today.getDate()
-  const diff = selectedDay - todayDate
-  if (diff < 1 || diff < 15) {
-    firstPayment = new Date(today.getFullYear(), today.getMonth() + 1, selectedDay)
-  } else {
-    firstPayment = new Date(today.getFullYear(), today.getMonth(), selectedDay)
-  }
-
-
-
-
-  for (let i = 0; i < months; i++) {
-    const d =
-      i === 0
-        ? firstPayment
-        : new Date(firstPayment.getFullYear(), firstPayment.getMonth() + i, selectedDay)
-    const amount = i === 0 ? firstMonth : perMonth
-    rows.push({ index: i + 1, dueDate: d.toISOString(), amount, paid: false, paidAt: null })
-  }
-  return rows
+  return buildSchedulePreview(totalPayable.value, t.termMonths, day.value)
 })
 
-function next() {
-  if (!day.value) return
+const saving = ref(false)
+const saveError = ref('')
+
+async function next() {
+  if (!day.value || saving.value) return
+
+  // Blocking step save (ADR-0024)
+  saving.value = true
+  saveError.value = ''
+  try {
+    await saveSessionStep(deal.dealSessionId!, 'payment', { paymentDay: day.value })
+  } catch {
+    saveError.value = tr('deal.stepSaveError')
+    return
+  } finally {
+    saving.value = false
+  }
+
   deal.setPaymentDay(day.value)
   deal.setSchedule(schedule.value)
   deal.complete('payment')
@@ -113,18 +103,33 @@ function fmtDate(iso: string) {
       </div>
     </div>
 
+    <p v-if="saveError" class="save-error">
+      <i class="pi pi-exclamation-triangle" /> {{ saveError }}
+    </p>
+
     <footer class="sc-foot">
       <button class="btn-ghost" @click="deal.back()">
         <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
       </button>
-      <button class="btn-gradient" :disabled="!day" @click="next">
-        {{ $t('common.continue') }} <i class="pi pi-arrow-right" />
+      <button class="btn-gradient" :disabled="!day || saving" @click="next">
+        <i v-if="saving" class="pi pi-spin pi-spinner" />
+        {{ $t('common.continue') }} <i v-if="!saving" class="pi pi-arrow-right" />
       </button>
     </footer>
   </div>
 </template>
 
 <style scoped>
+.save-error {
+  margin: 1rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--danger);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .step-card {
   padding: 2rem;
 }

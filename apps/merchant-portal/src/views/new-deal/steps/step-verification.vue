@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useDealStore } from '@/stores/deal'
-import { useClientScoringStore } from '@/stores/client-scoring'
 import { useClientApi } from '@/composables/use-client-api'
 import { useCreateDealMutation } from '@/composables/use-deals-api'
+import { saveSessionStep } from '@/composables/use-deal-session-api'
 import MonoAmount from '@/components/mono-amount.vue'
 
 const deal = useDealStore()
-const scoring = useClientScoringStore()
 const {
   sendSigningOtpMutation,
   verifySigningOtpMutation,
@@ -43,6 +42,26 @@ const submitError = ref('')
 const lang = ref<'ru' | 'uz'>('ru')
 /** JWT proof of OTP consent — returned by /sign-otp/verify, sent with deal creation */
 const signingToken = ref<string | null>(null)
+/** When the Client's signing OTP was verified — recorded on the session's verification step */
+const otpVerifiedAt = ref<string | null>(null)
+
+/**
+ * Blocking save of the Верификация step (lang + OTP consent moment) onto the
+ * Deal Session — the Deal is built from the session, so this must land before
+ * deal creation or the MyID redirect (ADR-0024).
+ */
+async function saveVerificationStep(): Promise<boolean> {
+  if (!deal.dealSessionId) return false
+  try {
+    await saveSessionStep(deal.dealSessionId, 'verification', {
+      lang: lang.value,
+      otpVerifiedAt: otpVerifiedAt.value,
+    })
+    return true
+  } catch {
+    return false
+  }
+}
 
 // Resend OTP cooldown
 const RESEND_COOLDOWN_SECONDS = 60
@@ -103,6 +122,7 @@ async function verifySigningOtp() {
   try {
     const res = await verifySigningOtpMutation.mutateAsync({ phone, code: otpCode.value })
     signingToken.value = res.signingToken
+    otpVerifiedAt.value = new Date().toISOString()
     // Persist across the MyID redirect — restored in onMounted
     sessionStorage.setItem('signing_token', res.signingToken)
     signPhase.value = 'signed'
@@ -115,6 +135,14 @@ async function startMyidSigning() {
   const pinfl = sd.value.client?.pinfl
   if (!pinfl) return
   myidError.value = ''
+
+  // The MyID callback creates the deal FROM the session — the verification
+  // step must be on the server before we leave the page
+  if (!(await saveVerificationStep())) {
+    myidError.value = 'Не удалось сохранить шаг. Попробуйте ещё раз.'
+    return
+  }
+
   try {
     const res = await myidSignSessionMutation.mutateAsync(pinfl)
     if (res.mock) {
@@ -140,30 +168,20 @@ function fmtDate(iso: string) {
 }
 
 async function signSubmit() {
-  if (!signingToken.value) return
-  const paymentDay = sd.value.paymentDay
-  if (!paymentDay) return
+  if (!signingToken.value || !deal.dealSessionId) return
   submitting.value = true
   submitError.value = ''
   try {
-    const basket = (sd.value.basket ?? []).map((item) => ({
-      productId: item.product.id,
-      quantity: item.quantity,
-    }))
+    // The deal is built FROM the session (ADR-0024): save the verification
+    // step (lang + consent moment), then send only the session id + token
+    if (!(await saveVerificationStep())) {
+      submitError.value = 'Не удалось сохранить шаг. Попробуйте ещё раз.'
+      return
+    }
 
     const res = await createDealMutation.mutateAsync({
-      clientId: sd.value.client?.id ?? '',
-      tariffId: sd.value.tariff?.id ?? '',
-      basket,
-      paymentDay,
+      dealSessionId: deal.dealSessionId,
       signingToken: signingToken.value,
-      scoreSum: scoring.scoreSum,
-      scoringDecision: scoring.decision,
-      coefficient: scoring.coefficient,
-      platformCreditLimit: scoring.platformCreditLimit,
-      criteriaScores: (scoring.criteriaScores as Record<string, number> | null) ?? null,
-      scoringId: scoring.scoringId && /^\d+$/.test(scoring.scoringId) ? scoring.scoringId : null,
-      lang: lang.value,
     })
 
     sessionStorage.removeItem('signing_token')

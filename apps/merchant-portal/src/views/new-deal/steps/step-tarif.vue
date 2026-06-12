@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useDealStore } from '@/stores/deal'
 import { useCatalogStore } from '@/stores/catalog'
 import { useClientScoringStore } from '@/stores/client-scoring'
+import { saveSessionStep } from '@/composables/use-deal-session-api'
 import MonoAmount from '@/components/mono-amount.vue'
 import { formatSomShort } from '@/utils/money'
 import type { Tariff } from '@/types'
@@ -45,12 +47,29 @@ function select(t: Tariff) {
   selectedId.value = t.id
 }
 
-function next() {
+const { t: tr } = useI18n()
+const saving = ref(false)
+const saveError = ref('')
+
+async function next() {
+  if (saving.value) return
   const t = catalog.activeTariffs.find((x) => x.id === selectedId.value)
-  if (t) {
-    deal.setTariff(t)
-    deal.complete('tarif')
+  if (!t) return
+
+  // Blocking step save — the server snapshots the tariff params (ADR-0024)
+  saving.value = true
+  saveError.value = ''
+  try {
+    await saveSessionStep(deal.dealSessionId!, 'tarif', { tariffId: t.id })
+  } catch {
+    saveError.value = tr('deal.stepSaveError')
+    return
+  } finally {
+    saving.value = false
   }
+
+  deal.setTariff(t)
+  deal.complete('tarif')
 }
 </script>
 
@@ -100,12 +119,17 @@ function next() {
       </button>
     </div>
 
+    <p v-if="saveError" class="save-error">
+      <i class="pi pi-exclamation-triangle" /> {{ saveError }}
+    </p>
+
     <footer class="sc-foot">
       <button class="btn-ghost" @click="deal.back()">
         <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
       </button>
-      <button class="btn-gradient" :disabled="!selectedId" @click="next">
-        {{ $t('common.continue') }} <i class="pi pi-arrow-right" />
+      <button class="btn-gradient" :disabled="!selectedId || saving" @click="next">
+        <i v-if="saving" class="pi pi-spin pi-spinner" />
+        {{ $t('common.continue') }} <i v-if="!saving" class="pi pi-arrow-right" />
       </button>
     </footer>
   </div>
@@ -114,6 +138,16 @@ function next() {
 <style scoped>
 .step-card {
   padding: 2rem;
+}
+
+.save-error {
+  margin: 1rem 0 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--danger);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .sc-head {

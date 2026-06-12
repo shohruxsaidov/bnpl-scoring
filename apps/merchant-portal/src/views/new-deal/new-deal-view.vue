@@ -5,6 +5,13 @@ import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
 import { useDealStore, DEAL_STEPS, type DealStepKey } from '@/stores/deal'
 import { useClientScoringStore } from '@/stores/client-scoring'
+import {
+  abandonDealSession,
+  createDealSession,
+  fetchActiveSession,
+  type DealSessionDto,
+} from '@/composables/use-deal-session-api'
+import type { ScoreDecision } from '@/types'
 import StepClient from './steps/step-client.vue'
 import StepKarta from './steps/step-karta.vue'
 import StepTarif from './steps/step-tarif.vue'
@@ -17,6 +24,51 @@ const deal = useDealStore()
 const scoring = useClientScoringStore()
 const { t } = useI18n()
 
+// ── Server session (ADR-0024) ───────────────────────────────────────────────
+// The server is the source of truth for a Wizard run. On open we fetch the
+// agent's active session: with progress → offer resume; without → adopt it;
+// none → open a fresh one. The persisted Pinia store is only a cache.
+const sessionError = ref(false)
+
+/**
+ * Steps render only after the server session is resolved — otherwise a step
+ * could mount with stale localStorage state before hydration replaces it.
+ */
+const ready = ref(false)
+
+/** The active server session held while the resume dialog is open. */
+const pendingSession = ref<DealSessionDto | null>(null)
+
+/** Hydrate the scoring store from the session's server-stamped scoring block. */
+function hydrateScoring(dto: DealSessionDto) {
+  scoring.reset()
+  const s = dto.stepData.scoring
+  if (!s) return
+  scoring.setCompleted({
+    scoringId: s.scoringId ?? `plum-${s.cardId}`,
+    scoreSum: s.scoreSum,
+    coefficient: s.coefficient,
+    decision: s.decision as ScoreDecision,
+    platformCreditLimit: s.platformCreditLimit,
+    criteriaScores: s.criteriaScores,
+  })
+}
+
+async function openFreshSession() {
+  sessionError.value = false
+  try {
+    const created = await createDealSession()
+    sessionStorage.removeItem('signing_token')
+    sessionStorage.removeItem('myid_sign_deal_id')
+    deal.reset()
+    scoring.reset()
+    deal.setDealSessionId(created.id)
+    ready.value = true
+  } catch {
+    sessionError.value = true
+  }
+}
+
 // ── Resume dialog ───────────────────────────────────────────────────────────
 const showResumeDialog = ref(false)
 
@@ -26,24 +78,30 @@ const hasInProgressDeal = computed(
 )
 
 const resumeClientName = computed(() => {
-  const c = deal.sessionData.client
+  const c = pendingSession.value?.client ?? deal.sessionData.client
   if (!c) return ''
   return `${c.firstName} ${c.lastName}`
 })
 
-const resumeStepLabel = computed(() => stepLabel(deal.currentStep))
+const resumeStepLabel = computed(() =>
+  stepLabel(pendingSession.value?.currentStep ?? deal.currentStep),
+)
 
 function resumeDeal() {
   showResumeDialog.value = false
-  // Deal state is already loaded from localStorage — just let the user continue.
+  if (pendingSession.value) {
+    deal.hydrateFromSession(pendingSession.value)
+    hydrateScoring(pendingSession.value)
+    pendingSession.value = null
+  }
+  ready.value = true
 }
 
-function startFresh() {
+async function startFresh() {
   showResumeDialog.value = false
-  sessionStorage.removeItem('signing_token')
-  sessionStorage.removeItem('myid_sign_deal_id')
-  deal.reset()
-  scoring.reset()
+  pendingSession.value = null
+  // The server auto-abandons the previous active session on create
+  await openFreshSession()
 }
 
 // ── Close deal ──────────────────────────────────────────────────────────────
@@ -54,9 +112,17 @@ const canCloseDeal = computed(
   () => hasInProgressDeal.value && deal.currentStep !== 'done',
 )
 
-function confirmCloseDeal() {
+async function confirmCloseDeal() {
   showCloseDialog.value = false
-  startFresh()
+  const id = deal.dealSessionId
+  if (id) {
+    try {
+      await abandonDealSession(id)
+    } catch {
+      // Already closed server-side is fine — a fresh session replaces it anyway
+    }
+  }
+  await openFreshSession()
 }
 
 // ── Step labels ─────────────────────────────────────────────────────────────
@@ -80,10 +146,13 @@ const mobileStepLabel = computed(() => {
   return `${idx + 1} / ${deal.steps.length} — ${label}`
 })
 
-onMounted(() => {
+onMounted(async () => {
+  // 1. Returning from MyID registration callback — wizard state (incl. the
+  //    server session id) survived in the persisted store; just continue.
   const fromReg = sessionStorage.getItem('myid_callback_complete')
   if (fromReg) {
     sessionStorage.removeItem('myid_callback_complete')
+    ready.value = true
     return
   }
 
@@ -104,20 +173,44 @@ onMounted(() => {
     }
     // Flags (myid_sign_complete / myid_sign_failed) intentionally left for StepVerification
     // to read in case the deal was NOT created (e.g. network error during step 2).
+    ready.value = true
     return
   }
 
-  // 3. Persisted in-progress deal — ask agent whether to continue or start fresh.
-  if (hasInProgressDeal.value) {
+  // 3. Server truth: fetch the agent's active session.
+  await initSession()
+})
+
+async function initSession() {
+  sessionError.value = false
+  let active: DealSessionDto | null = null
+  try {
+    active = await fetchActiveSession()
+  } catch {
+    sessionError.value = true
+    return
+  }
+
+  if (active && active.stepData.client) {
+    // In-progress run — ask the agent whether to continue or start fresh.
+    pendingSession.value = active
     showResumeDialog.value = true
     return
   }
 
-  // 4. No prior session — clean slate.
-  sessionStorage.removeItem('signing_token')
-  deal.reset()
-  scoring.reset()
-})
+  if (active) {
+    // An empty run (opened but nothing saved) — adopt it silently.
+    sessionStorage.removeItem('signing_token')
+    deal.reset()
+    scoring.reset()
+    deal.setDealSessionId(active.id)
+    ready.value = true
+    return
+  }
+
+  // No active session — open a fresh run.
+  await openFreshSession()
+}
 
 // ── Step ↔ URL sync (browser back/forward navigates between steps) ─────────
 const route = useRoute()
@@ -208,6 +301,15 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
       </template>
     </Dialog>
 
+    <!-- ── Session error (server unreachable — wizard cannot run) ────────── -->
+    <div v-if="sessionError" class="session-error surface-card">
+      <i class="pi pi-exclamation-triangle" />
+      <span>{{ t('deal.sessionError') }}</span>
+      <button class="p-button p-button-sm" @click="initSession">
+        <i class="pi pi-refresh" /> {{ t('common.retry') }}
+      </button>
+    </div>
+
     <!-- ── Step indicator ────────────────────────────────────────────────── -->
     <div class="stepper surface-card">
       <div v-if="canCloseDeal" class="stepper-bar">
@@ -228,8 +330,8 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
       </div>
     </div>
 
-    <!-- ── Active step ───────────────────────────────────────────────────── -->
-    <div class="step-body">
+    <!-- ── Active step (rendered only once the server session is resolved) ── -->
+    <div v-if="ready" class="step-body">
       <StepClient v-if="deal.currentStep === 'client'" />
       <StepKarta v-else-if="deal.currentStep === 'karta'" />
       <StepTarif v-else-if="deal.currentStep === 'tarif'" />
@@ -237,6 +339,9 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
       <StepPaymentDay v-else-if="deal.currentStep === 'payment'" />
       <StepVerification v-else-if="deal.currentStep === 'verification'" />
       <StepDone v-else-if="deal.currentStep === 'done'" />
+    </div>
+    <div v-else-if="!sessionError" class="step-body step-body-loading">
+      <i class="pi pi-spin pi-spinner" />
     </div>
   </div>
 </template>
@@ -259,6 +364,20 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
   display: flex;
   justify-content: flex-end;
   margin-bottom: 0.6rem;
+}
+
+.session-error {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.9rem 1.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--danger);
+}
+
+.session-error .p-button {
+  margin-left: auto;
 }
 
 .steps-row {
@@ -365,6 +484,13 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
 
 .step-body {
   min-height: 400px;
+}
+
+.step-body-loading {
+  display: grid;
+  place-items: center;
+  font-size: 1.6rem;
+  color: var(--text-secondary);
 }
 
 /* ── Resume dialog body ────────────────────────────────────────────────────*/

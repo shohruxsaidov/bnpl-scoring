@@ -77,4 +77,11 @@ export const ru: Record<string, string> = {
   card_scoring_already_started: "Скоринг карты уже запущен",
   user_not_found: "Пользователь не найден",
   version_taken: "Ревизия с такой версией уже существует",
+
+  // deal sessions (wizard)
+  session_not_active: "Сессия сделки уже закрыта",
+  invalid_step_payload: "Некорректные данные шага",
+  session_incomplete: "В сессии заполнены не все шаги — пройдите мастер заново",
+  scoring_missing: "Результат скоринга отсутствует в сессии",
+  scoring_declined: "Скоринг отклонён — сделка не может быть создана",
 }

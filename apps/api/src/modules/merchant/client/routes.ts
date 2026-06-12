@@ -6,7 +6,8 @@ import { searchClients, findClientByPinflAndMerchant } from './queries/search-cl
 import { createClient } from './commands/create-client';
 import { createOtp, verifyOtp } from '../../auth/client/service';
 import { createMyidSession, exchangeMyidCode } from '../../auth/client/myid';
-import { resolveAndCreateDeal } from '../deals/commands/create-deal';
+import { createDealFromSession } from '../deals/commands/create-deal';
+import { loadOwnedActiveSession } from '../deal-sessions/service';
 import { env } from '../../../env';
 
 function formatDealNumber(n: bigint | null | undefined): string {
@@ -274,21 +275,10 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
   const MyidSignCompleteBody = Type.Object({
     signingSessionToken: Type.String({ minLength: 1 }),
     myidCode: Type.String({ minLength: 1 }),
-    // OTP consent proof + deal fields — everything needed to create the deal
-    // atomically after verification so the callback view makes one call total.
+    // OTP consent proof + the Deal Session the deal is built from (ADR-0024) —
+    // one call total from the callback view.
     signingToken: Type.String({ minLength: 1 }),
-    clientId: Type.String({ minLength: 1 }),
-    tariffId: Type.String({ minLength: 1 }),
-    basket: Type.Array(
-      Type.Object({
-        productId: Type.String({ minLength: 1 }),
-        quantity: Type.Integer({ minimum: 1 }),
-      }),
-      { minItems: 1 },
-    ),
-    paymentDay: Type.Integer({ minimum: 1, maximum: 28 }),
-    scoreSum: Type.Optional(Type.Number()),
-    scoringDecision: Type.Optional(Type.String()),
+    dealSessionId: Type.String({ minLength: 1 }),
   });
 
   /**
@@ -325,7 +315,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
    *  1. Verifies the OTP signingToken (client consent proof)
    *  2. Verifies the signingSessionToken (MyID session correlation)
    *  3. Exchanges the MyID auth_code and confirms PINFL match
-   *  4. Creates the deal atomically via resolveAndCreateDeal
+   *  4. Creates the deal atomically from the Deal Session via createDealFromSession
    * Returns { verified: true, dealId }.
    */
   fastify.post(
@@ -371,26 +361,24 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
         return reply.code(400).sendError('pinfl_mismatch');
       }
 
-      // ── 4. Create deal atomically ──────────────────────────────────────────
-      const { basket, paymentDay, scoreSum, scoringDecision } = request.body;
-
-      let deal: Awaited<ReturnType<typeof resolveAndCreateDeal>>;
+      // ── 4. Create deal atomically from the Deal Session ────────────────────
+      let deal: Awaited<ReturnType<typeof createDealFromSession>>;
       try {
-        deal = await resolveAndCreateDeal(db, {
-          merchantId: BigInt(jwtPayload.merchantId),
-          branchId: BigInt(jwtPayload.branchId),
-          agentId: BigInt(jwtPayload.sub),
-          clientId: BigInt(request.body.clientId),
-          tariffId: BigInt(request.body.tariffId),
-          basket,
-          paymentDay,
-          scoreSum: scoreSum ?? null,
-          scoringDecision: scoringDecision ?? null,
-          lang: 'ru',
-        });
+        const dealSession = await loadOwnedActiveSession(
+          db,
+          request.body.dealSessionId,
+          BigInt(jwtPayload.sub),
+        );
+        deal = await createDealFromSession(db, dealSession);
       } catch (err: any) {
-        if (err.code === 'tariff_not_found') return reply.code(400).sendError('tariff_not_found');
+        if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found');
+        if (err.code === 'session_not_active') return reply.code(409).sendError('session_not_active');
+        if (err.code === 'session_incomplete') return reply.code(409).sendError('session_incomplete');
+        if (err.code === 'scoring_missing') return reply.code(409).sendError('scoring_missing');
+        if (err.code === 'scoring_declined') return reply.code(409).sendError('scoring_declined');
         if (err.code === 'product_not_found') return reply.code(400).sendError('product_not_found');
+        if (err.code === 'amount_below_tariff_min') return reply.code(400).sendError('amount_below_tariff_min');
+        if (err.code === 'amount_above_tariff_max') return reply.code(400).sendError('amount_above_tariff_max');
         throw err;
       }
 

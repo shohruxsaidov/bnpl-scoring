@@ -384,7 +384,9 @@
     "closeConfirmTitle": "Закрыть сделку?",
     "closeConfirmBody": "Введённые данные ({name}) будут удалены, и сделку нельзя будет восстановить.",
     "closeConfirmCancel": "Отмена",
-    "closeConfirmAction": "Закрыть сделку"
+    "closeConfirmAction": "Закрыть сделку",
+    "sessionError": "Не удалось открыть сессию сделки. Проверьте соединение и повторите.",
+    "stepSaveError": "Не удалось сохранить шаг. Проверьте соединение и повторите."
   },
   "stepClient": {
     "title": "Клиент",

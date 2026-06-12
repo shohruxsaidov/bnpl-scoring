@@ -77,4 +77,11 @@ export const uz: Record<string, string> = {
   card_scoring_already_started: "Karta skoring allaqachon boshlangan",
   user_not_found: "Foydalanuvchi topilmadi",
   version_taken: "Bunday versiyali reviziya allaqachon mavjud",
+
+  // deal sessions (wizard)
+  session_not_active: "Bitim sessiyasi allaqachon yopilgan",
+  invalid_step_payload: "Qadam ma'lumotlari noto'g'ri",
+  session_incomplete: "Sessiyada barcha qadamlar to'ldirilmagan — masterni qaytadan o'ting",
+  scoring_missing: "Sessiyada skoring natijasi yo'q",
+  scoring_declined: "Skoring rad etilgan — bitim yaratib bo'lmaydi",
 }

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useDealStore } from '@/stores/deal'
 import { useCatalogStore } from '@/stores/catalog'
 import { useClientScoringStore } from '@/stores/client-scoring'
+import { saveSessionStep } from '@/composables/use-deal-session-api'
 import MonoAmount from '@/components/mono-amount.vue'
 
 const deal = useDealStore()
@@ -73,8 +75,32 @@ const canProceed = computed(
   () => !!tariff.value && total.value > 0 && withinLimit.value && rangeWarning.value == null,
 )
 
-function next() {
-  if (canProceed.value) deal.complete('mahsulot')
+const { t: tr } = useI18n()
+const saving = ref(false)
+const saveError = ref('')
+
+async function next() {
+  if (!canProceed.value || saving.value) return
+
+  // Blocking step save — the server snapshots names and prices per line; the
+  // signed contract is built from this snapshot (ADR-0024)
+  saving.value = true
+  saveError.value = ''
+  try {
+    await saveSessionStep(deal.dealSessionId!, 'mahsulot', {
+      lines: deal.sessionData.basket.map((item) => ({
+        productId: item.product.id,
+        quantity: item.quantity,
+      })),
+    })
+  } catch {
+    saveError.value = tr('deal.stepSaveError')
+    return
+  } finally {
+    saving.value = false
+  }
+
+  deal.complete('mahsulot')
 }
 </script>
 
@@ -195,12 +221,17 @@ function next() {
         </div>
       </div>
 
+      <div v-if="saveError" class="bs-overlimit">
+        <i class="pi pi-exclamation-triangle" /> {{ saveError }}
+      </div>
+
       <div class="basket-foot">
         <button class="btn-ghost" @click="deal.back()">
           <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
         </button>
-        <button class="btn-gradient" :disabled="!canProceed" @click="next">
-          {{ $t('common.continue') }} <i class="pi pi-arrow-right" />
+        <button class="btn-gradient" :disabled="!canProceed || saving" @click="next">
+          <i v-if="saving" class="pi pi-spin pi-spinner" />
+          {{ $t('common.continue') }} <i v-if="!saving" class="pi pi-arrow-right" />
         </button>
       </div>
     </aside>

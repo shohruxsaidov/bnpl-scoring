@@ -1,7 +1,8 @@
 import { Type } from '@sinclair/typebox'
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import type { FastifyInstance } from 'fastify'
-import { resolveAndCreateDeal } from './commands/create-deal'
+import { createDealFromSession } from './commands/create-deal'
+import { loadOwnedActiveSession } from '../deal-sessions/service'
 import { listDeals } from './queries/list-deals'
 import { getDealById } from './queries/get-deal'
 import { getContractPdfUrl } from './queries/get-contract-pdf-url'
@@ -28,24 +29,12 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
 
   /* ── Body schemas ──────────────────────────────────────────────────────── */
 
-  const BasketItemBody = Type.Object({
-    productId: Type.String({ minLength: 1 }),
-    quantity: Type.Integer({ minimum: 1 }),
-  })
-
+  // The Deal is built FROM the Deal Session (ADR-0024): basket, tariff,
+  // payment day, lang and scoring are read from step_data written server-side
+  // during the Wizard run. The body carries only the run id + consent proof.
   const CreateDealBody = Type.Object({
-    clientId: Type.String({ minLength: 1 }),
-    tariffId: Type.String({ minLength: 1 }),
-    basket: Type.Array(BasketItemBody, { minItems: 1 }),
-    paymentDay: Type.Integer({ minimum: 1, maximum: 28 }),
+    dealSessionId: Type.String({ minLength: 1 }),
     signingToken: Type.String({ minLength: 1 }),
-    scoreSum: Type.Optional(Type.Number()),
-    scoringDecision: Type.Optional(Type.String()),
-    coefficient: Type.Optional(Type.Number()),
-    platformCreditLimit: Type.Optional(Type.Number()),
-    criteriaScores: Type.Optional(Type.Record(Type.String(), Type.Number())),
-    scoringId: Type.Optional(Type.String()),
-    lang: Type.Optional(Type.Union([Type.Literal('ru'), Type.Literal('uz')])),
   })
 
   const IdParams = Type.Object({ id: Type.String() })
@@ -83,58 +72,38 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
         return reply.code(400).sendError('invalid_signing_purpose')
       }
 
-      const {
-        basket,
-        paymentDay,
-        scoreSum,
-        scoringDecision,
-        coefficient,
-        platformCreditLimit,
-        criteriaScores,
-        scoringId,
-        lang,
-      } = request.body
-
-      let deal: Awaited<ReturnType<typeof resolveAndCreateDeal>>
+      let deal: Awaited<ReturnType<typeof createDealFromSession>>
       try {
-        deal = await resolveAndCreateDeal(db, {
-          merchantId: BigInt(p.merchantId),
-          branchId: BigInt(p.branchId),
-          agentId: BigInt(p.sub),
-          clientId: BigInt(request.body.clientId),
-          tariffId: BigInt(request.body.tariffId),
-          basket,
-          paymentDay,
-          scoreSum: scoreSum ?? null,
-          scoringDecision: scoringDecision ?? null,
-          coefficient: coefficient ?? null,
-          platformCreditLimit: platformCreditLimit != null ? BigInt(Math.round(platformCreditLimit)) : null,
-          criteriaScores: criteriaScores ?? null,
-          scoringId: scoringId ? BigInt(scoringId) : null,
-          lang: lang ?? 'ru',
-        })
+        const session = await loadOwnedActiveSession(db, request.body.dealSessionId, BigInt(p.sub))
+        deal = await createDealFromSession(db, session)
       } catch (err: any) {
-        if (err.code === 'tariff_not_found') return reply.code(400).sendError('tariff_not_found')
+        if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found')
+        if (err.code === 'session_not_active') return reply.code(409).sendError('session_not_active')
+        if (err.code === 'session_incomplete') return reply.code(409).sendError('session_incomplete')
+        if (err.code === 'scoring_missing') return reply.code(409).sendError('scoring_missing')
+        if (err.code === 'scoring_declined') return reply.code(409).sendError('scoring_declined')
         if (err.code === 'product_not_found') return reply.code(400).sendError('product_not_found')
         if (err.code === 'amount_below_tariff_min') return reply.code(400).sendError('amount_below_tariff_min')
         if (err.code === 'amount_above_tariff_max') return reply.code(400).sendError('amount_above_tariff_max')
         throw err
       }
 
+      const scoringDecision = deal.scoringDecision
+
       notifyDealCreated(db, {
         dealId: deal.id,
         agentId: BigInt(p.sub),
         merchantId: BigInt(p.merchantId),
         branchId: BigInt(p.branchId),
-        clientId: BigInt(request.body.clientId),
+        clientId: deal.clientId ?? BigInt(0),
         amountTiyin: deal.amount ?? BigInt(0),
       }).catch((err) => app.log.warn({ err }, 'notifyDealCreated failed'))
 
       notifyDealDecision(db, {
         dealId: deal.id,
-        clientId: BigInt(request.body.clientId),
+        clientId: deal.clientId ?? BigInt(0),
         scoringDecision: scoringDecision ?? null,
-        lang: lang ?? 'ru',
+        lang: deal.lang as 'ru' | 'uz',
       }).catch((err) => app.log.warn({ err }, 'notifyDealDecision failed'))
 
       return reply.code(201).send({ dealId: deal.id, dealNumber: formatDealNumber(deal.dealNumber) })

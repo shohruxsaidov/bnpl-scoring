@@ -17,10 +17,53 @@ import { clients, merchantUsers, merchants, branches, tariffs, products, adminUs
 import { files } from '../../../lib/file-storage/schema'
 
 // ---------------------------------------------------------------------------
+// deal_sessions
+// One row per Wizard run, created the moment an Agent opens the Wizard
+// (before a Client is identified). The mutable head of the run: current_step
+// and step_data are overwritten as steps are saved; the immutable trail lives
+// in deal_session_events. The session UUID is sent as claim_id on all KATM
+// requests made during the run. At most one 'active' session per Agent —
+// starting a new run abandons the previous one. See ADR-0024.
+// ---------------------------------------------------------------------------
+export const dealSessions = pgTable('deal_sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  merchantId: bigint('merchant_id', { mode: 'bigint' }).notNull().references(() => merchants.id),
+  branchId: bigint('branch_id', { mode: 'bigint' }).notNull().references(() => branches.id),
+  agentId: bigint('agent_id', { mode: 'bigint' }).notNull().references(() => merchantUsers.id),
+  // Set once the Клиент step is saved
+  clientId: bigint('client_id', { mode: 'bigint' }).references(() => clients.id),
+  // The step the Agent is currently on: 'client' | 'karta' | 'tarif' | 'mahsulot' | 'payment' | 'verification'
+  currentStep: varchar('current_step', { length: 20 }).notNull().default('client'),
+  // 'active' | 'completed' | 'abandoned'
+  status: varchar('status', { length: 10 }).notNull().default('active'),
+  // Mutable resume snapshot, keyed by step ('client', 'karta', …) plus
+  // server-stamped 'katm' and 'scoring' blocks. IDs + non-reconstructable
+  // snapshots only — no Client PII (the clients row is the PII home).
+  stepData: jsonb('step_data').notNull().default({}),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+// ---------------------------------------------------------------------------
+// deal_session_events
+// Append-only: one row per step submission (redone steps included) plus the
+// server-stamped 'katm' and 'scoring' events. Serves funnel analytics and the
+// audit trail; never updated or deleted. Retention deliberately deferred (ADR-0024).
+// ---------------------------------------------------------------------------
+export const dealSessionEvents = pgTable('deal_session_events', {
+  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+  sessionId: uuid('session_id').notNull().references(() => dealSessions.id, { onDelete: 'cascade' }),
+  step: varchar('step', { length: 20 }).notNull(),
+  payload: jsonb('payload'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})
+
+// ---------------------------------------------------------------------------
 // deals
-// A Deal is created (status = 'draft') when an Agent opens the Wizard.
-// Its UUID is sent as claim_id on all KATM requests made during that run.
-// Abandoned Wizard runs remain as 'draft' rows — never surfaced to users.
+// A Deal is created at the Верификация step of the Wizard, built from the
+// Deal Session's step data (snapshot prices, tariff params, scoring, KATM).
+// Only real signed deals live here — in-progress/abandoned runs are
+// deal_sessions rows. See ADR-0024.
 // ---------------------------------------------------------------------------
 export const deals = pgTable('deals', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -29,6 +72,8 @@ export const deals = pgTable('deals', {
   agentId: bigint('agent_id', { mode: 'bigint' }).notNull().references(() => merchantUsers.id),
   clientId: bigint('client_id', { mode: 'bigint' }).references(() => clients.id),
   tariffId: bigint('tariff_id', { mode: 'bigint' }).references(() => tariffs.id),
+  // The Wizard run that produced this Deal (null for deals predating ADR-0024)
+  dealSessionId: uuid('deal_session_id').references(() => dealSessions.id),
   // KATM consent — collected at start of Wizard
   consentId: varchar('consent_id', { length: 100 }),
   consentDate: date('consent_date'),

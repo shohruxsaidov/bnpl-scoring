@@ -4,13 +4,12 @@ import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import { useDealStore } from '@/stores/deal'
 import { useClientScoringStore } from '@/stores/client-scoring'
-import { useSaveScoringMutation } from '@/composables/use-scoring-history-api'
+import { saveSessionStep } from '@/composables/use-deal-session-api'
 import { apiFetch } from '@/utils/apiFetch'
 import type { Card, CardScoreResult, ScoreDecision } from '@/types'
 
 const deal = useDealStore()
 const clientScoring = useClientScoringStore()
-const saveScoring = useSaveScoringMutation()
 const { t } = useI18n()
 
 // ── Card list ────────────────────────────────────────────────────────────────
@@ -56,6 +55,7 @@ function selectCard(plumCardId: string) {
   selectedId.value = plumCardId
   // Reset scoring result when switching cards
   result.value = null
+  serverResult.value = null
   scoreError.value = null
 }
 
@@ -159,10 +159,22 @@ async function confirmOtp() {
 }
 
 // ── Scoring ──────────────────────────────────────────────────────────────────
+// The server runs the score AND stamps the full result onto the Deal Session
+// (ADR-0024) — the response here is display-only.
+
+interface ServerScoreResult {
+  score: number
+  limit: number
+  decision: string
+  scoringId: string | null
+  coefficient: number
+  criteriaScores: Record<string, number>
+}
 
 const scoring = ref(false)
 const progress = ref(0)
 const result = ref<CardScoreResult | null>(null)
+const serverResult = ref<ServerScoreResult | null>(null)
 const scoreError = ref<string | null>(null)
 
 let progressTimer: ReturnType<typeof setInterval> | null = null
@@ -172,11 +184,12 @@ function clearTimer() {
 }
 
 async function runScoring(): Promise<CardScoreResult | null> {
-  if (!selectedCard.value) return null
+  if (!selectedCard.value || !deal.dealSessionId || !deal.sessionData.client) return null
 
   scoring.value = true
   progress.value = 0
   result.value = null
+  serverResult.value = null
   scoreError.value = null
 
   // Animate progress bar — stays below 85 % until real result arrives
@@ -185,18 +198,21 @@ async function runScoring(): Promise<CardScoreResult | null> {
   }, 250)
 
   try {
-    const data = await apiFetch<{ score: number; limit: number; decision: string }>(
+    const data = await apiFetch<ServerScoreResult>(
       '/merchant/cards/score',
       {
         method: 'POST',
         body: JSON.stringify({
           plumCardId: selectedCard.value.plumCardId,
           pcType: selectedCard.value.pcType,
+          clientId: deal.sessionData.client.id,
+          dealSessionId: deal.dealSessionId,
         }),
       },
     )
     clearTimer()
     progress.value = 100
+    serverResult.value = data
     result.value = {
       score: data.score,
       decision: data.decision as ScoreDecision,
@@ -216,64 +232,53 @@ async function runScoring(): Promise<CardScoreResult | null> {
 function resetSelection() {
   selectedId.value = null
   result.value = null
+  serverResult.value = null
   scoreError.value = null
 }
 
 // ── Continue ─────────────────────────────────────────────────────────────────
 
-async function next() {
-  if (!selectedCard.value || scoring.value) return
+const saving = ref(false)
+const saveError = ref<string | null>(null)
 
-  // Reuse the result if this card was already scored on a prior pass
-  const score = result.value ?? (await runScoring())
-  if (!score || !selectedCard.value) return
+async function next() {
+  if (!selectedCard.value || scoring.value || saving.value) return
+
+  // Reuse the result if this card was already scored on a prior pass.
+  // Scoring history + the session's scoring block are recorded server-side
+  // during the score call (ADR-0024 / ADR-0022).
+  const score = result.value && serverResult.value ? result.value : await runScoring()
+  const server = serverResult.value
+  if (!score || !server || !selectedCard.value) return
+
+  // Blocking step save — the wizard advances only once the server has it
+  saving.value = true
+  saveError.value = null
+  try {
+    await saveSessionStep(deal.dealSessionId!, 'karta', {
+      cardId: selectedCard.value.plumCardId,
+      maskedPan: selectedCard.value.maskedPan,
+      pcType: selectedCard.value.pcType,
+      bank: selectedCard.value.bank,
+      holderName: selectedCard.value.holderName,
+      expiry: selectedCard.value.expiry,
+    })
+  } catch {
+    saveError.value = t('deal.stepSaveError')
+    return
+  } finally {
+    saving.value = false
+  }
 
   deal.setCard(selectedCard.value)
 
-  const coefficient = score.score >= 700 ? 1.0 : score.score >= 600 ? 0.8 : 0
-
-  // Scoring breakdown: card score + KATM-derived credit signals
-  const katm = deal.sessionData.katmResult
-  const criteriaScores: Record<string, number> = { cardScore: score.score }
-  if (katm) {
-    criteriaScores.katmScore = katm.score
-    criteriaScores.activeLoans = katm.activeLoans
-    criteriaScores.overdueCount = katm.overdueCount
-  }
-
-  // Record the scoring run now so it appears in the admin history even if no deal
-  // is ever created. Skip if this exact result was already saved on a prior pass.
-  const clientId = deal.sessionData.client?.id
-  const alreadySaved =
-    clientScoring.scoringId != null &&
-    /^\d+$/.test(clientScoring.scoringId) &&
-    clientScoring.scoreSum === score.score &&
-    clientScoring.decision === score.decision
-
-  let scoringId: string | null = clientScoring.scoringId
-  if (clientId && !alreadySaved) {
-    try {
-      const res = await saveScoring.mutateAsync({
-        clientId,
-        scoreSum: score.score,
-        coefficient,
-        decision: score.decision,
-        platformCreditLimit: score.limit,
-        criteriaScores,
-      })
-      scoringId = res.id
-    } catch {
-      // Non-blocking: the agent can still continue the wizard if recording fails
-    }
-  }
-
   clientScoring.setCompleted({
-    scoringId: scoringId ?? `plum-${selectedCard.value.plumCardId}-${Date.now()}`,
-    scoreSum: score.score,
-    coefficient,
-    decision: score.decision,
-    platformCreditLimit: score.limit,
-    criteriaScores,
+    scoringId: server.scoringId ?? `plum-${selectedCard.value.plumCardId}-${Date.now()}`,
+    scoreSum: server.score,
+    coefficient: server.coefficient,
+    decision: server.decision as ScoreDecision,
+    platformCreditLimit: server.limit,
+    criteriaScores: server.criteriaScores,
   })
   deal.complete('karta')
 }
@@ -399,13 +404,26 @@ async function next() {
       </div>
     </transition>
 
+    <!-- Step save error -->
+    <transition name="fade">
+      <div v-if="saveError" class="score-error-block">
+        <i class="pi pi-exclamation-triangle" />
+        <span>{{ saveError }}</span>
+        <div class="score-error-actions">
+          <button class="btn-ghost" @click="next">
+            <i class="pi pi-refresh" /> {{ $t('common.retry') }}
+          </button>
+        </div>
+      </div>
+    </transition>
+
     <footer class="sc-foot">
       <button class="btn-ghost" @click="deal.back()">
         <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
       </button>
-      <button class="btn-gradient" :disabled="!selectedId || scoring" @click="next">
-        <i v-if="scoring" class="pi pi-spin pi-spinner" />
-        {{ $t('common.continue') }} <i v-if="!scoring" class="pi pi-arrow-right" />
+      <button class="btn-gradient" :disabled="!selectedId || scoring || saving" @click="next">
+        <i v-if="scoring || saving" class="pi pi-spin pi-spinner" />
+        {{ $t('common.continue') }} <i v-if="!scoring && !saving" class="pi pi-arrow-right" />
       </button>
     </footer>
   </div>

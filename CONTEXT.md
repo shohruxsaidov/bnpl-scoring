@@ -67,8 +67,12 @@ A one-time code sent to the Client's phone at the Верификация step, u
 _Avoid_: Signing password, PIN, authentication code
 
 **Wizard**:
-The 7-step Merchant App flow a Sales Agent follows to issue a Deal: Клиент → Karta → Tarif → Mahsulot → To'lov kuni → Верификация → Готово. A Deal record (status `draft`) is created when the Agent opens the Wizard; its UUID is sent as `claim_id` on all KATM requests made during that run. Abandoned Wizard runs remain as Deal rows in `draft` status — they are never shown in reports or the UI.
+The 7-step Merchant App flow a Sales Agent follows to issue a Deal: Клиент → Karta → Tarif → Mahsulot → To'lov kuni → Верификация → Готово. Opening the Wizard creates a Deal Session; the Deal itself is created only at the Верификация step.
 _Avoid_: Form, flow, checkout
+
+**Deal Session**:
+The persistent record of a single Wizard run, created the moment an Agent opens the Wizard — before a Client is even identified. It carries the run's current state (so a run can be resumed from any device) and an immutable trail of every step submission, including steps the Agent later went back and redid. Belongs to one Merchant, Branch, and Agent. Its UUID is sent as `claim_id` on all KATM requests made during the run. Completing the Wizard produces a Deal linked back to its Deal Session; abandoned Deal Sessions are kept for funnel analytics and audit and are never shown as Deals.
+_Avoid_: wizard session, draft deal, claim
 
 **Basket**:
 The collection of one or more Products (with quantities) selected for a Deal. The Basket total must fall within the Tariff's Credit Range and must not exceed the Client's available credit balance.

@@ -9,6 +9,8 @@ import type {
   Product,
   Tariff,
 } from '@/types'
+import type { DealSessionDto } from '@/composables/use-deal-session-api'
+import { buildSchedulePreview } from '@/utils/schedule-preview'
 
 export type DealStepKey =
   | 'client'
@@ -99,6 +101,8 @@ export const useDealStore = defineStore(
     const currentStep = ref<DealStepKey>('client')
     const completed = ref<Record<DealStepKey, boolean>>(emptyCompleted())
     const sessionData = ref<SessionData>(emptySession())
+    /** Server-side Deal Session id (ADR-0024) — set the moment the Wizard opens. */
+    const dealSessionId = ref<string | null>(null)
 
     const steps = computed(() => DEAL_STEPS)
 
@@ -121,6 +125,109 @@ export const useDealStore = defineStore(
       currentStep.value = 'client'
       completed.value = emptyCompleted()
       sessionData.value = emptySession()
+      dealSessionId.value = null
+    }
+
+    function setDealSessionId(id: string) {
+      dealSessionId.value = id
+    }
+
+    /**
+     * Rebuild the local wizard state from the server session — the server is
+     * the source of truth (ADR-0024); the persisted store is only a cache.
+     */
+    function hydrateFromSession(dto: DealSessionDto) {
+      const data = dto.stepData
+      const fresh = emptySession()
+
+      fresh.client = dto.client
+      fresh.isNewClient = data.client?.isNewClient ?? false
+      fresh.myidVerified = data.client?.myidVerified ?? false
+      fresh.katmConsent = data.client?.katmConsent ?? false
+
+      if (data.katm) {
+        fresh.katmResult = {
+          demandId: data.katm.demandId,
+          consentId: data.katm.consentId,
+          score: data.katm.score,
+          scoringClass: data.katm.scoringClass,
+          scoringLevel: data.katm.scoringLevel,
+          activeLoans: data.katm.activeLoans,
+          allDebtSum: data.katm.allDebtSum,
+          overdueCount: data.katm.overdueCount,
+          overdueAmount: data.katm.overdueAmount,
+          hasDefaults: data.katm.hasDefaults,
+          hasCreditBan: data.katm.hasCreditBan,
+        }
+      }
+
+      if (data.karta) {
+        fresh.selectedCard = {
+          id: data.karta.cardId,
+          plumCardId: data.karta.cardId,
+          pcType: data.karta.pcType,
+          maskedPan: data.karta.maskedPan,
+          holderName: data.karta.holderName,
+          expiry: data.karta.expiry,
+          bank: data.karta.bank,
+        }
+      }
+
+      if (data.tarif) {
+        fresh.tariff = {
+          id: data.tarif.tariffId,
+          name: data.tarif.name,
+          termMonths: data.tarif.termMonths,
+          markupPercent: data.tarif.markupPercent,
+          minAmount: data.tarif.minAmount != null ? parseInt(data.tarif.minAmount, 10) : null,
+          maxAmount: data.tarif.maxAmount != null ? parseInt(data.tarif.maxAmount, 10) : null,
+          active: true,
+        }
+      }
+
+      if (data.mahsulot) {
+        fresh.basket = data.mahsulot.lines.map((line) => ({
+          product: {
+            id: line.productId,
+            merchantId: '',
+            categoryId: '',
+            name: line.productName,
+            price: line.price,
+            mxikCode: line.mxikCode,
+            packageCode: line.packageCode,
+            packageName: line.packageName,
+            active: true,
+            createdAt: '',
+          },
+          quantity: line.quantity,
+        }))
+      }
+
+      fresh.paymentDay = data.payment?.paymentDay ?? null
+
+      if (fresh.tariff && fresh.paymentDay) {
+        const principal = fresh.basket.reduce(
+          (sum, i) => sum + Math.round(parseFloat(i.product.price) * 100) * i.quantity,
+          0,
+        )
+        const totalPayable = Math.round(principal * (1 + fresh.tariff.markupPercent / 100))
+        fresh.schedule = buildSchedulePreview(totalPayable, fresh.tariff.termMonths, fresh.paymentDay)
+      }
+
+      sessionData.value = fresh
+      dealSessionId.value = dto.id
+
+      const done = emptyCompleted()
+      done.client = !!data.client
+      done.karta = !!data.karta
+      done.tarif = !!data.tarif
+      done.mahsulot = !!data.mahsulot
+      done.payment = !!data.payment
+      done.verification = false // verification completes only when the Deal is created
+      completed.value = done
+
+      const step = dto.currentStep as DealStepKey
+      currentStep.value = DEAL_STEPS.some((s) => s.key === step) && step !== 'done' ? step : 'client'
     }
 
     function goTo(step: DealStepKey) {
@@ -201,11 +308,14 @@ export const useDealStore = defineStore(
       currentStep,
       completed,
       sessionData,
+      dealSessionId,
       steps,
       currentIndex,
       basketTotal,
       basketCount,
       reset,
+      setDealSessionId,
+      hydrateFromSession,
       goTo,
       complete,
       back,
@@ -225,7 +335,7 @@ export const useDealStore = defineStore(
   },
   {
     persist: {
-      pick: ['currentStep', 'completed', 'sessionData'],
+      pick: ['currentStep', 'completed', 'sessionData', 'dealSessionId'],
     },
   },
 )

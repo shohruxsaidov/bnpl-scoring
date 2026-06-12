@@ -384,7 +384,9 @@
     "closeConfirmTitle": "Bitim yopilsinmi?",
     "closeConfirmBody": "Kiritilgan ma'lumotlar ({name}) o'chiriladi va bitimni qayta tiklab bo'lmaydi.",
     "closeConfirmCancel": "Bekor qilish",
-    "closeConfirmAction": "Bitimni yopish"
+    "closeConfirmAction": "Bitimni yopish",
+    "sessionError": "Bitim sessiyasini ochib bo'lmadi. Aloqani tekshirib, qayta urinib ko'ring.",
+    "stepSaveError": "Qadamni saqlab bo'lmadi. Aloqani tekshirib, qayta urinib ko'ring."
   },
   "stepClient": {
     "title": "Mijoz",

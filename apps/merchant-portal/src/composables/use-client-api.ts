@@ -68,12 +68,8 @@ export function useClientApi() {
       signingSessionToken: string;
       myidCode: string;
       signingToken: string;
-      clientId: string;
-      tariffId: string;
-      basket: Array<{ productId: string; quantity: number }>;
-      paymentDay: number;
-      scoreSum?: number | null;
-      scoringDecision?: string | null;
+      /** The deal is built FROM this Deal Session server-side (ADR-0024) */
+      dealSessionId: string;
     }) =>
       apiFetch<{ verified: boolean; dealId: string; dealNumber: string }>('/merchant/client/myid-sign-complete', {
         method: 'POST',

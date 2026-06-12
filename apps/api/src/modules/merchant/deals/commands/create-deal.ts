@@ -1,8 +1,9 @@
-import { eq } from "drizzle-orm"
+import { eq, inArray } from "drizzle-orm"
 import type { Db } from "../../../../db"
-import { deals, dealItems, dealPaymentSchedules, scoringHistories, buyouts } from "../../../deals/db/schema"
+import { deals, dealItems, dealPaymentSchedules, dealSessions, dealSessionEvents, scoringHistories, buyouts } from "../../../deals/db/schema"
 import { calcTotalPayable, splitInstallments } from "../../../deals/installments"
-import { clients, tariffs, products } from "../../../id/db/schema"
+import { clients, products } from "../../../id/db/schema"
+import type { DealSessionRow, SessionStepData } from "../../deal-sessions/service"
 
 export interface CreateDealInput {
   merchantId: bigint
@@ -10,6 +11,7 @@ export interface CreateDealInput {
   agentId: bigint
   clientId: bigint
   tariffId: bigint
+  dealSessionId: string | null
   basket: Array<{
     productId: bigint
     productName: string
@@ -31,78 +33,94 @@ export interface CreateDealInput {
   criteriaScores?: Record<string, number> | null
   scoringId?: bigint | null
   lang: "ru" | "uz"
+  // KATM audit trail copied from the Deal Session (ADR-0024)
+  consentId?: string | null
+  consentDate?: string | null
+  demandId?: string | null
+  infoscoreRaw?: unknown
 }
 
-export interface ResolveAndCreateDealInput {
-  merchantId: bigint
-  branchId: bigint
-  agentId: bigint
-  clientId: bigint
-  tariffId: bigint
-  basket: Array<{ productId: string; quantity: number }>
-  paymentDay: number
-  scoreSum: number | null
-  scoringDecision: string | null
-  coefficient?: number | null
-  platformCreditLimit?: bigint | null
-  criteriaScores?: Record<string, number> | null
-  scoringId?: bigint | null
-  lang: "ru" | "uz"
+function coded(code: string): Error & { code: string } {
+  return Object.assign(new Error(code), { code })
 }
 
-export async function resolveAndCreateDeal(db: Db, input: ResolveAndCreateDealInput) {
-  const [tariff] = await db.select().from(tariffs).where(eq(tariffs.id, input.tariffId)).limit(1)
-  if (!tariff) throw Object.assign(new Error("tariff_not_found"), { code: "tariff_not_found" })
+/**
+ * Build the Deal FROM the Deal Session (ADR-0024). The session's snapshots are
+ * authoritative: basket prices, tariff params, payment day, contract language
+ * and scoring all come from step_data written server-side during the run —
+ * the request body carries nothing but the session id and the signing token.
+ */
+export async function createDealFromSession(db: Db, session: DealSessionRow) {
+  const data = (session.stepData ?? {}) as SessionStepData
+  const { client, tarif, mahsulot, payment, verification, scoring, katm } = data
 
-  const productIds = input.basket.map((i) => BigInt(i.productId))
-  const productRows = await Promise.all(
-    productIds.map((id) => db.select().from(products).where(eq(products.id, id)).limit(1)),
-  )
+  // Deal creation requires every step saved; the invalidation rule (a redone
+  // step clears everything after it) guarantees верификация is the latest.
+  if (!client || !tarif || !mahsulot?.lines?.length || !payment || !verification) {
+    throw coded("session_incomplete")
+  }
+  if (!scoring) throw coded("scoring_missing")
+  if (scoring.decision === "declined") throw coded("scoring_declined")
 
+  // Products must still exist and be active — stale session fails hard and the
+  // Agent redoes the Mahsulot step (ADR-0024)
+  const productIds = mahsulot.lines.map((l) => BigInt(l.productId))
+  const productRows = await db
+    .select({ id: products.id, active: products.active })
+    .from(products)
+    .where(inArray(products.id, productIds))
+  const alive = new Set(productRows.filter((p) => p.active).map((p) => p.id.toString()))
+  for (const line of mahsulot.lines) {
+    if (!alive.has(line.productId)) throw coded("product_not_found")
+  }
+
+  // Amounts from the session's price snapshots — the signed contract equals
+  // what the Client OTP-consented to, even if prices changed since
   let amount = BigInt(0)
-  const resolvedBasket = input.basket.map((item, idx) => {
-    const p = productRows[idx]?.[0]
-    if (!p) throw Object.assign(new Error(`product_not_found:${item.productId}`), { code: "product_not_found" })
-    const itemTotal = BigInt(Math.round(parseFloat(p.price) * 100)) * BigInt(item.quantity)
-    amount += itemTotal
+  const basket = mahsulot.lines.map((line) => {
+    amount += BigInt(Math.round(parseFloat(line.price) * 100)) * BigInt(line.quantity)
     return {
-      productId: p.id,
-      productName: p.name,
-      price: p.price,
-      mxikCode: p.mxikCode ?? null,
-      packageCode: p.packageCode ?? null,
-      packageName: p.packageName ?? null,
-      quantity: item.quantity,
+      productId: BigInt(line.productId),
+      productName: line.productName,
+      price: line.price,
+      mxikCode: line.mxikCode,
+      packageCode: line.packageCode,
+      packageName: line.packageName,
+      quantity: line.quantity,
     }
   })
 
-  if (tariff.minAmount != null && amount < tariff.minAmount)
-    throw Object.assign(new Error("amount_below_tariff_min"), { code: "amount_below_tariff_min" })
-  if (tariff.maxAmount != null && amount > tariff.maxAmount)
-    throw Object.assign(new Error("amount_above_tariff_max"), { code: "amount_above_tariff_max" })
+  const minAmount = tarif.minAmount != null ? BigInt(tarif.minAmount) : null
+  const maxAmount = tarif.maxAmount != null ? BigInt(tarif.maxAmount) : null
+  if (minAmount != null && amount < minAmount) throw coded("amount_below_tariff_min")
+  if (maxAmount != null && amount > maxAmount) throw coded("amount_above_tariff_max")
 
-  const markupPercent = parseFloat(tariff.markupPercent)
-  const totalPayable = calcTotalPayable(amount, markupPercent)
+  const totalPayable = calcTotalPayable(amount, tarif.markupPercent)
 
   return createDeal(db, {
-    merchantId: input.merchantId,
-    branchId: input.branchId,
-    agentId: input.agentId,
-    clientId: input.clientId,
-    tariffId: input.tariffId,
-    basket: resolvedBasket,
-    paymentDay: input.paymentDay,
+    merchantId: session.merchantId,
+    branchId: session.branchId,
+    agentId: session.agentId,
+    clientId: BigInt(client.clientId),
+    tariffId: BigInt(tarif.tariffId),
+    dealSessionId: session.id,
+    basket,
+    paymentDay: payment.paymentDay,
     amount,
     totalPayable,
-    termMonths: tariff.termMonths,
-    markupPercent,
-    scoreSum: input.scoreSum,
-    scoringDecision: input.scoringDecision,
-    coefficient: input.coefficient ?? null,
-    platformCreditLimit: input.platformCreditLimit ?? null,
-    criteriaScores: input.criteriaScores ?? null,
-    scoringId: input.scoringId ?? null,
-    lang: input.lang,
+    termMonths: tarif.termMonths,
+    markupPercent: tarif.markupPercent,
+    scoreSum: scoring.scoreSum,
+    scoringDecision: scoring.decision,
+    coefficient: scoring.coefficient,
+    platformCreditLimit: BigInt(Math.round(scoring.platformCreditLimit)),
+    criteriaScores: scoring.criteriaScores,
+    scoringId: scoring.scoringId && /^\d+$/.test(scoring.scoringId) ? BigInt(scoring.scoringId) : null,
+    lang: verification.lang,
+    consentId: katm?.consentId ?? null,
+    consentDate: katm?.consentDate ?? null,
+    demandId: katm?.demandId ?? null,
+    infoscoreRaw: katm?.raw ?? null,
   })
 }
 
@@ -116,6 +134,11 @@ export async function createDeal(db: Db, input: CreateDealInput) {
         agentId: input.agentId,
         clientId: input.clientId,
         tariffId: input.tariffId,
+        dealSessionId: input.dealSessionId,
+        consentId: input.consentId ?? null,
+        consentDate: input.consentDate ?? null,
+        demandId: input.demandId ?? null,
+        infoscoreRaw: input.infoscoreRaw ?? null,
         paymentDay: input.paymentDay,
         amount: input.amount,
         totalPayable: input.totalPayable,
@@ -196,6 +219,17 @@ export async function createDeal(db: Db, input: CreateDealInput) {
       branchId: input.branchId,
       amount: input.amount,
     })
+
+    // Close the Wizard run atomically with the Deal it produced
+    if (input.dealSessionId) {
+      await tx
+        .update(dealSessions)
+        .set({ status: "completed", updatedAt: now })
+        .where(eq(dealSessions.id, input.dealSessionId))
+      await tx
+        .insert(dealSessionEvents)
+        .values({ sessionId: input.dealSessionId, step: "completed", payload: { dealId: deal.id } })
+    }
 
     return deal
   })

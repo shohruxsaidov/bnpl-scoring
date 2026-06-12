@@ -9,6 +9,8 @@ import {
   confirmCard,
   scoreCard,
 } from '../../integrations/plumgate/service'
+import { createScoring } from '../scoringHistory/commands/create-scoring'
+import { loadOwnedActiveSession, stampScoring, type SessionStepData } from '../deal-sessions/service'
 
 export default async function merchantCardRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
@@ -34,6 +36,8 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
   const ScoreBody = Type.Object({
     plumCardId: Type.String({ minLength: 1 }),
     pcType: Type.Union([Type.Literal('uzcard'), Type.Literal('humo')]),
+    clientId: Type.String({ minLength: 1 }),
+    dealSessionId: Type.String({ minLength: 1 }),
   })
 
   // ── Helper ───────────────────────────────────────────────────────────────
@@ -98,14 +102,69 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
   )
 
   // ── POST /merchant/cards/score ────────────────────────────────────────────
+  // Runs the card score, then stamps the full scoring result onto the Deal
+  // Session server-side (ADR-0024 / ADR-0022 — the client never carries
+  // scoring data; deal creation reads it back from the session).
 
   fastify.post(
     '/score',
     { schema: { body: ScoreBody }, preHandler: app.verifyMerchantJwt },
-    async (request) => {
-      const { plumCardId, pcType } = request.body
-      const result = await scoreCard(db, { plumCardId, pcType })
-      return result   // { score, limit, decision }
+    async (request, reply) => {
+      const p = request.user as { sub: string; merchantId: string }
+      const { plumCardId, pcType, clientId, dealSessionId } = request.body
+      await requireClient(clientId)
+
+      let session
+      try {
+        session = await loadOwnedActiveSession(db, dealSessionId, BigInt(p.sub))
+      } catch (err: any) {
+        if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found')
+        if (err.code === 'session_not_active') return reply.code(409).sendError('session_not_active')
+        throw err
+      }
+
+      const result = await scoreCard(db, { plumCardId, pcType })   // { score, limit, decision }
+
+      const coefficient = result.score >= 700 ? 1.0 : result.score >= 600 ? 0.8 : 0
+
+      // Scoring breakdown: card score + KATM-derived credit signals from the session
+      const katm = (session.stepData as SessionStepData).katm
+      const criteriaScores: Record<string, number> = { cardScore: result.score }
+      if (katm) {
+        criteriaScores['katmScore'] = katm.score
+        criteriaScores['activeLoans'] = katm.activeLoans
+        criteriaScores['overdueCount'] = katm.overdueCount
+      }
+
+      // Record the run so it appears in the admin history even if no deal is
+      // ever created; non-blocking — the wizard may continue if recording fails
+      let scoringId: string | null = null
+      try {
+        const res = await createScoring(db, {
+          merchantId: BigInt(p.merchantId),
+          clientId: BigInt(clientId),
+          scoreSum: result.score,
+          coefficient,
+          decision: result.decision,
+          platformCreditLimit: BigInt(Math.round(result.limit)),
+          criteriaScores,
+        })
+        scoringId = res.id
+      } catch (err) {
+        request.log.warn({ err }, 'scoring history record failed')
+      }
+
+      await stampScoring(db, session, {
+        cardId: plumCardId,
+        scoringId,
+        scoreSum: result.score,
+        coefficient,
+        decision: result.decision,
+        platformCreditLimit: result.limit,
+        criteriaScores,
+      })
+
+      return { ...result, scoringId, coefficient, criteriaScores }
     },
   )
 }

@@ -45,21 +45,14 @@ export interface DealDetail extends DealListItem {
   pdfUrl: string | null
 }
 
+/**
+ * The deal is built FROM the Deal Session (ADR-0024): basket, tariff, payment
+ * day, lang and scoring all live in the session's server-side step data —
+ * the request carries only the run id and the OTP consent proof.
+ */
 export interface CreateDealInput {
-  clientId: string
-  tariffId: string
-  basket: Array<{ productId: string; quantity: number }>
-  paymentDay: number
+  dealSessionId: string
   signingToken: string
-  scoreSum?: number | null
-  scoringDecision?: string | null
-  coefficient?: number | null
-  /** Platform credit limit, tiyin */
-  platformCreditLimit?: number | null
-  criteriaScores?: Record<string, number> | null
-  /** client_scorings.id recorded at scoring time, linked to this deal */
-  scoringId?: string | null
-  lang?: 'ru' | 'uz'
 }
 
 // ---------------------------------------------------------------------------

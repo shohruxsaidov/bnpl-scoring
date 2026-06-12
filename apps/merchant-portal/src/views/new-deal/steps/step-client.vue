@@ -5,6 +5,7 @@ import InputText from 'primevue/inputtext'
 import { useDealStore } from '@/stores/deal'
 import type { KatmSummary } from '@/stores/deal'
 import { useClientApi } from '@/composables/use-client-api'
+import { saveSessionStep } from '@/composables/use-deal-session-api'
 import { apiFetch } from '@/utils/apiFetch'
 import type { Client } from '@/types'
 
@@ -227,13 +228,16 @@ function confirmNewClient() {
 }
 
 async function queryKatm(): Promise<boolean> {
-  if (!confirmedClient.value) return false
+  if (!confirmedClient.value || !deal.dealSessionId) return false
   katmLoading.value = true
   katmError.value = ''
   try {
     const result = await apiFetch<KatmSummary>('/merchant/katm/query', {
       method: 'POST',
-      body: JSON.stringify({ clientId: confirmedClient.value.id }),
+      body: JSON.stringify({
+        clientId: confirmedClient.value.id,
+        dealSessionId: deal.dealSessionId,
+      }),
     })
     deal.setKatmResult(result)
     katmDone.value = true
@@ -267,9 +271,30 @@ function resetSearch() {
   myidError.value = ''
 }
 
+const saving = ref(false)
+const saveError = ref('')
+
 async function onNext() {
-  if (!confirmedClient.value || katmLoading.value) return
+  if (!confirmedClient.value || katmLoading.value || saving.value) return
   if (!katmDone.value && !(await queryKatm())) return
+
+  // Blocking step save — the wizard advances only once the server has it (ADR-0024)
+  saving.value = true
+  saveError.value = ''
+  try {
+    await saveSessionStep(deal.dealSessionId!, 'client', {
+      clientId: confirmedClient.value.id,
+      isNewClient: isNewClient.value,
+      myidVerified: isNewClient.value,
+      katmConsent: true,
+    })
+  } catch {
+    saveError.value = t('deal.stepSaveError')
+    return
+  } finally {
+    saving.value = false
+  }
+
   deal.setClient(confirmedClient.value, {
     isNew: isNewClient.value,
     myidVerified: isNewClient.value,
@@ -511,15 +536,25 @@ const clientFullName = computed(() =>
           </button>
         </div>
       </transition>
+
+      <transition name="fade">
+        <div v-if="saveError" class="katm-error">
+          <i class="pi pi-exclamation-triangle" />
+          {{ saveError }}
+          <button class="btn-ghost btn-sm" :disabled="saving" @click="onNext">
+            <i class="pi pi-refresh" /> {{ $t('common.retry') }}
+          </button>
+        </div>
+      </transition>
     </template>
 
     <!-- ── Footer ────────────────────────────────────────────────────────── -->
     <footer class="sc-foot">
       <span class="hint">{{ $t('stepClient.stepOf') }}</span>
-      <button class="btn-gradient" :disabled="!canContinue || katmLoading" @click="onNext">
-        <i v-if="katmLoading" class="pi pi-spin pi-spinner" />
+      <button class="btn-gradient" :disabled="!canContinue || katmLoading || saving" @click="onNext">
+        <i v-if="katmLoading || saving" class="pi pi-spin pi-spinner" />
         {{ katmLoading ? $t('stepClient.queryingKatm') : $t('common.continue') }}
-        <i v-if="!katmLoading" class="pi pi-arrow-right" />
+        <i v-if="!katmLoading && !saving" class="pi pi-arrow-right" />
       </button>
     </footer>
   </div>
