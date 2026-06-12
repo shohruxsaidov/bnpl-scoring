@@ -18,14 +18,6 @@ import {
 } from './service.js';
 import { createMyidSession, exchangeMyidCode } from './myid';
 
-/** Normalize a 9-digit national phone number to E.164 (+998XXXXXXXXX). */
-function normalizePhone(input: string): string {
-  const digits = input.replace(/\D/g, '');
-  // Tolerate inputs that already include the country code.
-  const national = digits.startsWith('998') ? digits.slice(3) : digits;
-  return `+998${national}`;
-}
-
 const ACCESS_MAX_AGE = 15 * 60; // seconds
 
 const isProd = env.NODE_ENV === 'production';
@@ -104,7 +96,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
   /* ── Registration ───────────────────────────────────────────────────────── */
 
   fastify.post('/register/phone', { schema: { body: PhoneBody } }, async (request, reply) => {
-    const phone = normalizePhone(request.body.phone);
+    const { phone } = request.body;
 
     const existing = await findUserByPhone(db, phone);
     if (existing) return reply.code(409).sendError('phone_taken');
@@ -116,7 +108,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
   });
 
   fastify.post('/register/otp', { schema: { body: RegisterOtpBody } }, async (request, reply) => {
-    const phone = normalizePhone(request.body.phone);
+    const { phone } = request.body;
 
     const ok = await verifyOtp(db, phone, request.body.code, 'register');
     if (!ok) return reply.code(400).sendError('invalid_otp');
@@ -165,7 +157,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
 
     const regToken = app.jwt.sign(
       {
-        phone: payload.phone.replace('+', ''),
+        phone: payload.phone,
         pinfl,
         myidSessionId: myidResult.sessionId,
         step: 'pinfl_verified',
@@ -221,7 +213,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
   /* ── Login ──────────────────────────────────────────────────────────────── */
 
   fastify.post('/login/phone', { schema: { body: PhoneBody } }, async (request, reply) => {
-    const phone = normalizePhone(request.body.phone);
+    const { phone } = request.body;
 
     const user = await findUserByPhone(db, phone);
     if (!user) return reply.code(404).sendError('no_account');
@@ -233,7 +225,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
   });
 
   fastify.post('/login/otp', { schema: { body: OtpBody } }, async (request, reply) => {
-    const phone = normalizePhone(request.body.phone);
+    const { phone } = request.body;
 
     const ok = await verifyOtp(db, phone, request.body.code, 'login');
     if (!ok) return reply.code(400).sendError('invalid_otp');

@@ -15,11 +15,7 @@ function formatDealNumber(n: bigint | null | undefined): string {
   return n != null ? `CN-${String(n).padStart(7, '0')}` : '—';
 }
 
-function normalizePhone(input: string): string {
-  const digits = input.replace(/\D/g, '');
-  const national = digits.startsWith('998') ? digits.slice(3) : digits;
-  return `+998${national}`;
-}
+
 
 function toClientDto(c: typeof clients.$inferSelect) {
   return {
@@ -98,14 +94,14 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
   fastify.post(
     '/otp',
     { schema: { body: OtpBody }, preHandler: app.verifyMerchantJwt },
-    async (request) => {
-      const phone = normalizePhone(request.body.phone);
+    async (req) => {
+      const {phone} = req.body
       const isProd = app.hasDecorator('isProd')
         ? (app as any).isProd
         : process.env['NODE_ENV'] === 'production';
 
       const code = await createOtp(db, phone, 'client_registration');
-      if (!isProd) request.log.info({ phone, code }, 'client_registration OTP issued');
+      if (!isProd) req.log.info({ phone, code }, 'client_registration OTP issued');
 
       return { ok: true, ...(isProd ? {} : { devOtp: code }) };
     },
@@ -115,7 +111,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
     '/otp/verify',
     { schema: { body: OtpVerifyBody }, preHandler: app.verifyMerchantJwt },
     async (request, reply) => {
-      const phone = normalizePhone(request.body.phone);
+      const { phone } = request.body;
       const ok = await verifyOtp(db, phone, request.body.code, 'client_registration');
       if (!ok) return reply.code(400).sendError('invalid_otp');
 
@@ -284,7 +280,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
     '/sign-otp',
     { schema: { body: SignOtpBody }, preHandler: app.verifyMerchantJwt },
     async (request) => {
-      const phone = normalizePhone(request.body.phone);
+      const { phone } = request.body;
       const isProd = app.hasDecorator('isProd')
         ? (app as any).isProd
         : process.env['NODE_ENV'] === 'production';
@@ -306,7 +302,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
     '/sign-otp/verify',
     { schema: { body: SignOtpVerifyBody }, preHandler: app.verifyMerchantJwt },
     async (request, reply) => {
-      const phone = normalizePhone(request.body.phone);
+      const { phone } = request.body;
       const ok = await verifyOtp(db, phone, request.body.code, 'deal_signing');
       if (!ok) return reply.code(400).sendError('invalid_otp');
 
