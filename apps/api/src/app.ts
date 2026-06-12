@@ -12,6 +12,7 @@ import jwtPlugin from "./plugins/jwt.js";
 import permissionsPlugin from "./plugins/permissions";
 import minioPlugin from "./plugins/minio";
 import redisPlugin from "./plugins/redis";
+import queuePlugin from "./plugins/queue";
 import i18nPlugin from "./plugins/i18n";
 import healthRoutes from "./routes/health.js";
 import { authModule, merchantModule, adminModule, notificationsModule, clientModule, pushModule } from "./modules/index.js";
@@ -98,6 +99,7 @@ export async function buildApp() {
   await app.register(permissionsPlugin);
   await app.register(redisPlugin);
   await app.register(minioPlugin);
+  await app.register(queuePlugin);
 
   // domain modules register here as encapsulated plugins
   await app.register(healthRoutes);

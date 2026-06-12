@@ -71,7 +71,7 @@ The 7-step Merchant App flow a Sales Agent follows to issue a Deal: Клиент
 _Avoid_: Form, flow, checkout
 
 **Deal Session**:
-The persistent record of a single Wizard run, created the moment an Agent opens the Wizard — before a Client is even identified. It carries the run's current state (so a run can be resumed from any device) and an immutable trail of every step submission, including steps the Agent later went back and redid. Belongs to one Merchant, Branch, and Agent. Its UUID is sent as `claim_id` on all KATM requests made during the run. Completing the Wizard produces a Deal linked back to its Deal Session; abandoned Deal Sessions are kept for funnel analytics and audit and are never shown as Deals.
+The persistent record of a single Wizard run, created the moment an Agent opens the Wizard — before a Client is even identified. It carries the run's current state (so a run can be resumed from any device) and an immutable trail of every step submission, including steps the Agent later went back and redid. Belongs to one Merchant, Branch, and Agent. Carries a **KATM Claim ID** assigned when the run's bureau claim is registered. Completing the Wizard produces a Deal linked back to its Deal Session; abandoned Deal Sessions are kept for funnel analytics and audit and are never shown as Deals.
 _Avoid_: wizard session, draft deal, claim
 
 **Basket**:
@@ -193,7 +193,7 @@ The scored output from PlumGate's SCORING module, derived from the Client's bank
 _Avoid_: PlumGate score, transaction score, card scoring result, optional scoring, scoring input
 
 **Scoring Session**:
-A self-service scoring request initiated by a Client through the Client portal. Keyed on `users.id` — platform-wide, no Merchant scope. Created when the Client submits KATM consent (not on page open). Its UUID serves as the `claim_id` for the KATM query and stores `consent_id` + `consent_date` directly. Tracks overall status (`pending | running | completed | failed`). Permanently separate from the Wizard scoring flow, which is Agent-driven and keyed on `clients.id`.
+A self-service scoring request initiated by a Client through the Client portal. Keyed on `users.id` — platform-wide, no Merchant scope. Created when the Client submits KATM consent (not on page open). Carries a **KATM Claim ID** assigned when the bureau claim is registered, and stores `consent_id` + `consent_date` directly. Tracks overall status (`pending | running | completed | failed`). Permanently separate from the Wizard scoring flow, which is Agent-driven and keyed on `clients.id`.
 _Avoid_: User scoring request, scoring request, self-service session
 
 **Scoring Pipeline**:
@@ -213,8 +213,12 @@ The 14-digit national personal identification number for individuals in Uzbekist
 _Avoid_: National ID, passport number, personal number
 
 **KATM Consent**:
-The borrower's signed consent document authorising a credit bureau query, required by UZ law №301. One Consent is collected per Deal at the start of the Wizard. Stored as `consent_id` (document number) + `consent_date` on the Deal. Both fields are sent on every KATM request for that Deal.
-_Avoid_: Permission, agreement, authorisation
+The borrower's consent authorising a credit bureau query, required by UZ law №301. Captured as a persisted, sequence-numbered consent record — who consented, when, through which Deal Session or Scoring Session, and how it was given — created at the Клиент step (Wizard) or the consent screen (self-service). The record's number is sent as `pAgreementId` and its timestamp as `pAgreementDate` on every KATM request for that run; the record is the auditable artifact behind those fields. There is no paper document.
+_Avoid_: Permission, agreement, authorisation, consent document (it is a record, not a signed paper)
+
+**KATM Claim ID**:
+The ≤20-character numeric identifier (`katm_claim_id`) the platform assigns to one bureau claim, drawn from a single shared Postgres sequence and stamped on the owning Deal Session or Scoring Session when the claim is registered with KATM. Sent as `pClaimId` on every KATM call for that run; the future provider phase (contract registration) references the same value. Replaces the earlier rule of sending the session UUID — KATM's `pClaimId` is capped at 20 characters, which a UUID exceeds.
+_Avoid_: claim id (when meaning the session UUID), session id, application number
 
 **KATM Demand ID**:
 The 16-char system reference KATM assigns to each bureau query (`demand_id` in the response). Stored on the Deal. Used when disputing a Score with KATM or responding to a regulatory audit.
@@ -395,6 +399,8 @@ Key decisions live in `docs/adr/` as thematic files:
 | `0021-global-scoring-model.md` | (superseded in part by 0023) `tariffs.scoring_model_id` dropped; `model_revision_id` stamped per scoring run; latest revision is active |
 | `0022-scoring-engine-sole-authority.md` | Engine wired into both runtime flows via one server-side orchestrator; Card Score audit-only; Base Limit constant in revision; 0.8 cap accepted until ИНПС/ГНК; decision vocabulary `approved`/`partial`/`denied`/`rejected`; client-supplied scoring POST deleted; latest run wins |
 | `0023-per-merchant-scoring-model.md` | `scoring_models` parent entity; Merchant optionally assigned a model (never a revision); exactly one Global Model (atomic switch, no delete); resolution `merchant.model ?? global` → latest revision; one limit per Client, last run wins |
+| `0024-deal-session.md` | Deal Session created on Wizard open; immutable step-event trail; resumable from any device; abandoned runs kept for funnel/audit |
+| `0025-katm-retail-api-integration.md` | KATM Retail API (infokredit.uz) replaces single infoscore call; consume-only (provider obligations deferred); shared-sequence KATM Claim ID (amends 0024); fixed claim amount; sequenced consent record; address/doc-type from MyID with manual fallback; ≤15 min background report polling |
 
 ## Example dialogue
 

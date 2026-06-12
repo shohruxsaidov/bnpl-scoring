@@ -21,9 +21,10 @@ import { files } from '../../../lib/file-storage/schema'
 // One row per Wizard run, created the moment an Agent opens the Wizard
 // (before a Client is identified). The mutable head of the run: current_step
 // and step_data are overwritten as steps are saved; the immutable trail lives
-// in deal_session_events. The session UUID is sent as claim_id on all KATM
-// requests made during the run. At most one 'active' session per Agent —
-// starting a new run abandons the previous one. See ADR-0024.
+// in deal_session_events. The run's bureau claim is identified by katm_claim_id
+// (shared sequence — ADR-0025; the UUID does not fit KATM's pClaimId String(20)).
+// At most one 'active' session per Agent — starting a new run abandons the
+// previous one. See ADR-0024.
 // ---------------------------------------------------------------------------
 export const dealSessions = pgTable('deal_sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -36,6 +37,9 @@ export const dealSessions = pgTable('deal_sessions', {
   currentStep: varchar('current_step', { length: 20 }).notNull().default('client'),
   // 'active' | 'completed' | 'abandoned'
   status: varchar('status', { length: 10 }).notNull().default('active'),
+  // KATM Claim ID (ADR-0025) — drawn from the shared katm_claim_seq when the
+  // bureau claim is registered
+  katmClaimId: varchar('katm_claim_id', { length: 20 }),
   // Mutable resume snapshot, keyed by step ('client', 'card', …) plus
   // server-stamped 'katm' and 'scoring' blocks. IDs + non-reconstructable
   // snapshots only — no Client PII (the clients row is the PII home).

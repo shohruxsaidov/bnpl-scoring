@@ -44,6 +44,13 @@ export interface ScoringStamp {
   criteriaScores: Record<string, number>
 }
 
+/** Async-report state while a BullMQ job polls KATM (ADR-0025). */
+export interface KatmPendingState {
+  status: 'pending' | 'failed'
+  startedAt: string
+  error?: string
+}
+
 export interface SessionStepData {
   client?: { clientId: string; isNewClient: boolean; myidVerified: boolean; katmConsent: boolean }
   card?: { cardId: string; maskedPan: string; pcType: string; bank: string; holderName: string; expiry: string }
@@ -72,6 +79,7 @@ export interface SessionStepData {
   payment?: { paymentDay: number }
   verification?: { lang: 'ru' | 'uz'; otpVerifiedAt: string | null }
   katm?: KatmStamp
+  katmPending?: KatmPendingState
   scoring?: ScoringStamp
 }
 
@@ -207,11 +215,34 @@ export async function saveStep(
 /** Merge a server-side KATM result into the session head + event trail. */
 export async function stampKatm(db: Db, session: DealSessionRow, stamp: KatmStamp): Promise<void> {
   const data = stepDataOf(session)
+  const { katmPending: _drop, ...rest } = data
   await db
     .update(dealSessions)
-    .set({ stepData: { ...data, katm: stamp }, updatedAt: new Date() })
+    .set({ stepData: { ...rest, katm: stamp }, updatedAt: new Date() })
     .where(eq(dealSessions.id, session.id))
   await logEvent(db, session.id, 'katm', stamp)
+}
+
+/** Record/refresh the async KATM-report state on the session (ADR-0025). */
+export async function stampKatmPending(
+  db: Db,
+  session: DealSessionRow,
+  state: KatmPendingState,
+): Promise<void> {
+  const data = stepDataOf(session)
+  await db
+    .update(dealSessions)
+    .set({ stepData: { ...data, katmPending: state }, updatedAt: new Date() })
+    .where(eq(dealSessions.id, session.id))
+  await logEvent(db, session.id, 'katm_pending', state)
+}
+
+/** Persist the KATM Claim ID allocated for this run (ADR-0025). */
+export async function setKatmClaimId(db: Db, session: DealSessionRow, claimId: string): Promise<void> {
+  await db
+    .update(dealSessions)
+    .set({ katmClaimId: claimId, updatedAt: new Date() })
+    .where(eq(dealSessions.id, session.id))
 }
 
 /** Merge a server-side scoring result into the session head + event trail. */

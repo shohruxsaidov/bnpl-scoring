@@ -1,10 +1,14 @@
 /**
- * KATM integration — Kredit Axborot Tizimi Markazi (Uzbekistan Credit Bureau)
+ * KATM integration — Retail API of the Uzbekistan Credit Bureau (ADR-0025).
  *
- * Vendor base URL : KATM_BASE_URL
- * Auth            : Basic Auth (KATM_LOGIN / KATM_PASSWORD)
- * Report type     : 077 (InfoScore JSON)
- * All requests are logged to integration_logs.
+ * Vendor base URL : KATM_BASE_URL ({base}/katm-api/v1)
+ * Auth            : body-level — security.pLogin / security.pPassword
+ * Org identity    : KATM_CODE (pCode) + KATM_HEAD (pHead)
+ * Report type     : InfoScore 077, JSON (pReportId = KATM_REPORT_ID)
+ *
+ * Consume-only scope: ban check, claim registration, credit report
+ * (+ status polling). Provider obligations are deferred — see ADR-0025.
+ * All requests are logged to integration_logs (credentials redacted).
  */
 
 import ky from 'ky'
@@ -12,31 +16,280 @@ import type { Db } from '../../../db'
 import { env } from '../../../env'
 import { IntegrationError } from '../../../lib/integrations'
 import { logIntegration } from '../log'
-import { mockQueryInfoscore } from './mock'
+import {
+  mockCheckCreditBan,
+  mockRegisterClaim,
+  mockRequestReport,
+  mockCheckReportStatus,
+} from './mock'
+
+// ---------------------------------------------------------------------------
+// Result codes
+// ---------------------------------------------------------------------------
+
+export const KATM_OK = '05000'
+export const KATM_REPORT_PENDING = '05050'
+
+/** Vendor-level failure: HTTP 200 but data.result is not a success code. */
+export class KatmVendorError extends Error {
+  constructor(
+    public readonly methodName: string,
+    public readonly result: string | null,
+    public readonly resultMessage: string | null,
+  ) {
+    super(`katm ${methodName}: ${result ?? 'no result'} ${resultMessage ?? ''}`.trim())
+    this.name = 'KatmVendorError'
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Client factory
 // ---------------------------------------------------------------------------
 
-function makeKatmClient() {
-  if (!env.KATM_LOGIN || !env.KATM_PASSWORD) {
-    throw new Error('KATM_LOGIN / KATM_PASSWORD are not configured')
+function katmClient() {
+  if (!env.KATM_LOGIN || !env.KATM_PASSWORD || !env.KATM_CODE || !env.KATM_HEAD) {
+    throw new Error('KATM_LOGIN / KATM_PASSWORD / KATM_CODE / KATM_HEAD are not configured')
   }
-  const credentials = Buffer.from(`${env.KATM_LOGIN}:${env.KATM_PASSWORD}`).toString('base64')
   const base = env.KATM_BASE_URL.endsWith('/') ? env.KATM_BASE_URL : `${env.KATM_BASE_URL}/`
   return ky.create({
     baseUrl: base,
     timeout: env.KATM_TIMEOUT,
     retry: 0,
-    headers: {
-      Authorization: `Basic ${credentials}`,
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
   })
 }
 
+function security() {
+  return { pLogin: env.KATM_LOGIN, pPassword: env.KATM_PASSWORD }
+}
+
+/** KATM date format: yyyy-MM-dd'T'HH:mm:ss.SSSZ */
+function katmDate(d: Date): string {
+  return d.toISOString().replace(/Z$/, '+0000')
+}
+
 // ---------------------------------------------------------------------------
-// Vendor response types (matches real KATM InfoScore 077 JSON response)
+// Vendor envelope + low-level call helper
+// ---------------------------------------------------------------------------
+
+interface KatmEnvelope<T> {
+  data?: T & { result?: string; resultMessage?: string }
+  errorMessage?: string
+  code?: number
+}
+
+async function callKatm<T>(
+  db: Db,
+  methodName: string,
+  body: Record<string, unknown>,
+): Promise<T & { result?: string; resultMessage?: string }> {
+  const client = katmClient()
+  const requestTimestamp = new Date()
+  try {
+    const envelope = await client.post(methodName, { json: body }).json<KatmEnvelope<T>>()
+
+    logIntegration(db, {
+      integration: 'katm',
+      methodName,
+      methodType: 'POST',
+      request: body,
+      response: envelope,
+      status: envelope.code ?? 200,
+      errorMessage: envelope.errorMessage ?? null,
+      requestTimestamp,
+      responseTimestamp: new Date(),
+    })
+
+    const data = envelope.data
+    if (!data) {
+      throw new KatmVendorError(methodName, null, envelope.errorMessage ?? null)
+    }
+    return data
+  } catch (err) {
+    if (!(err instanceof KatmVendorError)) {
+      logIntegration(db, {
+        integration: 'katm',
+        methodName,
+        methodType: 'POST',
+        request: body,
+        response: null,
+        status: err instanceof IntegrationError ? err.statusCode : null,
+        errorMessage: err instanceof Error ? err.message : String(err),
+        requestTimestamp,
+        responseTimestamp: new Date(),
+      })
+    }
+    throw err
+  }
+}
+
+function assertOk(
+  methodName: string,
+  data: { result?: string; resultMessage?: string },
+  alsoAllowed: string[] = [],
+): void {
+  const result = data.result ?? null
+  if (result === KATM_OK || (result && alsoAllowed.includes(result))) return
+  throw new KatmVendorError(methodName, result, data.resultMessage ?? null)
+}
+
+// ---------------------------------------------------------------------------
+// 1. Ban-registry pre-check — /client/credit/ban/status
+// ---------------------------------------------------------------------------
+
+export async function checkCreditBan(db: Db, params: { pinfl: string }): Promise<{ banned: boolean }> {
+  if (env.KATM_MOCK) return mockCheckCreditBan(params)
+
+  const data = await callKatm<{ status?: number }>(db, 'client/credit/ban/status', {
+    security: security(),
+    data: {
+      pHead: env.KATM_HEAD,
+      pCode: env.KATM_CODE,
+      pIdentifier: params.pinfl,
+      pSubjectType: 2, // physical person
+    },
+  })
+  assertOk('client/credit/ban/status', data)
+  return { banned: data.status === 1 }
+}
+
+// ---------------------------------------------------------------------------
+// 2. Claim registration — /claim/registration
+// ---------------------------------------------------------------------------
+
+export interface RegisterClaimParams {
+  claimId: string
+  agreementId: string
+  agreementDate: Date
+  pinfl: string
+  docSeries: string
+  docNumber: string
+  docType: number // 0 — ID card, 6 — biometric passport
+  regionCode: string // dict 016
+  districtCode: string // dict 052
+  address: string
+  phone: string
+}
+
+export interface RegisterClaimResult {
+  /** KATM-SIR — the bureau's subject identifier */
+  katmSir: string
+  /** Bureau-verified passport echo, kept for the audit trail */
+  verified: Record<string, unknown>
+}
+
+export async function registerClaim(db: Db, params: RegisterClaimParams): Promise<RegisterClaimResult> {
+  if (env.KATM_MOCK) return mockRegisterClaim(params)
+
+  const now = new Date()
+  const creditEndDate = new Date(now)
+  creditEndDate.setMonth(creditEndDate.getMonth() + env.KATM_CLAIM_TERM_MONTHS)
+
+  const data = await callKatm<Record<string, unknown> & { clientId?: string }>(db, 'claim/registration', {
+    security: security(),
+    data: {
+      pCode: env.KATM_CODE,
+      pClaimId: params.claimId,
+      pClaimDate: katmDate(now),
+      pAgreementId: params.agreementId,
+      pAgreementDate: katmDate(params.agreementDate),
+      pPinfl: params.pinfl,
+      pDocSeries: params.docSeries,
+      pDocNumber: params.docNumber,
+      pDocType: params.docType,
+      pRegion: params.regionCode,
+      pLocalRegion: params.districtCode,
+      pAddress: params.address,
+      pPhone: params.phone,
+      // Fixed applied amount/term (ADR-0025) — the Tariff and Basket do not
+      // exist yet when the claim is registered at the Клиент step
+      pCreditAmount: env.KATM_CLAIM_AMOUNT_TIYIN,
+      pCurrency: env.KATM_CURRENCY_CODE,
+      pCreditEndDate: katmDate(creditEndDate),
+    },
+  })
+  assertOk('claim/registration', data)
+
+  const { result: _r, resultMessage: _m, ...verified } = data
+  return { katmSir: data.clientId ?? '', verified }
+}
+
+// ---------------------------------------------------------------------------
+// 3. Credit report — /credit/report (+ /credit/report/status polling)
+// ---------------------------------------------------------------------------
+
+export type ReportOutcome =
+  | { status: 'ready'; result: KatmResult }
+  | { status: 'pending'; token: string }
+
+interface ReportData {
+  reportBase64?: string
+  Token?: string
+}
+
+function decodeReport(methodName: string, base64: string): KatmResult {
+  let parsed: KatmResponse
+  try {
+    parsed = JSON.parse(Buffer.from(base64, 'base64').toString('utf8')) as KatmResponse
+  } catch {
+    throw new KatmVendorError(methodName, KATM_OK, 'reportBase64 is not valid JSON')
+  }
+  return parseKatmResponse(parsed)
+}
+
+export async function requestReport(db: Db, params: { claimId: string }): Promise<ReportOutcome> {
+  if (env.KATM_MOCK) return mockRequestReport(params)
+
+  const data = await callKatm<ReportData>(db, 'credit/report', {
+    security: security(),
+    data: {
+      pHead: env.KATM_HEAD,
+      pCode: env.KATM_CODE,
+      pLegal: 1, // 1 — physical person (per spec v12.4)
+      pClaimId: params.claimId,
+      pReportId: env.KATM_REPORT_ID,
+      pLang: 'ru',
+      pReportFormat: 1, // JSON
+    },
+  })
+  assertOk('credit/report', data, [KATM_REPORT_PENDING])
+
+  if (data.result === KATM_REPORT_PENDING) {
+    if (!data.Token) throw new KatmVendorError('credit/report', data.result, 'pending without Token')
+    return { status: 'pending', token: data.Token }
+  }
+  if (!data.reportBase64) {
+    throw new KatmVendorError('credit/report', data.result ?? null, 'success without reportBase64')
+  }
+  return { status: 'ready', result: decodeReport('credit/report', data.reportBase64) }
+}
+
+export async function checkReportStatus(
+  db: Db,
+  params: { claimId: string; token: string },
+): Promise<ReportOutcome> {
+  if (env.KATM_MOCK) return mockCheckReportStatus(params)
+
+  const data = await callKatm<ReportData>(db, 'credit/report/status', {
+    security: security(),
+    data: {
+      pHead: env.KATM_HEAD,
+      pCode: env.KATM_CODE,
+      pToken: params.token,
+      pClaimId: params.claimId,
+      pReportFormat: 1,
+    },
+  })
+  assertOk('credit/report/status', data, [KATM_REPORT_PENDING])
+
+  if (data.result === KATM_REPORT_PENDING || !data.reportBase64) {
+    return { status: 'pending', token: params.token }
+  }
+  return { status: 'ready', result: decodeReport('credit/report/status', data.reportBase64) }
+}
+
+// ---------------------------------------------------------------------------
+// InfoScore 077 payload (matches real KATM InfoScore 077 JSON response)
 // ---------------------------------------------------------------------------
 
 interface KatmSysinfo {
@@ -76,7 +329,7 @@ interface KatmCreditBan {
   credit_ban_date: string
 }
 
-interface KatmResponse {
+export interface KatmResponse {
   sysinfo: KatmSysinfo
   overview: KatmOverview
   scorring: KatmScoringBlock  // note: vendor typo — single 'r' in "scorring"
@@ -85,7 +338,8 @@ interface KatmResponse {
 }
 
 // ---------------------------------------------------------------------------
-// Public DTOs
+// Public DTO — unchanged from the previous integration so the scoring engine
+// and session stamps keep working (the 077 payload shape is the same report)
 // ---------------------------------------------------------------------------
 
 export interface KatmResult {
@@ -100,7 +354,7 @@ export interface KatmResult {
   overdueAmount: number       // UZS
   hasDefaults: boolean
   hasCreditBan: boolean
-  /** Full raw vendor payload — persisted as infoscore_raw on the deal */
+  /** Full raw vendor payload — persisted on the session stamp */
   raw: unknown
 }
 
@@ -123,7 +377,7 @@ function countOpenContracts(oc: KatmOpenContracts): number {
   return Array.isArray(oc.open_contract) ? oc.open_contract.length : 1
 }
 
-function parseKatmResponse(data: KatmResponse): KatmResult {
+export function parseKatmResponse(data: KatmResponse): KatmResult {
   const { sysinfo, overview, scorring, open_contracts, credit_ban } = data
   const score = toInt(scorring?.scoring_grade)
   const overdueMaxDays = toInt(overview?.max_overdue_principal_days)
@@ -141,63 +395,5 @@ function parseKatmResponse(data: KatmResponse): KatmResult {
     hasDefaults: overdueMaxDays > 0 || toFloat(open_contracts?.all_overdue_debt_sum) > 0,
     hasCreditBan: credit_ban?.credit_ban_status !== '0',
     raw: data,
-  }
-}
-
-// ---------------------------------------------------------------------------
-// API method
-// ---------------------------------------------------------------------------
-
-export async function queryInfoscore(
-  db: Db,
-  params: {
-    pinfl: string
-    claimId: string
-    consentId: string
-  },
-): Promise<KatmResult> {
-  if (env.KATM_MOCK) return mockQueryInfoscore(params)
-
-  const client = makeKatmClient()
-  const reqBody = {
-    pinfl: params.pinfl,
-    claim_id: params.claimId,
-    consent_id: params.consentId,
-    consent_date: new Date().toISOString().slice(0, 10),
-    report_type: '077',
-  }
-
-  const requestTimestamp = new Date()
-  try {
-    const data = await client
-      .post('infoscore', { json: reqBody })
-      .json<KatmResponse>()
-
-    logIntegration(db, {
-      integration: 'katm',
-      methodName: 'infoscore',
-      methodType: 'POST',
-      request: reqBody,
-      response: data,
-      status: 200,
-      errorMessage: null,
-      requestTimestamp,
-      responseTimestamp: new Date(),
-    })
-
-    return parseKatmResponse(data)
-  } catch (err) {
-    logIntegration(db, {
-      integration: 'katm',
-      methodName: 'infoscore',
-      methodType: 'POST',
-      request: reqBody,
-      response: null,
-      status: err instanceof IntegrationError ? err.statusCode : null,
-      errorMessage: err instanceof Error ? err.message : String(err),
-      requestTimestamp,
-      responseTimestamp: new Date(),
-    })
-    throw err
   }
 }

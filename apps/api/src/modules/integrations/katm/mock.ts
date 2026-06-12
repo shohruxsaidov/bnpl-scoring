@@ -1,10 +1,22 @@
-import type { KatmResult } from './service'
+import type {
+  KatmResult,
+  RegisterClaimParams,
+  RegisterClaimResult,
+  ReportOutcome,
+} from './service'
 
 function delay(ms: number) {
   return new Promise<void>((r) => setTimeout(r, ms))
 }
 
-// Deterministic profile based on last 2 digits of PINFL
+// Deterministic behaviour from the PINFL tail:
+//   last 2 digits < 30  → risky profile
+//   last 2 digits < 70  → good profile
+//   otherwise           → excellent profile
+// Special tails:
+//   ends with '00'      → active credit ban
+//   ends with '77'      → report is async: /credit/report returns 05050,
+//                         the first /credit/report/status poll returns it
 function profileFromPinfl(pinfl: string): 'excellent' | 'good' | 'risky' {
   const tail = parseInt(pinfl.slice(-2), 10)
   if (tail < 30) return 'risky'
@@ -12,14 +24,55 @@ function profileFromPinfl(pinfl: string): 'excellent' | 'good' | 'risky' {
   return 'excellent'
 }
 
-export async function mockQueryInfoscore(params: {
-  pinfl: string
-  claimId: string
-  consentId: string
-}): Promise<KatmResult> {
-  await delay(900)
+export async function mockCheckCreditBan(params: { pinfl: string }): Promise<{ banned: boolean }> {
+  await delay(300)
+  return { banned: params.pinfl.endsWith('00') }
+}
 
-  const profile = profileFromPinfl(params.pinfl)
+export async function mockRegisterClaim(params: RegisterClaimParams): Promise<RegisterClaimResult> {
+  await delay(400)
+  pinflByClaim.set(params.claimId, params.pinfl)
+  return {
+    katmSir: `SIR${params.pinfl.slice(-8)}`,
+    verified: {
+      docSeries: params.docSeries,
+      docNumber: params.docNumber,
+      pinfl: params.pinfl,
+      lastName: 'MOCK',
+      firstName: 'CLIENT',
+      address: params.address,
+      phone: params.phone,
+      clientId: `SIR${params.pinfl.slice(-8)}`,
+      liveStatus: 1,
+    },
+  }
+}
+
+export async function mockRequestReport(params: { claimId: string }): Promise<ReportOutcome> {
+  await delay(500)
+  const pinfl = pinflByClaim.get(params.claimId) ?? '00000000000050'
+  if (pinfl.endsWith('77')) {
+    return { status: 'pending', token: `MOCKTOKEN-${params.claimId}` }
+  }
+  return { status: 'ready', result: buildResult(pinfl, params.claimId) }
+}
+
+export async function mockCheckReportStatus(params: {
+  claimId: string
+  token: string
+}): Promise<ReportOutcome> {
+  await delay(300)
+  const pinfl = pinflByClaim.get(params.claimId) ?? '00000000000077'
+  return { status: 'ready', result: buildResult(pinfl, params.claimId) }
+}
+
+// The real flow carries the PINFL only at claim registration; remember it per
+// claim so the report mock stays deterministic. In-memory is fine — mock mode
+// is dev-only and a lost entry just falls back to the default profile.
+const pinflByClaim = new Map<string, string>()
+
+function buildResult(pinfl: string, claimId: string): KatmResult {
+  const profile = profileFromPinfl(pinfl)
   const today = new Date().toISOString().slice(0, 10)
   const demandId = `MOCK${today.replace(/-/g, '')}${Math.floor(Math.random() * 9000 + 1000)}`
 
@@ -64,18 +117,18 @@ export async function mockQueryInfoscore(params: {
   const raw = {
     sysinfo: {
       report_type: '077',
-      report_name: 'InfoScore (XML)',
+      report_name: 'InfoScore (JSON)',
       org: 'MOCK',
       branch: '00000',
       demand_id: demandId,
       demand_date_time: new Date().toISOString().replace('T', ' ').slice(0, 16),
-      consent_id: params.consentId,
+      consent_id: '',
       consent_date: today,
-      claim_id: params.claimId,
+      claim_id: claimId,
       claim_date: today,
     },
     client: {
-      pinfl: params.pinfl,
+      pinfl,
       name: 'MOCK CLIENT',
       gender: 'M',
       birth_date: '1990-01-01',
@@ -114,7 +167,7 @@ export async function mockQueryInfoscore(params: {
 
   return {
     demandId,
-    consentId: params.consentId,
+    consentId: '',
     ...p,
     raw,
   }

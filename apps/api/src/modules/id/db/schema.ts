@@ -62,6 +62,14 @@ export const users = pgTable('users', {
   passportNumber: varchar('passport_number', { length: 10 }),
   photoUrl: text('photo_url'),
   myidVerifiedAt: timestamp('myid_verified_at', { withTimezone: true }).notNull(),
+  // KATM claim registration fields (ADR-0025) — sourced from MyID, with
+  // manual entry as fallback for rows created before these were captured.
+  address: varchar('address', { length: 100 }),
+  katmRegionCode: varchar('katm_region_code', { length: 2 }), // dict 016
+  katmDistrictCode: varchar('katm_district_code', { length: 3 }), // dict 052
+  docType: integer('doc_type'), // 0 — ID card, 6 — biometric passport
+  // KATM-SIR — the bureau's subject identifier, returned at claim registration
+  katmSir: varchar('katm_sir', { length: 20 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -113,6 +121,14 @@ export const clients = pgTable(
     passportNumber: varchar('passport_number', { length: 10 }),
     photoUrl: text('photo_url'),
     myidVerifiedAt: timestamp('myid_verified_at', { withTimezone: true }).notNull(),
+    // KATM claim registration fields (ADR-0025) — sourced from MyID, with
+    // Agent manual entry as fallback for rows created before these were captured.
+    address: varchar('address', { length: 100 }),
+    katmRegionCode: varchar('katm_region_code', { length: 2 }), // dict 016
+    katmDistrictCode: varchar('katm_district_code', { length: 3 }), // dict 052
+    docType: integer('doc_type'), // 0 — ID card, 6 — biometric passport
+    // KATM-SIR — the bureau's subject identifier, returned at claim registration
+    katmSir: varchar('katm_sir', { length: 20 }),
     merchantId: bigint('merchant_id', { mode: 'bigint' }).notNull(),
     branchId: bigint('branch_id', { mode: 'bigint' }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

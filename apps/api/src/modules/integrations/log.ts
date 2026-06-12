@@ -6,6 +6,7 @@ const SENSITIVE_KEYS = new Set([
   "client_secret",
   "access_token",
   "password",
+  "pPassword", // KATM Retail API body-level credential
   "token",
 ]);
 const PINFL_RE = /^\d{14}$/;
