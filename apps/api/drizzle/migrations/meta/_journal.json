@@ -50,6 +50,13 @@
       "when": 1781274384823,
       "tag": "0006_slim_viper",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1781280281224,
+      "tag": "0007_nervous_harpoon",
+      "breakpoints": true
     }
   ]
 }
