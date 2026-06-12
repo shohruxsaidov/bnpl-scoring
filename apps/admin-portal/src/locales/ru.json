@@ -43,7 +43,8 @@
     "scoringModel": "Модель скоринга · #{version}",
     "scoringModelTry": "Тест модели",
     "scoringTestCases": "Тест-кейсы",
-    "scoringTestRun": "Запуск тест-сюита"
+    "scoringTestRun": "Запуск тест-сюита",
+    "integrationLogs": "Логи интеграций"
   },
   "breadcrumb": {
     "overview": "Обзор",
@@ -68,7 +69,8 @@
     "scoringTestCases": "Тест-кейсы",
     "scoringTestRun": "Запуск",
     "payments": "Платежи",
-    "clients": "Клиенты"
+    "clients": "Клиенты",
+    "integrationLogs": "Логи интеграций"
   },
   "topbar": {
     "scoring": "Скоринг",
@@ -96,7 +98,8 @@
     "platformAdmin": "Админ платформы",
     "logout": "Выйти",
     "toggleSidebar": "Переключить панель",
-    "clients": "Клиенты"
+    "clients": "Клиенты",
+    "integrationLogs": "Логи интеграций"
   },
   "clients": {
     "searchPlaceholder": "Поиск по имени, телефону или ПИНФЛ…",
@@ -288,8 +291,29 @@
       "blacklist": "Чёрный список",
       "settings": "Настройки",
       "roles": "Роли",
-      "admins": "Администраторы"
+      "admins": "Администраторы",
+      "integrationLogs": "Логи интеграций"
     }
+  },
+  "integrationLogs": {
+    "count": "Всего записей: {count}",
+    "dateRange": "Период",
+    "allIntegrations": "Все интеграции",
+    "allResults": "Все результаты",
+    "success": "Успешно",
+    "error": "Ошибка",
+    "integration": "Интеграция",
+    "methodType": "Тип",
+    "methodName": "Метод",
+    "status": "Статус",
+    "duration": "Длительность",
+    "requestAt": "Запрос",
+    "responseAt": "Ответ",
+    "empty": "Логи не найдены",
+    "detailTitle": "Детали вызова",
+    "errorMessage": "Сообщение об ошибке",
+    "request": "Тело запроса",
+    "response": "Тело ответа"
   },
   "notifications": {
     "pageTitle": "Уведомления",

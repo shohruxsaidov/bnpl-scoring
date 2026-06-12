@@ -21,6 +21,7 @@ import adminBankRoutes from "./banks/routes"
 import adminOrganizationRoutes from "./organization/routes"
 import adminScoringModelRoutes from "./scoringModel/routes"
 import adminScoringTestCasesRoutes from "./scoringTestCases/routes"
+import adminIntegrationLogRoutes from "./integrationLogs/routes"
 import regionRoutes from "../regions/routes"
 
 interface FeatureMap {
@@ -65,6 +66,7 @@ export default async function adminModule(app: FastifyInstance) {
   await app.register(guarded(adminOrganizationRoutes, { read: "manage_settings", write: "manage_settings" }), { prefix: "/admin/organization" })
   await app.register(guarded(adminScoringModelRoutes, { read: "manage_scoring_model", write: "manage_scoring_model" }), { prefix: "/admin/scoring-model" })
   await app.register(guarded(adminScoringTestCasesRoutes, { read: "manage_scoring_model", write: "manage_scoring_model" }), { prefix: "/admin/scoring-test-cases" })
+  await app.register(guarded(adminIntegrationLogRoutes, { read: "view_integration_logs" }), { prefix: "/admin/integration-logs" })
   // Region reference: any authenticated admin.
   await app.register(regionRoutes, { prefix: "/admin/regions", preHandler: app.verifyAdminJwt })
 }

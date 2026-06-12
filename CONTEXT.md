@@ -306,6 +306,12 @@ _Avoid_: Device token, FCM token, push token
 The discriminator on a Notification that identifies which event occurred. Employee types: `deal_approved`, `deal_declined`, `payment_received`, `overdue`, `new_deal`. Client types: `deal_issued`, `payment_received`, `payment_due`. Platform Admin type: `payout_pending`.
 _Avoid_: Notification kind, notification category
 
+### Integrations
+
+**Integration Log**:
+An immutable audit record of one outbound call to an external service (KATM, MyID, Plumgate, MXIK). Captures the integration name, method name and type, redacted request/response payloads, HTTP status, error message, and request/response timestamps. Written fire-and-forget by every integration client — a log write failure never affects the call itself. Sensitive values (tokens, secrets, full PINFLs) are redacted before persistence. Viewable by Platform Admins holding the `view_integration_logs` Feature.
+_Avoid_: API log, request log, audit log (reserved for future user-action auditing)
+
 ## Relationships
 
 - A **Merchant** has one or more **Branches**

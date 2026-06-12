@@ -43,6 +43,13 @@
       "when": 1781236477967,
       "tag": "0005_milky_gabe_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781274384823,
+      "tag": "0006_slim_viper",
+      "breakpoints": true
     }
   ]
 }

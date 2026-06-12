@@ -275,6 +275,16 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'integration-logs',
+        name: 'integration-logs',
+        component: () => import('@/views/integration-logs-view.vue'),
+        meta: {
+          titleKey: 'routeTitle.integrationLogs',
+          breadcrumbKeys: ['breadcrumb.integrationLogs'],
+          feature: 'view_integration_logs',
+        },
+      },
+      {
         path: 'scoring-test-cases/run',
         name: 'scoring-test-run',
         component: () => import('@/views/scoring-test-run-view.vue'),

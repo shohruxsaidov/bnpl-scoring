@@ -63,6 +63,7 @@ const MODULE_CONFIG: Record<Platform, ModuleDef[]> = {
     { key: 'payments', icon: 'credit-card', features: ['view_payments', 'manage_payments'] },
     { key: 'buyout', icon: 'wallet', features: ['manage_buyout'] },
     { key: 'notifications', icon: 'bell', features: ['send_notifications'] },
+    { key: 'integrationLogs', icon: 'history', features: ['view_integration_logs'] },
     { key: 'settings', icon: 'cog', features: ['manage_settings'] },
     { key: 'roles', icon: 'shield', features: ['manage_roles'] },
     { key: 'admins', icon: 'user-edit', features: ['manage_admins'] },

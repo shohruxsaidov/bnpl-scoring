@@ -40,6 +40,7 @@ export const ADMIN_FEATURES = [
   'manage_roles',
   'manage_admins',
   'manage_scoring_model',
+  'view_integration_logs',
 ] as const;
 
 export type MerchantFeature = (typeof MERCHANT_FEATURES)[number];

@@ -43,7 +43,8 @@
     "scoringModel": "Skoring modeli · #{version}",
     "scoringModelTry": "Modelni sinash",
     "scoringTestCases": "Test-keyslar",
-    "scoringTestRun": "Test-syuit"
+    "scoringTestRun": "Test-syuit",
+    "integrationLogs": "Integratsiya loglari"
   },
   "breadcrumb": {
     "overview": "Umumiy ko'rinish",
@@ -68,7 +69,8 @@
     "scoringTestCases": "Test-keyslar",
     "scoringTestRun": "Ishga tushirish",
     "payments": "To'lovlar",
-    "clients": "Mijozlar"
+    "clients": "Mijozlar",
+    "integrationLogs": "Integratsiya loglari"
   },
   "topbar": {
     "scoring": "Skoring",
@@ -96,7 +98,8 @@
     "platformAdmin": "Platforma admin",
     "logout": "Chiqish",
     "toggleSidebar": "Yon panelni almashtirish",
-    "clients": "Mijozlar"
+    "clients": "Mijozlar",
+    "integrationLogs": "Integratsiya loglari"
   },
   "clients": {
     "searchPlaceholder": "Ism, telefon yoki PINFL bo'yicha qidirish…",
@@ -280,8 +283,29 @@
       "blacklist": "Qora ro'yxat",
       "settings": "Sozlamalar",
       "roles": "Rollar",
-      "admins": "Administratorlar"
+      "admins": "Administratorlar",
+      "integrationLogs": "Integratsiya loglari"
     }
+  },
+  "integrationLogs": {
+    "count": "Jami yozuvlar: {count}",
+    "dateRange": "Davr",
+    "allIntegrations": "Barcha integratsiyalar",
+    "allResults": "Barcha natijalar",
+    "success": "Muvaffaqiyatli",
+    "error": "Xato",
+    "integration": "Integratsiya",
+    "methodType": "Turi",
+    "methodName": "Metod",
+    "status": "Holat",
+    "duration": "Davomiylik",
+    "requestAt": "So'rov",
+    "responseAt": "Javob",
+    "empty": "Loglar topilmadi",
+    "detailTitle": "Chaqiruv tafsilotlari",
+    "errorMessage": "Xato xabari",
+    "request": "So'rov tanasi",
+    "response": "Javob tanasi"
   },
   "notifications": {
     "pageTitle": "Bildirishnomalar",
