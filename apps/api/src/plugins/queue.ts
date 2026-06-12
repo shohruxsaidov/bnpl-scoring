@@ -1,6 +1,6 @@
 import fp from 'fastify-plugin'
 import type { FastifyInstance } from 'fastify'
-import { Queue, Worker } from 'bullmq'
+import { Queue, Worker, type ConnectionOptions } from 'bullmq'
 import Redis from 'ioredis'
 import { env } from '../env'
 import {
@@ -23,11 +23,13 @@ declare module 'fastify' {
  */
 export default fp(async function queuePlugin(app: FastifyInstance) {
   // BullMQ requires its own connection with maxRetriesPerRequest: null —
-  // the shared app.redis client is tuned for fail-fast request handling
-  const connection = new Redis(env.REDIS_URL, { family: 4, maxRetriesPerRequest: null })
-  connection.on('error', (err) => app.log.warn({ err }, 'BullMQ Redis error'))
+  // the shared app.redis client is tuned for fail-fast request handling.
+  // The cast bridges BullMQ's bundled ioredis typings vs our ioredis version.
+  const redis = new Redis(env.REDIS_URL, { family: 4, maxRetriesPerRequest: null })
+  redis.on('error', (err) => app.log.warn({ err }, 'BullMQ Redis error'))
+  const connection = redis as unknown as ConnectionOptions
 
-  const queue = new Queue<KatmPollJobData>(KATM_POLL_QUEUE, { connection })
+  const queue: Queue<KatmPollJobData> = new Queue(KATM_POLL_QUEUE, { connection })
 
   const worker = new Worker<KatmPollJobData>(
     KATM_POLL_QUEUE,
@@ -52,6 +54,6 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
   app.addHook('onClose', async () => {
     await worker.close()
     await queue.close()
-    await connection.quit().catch(() => null)
+    await redis.quit().catch(() => null)
   })
 })

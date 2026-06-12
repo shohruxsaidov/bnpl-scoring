@@ -14,6 +14,10 @@ export async function createClient(
     passportSerial: string | null
     passportNumber: string | null
     photoUrl: string | null
+    address: string | null
+    katmRegionCode: string | null
+    katmDistrictCode: string | null
+    docType: number | null
     merchantId: bigint
     branchId: bigint
   },

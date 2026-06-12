@@ -452,7 +452,20 @@
     "myidFailed": "MyID xatosi. Qayta urinib ko'ring",
     "myidTimeout": "MyID 30 soniya ichida yuklanmadi",
     "myidReload": "Qayta yuklash",
-    "myidNewSession": "Qayta sessiya yaratish"
+    "myidNewSession": "Qayta sessiya yaratish",
+    "katmPendingWait": "KATM kredit hisobotini shakllantirmoqda — bu 15 daqiqagacha vaqt olishi mumkin. Sahifada qolishingiz yoki bitimga keyinroq qaytishingiz mumkin.",
+    "katmBanned": "Mijoz kreditlash taqiqi reestrida turibdi — rasmiylashtirish mumkin emas",
+    "katmDetailsTitle": "Mijoz ma'lumotlarini to'ldiring",
+    "katmDetailsSub": "KATM so'rovi uchun ro'yxatga olingan manzil, viloyat va tuman kodlari, hujjat turi kerak",
+    "addressLabel": "Ro'yxatga olingan manzil",
+    "regionCodeLabel": "Viloyat kodi",
+    "districtCodeLabel": "Tuman kodi",
+    "docTypeLabel": "Hujjat turi",
+    "docTypeId": "ID-karta",
+    "docTypePassport": "Biometrik pasport",
+    "saveKatmDetails": "Saqlash va davom etish",
+    "katmDetailsRequired": "Barcha maydonlarni to'ldiring",
+    "katmDetailsSaveFailed": "Ma'lumotlarni saqlab bo'lmadi"
   },
   "stepCard": {
     "title": "Karta",

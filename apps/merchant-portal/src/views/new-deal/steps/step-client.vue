@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
+import Select from 'primevue/select'
 import { useDealStore } from '@/stores/deal'
 import type { KatmSummary } from '@/stores/deal'
 import { useClientApi } from '@/composables/use-client-api'
@@ -87,10 +88,70 @@ const isNewClient = ref(deal.sessionData.isNewClient)
 // MyID
 const myidError = ref('')
 
-// KATM — queried implicitly when the merchant presses "Continue"
+// KATM — queried implicitly when the merchant presses "Continue" (ADR-0025:
+// consent → ban pre-check → claim registration → report, possibly async)
 const katmLoading = ref(false)
 const katmError = ref('')
 const katmDone = ref(!!deal.sessionData.katmResult && !!deal.sessionData.client)
+const katmBanned = ref(false)
+// Async report (05050): the server polls the bureau via BullMQ; we poll the
+// session status until the result is stamped
+const katmPending = ref(deal.sessionData.katmPending)
+let katmPollTimer: ReturnType<typeof setInterval> | null = null
+
+// Manual entry of KATM claim fields for clients registered before ADR-0025
+const katmFieldsMissing = ref(false)
+const katmDetailsSaving = ref(false)
+const katmDetailsError = ref('')
+const kdAddress = ref('')
+const kdRegionCode = ref('')
+const kdDistrictCode = ref('')
+const kdDocType = ref<0 | 6 | null>(null)
+const docTypeOptions = computed(() => [
+  { label: t('stepClient.docTypeId'), value: 0 as const },
+  { label: t('stepClient.docTypePassport'), value: 6 as const },
+])
+
+function stopKatmPolling() {
+  if (katmPollTimer) {
+    clearInterval(katmPollTimer)
+    katmPollTimer = null
+  }
+}
+
+function startKatmPolling() {
+  stopKatmPolling()
+  katmPending.value = true
+  deal.setKatmPending(true)
+  katmPollTimer = setInterval(checkKatmStatus, 5000)
+}
+
+async function checkKatmStatus() {
+  if (!deal.dealSessionId) return
+  try {
+    const res = await apiFetch<{ status: string; error?: string | null } & KatmSummary>(
+      `/merchant/katm/status?dealSessionId=${deal.dealSessionId}`,
+    )
+    if (res.status === 'completed') {
+      stopKatmPolling()
+      katmPending.value = false
+      deal.setKatmResult(res)
+      katmDone.value = true
+    } else if (res.status === 'failed') {
+      stopKatmPolling()
+      katmPending.value = false
+      deal.setKatmPending(false)
+      katmError.value = t('stepClient.katmError')
+    }
+  } catch {
+    // transient — keep polling
+  }
+}
+
+onMounted(() => {
+  if (katmPending.value && deal.sessionData.client) startKatmPolling()
+})
+onUnmounted(stopKatmPolling)
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 function validatePinfl(): boolean {
@@ -231,22 +292,73 @@ async function queryKatm(): Promise<boolean> {
   if (!confirmedClient.value || !deal.dealSessionId) return false
   katmLoading.value = true
   katmError.value = ''
+  katmDetailsError.value = ''
   try {
-    const result = await apiFetch<KatmSummary>('/merchant/katm/query', {
-      method: 'POST',
-      body: JSON.stringify({
-        clientId: confirmedClient.value.id,
-        dealSessionId: deal.dealSessionId,
-      }),
-    })
+    const result = await apiFetch<{ status: 'completed' | 'pending' } & KatmSummary>(
+      '/merchant/katm/query',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          clientId: confirmedClient.value.id,
+          dealSessionId: deal.dealSessionId,
+        }),
+      },
+    )
+    katmFieldsMissing.value = false
+    if (result.status === 'pending') {
+      startKatmPolling()
+      return false
+    }
     deal.setKatmResult(result)
     katmDone.value = true
     return true
-  } catch {
-    katmError.value = t('stepClient.katmError')
+  } catch (err) {
+    const code = (err as Error).message
+    if (code === 'client_katm_fields_missing') {
+      katmFieldsMissing.value = true
+      kdAddress.value = confirmedClient.value?.address ?? ''
+      kdRegionCode.value = confirmedClient.value?.katmRegionCode ?? ''
+      kdDistrictCode.value = confirmedClient.value?.katmDistrictCode ?? ''
+      kdDocType.value = (confirmedClient.value?.docType as 0 | 6 | undefined) ?? null
+    } else if (code === 'client_credit_banned') {
+      katmBanned.value = true
+    } else {
+      katmError.value = t('stepClient.katmError')
+    }
     return false
   } finally {
     katmLoading.value = false
+  }
+}
+
+async function saveKatmDetails() {
+  if (!confirmedClient.value) return
+  if (!kdAddress.value.trim() || !kdRegionCode.value.trim() || !kdDistrictCode.value.trim() || kdDocType.value == null) {
+    katmDetailsError.value = t('stepClient.katmDetailsRequired')
+    return
+  }
+  katmDetailsSaving.value = true
+  katmDetailsError.value = ''
+  try {
+    const res = await apiFetch<{ client: Client }>(
+      `/merchant/client/${confirmedClient.value.id}/katm-details`,
+      {
+        method: 'PATCH',
+        body: JSON.stringify({
+          address: kdAddress.value.trim(),
+          katmRegionCode: kdRegionCode.value.trim(),
+          katmDistrictCode: kdDistrictCode.value.trim(),
+          docType: kdDocType.value,
+        }),
+      },
+    )
+    confirmedClient.value = res.client
+    katmFieldsMissing.value = false
+    await onNext()
+  } catch {
+    katmDetailsError.value = t('stepClient.katmDetailsSaveFailed')
+  } finally {
+    katmDetailsSaving.value = false
   }
 }
 
@@ -268,6 +380,12 @@ function resetSearch() {
   pinflError.value = ''
   katmDone.value = false
   katmError.value = ''
+  katmBanned.value = false
+  katmFieldsMissing.value = false
+  katmDetailsError.value = ''
+  stopKatmPolling()
+  katmPending.value = false
+  deal.setKatmPending(false)
   myidError.value = ''
 }
 
@@ -276,6 +394,7 @@ const saveError = ref('')
 
 async function onNext() {
   if (!confirmedClient.value || katmLoading.value || saving.value) return
+  if (katmPending.value || katmBanned.value) return
   if (!katmDone.value && !(await queryKatm())) return
 
   // Blocking step save — the wizard advances only once the server has it (ADR-0024)
@@ -303,7 +422,14 @@ async function onNext() {
   deal.complete('client')
 }
 
-const canContinue = computed(() => phase.value === 'katm' && !!confirmedClient.value)
+const canContinue = computed(
+  () =>
+    phase.value === 'katm' &&
+    !!confirmedClient.value &&
+    !katmPending.value &&
+    !katmBanned.value &&
+    !katmFieldsMissing.value,
+)
 const clientFullName = computed(() =>
   confirmedClient.value ? `${confirmedClient.value.firstName} ${confirmedClient.value.lastName}` : ''
 )
@@ -526,6 +652,54 @@ const clientFullName = computed(() =>
           {{ $t('stepClient.katmResult') }}
         </div>
       </transition>
+
+      <transition name="fade">
+        <div v-if="katmPending" class="katm-pending">
+          <i class="pi pi-spin pi-spinner" />
+          {{ $t('stepClient.katmPendingWait') }}
+        </div>
+      </transition>
+
+      <transition name="fade">
+        <div v-if="katmBanned" class="katm-error">
+          <i class="pi pi-ban" />
+          {{ $t('stepClient.katmBanned') }}
+        </div>
+      </transition>
+
+      <!-- Manual KATM details — client rows registered before these fields
+           were captured from MyID (ADR-0025) -->
+      <div v-if="katmFieldsMissing" class="katm-details-form">
+        <p class="kd-title">{{ $t('stepClient.katmDetailsTitle') }}</p>
+        <p class="kd-sub">{{ $t('stepClient.katmDetailsSub') }}</p>
+        <div class="field">
+          <label class="field-label">{{ $t('stepClient.addressLabel') }}</label>
+          <InputText v-model="kdAddress" maxlength="100" :disabled="katmDetailsSaving" />
+        </div>
+        <div class="kd-row">
+          <div class="field">
+            <label class="field-label">{{ $t('stepClient.regionCodeLabel') }}</label>
+            <InputText v-model="kdRegionCode" inputmode="numeric" maxlength="2" placeholder="26"
+              :disabled="katmDetailsSaving" />
+          </div>
+          <div class="field">
+            <label class="field-label">{{ $t('stepClient.districtCodeLabel') }}</label>
+            <InputText v-model="kdDistrictCode" inputmode="numeric" maxlength="3" placeholder="001"
+              :disabled="katmDetailsSaving" />
+          </div>
+          <div class="field">
+            <label class="field-label">{{ $t('stepClient.docTypeLabel') }}</label>
+            <Select v-model="kdDocType" :options="docTypeOptions" option-label="label" option-value="value"
+              :placeholder="$t('stepClient.docTypeLabel')" :disabled="katmDetailsSaving" />
+          </div>
+        </div>
+        <span v-if="katmDetailsError" class="field-error">{{ katmDetailsError }}</span>
+        <button class="btn-gradient kd-save" :disabled="katmDetailsSaving" @click="saveKatmDetails">
+          <i v-if="katmDetailsSaving" class="pi pi-spin pi-spinner" />
+          <i v-else class="pi pi-check" />
+          {{ $t('stepClient.saveKatmDetails') }}
+        </button>
+      </div>
 
       <transition name="fade">
         <div v-if="katmError" class="katm-error">
@@ -1054,6 +1228,58 @@ const clientFullName = computed(() =>
   border-radius: 12px;
   font-weight: 600;
   font-size: 0.86rem;
+}
+
+.katm-pending {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--warning);
+  background: var(--warning-bg);
+  padding: 0.8rem 1.1rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.86rem;
+}
+
+.katm-details-form {
+  margin-top: 1rem;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--warning);
+  border-radius: 16px;
+  padding: 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.kd-title {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.kd-sub {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+}
+
+.kd-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.4fr;
+  gap: 0.9rem;
+}
+
+.kd-save {
+  align-self: flex-start;
+}
+
+@media (max-width: 600px) {
+  .kd-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 .btn-sm {

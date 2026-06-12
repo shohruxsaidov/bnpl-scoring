@@ -63,6 +63,11 @@ export interface Client {
   passportSerial: string | null
   passportNumber: string | null
   photoUrl: string | null
+  // KATM claim registration fields (ADR-0025)
+  address?: string | null
+  katmRegionCode?: string | null
+  katmDistrictCode?: string | null
+  docType?: number | null
 }
 
 export interface Card {

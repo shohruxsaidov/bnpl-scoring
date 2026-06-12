@@ -3,6 +3,7 @@ import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import { Type } from '@sinclair/typebox'
 import {
   getUserLimit,
+  getScoringSessionStatus,
   startScoringSession,
   addScoringCard,
   confirmScoringCard,
@@ -32,26 +33,50 @@ export default async function scoringRoutes(app: FastifyInstance) {
   )
 
   // ── POST /client/scoring/start ────────────────────────────────────────────
-  // Creates a Scoring Session and runs KATM. Returns KATM result and sessionId.
-  // The card_scoring pipeline stays 'pending' until the client adds their card.
+  // Creates a Scoring Session and runs the KATM consume flow (ADR-0025):
+  // server-side consent record → ban pre-check → claim registration → report.
+  // Returns { sessionId, katm, pending } — katm is null and pending true while
+  // KATM builds the report asynchronously (poll GET /:sessionId/status).
+  // Optional katmDetails backfills address/region/district/docType for users
+  // rows created before those fields were captured from MyID.
   fastify.post(
     '/start',
     {
       schema: {
         body: Type.Object({
-          consentId: Type.String({ minLength: 1 }),
-          consentDate: Type.String({ minLength: 10, maxLength: 10 }),
+          katmDetails: Type.Optional(
+            Type.Object({
+              address: Type.String({ minLength: 1, maxLength: 100 }),
+              regionCode: Type.String({ minLength: 1, maxLength: 2, pattern: '^\\d{1,2}$' }),
+              districtCode: Type.String({ minLength: 1, maxLength: 3, pattern: '^\\d{1,3}$' }),
+              docType: Type.Union([Type.Literal(0), Type.Literal(6)]),
+            }),
+          ),
         }),
       },
       preHandler: app.verifyClientJwt,
     },
     async (request, reply) => {
-      const result = await startScoringSession(app.db, {
+      const result = await startScoringSession(app.db, app.katmPollQueue, {
         userId: userId(request),
-        consentId: request.body.consentId,
-        consentDate: request.body.consentDate,
+        katmDetails: request.body.katmDetails,
       })
       return reply.code(201).send(result)
+    },
+  )
+
+  // ── GET /client/scoring/:sessionId/status ─────────────────────────────────
+  // Polled by the portal while the KATM report is pending.
+  fastify.get(
+    '/:sessionId/status',
+    { schema: { params: SessionParams }, preHandler: app.verifyClientJwt },
+    async (request, reply) => {
+      try {
+        return await getScoringSessionStatus(app.db, request.params.sessionId, userId(request))
+      } catch (err: any) {
+        if (err.statusCode === 404) return reply.code(404).sendError('session_not_found')
+        throw err
+      }
     },
   )
 

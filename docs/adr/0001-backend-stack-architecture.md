@@ -10,7 +10,7 @@
 | Framework | Fastify 5 + TypeBox |
 | Architecture | Modular monolith |
 | ORM | Drizzle ORM + `pg` driver |
-| Background jobs | pg-boss |
+| Background jobs | BullMQ (Redis-backed) |
 | API style | REST |
 
 ## Decisions
@@ -23,4 +23,4 @@
 
 **Drizzle ORM over raw `pg` and Prisma.** Raw `pg` produces untyped results — easy to miss `tenant_id` filters silently. Prisma hides generated SQL and produces suboptimal queries on complex joins (repayment schedules, scoring aggregations). Drizzle provides TypeScript inference on all query results while staying close to raw SQL; `tenant_id` filter omissions are a compile-time error.
 
-**pg-boss for background jobs.** Jobs (overdue installment detection, score cache expiry) run via pg-boss — a PostgreSQL-backed job queue with exactly-once delivery that survives restarts. In-process cron rejected: jobs die silently on restart. A separate worker process rejected as unnecessary infrastructure overhead.
+**BullMQ for background jobs** (amended 2026-06-12, with ADR-0025; originally pg-boss, never implemented). Jobs (KATM report polling, overdue installment detection, score cache expiry) run via BullMQ — a Redis-backed job queue with retries/backoff that survives restarts; Redis is already in the stack for sessions and caching. The worker runs in-process inside the API (plugins/queue.ts). In-process cron rejected: jobs die silently on restart. A separate worker process rejected as unnecessary infrastructure overhead. pg-boss rejected on second look: BullMQ's delayed retries with fixed backoff map directly onto the KATM ≥60 s polling contract, and we avoid putting queue churn on the primary database.

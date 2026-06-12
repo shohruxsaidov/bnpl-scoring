@@ -59,6 +59,7 @@ export interface SessionStepData {
   payment?: { paymentDay: number }
   verification?: { lang: 'ru' | 'uz'; otpVerifiedAt: string | null }
   katm?: SessionKatm
+  katmPending?: { status: 'pending' | 'failed'; startedAt: string; error?: string }
   scoring?: SessionScoring
 }
 

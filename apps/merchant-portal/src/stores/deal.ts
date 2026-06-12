@@ -39,7 +39,8 @@ export const DEAL_STEPS: DealStep[] = [
 
 export interface KatmSummary {
   demandId: string
-  consentId: string
+  /** Present on resumed sessions (server stamp); the live query response omits it */
+  consentId?: string
   score: number
   scoringClass: string
   scoringLevel: string
@@ -57,6 +58,8 @@ interface SessionData {
   myidVerified: boolean
   katmConsent: boolean
   katmResult: KatmSummary | null
+  /** true while the bureau builds the report asynchronously (ADR-0025) */
+  katmPending: boolean
   selectedCard: Card | null
   tariff: Tariff | null
   basket: BasketItem[]
@@ -73,6 +76,7 @@ function emptySession(): SessionData {
     myidVerified: false,
     katmConsent: false,
     katmResult: null,
+    katmPending: false,
     selectedCard: null,
     tariff: null,
     basket: [],
@@ -144,6 +148,8 @@ export const useDealStore = defineStore(
       fresh.isNewClient = data.client?.isNewClient ?? false
       fresh.myidVerified = data.client?.myidVerified ?? false
       fresh.katmConsent = data.client?.katmConsent ?? false
+
+      fresh.katmPending = data.katmPending?.status === 'pending'
 
       if (data.katm) {
         fresh.katmResult = {
@@ -258,6 +264,11 @@ export const useDealStore = defineStore(
 
     function setKatmResult(result: KatmSummary) {
       sessionData.value.katmResult = result
+      sessionData.value.katmPending = false
+    }
+
+    function setKatmPending(v: boolean) {
+      sessionData.value.katmPending = v
     }
 
     function setCard(card: Card) {
@@ -322,6 +333,7 @@ export const useDealStore = defineStore(
       setClient,
       setKatmConsent,
       setKatmResult,
+      setKatmPending,
       setCard,
       setTariff,
       addToBasket,

@@ -1,8 +1,21 @@
 import { and, eq } from 'drizzle-orm'
+import type { Queue } from 'bullmq'
 import type { Db } from '../../db'
 import { users, clients } from '../id/db/schema'
 import { scoringHistories } from '../deals/db/schema'
-import { queryInfoscore } from '../integrations/katm/service'
+import { katmConsents } from '../integrations/db/schema'
+import {
+  allocateKatmClaimId,
+  createKatmConsent,
+  missingKatmFields,
+  startKatmFlow,
+} from '../integrations/katm/flow'
+import {
+  enqueueKatmPoll,
+  katmSummary,
+  saveKatmSir,
+  type KatmPollJobData,
+} from '../integrations/katm/poller'
 import { addCard, confirmCard, scoreCard } from '../integrations/plumgate/service'
 import type { KatmResult } from '../integrations/katm/service'
 import { scoringSessions, scoringPipelines, userLimits } from './db/schema'
@@ -71,51 +84,81 @@ export async function getUserLimit(db: Db, userId: bigint) {
 
 export interface StartScoringInput {
   userId: bigint
-  consentId: string
-  consentDate: string
+  /** Backfill for users rows created before the KATM fields were captured (ADR-0025) */
+  katmDetails?: {
+    address: string
+    regionCode: string
+    districtCode: string
+    docType: number
+  }
 }
 
 export interface StartScoringResult {
   sessionId: string
-  katm: {
-    demandId: string
-    score: number
-    scoringClass: string
-    scoringLevel: string
-    activeLoans: number
-    allDebtSum: number
-    overdueCount: number
-    overdueAmount: number
-    hasDefaults: boolean
-    hasCreditBan: boolean
-  }
+  /** null while the report is being built asynchronously (status 05050) */
+  katm: ReturnType<typeof katmSummary> | null
+  pending: boolean
 }
 
 export async function startScoringSession(
   db: Db,
+  queue: Queue<KatmPollJobData>,
   input: StartScoringInput,
 ): Promise<StartScoringResult> {
-  const [user] = await db
-    .select({ id: users.id, pinfl: users.pinfl })
-    .from(users)
-    .where(eq(users.id, input.userId))
-    .limit(1)
+  const [user] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1)
 
   if (!user) throw Object.assign(new Error('user_not_found'), { statusCode: 404 })
+
+  let subject = user
+  if (input.katmDetails) {
+    const [updated] = await db
+      .update(users)
+      .set({
+        address: input.katmDetails.address,
+        katmRegionCode: input.katmDetails.regionCode.padStart(2, '0'),
+        katmDistrictCode: input.katmDetails.districtCode.padStart(3, '0'),
+        docType: input.katmDetails.docType,
+      })
+      .where(eq(users.id, input.userId))
+      .returning()
+    subject = updated ?? user
+  }
+
+  const missing = missingKatmFields(subject)
+  if (missing.length > 0) {
+    throw Object.assign(new Error('user_katm_fields_missing'), {
+      statusCode: 422,
+      args: { missing },
+    })
+  }
+
+  // Consent record first (ADR-0025) — its id/timestamp are the pAgreementId/
+  // pAgreementDate sent to KATM; linked to the session right after creation
+  const consent = await createKatmConsent(db, { channel: 'self_service', userId: input.userId })
 
   const [session] = await db
     .insert(scoringSessions)
     .values({
       userId: input.userId,
-      consentId: input.consentId,
-      consentDate: input.consentDate,
+      consentId: consent.agreementId,
+      consentDate: consent.agreementDate.toISOString().slice(0, 10),
       status: 'running',
     })
     .returning({ id: scoringSessions.id })
 
   const sessionId = session!.id
-  const now = new Date()
+  await db
+    .update(katmConsents)
+    .set({ sessionId })
+    .where(eq(katmConsents.id, BigInt(consent.agreementId)))
 
+  const claimId = await allocateKatmClaimId(db)
+  await db
+    .update(scoringSessions)
+    .set({ katmClaimId: claimId })
+    .where(eq(scoringSessions.id, sessionId))
+
+  const now = new Date()
   const [katmPipeline] = await db
     .insert(scoringPipelines)
     .values({ sessionId, type: 'katm', status: 'running', startedAt: now })
@@ -124,36 +167,51 @@ export async function startScoringSession(
   await db.insert(scoringPipelines).values({ sessionId, type: 'card_scoring', status: 'pending' })
 
   try {
-    const katmResult = await queryInfoscore(db, {
-      pinfl: user.pinfl,
-      claimId: sessionId,
-      consentId: input.consentId,
+    const outcome = await startKatmFlow(db, {
+      claimId,
+      consent,
+      subject: {
+        pinfl: subject.pinfl,
+        passportSerial: subject.passportSerial!,
+        passportNumber: subject.passportNumber!,
+        docType: subject.docType!,
+        regionCode: subject.katmRegionCode!,
+        districtCode: subject.katmDistrictCode!,
+        address: subject.address!,
+        phone: subject.phone,
+      },
     })
+
+    if (outcome.status === 'banned') {
+      throw Object.assign(new Error('credit_banned'), { statusCode: 409 })
+    }
+
+    await saveKatmSir(db, { userId: input.userId }, outcome.katmSir)
+
+    if (outcome.status === 'pending') {
+      // The BullMQ poller completes (or fails) the katm pipeline in the
+      // background; the portal polls the session status meanwhile
+      await enqueueKatmPoll(queue, {
+        flow: 'self_service',
+        sessionId,
+        claimId,
+        token: outcome.token,
+        consentId: consent.agreementId,
+        consentDate: consent.agreementDate.toISOString(),
+      })
+      return { sessionId, katm: null, pending: true }
+    }
 
     await db
       .update(scoringPipelines)
       .set({
         status: 'completed',
-        result: katmResult as unknown as Record<string, unknown>,
+        result: outcome.result as unknown as Record<string, unknown>,
         completedAt: new Date(),
       })
       .where(eq(scoringPipelines.id, katmPipeline!.id))
 
-    return {
-      sessionId,
-      katm: {
-        demandId: katmResult.demandId,
-        score: katmResult.score,
-        scoringClass: katmResult.scoringClass,
-        scoringLevel: katmResult.scoringLevel,
-        activeLoans: katmResult.activeLoans,
-        allDebtSum: katmResult.allDebtSum,
-        overdueCount: katmResult.overdueCount,
-        overdueAmount: katmResult.overdueAmount,
-        hasDefaults: katmResult.hasDefaults,
-        hasCreditBan: katmResult.hasCreditBan,
-      },
-    }
+    return { sessionId, katm: katmSummary(outcome.result), pending: false }
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : String(err)
     await Promise.all([
@@ -167,6 +225,32 @@ export async function startScoringSession(
         .where(eq(scoringSessions.id, sessionId)),
     ])
     throw err
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Session status — polled by the portal while the KATM report is pending
+// ---------------------------------------------------------------------------
+
+export async function getScoringSessionStatus(db: Db, sessionId: string, userId: bigint) {
+  const [session] = await db
+    .select()
+    .from(scoringSessions)
+    .where(and(eq(scoringSessions.id, sessionId), eq(scoringSessions.userId, userId)))
+    .limit(1)
+  if (!session) throw Object.assign(new Error('session_not_found'), { statusCode: 404 })
+
+  const katmPipeline = await getPipeline(db, sessionId, 'katm')
+  const katm =
+    katmPipeline?.status === 'completed' && katmPipeline.result
+      ? katmSummary(katmPipeline.result as KatmResult)
+      : null
+
+  return {
+    sessionId,
+    status: session.status,
+    katmStatus: katmPipeline?.status ?? 'pending',
+    katm,
   }
 }
 

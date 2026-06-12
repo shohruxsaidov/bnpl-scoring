@@ -23,6 +23,13 @@ export interface MyidUserData {
   passportSerial: string | null;
   passportNumber: string | null;
   photoUrl: string | null;
+  // KATM claim registration fields (ADR-0025) — registration address + doc
+  // type. Region/district codes are best-effort mapped from MyID's catalog
+  // ids; when absent the Agent enters them manually.
+  address: string | null;
+  regionCode: string | null; // KATM dict 016
+  districtCode: string | null; // KATM dict 052
+  docType: number | null; // 0 — ID card, 6 — biometric passport
 }
 
 export interface MyidSessionResult {
@@ -218,7 +225,17 @@ export async function exchangeMyidCode(db: Db, redis: Redis, code: string): Prom
           };
           doc_data: {
             pass_data: string | null;
+            doc_type_id?: number | string | null;
           };
+          address?: {
+            permanent_registration?: {
+              region?: string | null;
+              region_id?: number | string | null;
+              district?: string | null;
+              district_id?: number | string | null;
+              address?: string | null;
+            } | null;
+          } | null;
         };
       }>();
 
@@ -243,6 +260,19 @@ export async function exchangeMyidCode(db: Db, redis: Redis, code: string): Prom
     const [day, month, year] = common_data.birth_date.split('.');
     const birthDate = `${year}-${month}-${day}`;
 
+    // KATM doc type: ID cards carry an 'AD' serial; everything else is a
+    // biometric passport. Used only when MyID itself doesn't say.
+    const docType = passportSerial ? (passportSerial.toUpperCase() === 'AD' ? 0 : 6) : null;
+
+    const reg = me.profile.address?.permanent_registration;
+    const addressText =
+      reg?.address ?? [reg?.region, reg?.district].filter(Boolean).join(', ') ?? null;
+    // Best-effort mapping of MyID catalog ids onto KATM dict 016/052 codes —
+    // verify against the KATM test env; the Agent manual-entry fallback covers
+    // any mismatch (ADR-0025)
+    const regionCode = reg?.region_id != null ? String(reg.region_id).padStart(2, '0') : null;
+    const districtCode = reg?.district_id != null ? String(reg.district_id).padStart(3, '0') : null;
+
     return {
       pinfl: common_data.pinfl,
       firstName: common_data.first_name,
@@ -254,6 +284,10 @@ export async function exchangeMyidCode(db: Db, redis: Redis, code: string): Prom
       passportSerial,
       passportNumber,
       photoUrl: null,
+      address: addressText || null,
+      regionCode,
+      districtCode,
+      docType,
     };
   } catch (err) {
     logIntegration(db, {
@@ -283,5 +317,9 @@ export function buildMockUser(pinfl: string): MyidUserData {
     passportSerial: 'AA',
     passportNumber: '1234567',
     photoUrl: null,
+    address: 'г. Ташкент, ул. Тестовая, 1',
+    regionCode: '26',
+    districtCode: '001',
+    docType: 6,
   };
 }

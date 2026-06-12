@@ -12,7 +12,7 @@ Consent → ban pre-check → claim registration → report request → poll →
 
 - **Ban pre-check** runs before claim registration; an active ban stops the run immediately so no claim is recorded with the bureau for a client who cannot legally be credited.
 - **Report** is InfoScore 077 in JSON (`pReportFormat=1`); `pReportId` is config. The decoded payload is assumed to match the existing parser/scoring-input shape — verifying this against KATM's test environment is a blocking early task.
-- **Async reports**: on result `05050` a background job polls `/credit/report/status` every ≥60 s for up to 10–15 minutes (Deal Sessions are resumable, so the Agent can park the run); SSE notifies on arrival. Exhaustion fails the run — the existing "KATM failure hard-blocks the Deal" rule stands.
+- **Async reports**: on result `05050` a **BullMQ job (Redis-backed)** polls `/credit/report/status` on a fixed ≥60 s backoff for up to 10–15 minutes (Deal Sessions are resumable, so the Agent can park the run); SSE notifies on arrival and the frontend also polls the session status. Exhaustion fails the run — the existing "KATM failure hard-blocks the Deal" rule stands. BullMQ chosen over pg-boss (amends ADR-0001): Redis is already in the stack, and BullMQ's delayed retries map directly onto the polling contract without putting queue churn on the primary database.
 - KATM-SIR (`clientId` in the response) is stored on the client/user row; future claims and the provider phase reference it.
 
 ## Decisions with real alternatives

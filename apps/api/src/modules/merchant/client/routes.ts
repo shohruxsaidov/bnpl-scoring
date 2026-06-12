@@ -1,6 +1,7 @@
 import { Type } from '@sinclair/typebox';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
+import { eq } from 'drizzle-orm';
 import { clients } from '../../id/db/schema';
 import { searchClients, findClientByPinflAndMerchant } from './queries/search-client';
 import { createClient } from './commands/create-client';
@@ -33,6 +34,10 @@ function toClientDto(c: typeof clients.$inferSelect) {
     passportSerial: c.passportSerial,
     passportNumber: c.passportNumber,
     photoUrl: c.photoUrl,
+    address: c.address,
+    katmRegionCode: c.katmRegionCode,
+    katmDistrictCode: c.katmDistrictCode,
+    docType: c.docType,
   };
 }
 
@@ -205,11 +210,56 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
         passportSerial: myidUser.passportSerial,
         passportNumber: myidUser.passportNumber,
         photoUrl: myidUser.photoUrl,
+        address: myidUser.address,
+        katmRegionCode: myidUser.regionCode,
+        katmDistrictCode: myidUser.districtCode,
+        docType: myidUser.docType,
         merchantId,
         branchId,
       });
 
       return { client: toClientDto(client), isNew: true };
+    },
+  );
+
+  /* ── KATM details (manual entry) ────────────────────────────────────────── */
+
+  const KatmDetailsBody = Type.Object({
+    address: Type.String({ minLength: 1, maxLength: 100 }),
+    katmRegionCode: Type.String({ minLength: 1, maxLength: 2, pattern: '^\\d{1,2}$' }),
+    katmDistrictCode: Type.String({ minLength: 1, maxLength: 3, pattern: '^\\d{1,3}$' }),
+    docType: Type.Union([Type.Literal(0), Type.Literal(6)]),
+  });
+
+  /**
+   * PATCH /merchant/client/:id/katm-details
+   * Agent manual entry of the KATM claim-registration fields for client rows
+   * created before they were captured from MyID (ADR-0025). The Wizard offers
+   * this form when /merchant/katm/query answers client_katm_fields_missing.
+   */
+  fastify.patch(
+    '/:id/katm-details',
+    {
+      schema: {
+        params: Type.Object({ id: Type.String({ pattern: '^\\d+$' }) }),
+        body: KatmDetailsBody,
+      },
+      preHandler: app.verifyMerchantJwt,
+    },
+    async (request, reply) => {
+      const id = BigInt(request.params.id);
+      const [updated] = await db
+        .update(clients)
+        .set({
+          address: request.body.address,
+          katmRegionCode: request.body.katmRegionCode.padStart(2, '0'),
+          katmDistrictCode: request.body.katmDistrictCode.padStart(3, '0'),
+          docType: request.body.docType,
+        })
+        .where(eq(clients.id, id))
+        .returning();
+      if (!updated) return reply.code(404).sendError('client_not_found');
+      return { client: toClientDto(updated) };
     },
   );
 
