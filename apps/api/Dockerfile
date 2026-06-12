@@ -14,14 +14,11 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 COPY . .
 RUN pnpm  run build 
 
-FROM building AS runtime
 ENV NODE_ENV=production
 ENV PORT=4000
 ENV HOST=0.0.0.0
 
 
-COPY --from=building /app /app
-WORKDIR /app
 EXPOSE 4000
 RUN npm i tsx -g
 # apps/api "start" script -> node dist/server.js
