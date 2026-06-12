@@ -56,6 +56,7 @@ interface PlumCardRaw {
 }
 
 interface PlumCardItem {
+  id: number; // vendor's card ID, used for subsequent API calls
   cardId: string;
   number: string; // masked PAN e.g. "8600****4417"
   owner: string;
@@ -105,7 +106,7 @@ interface PlumHumoScoreResponse {
 // ---------------------------------------------------------------------------
 
 export interface PlumCard {
-  userCardId: string; // vendor's card ID, used for subsequent API calls
+  userCardId: number; // vendor's card ID, used for subsequent API calls
   plumCardId: string; // userCardId
   maskedPan: string;
   holderName: string;
@@ -169,7 +170,7 @@ function normalisePcType(raw: string): 'uzcard' | 'humo' {
 function toPlumCard(r: PlumCardItem): PlumCard {
   const pcType = normalisePcType(`${r.pcType}`);
   return {
-    userCardId: r.cardId,
+    userCardId: r.id,
     plumCardId: r.cardId,
     maskedPan: r.number,
     holderName: r.owner,
@@ -336,6 +337,7 @@ export async function confirmCard(
     });
 
     return toPlumCard({
+      id: data.result.card.id, // assuming userId is returned as card ID, adjust if different
       cardId: data.result.card.id.toString(),
       number: data.result.card.number,
       owner: data.result.card.owner,
@@ -574,7 +576,7 @@ async function parsePlumError(err: unknown): Promise<IntegrationError | Error> {
   if (err instanceof HTTPError) {
     let body: unknown = null;
     try {
-      body = err.data
+      body = err.data;
     } catch {
       body = await err.response.text().catch(() => null);
     }

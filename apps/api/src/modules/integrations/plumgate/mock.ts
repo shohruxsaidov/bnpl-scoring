@@ -1,7 +1,7 @@
-import type { PlumCard, PlumAddCardResult, PlumScoreResult } from './service'
+import type { PlumCard, PlumAddCardResult, PlumScoreResult } from './service';
 
 function delay(ms: number) {
-  return new Promise<void>((r) => setTimeout(r, ms))
+  return new Promise<void>((r) => setTimeout(r, ms));
 }
 
 const MOCK_CARDS: PlumCard[] = [
@@ -12,7 +12,7 @@ const MOCK_CARDS: PlumCard[] = [
     expiry: '08/27',
     bank: 'Uzcard',
     pcType: 'uzcard',
-    userCardId: 'mock-card-uzcard-001',
+    userCardId: 1,
   },
   {
     plumCardId: 'mock-card-humo-002',
@@ -21,75 +21,75 @@ const MOCK_CARDS: PlumCard[] = [
     expiry: '03/26',
     bank: 'Humo',
     pcType: 'humo',
-    userCardId: 'mock-card-humo-002',
+    userCardId: 2,
   },
-]
+];
 
 // sessionId → card added during this server run
-const pendingSessions = new Map<string, PlumCard>()
+const pendingSessions = new Map<string, PlumCard>();
 
 export async function mockListCards(): Promise<PlumCard[]> {
-  await delay(400)
-  return MOCK_CARDS
+  await delay(400);
+  return MOCK_CARDS;
 }
 
 export async function mockAddCard(params: {
-  clientId: string
-  cardNumber: string
-  expiry: string
+  clientId: string;
+  cardNumber: string;
+  expiry: string;
 }): Promise<PlumAddCardResult> {
-  await delay(600)
-  const sessionId = `mock-session-${Date.now()}`
-  const pan = params.cardNumber.replace(/\s/g, '')
-  const masked = pan.slice(0, 4) + ' **** **** ' + pan.slice(-4)
+  await delay(600);
+  const sessionId = `mock-session-${Date.now()}`;
+  const pan = params.cardNumber.replace(/\s/g, '');
+  const masked = pan.slice(0, 4) + ' **** **** ' + pan.slice(-4);
   const expiry = params.expiry.includes('/')
     ? params.expiry
-    : `${params.expiry.slice(0, 2)}/${params.expiry.slice(2)}`
+    : `${params.expiry.slice(0, 2)}/${params.expiry.slice(2)}`;
 
   pendingSessions.set(sessionId, {
     plumCardId: `mock-card-${Date.now()}`,
-    userCardId: `mock-card-${Date.now()}`,
+    userCardId: Date.now(), // just a unique number for the mock, not used in logic
     maskedPan: masked,
     holderName: 'MOCK HOLDER',
     expiry,
     bank: pan.startsWith('9860') ? 'Humo' : 'Uzcard',
     pcType: pan.startsWith('9860') ? 'humo' : 'uzcard',
-  })
+  });
 
-  return { sessionId, maskedPhone: '+998 ** *** ** 42' }
+  return { sessionId, maskedPhone: '+998 ** *** ** 42' };
 }
 
 export async function mockConfirmCard(params: {
-  sessionId: string
-  otp: string
+  sessionId: string;
+  otp: string;
 }): Promise<PlumCard> {
-  await delay(500)
-  const card = pendingSessions.get(params.sessionId)
+  await delay(500);
+  const card = pendingSessions.get(params.sessionId);
   if (!card) {
-    throw Object.assign(new Error('Mock: session not found or already used'), { statusCode: 404 })
+    throw Object.assign(new Error('Mock: session not found or already used'), { statusCode: 404 });
   }
-  pendingSessions.delete(params.sessionId)
-  MOCK_CARDS.push(card)
-  return card
+  pendingSessions.delete(params.sessionId);
+  MOCK_CARDS.push(card);
+  return card;
 }
 
 export async function mockScoreCard(params: {
-  plumCardId: string
-  pcType: 'uzcard' | 'humo'
+  plumCardId: string;
+  pcType: 'uzcard' | 'humo';
 }): Promise<PlumScoreResult> {
-  await delay(2000)
+  await delay(2000);
 
   // Deterministic seed per card so the same card always returns the same limit
-  const seed = params.plumCardId.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
-  const score = 700 + (seed % 250) // always approved range: 700–949
+  const seed = params.plumCardId.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const score = 700 + (seed % 250); // always approved range: 700–949
 
   // Scatter the small char-sum seed across the full range with a multiplicative hash
-  const mixed = Math.imul(seed, 2654435761) >>> 0
+  const mixed = Math.imul(seed, 2654435761) >>> 0;
 
   // Limit in round 100 000 som steps: 500 000 – 2 000 000 som (50 000 000 – 200 000 000 tiyin)
-  const STEP = 10_000_000 // 100 000 som in tiyin
-  const STEPS = 16        // 500 000, 600 000, … 2 000 000
-  const limit = 50_000_000 + (mixed % STEPS) * STEP
+  const STEP = 10_000_000; // 100 000 som in tiyin
+  const STEPS = 16; // 500 000, 600 000, … 2 000 000
+  const limit = 50_000_000 + (mixed % STEPS) * STEP;
 
-  return { score, limit, decision: 'approved' }
+  return { score, limit, decision: 'approved' };
 }
