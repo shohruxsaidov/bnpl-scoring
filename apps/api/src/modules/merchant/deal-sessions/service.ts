@@ -279,29 +279,36 @@ async function buildStepPayload(
   body: Record<string, unknown>,
   _data: SessionStepData,
 ): Promise<SessionStepData[WizardStep]> {
+  console.log('[buildStepPayload] called', { sessionId: session.id, step, body })
+
   switch (step) {
     case 'client': {
       const clientId = str(body['clientId'])
+      console.log('[buildStepPayload:client] clientId', clientId)
       if (!clientId || !/^\d+$/.test(clientId)) throw err('invalid_step_payload')
       const [client] = await db
         .select({ id: clients.id })
         .from(clients)
         .where(eq(clients.id, BigInt(clientId)))
         .limit(1)
+      console.log('[buildStepPayload:client] db lookup result', client ?? 'NOT FOUND')
       if (!client) throw err('client_not_found')
-      return {
+      const result = {
         clientId,
         isNewClient: body['isNewClient'] === true,
         myidVerified: body['myidVerified'] === true,
         katmConsent: body['katmConsent'] === true,
       }
+      console.log('[buildStepPayload:client] returning', result)
+      return result
     }
 
     case 'card': {
       const cardId = str(body['cardId'])
       const maskedPan = str(body['maskedPan'])
+      console.log('[buildStepPayload:card] cardId', cardId, 'maskedPan', maskedPan)
       if (!cardId || !maskedPan) throw err('invalid_step_payload')
-      return {
+      const result = {
         cardId,
         maskedPan,
         pcType: str(body['pcType']) ?? '',
@@ -309,14 +316,18 @@ async function buildStepPayload(
         holderName: str(body['holderName']) ?? '',
         expiry: str(body['expiry']) ?? '',
       }
+      console.log('[buildStepPayload:card] returning', result)
+      return result
     }
 
     case 'tariff': {
       const tariffId = str(body['tariffId'])
+      console.log('[buildStepPayload:tariff] tariffId', tariffId)
       if (!tariffId || !/^\d+$/.test(tariffId)) throw err('invalid_step_payload')
       const [tariff] = await db.select().from(tariffs).where(eq(tariffs.id, BigInt(tariffId))).limit(1)
+      console.log('[buildStepPayload:tariff] db lookup result', tariff ?? 'NOT FOUND', 'active', tariff?.active)
       if (!tariff || !tariff.active) throw err('tariff_not_found')
-      return {
+      const result = {
         tariffId,
         name: tariff.name,
         termMonths: tariff.termMonths,
@@ -324,15 +335,19 @@ async function buildStepPayload(
         minAmount: tariff.minAmount?.toString() ?? null,
         maxAmount: tariff.maxAmount?.toString() ?? null,
       }
+      console.log('[buildStepPayload:tariff] returning', result)
+      return result
     }
 
     case 'products': {
       const rawLines = Array.isArray(body['lines']) ? (body['lines'] as unknown[]) : []
+      console.log('[buildStepPayload:products] rawLines', rawLines)
       if (rawLines.length === 0) throw err('invalid_step_payload')
       const lines = rawLines.map((l) => {
         const line = l as Record<string, unknown>
         const productId = str(line['productId'])
         const quantity = typeof line['quantity'] === 'number' ? Math.floor(line['quantity']) : 0
+        console.log('[buildStepPayload:products] parsed line', { productId, quantity })
         if (!productId || !/^\d+$/.test(productId) || quantity < 1) throw err('invalid_step_payload')
         return { productId, quantity }
       })
@@ -340,6 +355,7 @@ async function buildStepPayload(
       const resolved = []
       for (const line of lines) {
         const [p] = await db.select().from(products).where(eq(products.id, BigInt(line.productId))).limit(1)
+        console.log('[buildStepPayload:products] product lookup', { productId: line.productId, found: !!p, active: p?.active, merchantMatch: p?.merchantId === session.merchantId })
         if (!p || !p.active || p.merchantId !== session.merchantId) throw err('product_not_found')
         resolved.push({
           productId: line.productId,
@@ -352,21 +368,27 @@ async function buildStepPayload(
           quantity: line.quantity,
         })
       }
+      console.log('[buildStepPayload:products] returning', resolved)
       return { lines: resolved }
     }
 
     case 'payment': {
       const day = body['paymentDay']
+      console.log('[buildStepPayload:payment] paymentDay', day)
       if (typeof day !== 'number' || !Number.isInteger(day) || day < 1 || day > 28) {
         throw err('invalid_step_payload')
       }
+      console.log('[buildStepPayload:payment] returning', { paymentDay: day })
       return { paymentDay: day }
     }
 
     case 'verification': {
       const lang = body['lang']
+      console.log('[buildStepPayload:verification] lang', lang, 'otpVerifiedAt', body['otpVerifiedAt'])
       if (lang !== 'ru' && lang !== 'uz') throw err('invalid_step_payload')
-      return { lang, otpVerifiedAt: str(body['otpVerifiedAt']) }
+      const result = { lang, otpVerifiedAt: str(body['otpVerifiedAt']) }
+      console.log('[buildStepPayload:verification] returning', result)
+      return result
     }
   }
 }
