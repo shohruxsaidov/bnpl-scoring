@@ -388,7 +388,7 @@ async function scoreUzcard(db: Db, userCardId: string): Promise<PlumScoreResult>
   // Step 1: createScoringCard
   const endDate = new Date();
   const beginDate = new Date(endDate.getTime() - 365 * 24 * 60 * 60 * 1000); // 365 days ago
-  const createBody = { userCardId, templateId: env.PLUM_TEMPLATE_ID, beginDate, endDate };
+  const createBody = { cardId: userCardId, templateId: env.PLUM_TEMPLATE_ID, beginDate, endDate };
   console.log('[plum] scoreUzcard createScoringCard request:', JSON.stringify(createBody));
   let scoringId: string;
 
