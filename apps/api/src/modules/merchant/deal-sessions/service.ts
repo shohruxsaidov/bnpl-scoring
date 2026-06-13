@@ -386,7 +386,7 @@ async function buildStepPayload(
       const lang = body['lang']
       console.log('[buildStepPayload:verification] lang', lang, 'otpVerifiedAt', body['otpVerifiedAt'])
       if (lang !== 'ru' && lang !== 'uz') throw err('invalid_step_payload')
-      const result = { lang, otpVerifiedAt: str(body['otpVerifiedAt']) }
+      const result = { lang, otpVerifiedAt: str(body['otpVerifiedAt']) } as any
       console.log('[buildStepPayload:verification] returning', result)
       return result
     }
