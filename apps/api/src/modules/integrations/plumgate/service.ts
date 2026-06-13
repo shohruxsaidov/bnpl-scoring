@@ -434,7 +434,7 @@ async function scoreUzcard(db: Db, userCardId: string): Promise<PlumScoreResult>
   // Step 2: poll scoringGetPoint until result arrives (max 10 attempts × 1 s)
   const pollParams = { scoringId: scoringId };
   for (let attempt = 0; attempt < 10; attempt++) {
-    await delay(1000);
+    await delay(10000);
     const requestTimestamp = new Date();
     try {
       const data = await client
@@ -442,27 +442,31 @@ async function scoreUzcard(db: Db, userCardId: string): Promise<PlumScoreResult>
         .json<PlumUzcardScoreResponse>();
 
       console.log(`[plum] scoreUzcard scoringGetPoint attempt ${attempt}:`, JSON.stringify(data));
-      if (data.score != null) {
-        logIntegration(db, {
-          integration: 'plumgate',
-          methodName: 'scoringGetPoint',
-          methodType: 'GET',
-          request: { ...pollParams, scoringId, attempt },
-          response: data,
-          status: 200,
-          errorMessage: null,
-          requestTimestamp,
-          responseTimestamp: new Date(),
-        });
+      logIntegration(db, {
+        integration: 'plumgate',
+        methodName: 'scoringGetPoint',
+        methodType: 'GET',
+        request: { ...pollParams, attempt },
+        response: data,
+        status: 200,
+        errorMessage: null,
+        requestTimestamp,
+        responseTimestamp: new Date(),
+      });
 
-        const result = {
-          score: data.score,
-          limit: scoreToLimit(data.score, data.creditLimit),
-          decision: scoreToDecision(data.score),
-        };
-        console.log('[plum] scoreUzcard result:', JSON.stringify(result));
-        return result;
-      }
+      // const result = {
+      //   score: data.score,
+      //   limit: scoreToLimit(data.score, data.creditLimit),
+      //   decision: scoreToDecision(data.score),
+      // };
+      // TODO remove the hardcoded result once the live API is tested and confirmed to return the expected fields
+      const result: PlumScoreResult = {
+        score: 660,
+        limit: 1_400_000,
+        decision: 'approved',
+      };
+      console.log('[plum] scoreUzcard result:', JSON.stringify(result));
+      return result;
     } catch (err) {
       const toLog = await parsePlumError(err);
       console.log(`[plum] scoreUzcard scoringGetPoint attempt ${attempt} failed:`, toLog.message);
