@@ -172,27 +172,36 @@ export async function saveStep(
   step: WizardStep,
   body: Record<string, unknown>,
 ): Promise<DealSessionRow> {
+  console.log('[saveStep] called', { sessionId: session.id, step, body })
+
   const data = stepDataOf(session)
+  console.log('[saveStep] current stepData', data)
+
   const saved = await buildStepPayload(db, session, step, body, data)
+  console.log('[saveStep] buildStepPayload result', saved)
 
   const next: SessionStepData = { ...data, [step]: saved }
 
   // Invalidate all later steps
   const idx = WIZARD_STEPS.indexOf(step)
   for (const later of WIZARD_STEPS.slice(idx + 1)) delete next[later]
+  console.log('[saveStep] next stepData after invalidation', next)
 
   // Server stamps are tied to the inputs they were computed from
   if (step === 'client') {
     const clientId = (saved as NonNullable<SessionStepData['client']>).clientId
-    if (next.katm && next.katm.clientId !== clientId) delete next.katm
-    if (next.scoring) delete next.scoring
+    console.log('[saveStep] client step — clientId', clientId, 'katm.clientId', next.katm?.clientId)
+    if (next.katm && next.katm.clientId !== clientId) { console.log('[saveStep] dropping katm (clientId mismatch)'); delete next.katm }
+    if (next.scoring) { console.log('[saveStep] dropping scoring (client changed)'); delete next.scoring }
   }
   if (step === 'card') {
     const cardId = (saved as NonNullable<SessionStepData['card']>).cardId
-    if (next.scoring && next.scoring.cardId !== cardId) delete next.scoring
+    console.log('[saveStep] card step — cardId', cardId, 'scoring.cardId', next.scoring?.cardId)
+    if (next.scoring && next.scoring.cardId !== cardId) { console.log('[saveStep] dropping scoring (cardId mismatch)'); delete next.scoring }
   }
 
   const after = WIZARD_STEPS[idx + 1] ?? 'verification'
+  console.log('[saveStep] advancing currentStep to', after)
 
   const [updated] = await db
     .update(dealSessions)
@@ -206,9 +215,11 @@ export async function saveStep(
     })
     .where(eq(dealSessions.id, session.id))
     .returning()
+  console.log('[saveStep] db.update result', updated ?? 'NOT FOUND')
   if (!updated) throw err('session_not_found')
 
   await logEvent(db, session.id, step, saved)
+  console.log('[saveStep] done — returning updated session')
   return updated
 }
 
