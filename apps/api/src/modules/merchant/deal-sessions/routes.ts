@@ -104,6 +104,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         const updated = await saveStep(db, session, step, request.body as Record<string, unknown>)
         return { session: await toSessionDto(updated) }
       } catch (err: any) {
+        console.error(err)
         if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found')
         if (err.code === 'session_not_active') return reply.code(409).sendError('session_not_active')
         if (err.code === 'invalid_step_payload') return reply.code(400).sendError('invalid_step_payload')
