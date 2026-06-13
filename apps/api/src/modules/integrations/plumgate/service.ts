@@ -85,7 +85,9 @@ interface PlumConfirmCardResponse {
 
 interface PlumScoringCreateResponse {
   /** Session/scoring ID returned by createScoringCard or HumoScoring */
-  sessionId: string;
+  result: {
+    scoringId: number;
+  };
 }
 
 interface PlumUzcardScoreResponse {
@@ -390,7 +392,7 @@ async function scoreUzcard(db: Db, userCardId: string): Promise<PlumScoreResult>
   const beginDate = new Date(endDate.getTime() - 365 * 24 * 60 * 60 * 1000); // 365 days ago
   const createBody = { cardId: userCardId, templateId: env.PLUM_TEMPLATE_ID, beginDate, endDate };
   console.log('[plum] scoreUzcard createScoringCard request:', JSON.stringify(createBody));
-  let scoringId: string;
+  let scoringId: number;
 
   const createRequestTimestamp = new Date();
   try {
@@ -411,7 +413,7 @@ async function scoreUzcard(db: Db, userCardId: string): Promise<PlumScoreResult>
       responseTimestamp: new Date(),
     });
 
-    scoringId = data.sessionId;
+    scoringId = data.result.scoringId;
   } catch (err) {
     console.error({ err: (err as any)?.data || err });
     const toThrow = await parsePlumError(err);
@@ -430,7 +432,7 @@ async function scoreUzcard(db: Db, userCardId: string): Promise<PlumScoreResult>
   }
 
   // Step 2: poll scoringGetPoint until result arrives (max 10 attempts × 1 s)
-  const pollParams = { cardId: userCardId };
+  const pollParams = { scoringId: scoringId };
   for (let attempt = 0; attempt < 10; attempt++) {
     await delay(1000);
     const requestTimestamp = new Date();
@@ -490,7 +492,7 @@ async function scoreHumo(db: Db, userCardId: string): Promise<PlumScoreResult> {
   // Step 1: HumoScoring
   const createBody = { userCardId, templateId: env.PLUM_TEMPLATE_ID };
   console.log('[plum] scoreHumo HumoScoring request:', JSON.stringify(createBody));
-  let sessionId: string;
+  let scoringId: number;
 
   const createRequestTimestamp = new Date();
   try {
@@ -511,7 +513,7 @@ async function scoreHumo(db: Db, userCardId: string): Promise<PlumScoreResult> {
       responseTimestamp: new Date(),
     });
 
-    sessionId = data.sessionId;
+    scoringId = data.result.scoringId;
   } catch (err) {
     const toThrow = await parsePlumError(err);
     logIntegration(db, {
@@ -529,7 +531,7 @@ async function scoreHumo(db: Db, userCardId: string): Promise<PlumScoreResult> {
   }
 
   // Step 2: HumoScoringAvg (poll, max 10 attempts × 1 s)
-  const avgBody = { sessionId };
+  const avgBody = { scoringId };
   for (let attempt = 0; attempt < 10; attempt++) {
     await delay(1000);
     const requestTimestamp = new Date();
