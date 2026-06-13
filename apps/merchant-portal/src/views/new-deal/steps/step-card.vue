@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
 import { useDealStore } from '@/stores/deal'
 import { useClientScoringStore } from '@/stores/client-scoring'
-import { saveSessionStep } from '@/composables/use-deal-session-api'
 import { apiFetch } from '@/utils/apiFetch'
 import type { Card, CardScoreResult, ScoreDecision } from '@/types'
 
@@ -239,6 +238,10 @@ async function runScoring(): Promise<CardScoreResult | null> {
           pcType: selectedCard.value.pcType,
           clientId: deal.sessionData.client.id,
           dealSessionId: deal.dealSessionId,
+          maskedPan: selectedCard.value.maskedPan,
+          bank: selectedCard.value.bank,
+          holderName: selectedCard.value.holderName,
+          expiry: selectedCard.value.expiry,
         }),
       },
     )
@@ -270,37 +273,14 @@ function resetSelection() {
 
 // ── Continue ─────────────────────────────────────────────────────────────────
 
-const saving = ref(false)
-const saveError = ref<string | null>(null)
-
 async function next() {
-  if (!selectedCard.value || scoring.value || saving.value) return
+  if (!selectedCard.value || scoring.value) return
 
+  // Scoring endpoint saves the card step + scoring stamp server-side (ADR-0024).
   // Reuse the result if this card was already scored on a prior pass.
-  // Scoring history + the session's scoring block are recorded server-side
-  // during the score call (ADR-0024 / ADR-0022).
   const score = result.value && serverResult.value ? result.value : await runScoring()
   const server = serverResult.value
   if (!score || !server || !selectedCard.value) return
-
-  // Blocking step save — the wizard advances only once the server has it
-  saving.value = true
-  saveError.value = null
-  try {
-    await saveSessionStep(deal.dealSessionId!, 'card', {
-      cardId: selectedCard.value.plumCardId,
-      maskedPan: selectedCard.value.maskedPan,
-      pcType: selectedCard.value.pcType,
-      bank: selectedCard.value.bank,
-      holderName: selectedCard.value.holderName,
-      expiry: selectedCard.value.expiry,
-    })
-  } catch {
-    saveError.value = t('deal.stepSaveError')
-    return
-  } finally {
-    saving.value = false
-  }
 
   deal.setCard(selectedCard.value)
 
@@ -442,26 +422,13 @@ async function next() {
       </div>
     </transition>
 
-    <!-- Step save error -->
-    <transition name="fade">
-      <div v-if="saveError" class="score-error-block">
-        <i class="pi pi-exclamation-triangle" />
-        <span>{{ saveError }}</span>
-        <div class="score-error-actions">
-          <button class="btn-ghost" @click="next">
-            <i class="pi pi-refresh" /> {{ $t('common.retry') }}
-          </button>
-        </div>
-      </div>
-    </transition>
-
     <footer class="sc-foot">
       <button class="btn-ghost" @click="deal.back()">
         <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
       </button>
-      <button class="btn-gradient" :disabled="!selectedId || scoring || saving" @click="next">
-        <i v-if="scoring || saving" class="pi pi-spin pi-spinner" />
-        {{ $t('common.continue') }} <i v-if="!scoring && !saving" class="pi pi-arrow-right" />
+      <button class="btn-gradient" :disabled="!selectedId || scoring" @click="next">
+        <i v-if="scoring" class="pi pi-spin pi-spinner" />
+        {{ $t('common.continue') }} <i v-if="!scoring" class="pi pi-arrow-right" />
       </button>
     </footer>
   </div>

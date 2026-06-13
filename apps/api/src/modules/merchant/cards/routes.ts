@@ -10,7 +10,7 @@ import {
   scoreCard,
 } from '../../integrations/plumgate/service'
 import { createScoring } from '../scoringHistory/commands/create-scoring'
-import { loadOwnedActiveSession, stampScoring, type SessionStepData } from '../deal-sessions/service'
+import { loadOwnedActiveSession, saveStep, stampScoring, type SessionStepData } from '../deal-sessions/service'
 
 export default async function merchantCardRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
@@ -38,6 +38,11 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
     pcType: Type.Union([Type.Literal('uzcard'), Type.Literal('humo')]),
     clientId: Type.String({ minLength: 1 }),
     dealSessionId: Type.String({ minLength: 1 }),
+    // Card display fields — written to the session's card step server-side
+    maskedPan: Type.String({ minLength: 1 }),
+    bank: Type.String({ minLength: 1 }),
+    holderName: Type.String(),
+    expiry: Type.String({ minLength: 1 }),
   })
 
   // ── Helper ───────────────────────────────────────────────────────────────
@@ -114,7 +119,7 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
       console.log('[score] body:', JSON.stringify(request.body))
       const p = request.user as { sub: string; merchantId: string }
       console.log('[score] user:', JSON.stringify(p))
-      const { plumCardId, pcType, clientId, dealSessionId } = request.body
+      const { plumCardId, pcType, clientId, dealSessionId, maskedPan, bank, holderName, expiry } = request.body
       console.log('[score] requireClient, clientId:', clientId)
       await requireClient(clientId)
       console.log('[score] requireClient OK')
@@ -170,8 +175,21 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
         request.log.warn({ err }, 'scoring history record failed')
       }
 
-      console.log('[score] stampScoring onto session:', session.id?.toString?.() ?? session.id)
-      await stampScoring(db, session, {
+      // Save the card step first so the session always has card data even if
+      // the client never reaches the frontend's step-save call.
+      console.log('[score] saveStep card onto session:', session.id?.toString?.() ?? session.id)
+      const sessionAfterCard = await saveStep(db, session, 'card', {
+        cardId: plumCardId,
+        maskedPan,
+        pcType,
+        bank,
+        holderName,
+        expiry,
+      })
+      console.log('[score] saveStep card OK')
+
+      console.log('[score] stampScoring onto session:', sessionAfterCard.id?.toString?.() ?? sessionAfterCard.id)
+      await stampScoring(db, sessionAfterCard, {
         cardId: plumCardId,
         scoringId,
         scoreSum: result.score,
