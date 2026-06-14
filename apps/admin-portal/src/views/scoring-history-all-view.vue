@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -10,9 +10,10 @@ import { formatDate } from '@/utils/money'
 
 const store = useScoringHistoryStore()
 const router = useRouter()
+const route = useRoute()
 const { t } = useI18n()
 
-const search = ref('')
+const search = ref((route.query.pinfl as string) ?? '')
 const statusFilter = ref<ScoringListItem['status'] | null>(null)
 
 onMounted(() => store.fetchAllList())

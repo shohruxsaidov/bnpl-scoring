@@ -22,9 +22,16 @@ const STATUS_COLORS: Record<ScoringDetail['status'], { fg: string; bg: string }>
 
 <template>
   <div class="page">
-    <button class="back-link" @click="router.push({ name: 'scoring-history' })">
-      <i class="pi pi-arrow-left" /> {{ $t('scoringHistory.back') }}
-    </button>
+    <div class="top-bar">
+      <button class="back-link" @click="router.push({ name: 'scoring-history' })">
+        <i class="pi pi-arrow-left" /> {{ $t('scoringHistory.back') }}
+      </button>
+      <button v-if="detail" class="btn-client-history"
+        @click="router.push({ name: 'scoring-history-all', query: { pinfl: detail.pinfl } })">
+        <i class="pi pi-history" />
+        {{ $t('scoringHistory.clientHistory') }}
+      </button>
+    </div>
 
     <div v-if="store.loading" class="surface-card skeleton-table" />
     <div v-else-if="store.error || !detail" class="surface-card error-state">
@@ -96,11 +103,38 @@ const STATUS_COLORS: Record<ScoringDetail['status'], { fg: string; bg: string }>
 
 <style scoped>
 .page { display: flex; flex-direction: column; gap: 1.2rem; }
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
 .back-link {
   display: inline-flex; align-items: center; gap: 0.4rem; background: none; border: none;
   color: var(--text-secondary); font-weight: 700; font-size: 0.85rem; cursor: pointer; padding: 0;
 }
 .back-link:hover { color: var(--accent-2); }
+.btn-client-history {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.btn-client-history:hover {
+  background: var(--gradient-accent);
+  border-color: transparent;
+  color: #fff;
+}
 
 .header-card { padding: 1.6rem 1.8rem; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; }
 .hc-main { display: flex; flex-direction: column; gap: 0.25rem; }
