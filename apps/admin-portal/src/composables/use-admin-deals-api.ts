@@ -41,6 +41,7 @@ export interface AdminDealDetail {
   totalPayable: number
   termMonths: number
   paymentDay: number | null
+  prepaymentAmount: number | null
   scoreSum: number | null
   scoringDecision: string | null
   agentId: string

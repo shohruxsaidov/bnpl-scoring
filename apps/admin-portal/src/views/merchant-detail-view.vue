@@ -247,18 +247,6 @@ async function openEnableCategory() {
 
 const enabledCategoryIds = computed(() => new Set(categories.value.map((c) => c.id)))
 
-async function toggleCategory(category: Category) {
-  try {
-    if (enabledCategoryIds.value.has(category.id)) {
-      await merchants.disableCategory(merchantId.value, category.id)
-    } else {
-      await merchants.enableCategory(merchantId.value, category.id)
-    }
-  } catch {
-    notifyError('merchantDetail.updateFailed')
-  }
-}
-
 async function disableCategory(category: Category) {
   try {
     await merchants.disableCategory(merchantId.value, category.id)
