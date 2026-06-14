@@ -122,12 +122,27 @@ const prepayOtp = ref('')
 const prepayLoading = ref(false)
 const prepayError = ref('')
 
-function openPrepayDialog() {
+async function openPrepayDialog() {
   prepayCardNumber.value = ''
   prepayExpiry.value = ''
   prepayPhone.value = ''
   prepayOtp.value = ''
   prepayError.value = ''
+  // The server needs products.lines to compute the gap — save the step first.
+  saving.value = true
+  try {
+    await saveSessionStep(deal.dealSessionId!, 'products', {
+      lines: deal.sessionData.basket.map((item) => ({
+        productId: item.product.id,
+        quantity: item.quantity,
+      })),
+    })
+  } catch {
+    saveError.value = tr('deal.stepSaveError')
+    return
+  } finally {
+    saving.value = false
+  }
   showPrepayDialog.value = true
 }
 
