@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
-import { useScoringHistoryStore, type ClientListItem } from '@/stores/scoring-history'
+import { useScoringHistoryStore, type ScoringListItem } from '@/stores/scoring-history'
 import MonoAmount from '@/components/mono-amount.vue'
 import { formatDate } from '@/utils/money'
 
@@ -13,9 +13,9 @@ const router = useRouter()
 const { t } = useI18n()
 
 const search = ref('')
-const statusFilter = ref<ClientListItem['lastStatus'] | null>(null)
+const statusFilter = ref<ScoringListItem['status'] | null>(null)
 
-onMounted(() => store.fetchClients())
+onMounted(() => store.fetchAllList())
 
 const statusOptions = computed(() => [
   { label: t('scoringHistory.allStatuses'), value: null },
@@ -24,9 +24,9 @@ const statusOptions = computed(() => [
   { label: t('scoringHistory.pending'), value: 'pending' },
 ])
 
-const filtered = computed<ClientListItem[]>(() => {
-  let list = store.clients
-  if (statusFilter.value) list = list.filter((r) => r.lastStatus === statusFilter.value)
+const filtered = computed<ScoringListItem[]>(() => {
+  let list = store.records
+  if (statusFilter.value) list = list.filter((r) => r.status === statusFilter.value)
   if (search.value.trim()) {
     const q = search.value.toLowerCase()
     list = list.filter(
@@ -37,28 +37,28 @@ const filtered = computed<ClientListItem[]>(() => {
 })
 
 const stats = computed(() => ({
-  total: store.clients.length,
-  approved: store.clients.filter((r) => r.lastStatus === 'approved').length,
-  declined: store.clients.filter((r) => r.lastStatus === 'declined').length,
-  avg: store.clients.length
-    ? Math.round(store.clients.reduce((s, r) => s + r.lastScore, 0) / store.clients.length)
+  total: store.records.length,
+  approved: store.records.filter((r) => r.status === 'approved').length,
+  declined: store.records.filter((r) => r.status === 'declined').length,
+  avg: store.records.length
+    ? Math.round(store.records.reduce((s, r) => s + r.score, 0) / store.records.length)
     : 0,
 }))
 
-const STATUS_COLORS: Record<ClientListItem['lastStatus'], { fg: string; bg: string }> = {
+const STATUS_COLORS: Record<ScoringListItem['status'], { fg: string; bg: string }> = {
   approved: { fg: 'var(--success)', bg: 'var(--success-bg)' },
   declined: { fg: 'var(--danger)', bg: 'var(--danger-bg)' },
   pending: { fg: 'var(--warning)', bg: 'var(--warning-bg)' },
 }
 
-function openLastScoring(row: ClientListItem) {
-  router.push(`/scoring-history/${row.lastScoringId}`)
+function openDetail(row: ScoringListItem) {
+  router.push(`/scoring-history/${row.id}`)
 }
 </script>
 
 <template>
   <div class="page">
-    <template v-if="store.loading && store.clients.length === 0">
+    <template v-if="store.loading && store.records.length === 0">
       <div class="kpi-strip">
         <div v-for="i in 4" :key="i" class="kpi-card surface-card skeleton-card" />
       </div>
@@ -68,24 +68,23 @@ function openLastScoring(row: ClientListItem) {
     <div v-else-if="store.error" class="surface-card error-state">
       <i class="pi pi-exclamation-circle" />
       <p>{{ store.error }}</p>
-      <button class="btn-ghost" @click="store.fetchClients()">{{ $t('common.retry') }}</button>
+      <button class="btn-ghost" @click="store.fetchAllList()">{{ $t('common.retry') }}</button>
     </div>
 
     <template v-else>
       <div class="page-header">
         <div>
-          <h1 class="page-title">{{ $t('routeTitle.scoringHistory') }}</h1>
-          <p class="page-sub">{{ $t('scoringHistory.clientCount', { count: filtered.length }) }}</p>
+          <button class="back-link" @click="router.push({ name: 'scoring-history' })">
+            <i class="pi pi-arrow-left" /> {{ $t('scoringHistory.backToClients') }}
+          </button>
+          <h1 class="page-title">{{ $t('scoringHistory.allHistory') }}</h1>
+          <p class="page-sub">{{ $t('scoringHistory.count', { count: filtered.length }) }}</p>
         </div>
-        <button class="btn-all-history" @click="router.push({ name: 'scoring-history-all' })">
-          <i class="pi pi-list" />
-          {{ $t('scoringHistory.showAllHistory') }}
-        </button>
       </div>
 
       <div class="kpi-strip">
         <div class="kpi-card surface-card">
-          <span class="kpi-label">{{ $t('scoringHistory.uniqueClients') }}</span>
+          <span class="kpi-label">{{ $t('scoringHistory.totalRequests') }}</span>
           <span class="kpi-value font-mono">{{ stats.total }}</span>
         </div>
         <div class="kpi-card surface-card">
@@ -113,10 +112,10 @@ function openLastScoring(row: ClientListItem) {
       </div>
 
       <div class="surface-card table-card">
-        <DataTable :value="filtered" data-key="pinfl" row-hover removable-sort
+        <DataTable :value="filtered" data-key="id" row-hover removable-sort
           :paginator="filtered.length > 15" :rows="15" :rows-per-page-options="[10, 15, 25, 50]"
           size="small" class="grid-table"
-          @row-click="openLastScoring($event.data as ClientListItem)">
+          @row-click="openDetail($event.data as ScoringListItem)">
           <Column :header="$t('scoringHistory.client')" field="clientName" sortable>
             <template #body="{ data }">
               <div class="client-cell">
@@ -125,37 +124,32 @@ function openLastScoring(row: ClientListItem) {
               </div>
             </template>
           </Column>
-          <Column :header="$t('scoringHistory.score')" field="lastScore" sortable style="width:90px">
+          <Column :header="$t('scoringHistory.score')" field="score" sortable style="width:90px">
             <template #body="{ data }">
-              <span class="font-mono">{{ data.lastScore || '—' }}</span>
+              <span class="font-mono">{{ data.score || '—' }}</span>
             </template>
           </Column>
-          <Column :header="$t('scoringHistory.limit')" field="lastLimit" sortable style="width:160px">
+          <Column :header="$t('scoringHistory.limit')" field="limit" sortable style="width:160px">
             <template #body="{ data }">
-              <MonoAmount :value="data.lastLimit" size="sm" />
+              <MonoAmount :value="data.limit" size="sm" />
             </template>
           </Column>
-          <Column :header="$t('scoringHistory.status')" field="lastStatus" sortable style="width:130px">
+          <Column :header="$t('scoringHistory.status')" field="status" sortable style="width:130px">
             <template #body="{ data }">
               <span class="pill"
-                :style="{ color: STATUS_COLORS[data.lastStatus as ClientListItem['lastStatus']].fg, background: STATUS_COLORS[data.lastStatus as ClientListItem['lastStatus']].bg }">
-                {{ $t('scoringHistory.' + data.lastStatus) }}
+                :style="{ color: STATUS_COLORS[data.status as ScoringListItem['status']].fg, background: STATUS_COLORS[data.status as ScoringListItem['status']].bg }">
+                {{ $t('scoringHistory.' + data.status) }}
               </span>
             </template>
           </Column>
-          <Column :header="$t('scoringHistory.totalRuns')" field="totalRuns" sortable style="width:110px">
+          <Column :header="$t('scoringHistory.date')" field="scoredAt" sortable style="width:120px">
             <template #body="{ data }">
-              <span class="font-mono">{{ data.totalRuns }}</span>
-            </template>
-          </Column>
-          <Column :header="$t('scoringHistory.date')" field="lastScoredAt" sortable style="width:120px">
-            <template #body="{ data }">
-              <span class="font-mono muted">{{ formatDate(data.lastScoredAt) }}</span>
+              <span class="font-mono muted">{{ formatDate(data.scoredAt) }}</span>
             </template>
           </Column>
           <Column style="width:52px">
             <template #body="{ data }">
-              <button class="open-btn" @click.stop="openLastScoring(data)">
+              <button class="open-btn" @click.stop="openDetail(data)">
                 <i class="pi pi-arrow-right" />
               </button>
             </template>
@@ -180,6 +174,22 @@ function openLastScoring(row: ClientListItem) {
   gap: 1rem;
 }
 
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 0.5rem;
+}
+
+.back-link:hover { color: var(--accent-2); }
+
 .page-title {
   margin: 0 0 0.2rem;
   font-size: 1.55rem;
@@ -190,30 +200,6 @@ function openLastScoring(row: ClientListItem) {
   margin: 0;
   font-size: 0.85rem;
   color: var(--text-secondary);
-}
-
-.btn-all-history {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.55rem 1.1rem;
-  border-radius: 10px;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-base);
-  color: var(--text-primary);
-  font-size: 0.85rem;
-  font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.btn-all-history:hover {
-  background: var(--gradient-accent);
-  border-color: transparent;
-  color: #fff;
 }
 
 .kpi-strip {
@@ -358,17 +344,11 @@ function openLastScoring(row: ClientListItem) {
   gap: 0.15rem;
 }
 
-.client-name {
-  font-weight: 700;
-}
+.client-name { font-weight: 700; }
 
-.client-phone {
-  font-size: 0.78rem;
-}
+.client-phone { font-size: 0.78rem; }
 
-.muted {
-  color: var(--text-secondary);
-}
+.muted { color: var(--text-secondary); }
 
 .pill {
   display: inline-flex;
@@ -410,32 +390,20 @@ function openLastScoring(row: ClientListItem) {
   text-align: center;
 }
 
-.error-state i {
-  font-size: 2.2rem;
-  color: var(--danger);
-}
-
-.error-state p {
-  margin: 0;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
+.error-state i { font-size: 2.2rem; color: var(--danger); }
+.error-state p { margin: 0; font-weight: 600; color: var(--text-secondary); }
 
 @media (max-width: 900px) {
   .kpi-strip { grid-template-columns: repeat(2, 1fr); }
 }
 
-@media (max-width: 480px) {
-  .kpi-strip { grid-template-columns: 1fr 1fr; }
+@media (max-width: 600px) {
+  .table-card { overflow-x: auto; }
 }
 
 @media (max-width: 450px) {
   .filters-bar { flex-direction: column; align-items: stretch; }
   .search-wrap { min-width: 0; }
   .filter-select-native { width: 100%; }
-}
-
-@media (max-width: 600px) {
-  .table-card { overflow-x: auto; }
 }
 </style>

@@ -185,6 +185,16 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'scoring-history/all',
+        name: 'scoring-history-all',
+        component: () => import('@/views/scoring-history-all-view.vue'),
+        meta: {
+          titleKey: 'routeTitle.scoringHistory',
+          breadcrumbKeys: ['breadcrumb.scoringHistory', 'breadcrumb.scoringHistoryAll'],
+          feature: 'view_scoring_history',
+        },
+      },
+      {
         path: 'scoring-history/:id',
         name: 'scoring-detail',
         component: () => import('@/views/scoring-detail-view.vue'),

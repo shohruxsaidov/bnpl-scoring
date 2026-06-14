@@ -1,7 +1,7 @@
 import { Type } from "@sinclair/typebox"
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
 import type { FastifyInstance } from "fastify"
-import { listScorings } from "./queries/list-scorings"
+import { listAllScorings, listUniqueClients } from "./queries/list-scorings"
 import { getScoring } from "./queries/get-scoring"
 
 export default async function adminScoringHistoryRoutes(app: FastifyInstance) {
@@ -9,13 +9,15 @@ export default async function adminScoringHistoryRoutes(app: FastifyInstance) {
   const db = app.db
   const preHandler = app.verifyAdminJwt
 
-  const ListQuery = Type.Object({
-    merchantId: Type.Optional(Type.String()),
-  })
   const IdParams = Type.Object({ id: Type.String() })
 
-  fastify.get("/", { schema: { querystring: ListQuery }, preHandler }, async (request) => {
-    const records = await listScorings(db)
+  fastify.get("/", { preHandler }, async () => {
+    const clients = await listUniqueClients(db)
+    return { clients }
+  })
+
+  fastify.get("/all", { preHandler }, async () => {
+    const records = await listAllScorings(db)
     return { records }
   })
 
