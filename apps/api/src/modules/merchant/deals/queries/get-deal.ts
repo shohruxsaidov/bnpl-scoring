@@ -1,19 +1,26 @@
-import { and, eq } from "drizzle-orm"
-import type { Db } from "../../../../db"
-import { deals, dealItems, dealPaymentSchedules } from "../../../deals/db/schema"
-import { clients, tariffs, merchantUsers, merchants, branches } from "../../../id/db/schema"
+import { and, eq } from 'drizzle-orm';
+import type { Db } from '../../../../db';
+import { deals, dealItems, dealPaymentSchedules } from '../../../deals/db/schema';
+import { clients, tariffs, merchantUsers, merchants, branches } from '../../../id/db/schema';
 
 function serializeBigInt(v: bigint | null | undefined): string | null {
-  return v == null ? null : v.toString()
+  return v == null ? null : v.toString();
 }
 
 function formatDealNumber(n: bigint | null | undefined): string {
-  return n != null ? `CN-${String(n).padStart(7, "0")}` : "—"
+  return n != null ? `CN-${String(n).padStart(7, '0')}` : '—';
 }
 
 export async function getDealById(db: Db, id: string, merchantId: bigint) {
   const rows = await db
-    .select({ deal: deals, client: clients, tariff: tariffs, agent: merchantUsers, branch: branches, merchant: merchants })
+    .select({
+      deal: deals,
+      client: clients,
+      tariff: tariffs,
+      agent: merchantUsers,
+      branch: branches,
+      merchant: merchants,
+    })
     .from(deals)
     .leftJoin(clients, eq(deals.clientId, clients.id))
     .leftJoin(tariffs, eq(deals.tariffId, tariffs.id))
@@ -21,17 +28,21 @@ export async function getDealById(db: Db, id: string, merchantId: bigint) {
     .leftJoin(branches, eq(deals.branchId, branches.id))
     .leftJoin(merchants, eq(deals.merchantId, merchants.id))
     .where(and(eq(deals.id, id), eq(deals.merchantId, merchantId)))
-    .limit(1)
+    .limit(1);
 
-  const row = rows[0]
-  if (!row) return null
+  const row = rows[0];
+  if (!row) return null;
 
-  const { deal: d, client: c, tariff: t, agent, branch, merchant } = row
+  const { deal: d, client: c, tariff: t, agent, branch, merchant } = row;
 
   const [items, schedule] = await Promise.all([
     db.select().from(dealItems).where(eq(dealItems.dealId, id)).orderBy(dealItems.id),
-    db.select().from(dealPaymentSchedules).where(eq(dealPaymentSchedules.dealId, id)).orderBy(dealPaymentSchedules.index),
-  ])
+    db
+      .select()
+      .from(dealPaymentSchedules)
+      .where(eq(dealPaymentSchedules.dealId, id))
+      .orderBy(dealPaymentSchedules.index),
+  ]);
 
   return {
     id: d.id,
@@ -39,12 +50,13 @@ export async function getDealById(db: Db, id: string, merchantId: bigint) {
     status: d.status,
     createdAt: d.createdAt.toISOString(),
     paymentDay: d.paymentDay,
+    merchantName: merchant?.name,
     amount: d.amount != null ? Number(d.amount) : 0,
     totalPayable: d.totalPayable != null ? Number(d.totalPayable) : 0,
     termMonths: d.termMonths ?? t?.termMonths ?? 0,
-    lang: (d.lang ?? "ru") as "ru" | "uz",
+    lang: (d.lang ?? 'ru') as 'ru' | 'uz',
     agentId: serializeBigInt(d.agentId),
-    agentName: agent?.fullName ?? "",
+    agentName: agent?.fullName ?? '',
     clientId: serializeBigInt(d.clientId),
     clientName: c ? `${c.firstName} ${c.lastName}` : null,
     clientPinfl: c?.pinfl ?? null,
@@ -73,5 +85,5 @@ export async function getDealById(db: Db, id: string, merchantId: bigint) {
       paid: s.paid,
       paidAt: s.paidAt?.toISOString() ?? null,
     })),
-  }
+  };
 }

@@ -135,6 +135,7 @@ export interface ContractData {
   clientFullName: string;
   clientPinfl: string;
   clientPassport: string;
+  merchantName?: string;
   agentName: string;
   branchName: string;
   merchantInn: string;
@@ -473,7 +474,7 @@ export async function generateContract(data: ContractData, lang: 'ru' | 'uz'): P
     const unitWithMarkup = Math.round(item.price * markupRatio);
     return [
       String(i + 1),
-      data.branchName,
+      `${data.merchantName}(${data.branchName})`,
       item.productName,
       String(item.quantity),
       `${fmt(unitWithMarkup)} ${t.currency}`,
