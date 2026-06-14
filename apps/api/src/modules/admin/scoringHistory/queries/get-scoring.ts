@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm"
+import { eq, inArray } from "drizzle-orm"
 import type { Db } from "../../../../db"
-import { scoringHistories } from "../../../deals/db/schema"
+import { scoringHistories, deals, dealPaymentSchedules } from "../../../deals/db/schema"
 
 export interface ScoringFactor {
   label: string
@@ -22,6 +22,13 @@ export interface ScoringDetail {
   passport: string
   coefficient: number | null
   factors: ScoringFactor[]
+  platformStats: {
+    total: number
+    active: number
+    closed: number
+    overdue: number
+    totalPaid: number
+  } | null
 }
 
 const CRITERIA_LABELS: Record<string, string> = {
@@ -63,6 +70,34 @@ export async function getScoring(db: Db, id: bigint): Promise<ScoringDetail | nu
       ? `${scoring.passportSeries}${scoring.passportNumber}`
       : "—"
 
+  let platformStats: ScoringDetail["platformStats"] = null
+  if (scoring.clientId) {
+    const dealRows = await db
+      .select({ id: deals.id, status: deals.status })
+      .from(deals)
+      .where(eq(deals.clientId, scoring.clientId))
+
+    const realDeals = dealRows.filter((d) => ["active", "closed", "overdue"].includes(d.status))
+    const dealIds = realDeals.map((d) => d.id)
+
+    let totalPaid = 0
+    if (dealIds.length > 0) {
+      const schedules = await db
+        .select({ paidAmount: dealPaymentSchedules.paidAmount })
+        .from(dealPaymentSchedules)
+        .where(inArray(dealPaymentSchedules.dealId, dealIds))
+      totalPaid = schedules.reduce((sum, s) => sum + Number(s.paidAmount), 0)
+    }
+
+    platformStats = {
+      total: realDeals.length,
+      active: realDeals.filter((d) => d.status === "active").length,
+      closed: realDeals.filter((d) => d.status === "closed").length,
+      overdue: realDeals.filter((d) => d.status === "overdue").length,
+      totalPaid,
+    }
+  }
+
   return {
     id: scoring.id.toString(),
     fullName:
@@ -79,5 +114,6 @@ export async function getScoring(db: Db, id: bigint): Promise<ScoringDetail | nu
     passport,
     coefficient: scoring.coefficient != null ? Number(scoring.coefficient) : null,
     factors: criteriaToFactors(scoring.criteriaScores as Record<string, number> | null),
+    platformStats,
   }
 }

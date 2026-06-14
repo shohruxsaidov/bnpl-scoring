@@ -64,16 +64,19 @@ const STATUS_COLORS: Record<ScoringDetail['status'], { fg: string; bg: string }>
 
         <div class="surface-card panel">
           <h2 class="panel-title">{{ $t('scoringHistory.platformStats') }}</h2>
-          <div class="stat-grid">
-            <div class="stat"><span class="stat-num font-mono">{{ detail.platformStats.total }}</span><span class="stat-lbl">{{ $t('scoringHistory.statTotal') }}</span></div>
-            <div class="stat"><span class="stat-num font-mono" style="color:var(--success)">{{ detail.platformStats.active }}</span><span class="stat-lbl">{{ $t('scoringHistory.statActive') }}</span></div>
-            <div class="stat"><span class="stat-num font-mono">{{ detail.platformStats.closed }}</span><span class="stat-lbl">{{ $t('scoringHistory.statClosed') }}</span></div>
-            <div class="stat"><span class="stat-num font-mono" style="color:var(--danger)">{{ detail.platformStats.overdue }}</span><span class="stat-lbl">{{ $t('scoringHistory.statOverdue') }}</span></div>
-          </div>
-          <div class="paid-row">
-            <span class="muted">{{ $t('scoringHistory.totalPaid') }}</span>
-            <MonoAmount :value="detail.platformStats.totalPaid" size="sm" />
-          </div>
+          <template v-if="detail.platformStats">
+            <div class="stat-grid">
+              <div class="stat"><span class="stat-num font-mono">{{ detail.platformStats.total }}</span><span class="stat-lbl">{{ $t('scoringHistory.statTotal') }}</span></div>
+              <div class="stat"><span class="stat-num font-mono" style="color:var(--success)">{{ detail.platformStats.active }}</span><span class="stat-lbl">{{ $t('scoringHistory.statActive') }}</span></div>
+              <div class="stat"><span class="stat-num font-mono">{{ detail.platformStats.closed }}</span><span class="stat-lbl">{{ $t('scoringHistory.statClosed') }}</span></div>
+              <div class="stat"><span class="stat-num font-mono" style="color:var(--danger)">{{ detail.platformStats.overdue }}</span><span class="stat-lbl">{{ $t('scoringHistory.statOverdue') }}</span></div>
+            </div>
+            <div class="paid-row">
+              <span class="muted">{{ $t('scoringHistory.totalPaid') }}</span>
+              <MonoAmount :value="detail.platformStats.totalPaid" size="sm" />
+            </div>
+          </template>
+          <div v-else class="muted">{{ $t('common.noData') }}</div>
         </div>
       </div>
 

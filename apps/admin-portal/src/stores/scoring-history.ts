@@ -54,7 +54,7 @@ export interface ScoringDetail {
     overdue: number
     /** Total paid across the client's deals, tiyin */
     totalPaid: number
-  }
+  } | null
 }
 
 export const useScoringHistoryStore = defineStore('scoringHistory', () => {
