@@ -19,6 +19,7 @@ import adminClientsRoutes from "./clients/routes"
 import mxikRoutes from "../mxik/routes"
 import adminBankRoutes from "./banks/routes"
 import adminOrganizationRoutes from "./organization/routes"
+import adminScoringSessionsRoutes from "./scoringSessions/routes"
 import adminScoringModelRoutes from "./scoringModel/routes"
 import adminScoringTestCasesRoutes from "./scoringTestCases/routes"
 import adminIntegrationLogRoutes from "./integrationLogs/routes"
@@ -52,6 +53,7 @@ export default async function adminModule(app: FastifyInstance) {
   await app.register(guarded(adminNotificationRoutes, { read: "send_notifications", write: "send_notifications" }), { prefix: "/admin/notifications" })
   await app.register(guarded(adminDealRoutes, { read: "view_deals", write: "manage_payments" }), { prefix: "/admin/deals" })
   await app.register(guarded(adminScoringHistoryRoutes, { read: "view_scoring_history" }), { prefix: "/admin/scoring-history" })
+  await app.register(guarded(adminScoringSessionsRoutes, { read: "view_scoring_history" }), { prefix: "/admin/scoring-sessions" })
   await app.register(guarded(adminPaymentRoutes, { read: "view_payments", write: "manage_payments" }), { prefix: "/admin/payments" })
   await app.register(guarded(adminCollectionBoardRoutes, { read: "view_collection_board" }), { prefix: "/admin/collection-board" })
   await app.register(guarded(adminBuyoutRoutes, { read: "manage_buyout", write: "manage_buyout" }), { prefix: "/admin/buyouts" })

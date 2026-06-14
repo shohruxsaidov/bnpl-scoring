@@ -44,7 +44,8 @@
     "scoringModelTry": "Modelni sinash",
     "scoringTestCases": "Test-keyslar",
     "scoringTestRun": "Test-syuit",
-    "integrationLogs": "Integratsiya loglari"
+    "integrationLogs": "Integratsiya loglari",
+    "scoringSessions": "Skoring sessiyalari"
   },
   "breadcrumb": {
     "overview": "Umumiy ko'rinish",
@@ -71,7 +72,8 @@
     "scoringTestRun": "Ishga tushirish",
     "payments": "To'lovlar",
     "clients": "Mijozlar",
-    "integrationLogs": "Integratsiya loglari"
+    "integrationLogs": "Integratsiya loglari",
+    "scoringSessions": "Skoring sessiyalari"
   },
   "topbar": {
     "scoring": "Skoring",
@@ -100,7 +102,8 @@
     "logout": "Chiqish",
     "toggleSidebar": "Yon panelni almashtirish",
     "clients": "Mijozlar",
-    "integrationLogs": "Integratsiya loglari"
+    "integrationLogs": "Integratsiya loglari",
+    "scoringSessions": "Skoring sessiyalari"
   },
   "clients": {
     "searchPlaceholder": "Ism, telefon yoki PINFL bo'yicha qidirish…",
@@ -314,6 +317,32 @@
     "errorMessage": "Xato xabari",
     "request": "So'rov tanasi",
     "response": "Javob tanasi"
+  },
+  "scoringSessions": {
+    "count": "Jami sessiyalar: {count}",
+    "searchPlaceholder": "Ism, telefon yoki PINFL bo'yicha qidirish…",
+    "allStatuses": "Barcha holat",
+    "statusPending": "Kutilmoqda",
+    "statusRunning": "Bajarilmoqda",
+    "statusCompleted": "Yakunlandi",
+    "statusFailed": "Xato",
+    "client": "Mijoz",
+    "status": "Holat",
+    "consentId": "Rozilik ID",
+    "consentDate": "Rozilik sanasi",
+    "katmClaimId": "KATM so'rov ID",
+    "createdAt": "Yaratildi",
+    "scoredAt": "Baholandi",
+    "userLimit": "Mijoz limiti",
+    "approvedLimit": "tasdiqlangan limit",
+    "limitScoredAt": "Baholash sanasi",
+    "limitUpdatedAt": "Yangilandi",
+    "pipelines": "Pipelainlar",
+    "pipelineType": "Turi",
+    "startedAt": "Boshlandi",
+    "completedAt": "Yakunlandi",
+    "pipelineError": "Xato",
+    "cardScoring": "Karta skoring"
   },
   "notifications": {
     "pageTitle": "Bildirishnomalar",

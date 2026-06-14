@@ -44,7 +44,8 @@
     "scoringModelTry": "Тест модели",
     "scoringTestCases": "Тест-кейсы",
     "scoringTestRun": "Запуск тест-сюита",
-    "integrationLogs": "Логи интеграций"
+    "integrationLogs": "Логи интеграций",
+    "scoringSessions": "Скоринг-сессии"
   },
   "breadcrumb": {
     "overview": "Обзор",
@@ -71,7 +72,8 @@
     "scoringTestRun": "Запуск",
     "payments": "Платежи",
     "clients": "Клиенты",
-    "integrationLogs": "Логи интеграций"
+    "integrationLogs": "Логи интеграций",
+    "scoringSessions": "Скоринг-сессии"
   },
   "topbar": {
     "scoring": "Скоринг",
@@ -100,7 +102,8 @@
     "logout": "Выйти",
     "toggleSidebar": "Переключить панель",
     "clients": "Клиенты",
-    "integrationLogs": "Логи интеграций"
+    "integrationLogs": "Логи интеграций",
+    "scoringSessions": "Скоринг-сессии"
   },
   "clients": {
     "searchPlaceholder": "Поиск по имени, телефону или ПИНФЛ…",
@@ -322,6 +325,32 @@
     "errorMessage": "Сообщение об ошибке",
     "request": "Тело запроса",
     "response": "Тело ответа"
+  },
+  "scoringSessions": {
+    "count": "Всего сессий: {count}",
+    "searchPlaceholder": "Поиск по имени, телефону или ПИНФЛ…",
+    "allStatuses": "Все статусы",
+    "statusPending": "Ожидание",
+    "statusRunning": "В процессе",
+    "statusCompleted": "Завершено",
+    "statusFailed": "Ошибка",
+    "client": "Клиент",
+    "status": "Статус",
+    "consentId": "ID согласия",
+    "consentDate": "Дата согласия",
+    "katmClaimId": "ID заявки КАТМ",
+    "createdAt": "Создано",
+    "scoredAt": "Оценено",
+    "userLimit": "Лимит клиента",
+    "approvedLimit": "одобренный лимит",
+    "limitScoredAt": "Дата оценки",
+    "limitUpdatedAt": "Обновлено",
+    "pipelines": "Пайплайны",
+    "pipelineType": "Тип",
+    "startedAt": "Начало",
+    "completedAt": "Завершение",
+    "pipelineError": "Ошибка",
+    "cardScoring": "Карточный скоринг"
   },
   "notifications": {
     "pageTitle": "Уведомления",
