@@ -323,7 +323,7 @@ function formatDateShort(iso: string): string {
           </div>
           <div class="field-row">
             <span class="fl">{{ $t('dealDetail.prepayment') }}</span>
-            <span class="fv font-mono">0 {{ $t('dealDetail.som') }}</span>
+            <span class="fv font-mono">{{ formatSomShort(deal.prepaymentAmount ?? 0) }} {{ $t('dealDetail.som') }}</span>
             <span class="fl">{{ $t('dealDetail.markup') }}</span>
             <span class="fv">{{ ustama }}</span>
           </div>

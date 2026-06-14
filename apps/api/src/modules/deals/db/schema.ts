@@ -97,6 +97,10 @@ export const deals = pgTable('deals', {
   // Scoring result — copied from scoring_histories at deal activation
   scoreSum: numeric('score_sum', { precision: 10, scale: 2 }),
   scoringDecision: varchar('scoring_decision', { length: 20 }),
+  // Avansoviy to'lov — recorded at deal creation when the client paid a gap amount
+  // upfront so the installment schedule covers only (totalPayable - prepaymentAmount).
+  // Null means no prepayment was made. ADR-0026.
+  prepaymentAmount: bigint('prepayment_amount', { mode: 'bigint' }),
   // Kontrakt language selected at Wizard verification step
   lang: varchar('lang', { length: 5 }).notNull().default('ru'),
   // Human-readable sequential identifier, formatted as CN-0000001 at the app layer

@@ -49,6 +49,7 @@ export async function getAdminDeal(db: Db, id: string) {
     status: deal.status,
     amount: deal.amount != null ? Number(deal.amount) : 0,
     totalPayable: deal.totalPayable != null ? Number(deal.totalPayable) : 0,
+    prepaymentAmount: deal.prepaymentAmount != null ? Number(deal.prepaymentAmount) : 0,
     termMonths: deal.termMonths ?? tariff?.termMonths ?? 0,
     paymentDay: deal.paymentDay ?? null,
     scoreSum: deal.scoreSum != null ? Number(deal.scoreSum) : null,

@@ -526,7 +526,18 @@
     "belowTariffMin": "Savat summasi tarif minimumidan kam — kamida {amount} so'm bo'lishi kerak",
     "aboveTariffMax": "Savat summasi tarif maksimumidan oshdi — ko'pi bilan {amount} so'm bo'lishi kerak",
     "back": "Orqaga",
-    "continue": "Davom etish"
+    "continue": "Davom etish",
+    "prepayBtn": "Avans to'lov",
+    "prepayConfirmed": "Avans tasdiqlandi",
+    "prepayDialogTitle": "Avans to'lov",
+    "prepayDialogSubtitle": "Mijoz yetishmayotgan summani karta orqali to'laydi. Qolgan qism bo'lib to'lanadi.",
+    "prepayAmount": "Avans summasi",
+    "prepayCardNumber": "Karta raqami",
+    "prepayExpiry": "Amal qilish muddati",
+    "prepayPhone": "Telefon",
+    "prepayOtp": "Tasdiqlash kodi",
+    "prepayConfirm": "To'lovni tasdiqlash",
+    "prepayError": "Avansni tasdiqlab bo'lmadi. Qayta urinib ko'ring."
   },
   "stepPayment": {
     "title": "To'lov kuni",

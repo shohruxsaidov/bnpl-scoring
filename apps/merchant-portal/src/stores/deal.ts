@@ -63,6 +63,8 @@ interface SessionData {
   selectedCard: Card | null
   tariff: Tariff | null
   basket: BasketItem[]
+  /** Confirmed prepayment amount in tiyin (ADR-0026); null = no prepayment */
+  prepaymentAmount: number | null
   paymentDay: number | null
   schedule: DealPaymentSchedule[]
   createdDealId: string | null
@@ -80,6 +82,7 @@ function emptySession(): SessionData {
     selectedCard: null,
     tariff: null,
     basket: [],
+    prepaymentAmount: null,
     paymentDay: null,
     schedule: [],
     createdDealId: null,
@@ -209,6 +212,7 @@ export const useDealStore = defineStore(
         }))
       }
 
+      fresh.prepaymentAmount = data.prepayment?.amount ?? null
       fresh.paymentDay = data.payment?.paymentDay ?? null
 
       if (fresh.tariff && fresh.paymentDay) {
@@ -279,27 +283,39 @@ export const useDealStore = defineStore(
       sessionData.value.tariff = tariff
     }
 
+    function setPrepayment(amount: number) {
+      sessionData.value.prepaymentAmount = amount
+    }
+
+    function clearPrepayment() {
+      sessionData.value.prepaymentAmount = null
+    }
+
     function addToBasket(product: Product) {
       const existing = sessionData.value.basket.find((i) => i.product.id === product.id)
       if (existing) existing.quantity++
       else sessionData.value.basket.push({ product, quantity: 1 })
+      sessionData.value.prepaymentAmount = null
     }
 
     function incrementItem(productId: string) {
       const i = sessionData.value.basket.find((x) => x.product.id === productId)
       if (i) i.quantity++
+      sessionData.value.prepaymentAmount = null
     }
 
     function decrementItem(productId: string) {
       const i = sessionData.value.basket.find((x) => x.product.id === productId)
       if (i && i.quantity > 1) i.quantity--
       else removeFromBasket(productId)
+      sessionData.value.prepaymentAmount = null
     }
 
     function removeFromBasket(productId: string) {
       sessionData.value.basket = sessionData.value.basket.filter(
         (i) => i.product.id !== productId,
       )
+      sessionData.value.prepaymentAmount = null
     }
 
     function setPaymentDay(day: number) {
@@ -336,6 +352,8 @@ export const useDealStore = defineStore(
       setKatmPending,
       setCard,
       setTariff,
+      setPrepayment,
+      clearPrepayment,
       addToBasket,
       incrementItem,
       decrementItem,

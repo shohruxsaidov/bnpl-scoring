@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useDealStore } from '@/stores/deal'
 import { useCatalogStore } from '@/stores/catalog'
 import { useClientScoringStore } from '@/stores/client-scoring'
-import { saveSessionStep } from '@/composables/use-deal-session-api'
+import { saveSessionStep, confirmPrepayment } from '@/composables/use-deal-session-api'
 import MonoAmount from '@/components/mono-amount.vue'
 
 const deal = useDealStore()
@@ -55,6 +55,13 @@ const effectiveLimit = computed(
 
 const withinLimit = computed(() => totalWithMarkup.value <= effectiveLimit.value)
 
+/** Prepayment gap in tiyin — only positive when basket overflows the limit */
+const prepaymentGap = computed(() =>
+  withinLimit.value ? 0 : totalWithMarkup.value - effectiveLimit.value,
+)
+
+const prepaymentConfirmed = computed(() => deal.sessionData.prepaymentAmount != null)
+
 /** How much of the limit is still available after the current basket */
 const remainingLimit = computed(() =>
   Math.max(effectiveLimit.value - totalWithMarkup.value, 0),
@@ -72,7 +79,11 @@ const rangeWarning = computed(() => {
 })
 
 const canProceed = computed(
-  () => !!tariff.value && total.value > 0 && withinLimit.value && rangeWarning.value == null,
+  () =>
+    !!tariff.value &&
+    total.value > 0 &&
+    (withinLimit.value || prepaymentConfirmed.value) &&
+    rangeWarning.value == null,
 )
 
 const { t: tr } = useI18n()
@@ -82,8 +93,6 @@ const saveError = ref('')
 async function next() {
   if (!canProceed.value || saving.value) return
 
-  // Blocking step save — the server snapshots names and prices per line; the
-  // signed contract is built from this snapshot (ADR-0024)
   saving.value = true
   saveError.value = ''
   try {
@@ -101,6 +110,49 @@ async function next() {
   }
 
   deal.complete('products')
+}
+
+/* ── Prepayment dialog ───────────────────────────────────────────────────── */
+
+const showPrepayDialog = ref(false)
+const prepayCardNumber = ref('')
+const prepayExpiry = ref('')
+const prepayPhone = ref('')
+const prepayOtp = ref('')
+const prepayLoading = ref(false)
+const prepayError = ref('')
+
+function openPrepayDialog() {
+  prepayCardNumber.value = ''
+  prepayExpiry.value = ''
+  prepayPhone.value = ''
+  prepayOtp.value = ''
+  prepayError.value = ''
+  showPrepayDialog.value = true
+}
+
+function closePrepayDialog() {
+  showPrepayDialog.value = false
+}
+
+async function submitPrepayment() {
+  if (prepayLoading.value) return
+  prepayLoading.value = true
+  prepayError.value = ''
+  try {
+    const session = await confirmPrepayment(deal.dealSessionId!, {
+      cardNumber: prepayCardNumber.value,
+      expiry: prepayExpiry.value,
+      phone: prepayPhone.value,
+      otp: prepayOtp.value,
+    })
+    deal.setPrepayment(session.stepData.prepayment!.amount)
+    showPrepayDialog.value = false
+  } catch {
+    prepayError.value = tr('stepProducts.prepayError')
+  } finally {
+    prepayLoading.value = false
+  }
 }
 </script>
 
@@ -207,11 +259,16 @@ async function next() {
           <span>{{ $t('stepProducts.withMarkup', { pct: tariff.markupPercent }) }}</span>
           <MonoAmount :value="totalWithMarkup" size="md" />
         </div>
-        <div v-if="tariff && !withinLimit" class="bs-overlimit">
+        <div v-if="tariff && !withinLimit && !prepaymentConfirmed" class="bs-overlimit">
           <i class="pi pi-exclamation-triangle" />
           {{ $t('stepProducts.overLimit', {
             amount: ((totalWithMarkup - effectiveLimit) / 100).toLocaleString('uz-UZ'),
           }) }}
+        </div>
+        <div v-if="tariff && !withinLimit && prepaymentConfirmed" class="bs-prepay-confirmed">
+          <i class="pi pi-check-circle" />
+          {{ $t('stepProducts.prepayConfirmed') }}
+          <MonoAmount :value="deal.sessionData.prepaymentAmount!" size="sm" :gradient="false" class="prepay-amount" />
         </div>
         <div v-if="rangeWarning" class="bs-overlimit">
           <i class="pi pi-exclamation-triangle" />
@@ -229,6 +286,13 @@ async function next() {
         <button class="btn-ghost" @click="deal.back()">
           <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
         </button>
+        <button
+          v-if="tariff && !withinLimit && !prepaymentConfirmed"
+          class="btn-prepay"
+          @click="openPrepayDialog"
+        >
+          <i class="pi pi-wallet" /> {{ $t('stepProducts.prepayBtn') }}
+        </button>
         <button class="btn-gradient" :disabled="!canProceed || saving" @click="next">
           <i v-if="saving" class="pi pi-spin pi-spinner" />
           {{ $t('common.continue') }} <i v-if="!saving" class="pi pi-arrow-right" />
@@ -236,6 +300,59 @@ async function next() {
       </div>
     </aside>
   </div>
+
+  <!-- Prepayment dialog -->
+  <Teleport to="body">
+    <div v-if="showPrepayDialog" class="dialog-overlay" @click.self="closePrepayDialog">
+      <div class="dialog-box surface-card">
+        <div class="dialog-head">
+          <h3>{{ $t('stepProducts.prepayDialogTitle') }}</h3>
+          <button class="dialog-close" @click="closePrepayDialog">
+            <i class="pi pi-times" />
+          </button>
+        </div>
+
+        <p class="dialog-subtitle">{{ $t('stepProducts.prepayDialogSubtitle') }}</p>
+
+        <div class="dialog-amount-row">
+          <span class="dialog-amount-label">{{ $t('stepProducts.prepayAmount') }}</span>
+          <MonoAmount :value="prepaymentGap" size="lg" />
+        </div>
+
+        <div class="dialog-fields">
+          <label>
+            <span>{{ $t('stepProducts.prepayCardNumber') }}</span>
+            <input v-model="prepayCardNumber" type="text" maxlength="19" placeholder="0000 0000 0000 0000" />
+          </label>
+          <label>
+            <span>{{ $t('stepProducts.prepayExpiry') }}</span>
+            <input v-model="prepayExpiry" type="text" maxlength="5" placeholder="MM/YY" />
+          </label>
+          <label>
+            <span>{{ $t('stepProducts.prepayPhone') }}</span>
+            <input v-model="prepayPhone" type="text" placeholder="+998 90 000 00 00" />
+          </label>
+          <label>
+            <span>{{ $t('stepProducts.prepayOtp') }}</span>
+            <input v-model="prepayOtp" type="text" maxlength="6" placeholder="000000" />
+          </label>
+        </div>
+
+        <p v-if="prepayError" class="dialog-error">
+          <i class="pi pi-exclamation-triangle" /> {{ prepayError }}
+        </p>
+
+        <button
+          class="btn-gradient dialog-confirm"
+          :disabled="!prepayCardNumber || !prepayExpiry || !prepayPhone || !prepayOtp || prepayLoading"
+          @click="submitPrepayment"
+        >
+          <i v-if="prepayLoading" class="pi pi-spin pi-spinner" />
+          {{ $t('stepProducts.prepayConfirm') }}
+        </button>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -644,10 +761,27 @@ async function next() {
   border-radius: 10px;
 }
 
+.bs-prepay-confirmed {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--success);
+  background: var(--success-bg);
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+}
+
+.prepay-amount {
+  margin-left: auto;
+}
+
 .basket-foot {
   margin-top: 1.2rem;
   display: flex;
   gap: 0.6rem;
+  flex-wrap: wrap;
 }
 
 .basket-foot button {
@@ -656,6 +790,155 @@ async function next() {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  min-width: 0;
+}
+
+.btn-prepay {
+  background: var(--warning-bg);
+  border: 1.5px solid var(--warning);
+  color: var(--warning);
+  font-weight: 700;
+  font-size: 0.84rem;
+  padding: 0.55rem 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: all 0.15s ease;
+}
+
+.btn-prepay:hover {
+  background: var(--warning);
+  color: #fff;
+}
+
+/* ── Prepayment dialog ──────────────────────────────────────────────────── */
+
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.dialog-box {
+  width: 100%;
+  max-width: 440px;
+  border-radius: 20px;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dialog-head h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.dialog-close {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  padding: 0.2rem;
+}
+
+.dialog-close:hover {
+  color: var(--text-primary);
+}
+
+.dialog-subtitle {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.dialog-amount-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-base);
+  border: 2px solid var(--accent-2);
+  border-radius: 14px;
+  padding: 1rem 1.2rem;
+}
+
+.dialog-amount-label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--accent-2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dialog-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.dialog-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.dialog-fields label span {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.dialog-fields input {
+  height: 40px;
+  padding: 0 0.9rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: var(--font-mono, monospace);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.dialog-fields input:focus {
+  border-color: var(--accent-2);
+}
+
+.dialog-error {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--danger);
+}
+
+.dialog-confirm {
+  width: 100%;
+  justify-content: center;
 }
 
 @media (max-width: 900px) {

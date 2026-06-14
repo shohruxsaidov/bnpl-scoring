@@ -53,6 +53,7 @@ export async function getDealById(db: Db, id: string, merchantId: bigint) {
     merchantName: merchant?.name,
     amount: d.amount != null ? Number(d.amount) : 0,
     totalPayable: d.totalPayable != null ? Number(d.totalPayable) : 0,
+    prepaymentAmount: d.prepaymentAmount != null ? Number(d.prepaymentAmount) : 0,
     termMonths: d.termMonths ?? t?.termMonths ?? 0,
     lang: (d.lang ?? 'ru') as 'ru' | 'uz',
     agentId: serializeBigInt(d.agentId),

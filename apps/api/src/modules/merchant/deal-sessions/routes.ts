@@ -3,6 +3,7 @@ import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import type { FastifyInstance } from 'fastify'
 import { eq } from 'drizzle-orm'
 import { clients } from '../../id/db/schema'
+import { dealSessions } from '../../deals/db/schema'
 import {
   abandonSession,
   createSession,
@@ -10,7 +11,9 @@ import {
   isWizardStep,
   loadOwnedActiveSession,
   saveStep,
+  stampPrepayment,
   type DealSessionRow,
+  type SessionStepData,
 } from './service'
 
 type JwtPayload = {
@@ -116,9 +119,65 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
     },
   )
 
-  /* ── POST /:id/abandon — the wizard's close-deal action ────────────────── */
-
   const IdParams = Type.Object({ id: Type.String() })
+
+  /* ── POST /:id/prepayment — confirm a mocked acquiring flow (ADR-0026) ─── */
+  //
+  // The server computes the gap from session data and stamps it.  The acquiring
+  // call is mocked (always succeeds) — replace the body of this handler with a
+  // real processor call when one is integrated.
+
+  const PrepaymentBody = Type.Object({
+    cardNumber: Type.String(),
+    expiry: Type.String(),
+    phone: Type.String(),
+    otp: Type.String(),
+  })
+
+  fastify.post(
+    '/:id/prepayment',
+    { schema: { params: IdParams, body: PrepaymentBody }, preHandler: guards },
+    async (request, reply) => {
+      const p = payload(request)
+      let session: DealSessionRow
+      try {
+        session = await loadOwnedActiveSession(db, request.params.id, BigInt(p.sub))
+      } catch (err: any) {
+        if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found')
+        if (err.code === 'session_not_active') return reply.code(409).sendError('session_not_active')
+        throw err
+      }
+
+      const data = session.stepData as SessionStepData
+      if (!data.products?.lines?.length) return reply.code(409).sendError('products_step_missing')
+      if (!data.tariff) return reply.code(409).sendError('tariff_step_missing')
+      if (!data.scoring) return reply.code(409).sendError('scoring_missing')
+
+      // Compute gap: totalWithMarkup - effectiveLimit
+      const basketBase = data.products.lines.reduce(
+        (sum, l) => sum + Math.round(parseFloat(l.price) * 100) * l.quantity,
+        0,
+      )
+      const totalWithMarkup = Math.round(basketBase * (1 + data.tariff.markupPercent / 100))
+      const effectiveLimit = Math.round(data.scoring.platformCreditLimit * data.tariff.termMonths)
+      const gap = totalWithMarkup - effectiveLimit
+
+      if (gap <= 0) return reply.code(409).sendError('no_prepayment_needed')
+
+      // Mocked acquiring — always succeeds. Replace this with a real processor call.
+      await stampPrepayment(db, session, { amount: gap, confirmedAt: new Date().toISOString() })
+
+      const [updated] = await db
+        .select()
+        .from(dealSessions)
+        .where(eq(dealSessions.id, session.id))
+        .limit(1)
+
+      return { session: await toSessionDto(updated ?? session) }
+    },
+  )
+
+  /* ── POST /:id/abandon — the wizard's close-deal action ────────────────── */
 
   fastify.post(
     '/:id/abandon',

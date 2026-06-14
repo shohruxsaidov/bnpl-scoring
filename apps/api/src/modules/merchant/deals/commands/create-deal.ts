@@ -38,6 +38,8 @@ export interface CreateDealInput {
   consentDate?: string | null
   demandId?: string | null
   infoscoreRaw?: unknown
+  // Avansoviy to'lov — null means no prepayment (ADR-0026)
+  prepaymentAmount?: bigint | null
 }
 
 function coded(code: string): Error & { code: string } {
@@ -97,6 +99,11 @@ export async function createDealFromSession(db: Db, session: DealSessionRow) {
 
   const totalPayable = calcTotalPayable(amount, tariff.markupPercent)
 
+  // Prepayment amount stamped by POST /prepayment (ADR-0026). Null means no prepayment.
+  const prepaymentAmount = data.prepayment
+    ? BigInt(Math.round(data.prepayment.amount))
+    : null
+
   return createDeal(db, {
     merchantId: session.merchantId,
     branchId: session.branchId,
@@ -121,6 +128,7 @@ export async function createDealFromSession(db: Db, session: DealSessionRow) {
     consentDate: katm?.consentDate ?? null,
     demandId: katm?.demandId ?? null,
     infoscoreRaw: katm?.raw ?? null,
+    prepaymentAmount,
   })
 }
 
@@ -142,6 +150,7 @@ export async function createDeal(db: Db, input: CreateDealInput) {
         paymentDay: input.paymentDay,
         amount: input.amount,
         totalPayable: input.totalPayable,
+        prepaymentAmount: input.prepaymentAmount ?? null,
         termMonths: input.termMonths,
         scoreSum: input.scoreSum?.toString() ?? null,
         scoringDecision: input.scoringDecision ?? null,
@@ -167,7 +176,11 @@ export async function createDeal(db: Db, input: CreateDealInput) {
       )
     }
 
-    const installments = splitInstallments(input.totalPayable, input.termMonths)
+    // Installments run on the credit portion only; the prepayment covers the gap upfront
+    const creditPortion = input.prepaymentAmount
+      ? input.totalPayable - input.prepaymentAmount
+      : input.totalPayable
+    const installments = splitInstallments(creditPortion, input.termMonths)
 
     const now = new Date()
     const scheduleRows = installments.map((amount, i) => {

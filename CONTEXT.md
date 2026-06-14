@@ -30,14 +30,14 @@ _Avoid_: Staff, user, agent, admin (use Role names instead)
 A named set of Features. A Role belongs to one **platform** — either `merchant` (assignable to Employees) or `admin` (assignable to Platform Admins). Roles are global templates: a merchant Role applies to every Merchant's Employees (no `merchant_id` scope). Roles are custom — defined and granted Features exclusively from the admin platform — but several are seeded with stable keys and serve as defaults:
 - **Agent** (`agent`, merchant) — issues Deals via the Wizard, scoped to their Branch. The only Role a Merchant Admin may assign when creating Employees.
 - **Branch Admin** (`branch_admin`, merchant) — manages Agents and views Deals within one Branch.
-- **Merchant Admin** (`merchant_admin`, merchant) — manages all Branches, all Employees, all Deals across the Merchant; selects active Tariffs.
+- **Merchant Admin** (`merchant_admin`, merchant) — manages all Branches, all Employees, all Deals across the Merchant; selects active Tariffs; enables/disables global Categories for the Merchant.
 - **Superadmin** (`superadmin`, admin) — implicitly holds every Feature; cannot be edited, deleted, or stripped of Features; at least one Platform Admin must always hold it. Seeded; held by the initial admin.
 
 An Employee may hold one or more merchant Roles (a login picker selects one per session); a Platform Admin holds exactly one admin Role. A Role grants _capabilities_, not data scope — which rows an actor sees is still governed by `merchant_id` / `branch_id` / agent-owns-Deal filters, independent of the Role.
 _Avoid_: access level, group, permission (use **Feature** for the unit of access)
 
 **Feature**:
-The unit of access in the permission system — a named, page/feature-level capability (e.g. `view_deals`, `manage_employees`, `manage_payments`). The full catalog of valid Features is fixed in code, one set per platform, and is the source of truth route guards enforce. A Feature is either granted to a Role or not; there is no per-field or per-record Feature.
+The unit of access in the permission system — a named, page/feature-level capability (e.g. `view_deals`, `manage_employees`, `manage_payments`, `manage_global_categories`). The full catalog of valid Features is fixed in code, one set per platform, and is the source of truth route guards enforce. A Feature is either granted to a Role or not; there is no per-field or per-record Feature.
 _Avoid_: permission flag, scope, ACL entry
 
 **Role Permission Matrix**:
@@ -97,8 +97,8 @@ The Merchant's cost price for a Product — the amount Finsum Nasiya pays the Me
 _Avoid_: Base price, cost, merchant price
 
 **Category**:
-A named grouping of Products managed by an Employee with the Merchant Admin Role (e.g. Elektronika, Mebel). A Product belongs to exactly one Category. Used as a filter in the Wizard and in admin product lists.
-_Avoid_: Product type, product category label
+A named grouping of Products in the platform-wide taxonomy, created and managed exclusively by Platform Admins (e.g. Elektronika, Mebel). A Product belongs to exactly one Category. A Merchant must explicitly enable a Category before its Employees can assign Products to it or use it as a filter in the Wizard and product lists. The enabled set is per-Merchant and toggled by Merchant Admins.
+_Avoid_: Product type, product category label, merchant category (Categories are global; only the enabled set is per-Merchant)
 
 **Tariff**:
 A credit plan that defines a name, number of instalment months, Ustama rate, and Credit Range. Created and managed exclusively by the Finsum platform admin. Merchant Admins select which active Tariffs to expose to their clients — they cannot create or modify Tariff parameters. A Tariff is purely a pricing construct: it plays no role in scoring, which resolves its **Scoring Model** from the Merchant (or the **Global Model**), never from the Tariff.
@@ -238,6 +238,16 @@ _Avoid_: Bucket, tier, aging group
 The number of calendar days between today and the most recent unpaid InstallmentScheduleRow's `dueDate` (where `dueDate` ≤ today and `paid = false`). Determines which Aging Bucket a Deal appears in. Computed on demand — not stored.
 _Avoid_: Overdue days, days past due, delinquency period
 
+### Prepayment
+
+**Prepayment** (ru: Авансовый взнос):
+A down payment made by the Client at the Products step of the Wizard when their Available Balance is insufficient to cover the selected Basket. The Prepayment amount is exactly the gap between the Basket total and the Client's effective credit ceiling (`limit × termMonths`); it is not configurable by the Agent. On confirmation, the credit portion of the Deal is reduced: the InstallmentSchedule is computed on `Basket total − Prepayment amount` rather than the full Basket total. Confirmed server-side via a mocked acquiring flow (card number + expiry + phone collected; OTP always succeeds until a real processor is integrated). Stored as a `prepayment` stamp on the Deal Session and copied to `deals.prepayment_amount` at Deal creation. The Prepayment stamp is cleared from the session whenever the Products step is redone. Printed in the `prepayment` field of the Contract PDF.
+_Avoid_: Down payment (use Prepayment), client balance (Prepayment is deal-scoped, not a persistent wallet), top-up
+
+**Prepayment Card**:
+The bank card used by the Client to make a Prepayment. Distinct from the registered PlumGate card (which is the installment repayment card). The Agent enters the Prepayment Card's number, expiry date, and the Client's phone number in the Prepayment dialog. Not stored beyond the mocked confirmation flow — only the confirmed amount and timestamp are stamped on the Deal Session.
+_Avoid_: Payment card (overloaded), scoring card (that is the PlumGate card from the Card step)
+
 ### Manual Payments
 
 **Manual Payment** (ru: Ручной платёж):
@@ -328,7 +338,7 @@ _Avoid_: API log, request log, audit log (reserved for future user-action auditi
 - A **Scoring Model** has one or more **Scoring Model Revisions** (append-only; latest per model is active)
 - A **Deal** contains one **Basket** and one **Tariff**
 - A **Basket** contains one or more **Products** with quantities; total must fall within the Tariff's **Credit Range** and must not exceed the Client's **Available Balance**
-- A **Product** belongs to exactly one **Category**; a **Category** is owned by a **Merchant**
+- A **Product** belongs to exactly one **Category**; a **Category** is global (Platform-Admin-managed); a **Merchant** enables a subset of global Categories via **Merchant Category** links; a Product may only be assigned to a Category the Merchant has enabled
 - A **Client** has one **Platform Credit Limit** and an **Available Balance** derived from it
 - A **Deal** produces exactly one **Contract**
 - A **Contract** produces exactly one **Buyout** obligation toward the Merchant
@@ -401,6 +411,8 @@ Key decisions live in `docs/adr/` as thematic files:
 | `0023-per-merchant-scoring-model.md` | `scoring_models` parent entity; Merchant optionally assigned a model (never a revision); exactly one Global Model (atomic switch, no delete); resolution `merchant.model ?? global` → latest revision; one limit per Client, last run wins |
 | `0024-deal-session.md` | Deal Session created on Wizard open; immutable step-event trail; resumable from any device; abandoned runs kept for funnel/audit |
 | `0025-katm-retail-api-integration.md` | KATM Retail API (infokredit.uz) replaces single infoscore call; consume-only (provider obligations deferred); shared-sequence KATM Claim ID (amends 0024); fixed claim amount; sequenced consent record; address/doc-type from MyID with manual fallback; ≤15 min background report polling |
+| `0026-prepayment-wizard-flow.md` | Prepayment at Products step when limit insufficient; exact gap only; any card (not PlumGate card); mocked acquiring (OTP always succeeds); deal-scoped stamp on session + deals.prepayment_amount; products redo clears stamp; installments computed on basket − prepayment |
+| `0027-global-category-taxonomy.md` | Categories become platform-wide (no merchant_id); merchant_categories join table (presence = enabled); Platform Admin owns global list via manage_global_categories; Merchant Admin toggles enabled set; product assignment validated against enabled set; dedup migration |
 
 ## Example dialogue
 

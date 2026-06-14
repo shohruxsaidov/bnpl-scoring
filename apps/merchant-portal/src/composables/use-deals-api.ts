@@ -43,6 +43,7 @@ export interface DealDetail extends DealListItem {
   branchName: string | null
   merchantInn: string | null
   pdfUrl: string | null
+  prepaymentAmount: number
 }
 
 /**

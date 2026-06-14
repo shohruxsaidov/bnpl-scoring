@@ -51,6 +51,13 @@ export interface KatmPendingState {
   error?: string
 }
 
+/** Prepayment confirmed server-side at POST /prepayment (ADR-0026). */
+export interface PrepaymentStamp {
+  /** Gap in tiyin: totalWithMarkup - effectiveLimit. Installments run on this less. */
+  amount: number
+  confirmedAt: string
+}
+
 export interface SessionStepData {
   client?: { clientId: string; isNewClient: boolean; myidVerified: boolean; katmConsent: boolean }
   card?: { cardId: string; maskedPan: string; pcType: string; bank: string; holderName: string; expiry: string }
@@ -81,6 +88,8 @@ export interface SessionStepData {
   katm?: KatmStamp
   katmPending?: KatmPendingState
   scoring?: ScoringStamp
+  // Stamped by POST /prepayment; cleared whenever products step is redone (ADR-0026)
+  prepayment?: PrepaymentStamp
 }
 
 export type DealSessionRow = typeof dealSessions.$inferSelect
@@ -199,6 +208,11 @@ export async function saveStep(
     console.log('[saveStep] card step — cardId', cardId, 'scoring.cardId', next.scoring?.cardId)
     if (next.scoring && next.scoring.cardId !== cardId) { console.log('[saveStep] dropping scoring (cardId mismatch)'); delete next.scoring }
   }
+  // Prepayment amount is tied to the basket total; a basket change invalidates it (ADR-0026)
+  if (step === 'products' && next.prepayment) {
+    console.log('[saveStep] dropping prepayment (products changed)')
+    delete next.prepayment
+  }
 
   const after = WIZARD_STEPS[idx + 1] ?? 'verification'
   console.log('[saveStep] advancing currentStep to', after)
@@ -254,6 +268,16 @@ export async function setKatmClaimId(db: Db, session: DealSessionRow, claimId: s
     .update(dealSessions)
     .set({ katmClaimId: claimId, updatedAt: new Date() })
     .where(eq(dealSessions.id, session.id))
+}
+
+/** Stamp the confirmed prepayment onto the session head + event trail (ADR-0026). */
+export async function stampPrepayment(db: Db, session: DealSessionRow, stamp: PrepaymentStamp): Promise<void> {
+  const data = stepDataOf(session)
+  await db
+    .update(dealSessions)
+    .set({ stepData: { ...data, prepayment: stamp }, updatedAt: new Date() })
+    .where(eq(dealSessions.id, session.id))
+  await logEvent(db, session.id, 'prepayment', stamp)
 }
 
 /** Merge a server-side scoring result into the session head + event trail. */

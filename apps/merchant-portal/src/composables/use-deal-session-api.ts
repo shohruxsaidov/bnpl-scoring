@@ -61,6 +61,7 @@ export interface SessionStepData {
   katm?: SessionKatm
   katmPending?: { status: 'pending' | 'failed'; startedAt: string; error?: string }
   scoring?: SessionScoring
+  prepayment?: { amount: number; confirmedAt: string }
 }
 
 export interface DealSessionDto {
@@ -97,6 +98,18 @@ export async function saveSessionStep(
   const res = await apiFetch<{ session: DealSessionDto }>(
     `/merchant/deal-sessions/${sessionId}/steps/${step}`,
     { method: 'PUT', body: JSON.stringify(payload) },
+  )
+  return res.session
+}
+
+/** Confirm the prepayment for an over-limit basket (ADR-0026). */
+export async function confirmPrepayment(
+  sessionId: string,
+  payload: { cardNumber: string; expiry: string; phone: string; otp: string },
+): Promise<DealSessionDto> {
+  const res = await apiFetch<{ session: DealSessionDto }>(
+    `/merchant/deal-sessions/${sessionId}/prepayment`,
+    { method: 'POST', body: JSON.stringify(payload) },
   )
   return res.session
 }
