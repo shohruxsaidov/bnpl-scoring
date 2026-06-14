@@ -29,6 +29,7 @@ export const ADMIN_FEATURES = [
   'manage_tariffs',
   'manage_products',
   'manage_categories',
+  'manage_global_categories',
   'manage_blacklist',
   'view_collection_board',
   'view_scoring_history',

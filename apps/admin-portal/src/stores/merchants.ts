@@ -12,6 +12,7 @@ import type {
   Tariff,
 } from '@/types'
 
+
 import { apiFetch as api } from '@/utils/apiFetch'
 
 export const useMerchantsStore = defineStore('merchants', () => {
@@ -19,6 +20,7 @@ export const useMerchantsStore = defineStore('merchants', () => {
   const branches = ref<Record<string, Branch[]>>({})
   const employees = ref<Record<string, MerchantEmployee[]>>({})
   const categories = ref<Record<string, Category[]>>({})
+  const globalCategories = ref<Category[]>([])
   const products = ref<Record<string, Product[]>>({})
   const documents = ref<Record<string, MerchantDocument[]>>({})
   const merchantTariffs = ref<Record<string, Tariff[]>>({})
@@ -189,33 +191,26 @@ export const useMerchantsStore = defineStore('merchants', () => {
     })
   }
 
+  async function fetchGlobalCategories(): Promise<void> {
+    const body = await api<{ categories: Category[] }>('/admin/categories')
+    globalCategories.value = body.categories
+  }
+
   async function fetchCategories(merchantId: string): Promise<void> {
-    const body = await api<{ categories: Category[] }>(
-      `/admin/merchants/${merchantId}/categories`,
-    )
+    const body = await api<{ categories: Category[] }>(`/admin/merchants/${merchantId}/categories`)
     categories.value[merchantId] = body.categories
   }
 
-  async function createCategory(merchantId: string, input: { name: string }): Promise<Category> {
-    const body = await api<{ category: Category }>(`/admin/merchants/${merchantId}/categories`, {
-      method: 'POST',
-      body: JSON.stringify(input),
-    })
-    categories.value[merchantId] = [...(categories.value[merchantId] ?? []), body.category]
-    return body.category
+  async function enableCategory(merchantId: string, categoryId: string): Promise<void> {
+    await api(`/admin/merchants/${merchantId}/categories/${categoryId}`, { method: 'POST' })
+    const cat = globalCategories.value.find((c) => c.id === categoryId)
+    if (cat) categories.value[merchantId] = [...(categories.value[merchantId] ?? []), cat]
   }
 
-  async function updateCategory(categoryId: string, patch: Partial<Category>): Promise<Category> {
-    const body = await api<{ category: Category }>(`/admin/categories/${categoryId}`, {
-      method: 'PATCH',
-      body: JSON.stringify(patch),
-    })
-    const list = categories.value[body.category.merchantId]
-    if (list) {
-      const idx = list.findIndex((c) => c.id === categoryId)
-      if (idx >= 0) list[idx] = body.category
-    }
-    return body.category
+  async function disableCategory(merchantId: string, categoryId: string): Promise<void> {
+    await api(`/admin/merchants/${merchantId}/categories/${categoryId}`, { method: 'DELETE' })
+    const list = categories.value[merchantId]
+    if (list) categories.value[merchantId] = list.filter((c) => c.id !== categoryId)
   }
 
   async function fetchProducts(merchantId: string): Promise<void> {
@@ -351,9 +346,11 @@ export const useMerchantsStore = defineStore('merchants', () => {
     createEmployee,
     updateEmployee,
     changeEmployeePassword,
+    globalCategories,
+    fetchGlobalCategories,
     fetchCategories,
-    createCategory,
-    updateCategory,
+    enableCategory,
+    disableCategory,
     fetchProducts,
     createProduct,
     updateProduct,

@@ -45,29 +45,14 @@ export const useCatalogStore = defineStore('catalog', () => {
     }
   }
 
-  async function addCategory(name: string) {
-    const body = await api<{ category: Category }>('/merchant/catalog/categories', {
-      method: 'POST',
-      body: JSON.stringify({ name }),
-    })
-    categories.value.push(body.category)
+  async function enableCategory(categoryId: string) {
+    await api(`/merchant/catalog/categories/${categoryId}`, { method: 'POST' })
+    await fetchCategories()
   }
 
-  async function updateCategory(id: string, name: string) {
-    const body = await api<{ category: Category }>(`/merchant/catalog/categories/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ name }),
-    })
-    const idx = categories.value.findIndex((c) => c.id === id)
-    if (idx >= 0) categories.value[idx] = body.category
-  }
-
-  async function deleteCategory(id: string) {
-    await api(`/merchant/catalog/categories/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ active: false }),
-    })
-    categories.value = categories.value.filter((c) => c.id !== id)
+  async function disableCategory(categoryId: string) {
+    await api(`/merchant/catalog/categories/${categoryId}`, { method: 'DELETE' })
+    categories.value = categories.value.filter((c) => c.id !== categoryId)
   }
 
   async function addProduct(input: { name: string; categoryId: string; price: string; mxikCode?: string; packageCode?: number; packageName?: string }) {
@@ -217,9 +202,8 @@ export const useCatalogStore = defineStore('catalog', () => {
     activeBranches,
     activeTariffs,
     fetchAll,
-    addCategory,
-    updateCategory,
-    deleteCategory,
+    enableCategory,
+    disableCategory,
     addProduct,
     updateProduct,
     deleteProduct,

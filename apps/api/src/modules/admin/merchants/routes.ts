@@ -14,8 +14,11 @@ import { assignTariff } from "./commands/assign-tariff"
 import { removeTariff } from "./commands/remove-tariff"
 import { listBranches } from "../branches/queries/list-branches"
 import { createBranch } from "../branches/commands/create-branch"
-import { listCategories } from "../categories/queries/list-categories"
-import { createCategory } from "../categories/commands/create-category"
+import { listEnabledCategories } from "../categories/queries/list-enabled-categories"
+import { getCategory } from "../categories/queries/get-category"
+import { enableMerchantCategory } from "../categories/commands/enable-merchant-category"
+import { disableMerchantCategory } from "../categories/commands/disable-merchant-category"
+import { isCategoryEnabledForMerchant } from "../categories/queries/is-category-enabled"
 import { listProducts } from "../products/queries/list-products"
 import { createProduct } from "../products/commands/create-product"
 import {
@@ -65,10 +68,6 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     name: Type.String({ minLength: 1 }),
     address: Type.String({ minLength: 1 }),
     phone: Type.String({ minLength: 1 }),
-  })
-
-  const CreateCategoryBody = Type.Object({
-    name: Type.String({ minLength: 1 }),
   })
 
   const CreateProductBody = Type.Object({
@@ -155,23 +154,34 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
 
   /* ── Merchant categories ────────────────────────────────────────────────── */
 
+  const CategoryIdParams = Type.Object({ id: Type.String(), categoryId: Type.String() })
+
   fastify.get(
     "/:id/categories",
     { schema: { params: IdParams }, preHandler },
     async (request) => {
-      const rows = await listCategories(db, BigInt(request.params.id))
+      const rows = await listEnabledCategories(db, BigInt(request.params.id))
       return { categories: rows.map(serializeCategory) }
     },
   )
 
   fastify.post(
-    "/:id/categories",
-    { schema: { params: IdParams, body: CreateCategoryBody }, preHandler },
+    "/:id/categories/:categoryId",
+    { schema: { params: CategoryIdParams }, preHandler },
     async (request, reply) => {
-      const merchant = await getMerchant(db, BigInt(request.params.id))
-      if (!merchant) return reply.code(404).sendError("not_found")
-      const category = await createCategory(db, { merchantId: merchant.id, name: request.body.name })
-      return reply.code(201).send({ category: serializeCategory(category) })
+      const category = await getCategory(db, BigInt(request.params.categoryId))
+      if (!category) return reply.code(404).sendError("not_found")
+      await enableMerchantCategory(db, category.id, BigInt(request.params.id))
+      return reply.code(204).send()
+    },
+  )
+
+  fastify.delete(
+    "/:id/categories/:categoryId",
+    { schema: { params: CategoryIdParams }, preHandler },
+    async (request, reply) => {
+      await disableMerchantCategory(db, BigInt(request.params.categoryId), BigInt(request.params.id))
+      return reply.code(204).send()
     },
   )
 
@@ -192,9 +202,12 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const merchant = await getMerchant(db, BigInt(request.params.id))
       if (!merchant) return reply.code(404).sendError("not_found")
+      const categoryId = BigInt(request.body.categoryId)
+      const enabled = await isCategoryEnabledForMerchant(db, categoryId, merchant.id)
+      if (!enabled) return reply.code(400).sendError("category_not_enabled")
       const product = await createProduct(db, {
         merchantId: merchant.id,
-        categoryId: BigInt(request.body.categoryId),
+        categoryId,
         name: request.body.name,
         price: request.body.price,
         mxikCode: request.body.mxikCode,

@@ -3,6 +3,7 @@ import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
 import type { FastifyInstance } from "fastify"
 import { getProduct } from "./queries/get-product"
 import { updateProduct } from "./commands/update-product"
+import { isCategoryEnabledForMerchant } from "../categories/queries/is-category-enabled"
 
 function serializeProduct(p: NonNullable<Awaited<ReturnType<typeof getProduct>>>) {
   return { ...p, id: p.id.toString(), merchantId: p.merchantId.toString(), categoryId: p.categoryId.toString() }
@@ -42,13 +43,16 @@ export default async function adminProductRoutes(app: FastifyInstance) {
     "/:id",
     { schema: { params: IdParams, body: UpdateProductBody }, preHandler },
     async (request, reply) => {
-      const input = {
-        ...request.body,
-        categoryId: request.body.categoryId ? BigInt(request.body.categoryId) : undefined,
-      }
-      const product = await updateProduct(db, BigInt(request.params.id), input)
+      const product = await getProduct(db, BigInt(request.params.id))
       if (!product) return reply.code(404).sendError("not_found")
-      return { product: serializeProduct(product) }
+      const categoryId = request.body.categoryId ? BigInt(request.body.categoryId) : undefined
+      if (categoryId !== undefined) {
+        const enabled = await isCategoryEnabledForMerchant(db, categoryId, product.merchantId)
+        if (!enabled) return reply.code(400).sendError("category_not_enabled")
+      }
+      const updated = await updateProduct(db, product.id, { ...request.body, categoryId })
+      if (!updated) return reply.code(404).sendError("not_found")
+      return { product: serializeProduct(updated) }
     },
   )
 }

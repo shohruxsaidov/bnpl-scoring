@@ -238,55 +238,30 @@ async function submitChangePwd() {
 }
 
 // --- Categories --------------------------------------------------------------
-const showCategory = ref(false)
-const categoryForm = ref({ name: '' })
-const categorySaving = ref(false)
+const showEnableCategory = ref(false)
 
-function openCategory() {
-  categoryForm.value = { name: '' }
-  showCategory.value = true
+async function openEnableCategory() {
+  await merchants.fetchGlobalCategories()
+  showEnableCategory.value = true
 }
 
-async function submitCategory() {
-  if (!categoryForm.value.name) return
-  categorySaving.value = true
-  try {
-    await merchants.createCategory(merchantId.value, { ...categoryForm.value })
-    toast.add({ severity: 'success', summary: t('merchantDetail.categoryCreated'), life: 2000 })
-    showCategory.value = false
-  } catch {
-    notifyError('merchantDetail.createFailed')
-  } finally {
-    categorySaving.value = false
-  }
-}
-
-const showEditCategory = ref(false)
-const editCategoryForm = ref({ id: '', name: '' })
-const editCategorySaving = ref(false)
-
-function openEditCategory(category: Category) {
-  editCategoryForm.value = { id: category.id, name: category.name }
-  showEditCategory.value = true
-}
-
-async function submitEditCategory() {
-  if (!editCategoryForm.value.name.trim()) return
-  editCategorySaving.value = true
-  try {
-    await merchants.updateCategory(editCategoryForm.value.id, { name: editCategoryForm.value.name.trim() })
-    toast.add({ severity: 'success', summary: t('merchantDetail.categorySaved'), life: 2000 })
-    showEditCategory.value = false
-  } catch {
-    notifyError('merchantDetail.updateFailed')
-  } finally {
-    editCategorySaving.value = false
-  }
-}
+const enabledCategoryIds = computed(() => new Set(categories.value.map((c) => c.id)))
 
 async function toggleCategory(category: Category) {
   try {
-    await merchants.updateCategory(category.id, { active: !category.active })
+    if (enabledCategoryIds.value.has(category.id)) {
+      await merchants.disableCategory(merchantId.value, category.id)
+    } else {
+      await merchants.enableCategory(merchantId.value, category.id)
+    }
+  } catch {
+    notifyError('merchantDetail.updateFailed')
+  }
+}
+
+async function disableCategory(category: Category) {
+  try {
+    await merchants.disableCategory(merchantId.value, category.id)
   } catch {
     notifyError('merchantDetail.updateFailed')
   }
@@ -851,7 +826,7 @@ async function assignScoringModel(radioValue: number) {
     <section v-else-if="activeTab === 'Categories'" class="tab-body">
       <div class="tab-head">
         <h3 class="section-title">{{ $t('merchantDetail.categories') }}</h3>
-        <button class="btn-gradient" @click="openCategory">
+        <button class="btn-gradient" @click="openEnableCategory">
           <i class="pi pi-plus" /> {{ $t('merchantDetail.addCategory') }}
         </button>
       </div>
@@ -862,15 +837,10 @@ async function assignScoringModel(radioValue: number) {
               <span class="t-name-sm">{{ data.name }}</span>
             </template>
           </Column>
-          <Column :header="$t('merchantDetail.active')">
-            <template #body="{ data }">
-              <ToggleSwitch :model-value="data.active" @update:model-value="toggleCategory(data)" />
-            </template>
-          </Column>
           <Column style="width: 48px">
             <template #body="{ data }">
-              <button class="icon-btn" :title="$t('common.edit')" @click="openEditCategory(data)">
-                <i class="pi pi-pencil" />
+              <button class="icon-btn danger" :title="$t('common.delete')" @click="disableCategory(data)">
+                <i class="pi pi-trash" />
               </button>
             </template>
           </Column>
@@ -1061,32 +1031,23 @@ async function assignScoringModel(radioValue: number) {
       </template>
     </Dialog>
 
-    <!-- Category create dialog -->
-    <Dialog v-model:visible="showCategory" modal :header="$t('merchantDetail.addCategory')" :style="{ width: '420px' }">
-      <div class="field">
-        <label class="field-label">{{ $t('merchantDetail.name') }}</label>
-        <InputText v-model="categoryForm.name" class="w-full" autofocus />
+    <!-- Enable category dialog -->
+    <Dialog v-model:visible="showEnableCategory" modal :header="$t('merchantDetail.addCategory')" :style="{ width: '460px' }">
+      <div class="category-checklist">
+        <div v-for="c in merchants.globalCategories" :key="c.id" class="category-check-row">
+          <span class="cat-check-name">{{ c.name }}</span>
+          <button
+            v-if="!enabledCategoryIds.has(c.id)"
+            class="btn-gradient btn-sm"
+            @click="merchants.enableCategory(merchantId, c.id)"
+          >
+            <i class="pi pi-plus" />
+          </button>
+          <span v-else class="enabled-badge"><i class="pi pi-check" /></span>
+        </div>
       </div>
       <template #footer>
-        <button class="btn-ghost" @click="showCategory = false">{{ $t('common.cancel') }}</button>
-        <button class="btn-gradient" :disabled="categorySaving" @click="submitCategory">
-          {{ $t('merchantDetail.create') }}
-        </button>
-      </template>
-    </Dialog>
-
-    <!-- Category edit dialog -->
-    <Dialog v-model:visible="showEditCategory" modal :header="$t('merchantDetail.editCategory')"
-      :style="{ width: '420px' }">
-      <div class="field">
-        <label class="field-label">{{ $t('merchantDetail.name') }}</label>
-        <InputText v-model="editCategoryForm.name" class="w-full" autofocus />
-      </div>
-      <template #footer>
-        <button class="btn-ghost" @click="showEditCategory = false">{{ $t('common.cancel') }}</button>
-        <button class="btn-gradient" :disabled="editCategorySaving" @click="submitEditCategory">
-          {{ $t('common.save') }}
-        </button>
+        <button class="btn-ghost" @click="showEnableCategory = false">{{ $t('common.close') }}</button>
       </template>
     </Dialog>
 

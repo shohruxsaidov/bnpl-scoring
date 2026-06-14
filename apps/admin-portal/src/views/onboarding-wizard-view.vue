@@ -166,9 +166,24 @@ async function submitStep5() {
   if (!valid.length) { step.value = 6; return }
   saving.value = true
   try {
+    await store.fetchGlobalCategories()
     for (const cat of valid) {
-      const created = await store.createCategory(merchantId.value!, { name: cat.name.trim() })
-      createdCategories.value.push(created)
+      const trimmed = cat.name.trim()
+      let existing = store.globalCategories.find(
+        (c) => c.name.toLowerCase() === trimmed.toLowerCase(),
+      )
+      if (!existing) {
+        const body = await import('@/utils/apiFetch').then(({ apiFetch }) =>
+          apiFetch<{ category: Category }>('/admin/categories', {
+            method: 'POST',
+            body: JSON.stringify({ name: trimmed }),
+          }),
+        )
+        existing = body.category
+        store.globalCategories.push(existing)
+      }
+      await store.enableCategory(merchantId.value!, existing.id)
+      createdCategories.value.push(existing)
     }
     step.value = 6
   } catch {

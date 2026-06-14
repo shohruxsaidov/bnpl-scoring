@@ -1,6 +1,6 @@
 import type { getMerchant } from "./queries/get-merchant"
 import type { createBranch } from "../branches/commands/create-branch"
-import type { createCategory } from "../categories/commands/create-category"
+import type { listEnabledCategories } from "../categories/queries/list-enabled-categories"
 import type { createProduct } from "../products/commands/create-product"
 import type { recordDocument } from "./commands/record-document"
 
@@ -12,8 +12,8 @@ export function serializeBranch(b: Awaited<ReturnType<typeof createBranch>>) {
   return { ...b, id: b.id.toString(), merchantId: b.merchantId.toString() }
 }
 
-export function serializeCategory(c: Awaited<ReturnType<typeof createCategory>>) {
-  return { ...c, id: c.id.toString(), merchantId: c.merchantId.toString() }
+export function serializeCategory(c: Awaited<ReturnType<typeof listEnabledCategories>>[number]) {
+  return { ...c, id: c.id.toString() }
 }
 
 export function serializeProduct(p: Awaited<ReturnType<typeof createProduct>>) {

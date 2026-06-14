@@ -112,7 +112,6 @@ export interface TariffQuote {
 
 export interface Category {
   id: string
-  merchantId: string
   name: string
   active: boolean
   createdAt: string

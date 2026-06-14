@@ -271,7 +271,6 @@ export interface MerchantEmployee {
 
 export interface Category {
   id: string
-  merchantId: string
   name: string
   active: boolean
   createdAt: string

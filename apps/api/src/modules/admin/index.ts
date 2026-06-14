@@ -45,7 +45,7 @@ export default async function adminModule(app: FastifyInstance) {
   await app.register(guarded(adminMerchantRoutes, { read: "view_merchants", write: "manage_merchants" }), { prefix: "/admin/merchants" })
   await app.register(guarded(adminBranchRoutes, { read: "view_merchants", write: "manage_merchants" }), { prefix: "/admin/branches" })
   await app.register(guarded(adminEmployeeRoutes, { read: "manage_employees", write: "manage_employees" }), { prefix: "/admin/employees" })
-  await app.register(guarded(adminCategoryRoutes, { read: "manage_categories", write: "manage_categories" }), { prefix: "/admin/categories" })
+  await app.register(guarded(adminCategoryRoutes, { read: "manage_global_categories", write: "manage_global_categories" }), { prefix: "/admin/categories" })
   await app.register(guarded(adminProductRoutes, { read: "manage_products", write: "manage_products" }), { prefix: "/admin/products" })
   await app.register(guarded(adminTariffRoutes, { read: "view_tariffs", write: "manage_tariffs" }), { prefix: "/admin/tariffs" })
   await app.register(guarded(adminBlacklistRoutes, { read: "manage_blacklist", write: "manage_blacklist" }), { prefix: "/admin/blacklist" })

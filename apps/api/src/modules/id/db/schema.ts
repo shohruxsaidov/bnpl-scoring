@@ -216,13 +216,23 @@ export const branches = pgTable('branches', {
 
 export const categories = pgTable('categories', {
   id: bigserial('id', { mode: 'bigint' }).primaryKey(),
-  merchantId: bigint('merchant_id', { mode: 'bigint' })
-    .notNull()
-    .references(() => merchants.id),
   name: varchar('name', { length: 200 }).notNull(),
   active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
+
+export const merchantCategories = pgTable(
+  'merchant_categories',
+  {
+    categoryId: bigint('category_id', { mode: 'bigint' })
+      .notNull()
+      .references(() => categories.id, { onDelete: 'cascade' }),
+    merchantId: bigint('merchant_id', { mode: 'bigint' })
+      .notNull()
+      .references(() => merchants.id, { onDelete: 'cascade' }),
+  },
+  (t) => [primaryKey({ columns: [t.categoryId, t.merchantId] })],
+);
 
 export const products = pgTable('products', {
   id: bigserial('id', { mode: 'bigint' }).primaryKey(),
