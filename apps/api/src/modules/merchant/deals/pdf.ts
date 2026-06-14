@@ -54,6 +54,7 @@ const STRINGS = {
     durationUnit: 'мес.',
     downPayment: 'Сумма предоплаты:',
     maxMonthly: 'Макс. ежемесячный платёж:',
+    monthlyPayment: 'Ежемесячный платёж:',
     paymentDayLabel: 'Ежемесячная день/число платежа:',
     currency: 'сум',
     section3: '3. График платежей по рассрочке',
@@ -103,6 +104,7 @@ const STRINGS = {
     durationUnit: 'oy',
     downPayment: "Bosh to'lov miqdori:",
     maxMonthly: "Eng katta oylik to'lov:",
+    monthlyPayment: 'Oylik to\'lov:',
     paymentDayLabel: "Har oydagi to'lov kuni:",
     currency: "so'm",
     section3: "3. To'lov grafigi",
@@ -511,6 +513,7 @@ export async function generateContract(data: ContractData, lang: 'ru' | 'uz'): P
   const maxMonthly = data.schedule.length
     ? Math.max(...data.schedule.map((row) => row.amount))
     : Math.round(data.totalPayable / data.termMonths);
+  const monthlyPayment = Math.round(data.totalPayable / data.termMonths);
   const leftRows: Array<[string, string]> = [
     [t.installmentTotal, `${fmt(data.totalPayable)} ${t.currency}`],
     [t.duration, `${data.termMonths} ${t.durationUnit}`],
@@ -518,6 +521,7 @@ export async function generateContract(data: ContractData, lang: 'ru' | 'uz'): P
   const rightRows: Array<[string, string]> = [
     [t.downPayment, `0 ${t.currency}`],
     [t.maxMonthly, `${fmt(maxMonthly)} ${t.currency}`],
+    [t.monthlyPayment, `${fmt(monthlyPayment)} ${t.currency}`],
     [t.paymentDayLabel, String(data.paymentDay)],
   ];
 
