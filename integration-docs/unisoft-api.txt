@@ -1,0 +1,2808 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+PREPARED BY
+Gafurov Shakhzod
+Documentation
+Table of contents
+Project Overview 4
+1 Introduction 4
+2 Web Service Message Format 4
+Example Requests and Responses 5
+1. Login 7
+1.1 Authentication and Token Generation 7
+2. Terminal 9
+2.1 Terminal Check 9
+2.2 Terminal Add 10
+2.3 Terminal get 11
+2.4 Terminal delete 13
+3. Merchants (Filials) 14
+3.1 Merchant Create 14
+3.2 Merchant Update 17
+3.3 Merchant Get 20
+3.4 Merchant Delete 21
+4. Clients 22
+4.1 Clients Create 22
+4.2 Clients Phone Add 25
+4.3 Clients Phone Delete 27
+4.4 Client Update 28
+4.5 Clients Get 30
+5. Contracts 32
+5.1 Contracts Create 32
+5.2 Contract Update 36
+Behavior 36
+1) Product-only update (when data.product is present) 36
+2) Debt update (when data.debt is present and data.product is not provided) 36
+5.3 Contracts Get 38
+5.4 Contract Delete 41
+5.5 Contract Auto Toggle 42
+5.5 Contract Find 44
+6. Transactions 46
+6.1 Transactions Get 46
+6.2 Transactions mark as synchronized 50
+6.3 Transaction find by ext 51
+6.3 Transaction cancel 53
+6.4 Transaction verification set 54
+6.4.1 Transaction verification scenario 55
+6.5 Transaction verification check 58
+7. Webhook 58
+7.1 Webhook Definition 58
+7.2 Webhook check 60
+7.2 Webhook set 60
+8. Cards 62
+8.1 Card Info 62
+8.2 Cards count by PINFL 64
+8.3 Card Sync Local 65
+9. Processing (Paid methods) 66
+9.1 Search Uzcard cards 66
+9.2 Search Humo cards 69
+9.3 Failed Cards Recheck by Key 72
+9.4 Card search History 73
+10. Monitoring (Paid methods) 76
+10.1 Card Registration 76
+10.1.2 Card Verify 78
+10.2 Monitoring Humo 80
+10.3 Monitoring Uzcard 82
+11. Scoring (Paid methods) 85
+11.1 Scoring By Pinfl 85
+12. E-GOV (Paid methods) 87
+12.1 Services { free } 87
+12.2 Store 88
+12.3 Get { free } 89
+12.4 Update 91
+
+
+Project Overview
+1 Introduction
+This document describes the API of the UniAccess Web service, focusing on the components necessary for automating auto-debit business processes. The UniAccess Web service interacts via HTTP, providing a set of methods for sending requests and receiving responses for each operation. All responses are returned in JSON format.
+To ensure the security of confidential information, HTTPS (an extension of HTTP) is used, offering cryptographic protection when transmitting information between the user and the server.
+2 Web Service Message Format
+After successfully logging in, clients can interact with the UniAccess API using the generated token. All subsequent requests must include this token for authorization.
+The UniAccess web service uses a remote procedure call protocol that employs JSON (JSON-RPC v.2.0) to encode messages. According to the specification, JSON-RPC works by sending requests to a server that implements the protocol. Typically, the client is a program that needs to call a method on a remote system.
+All transmitted data consists of simple records serialized into JSON. A request is a call to a specific method provided by the remote system. It must contain the following (R) properties:
+●	Header:
+○	Content-Type: application/json; charset=utf-8
+○	Accept: application/json
+○	Authorization: Bearer (This is the token obtained from the login method.)
+●	Body:
+○	method: A string with the name of the method being called.
+○	params: An array of data to be passed to the method as parameters. If the method does not require parameters, the params field can be set to null.
+The server must send a proper response for each received request. The response must contain the following properties:
+●	status: A boolean indicating the status of the response. If the request is successfully processed, the status is true; otherwise, in the case of an error, the status will be false.
+●	result: The data returned by the method. If an error occurred during method execution, this property should be set to null.
+●	error: The error code and message if an error occurred during the method's execution, otherwise null.
+Example Requests and Responses
+Request(Header):
+Content-Type: application/json; charset=utf-8
+Accept: application/json
+Authorization: Bearer h8nkAWTQnZhrLiMQxoMm6Yfu2TONWUF8yeKHKATK1FGH	
+Parameters
+method	String	Method name, (R)
+params	Array	(R) named params as method structure and maximum 250 characters
+Body:
+Jsonrpc 2.0 
+ POST	{{autopay-v4-host}}/api/login
+{
+   "method": "method-name",
+   "params": {
+       // Body of request //
+   }
+}	
+Parameters
+status	Boolean	true in success response 
+result	Object	(R) params as method structure
+error	Boolean	null in success response
+Successful Response:
+{
+   "status": true,
+   "result": {
+      // Body of response //
+   },
+   "error":null
+}
+	
+Error Response:
+{
+   "status": false,
+   "error": {
+        "message": "Error message!" 
+   }
+}	
+Parameters
+status	Boolean	false in error response
+error	Object	(R) params as method structure
+message	String	Error  message
+B.Security Considerations
+●	All interactions must use HTTPS to ensure secure transmission.
+●	Tokens should be kept secure and not exposed publicly.
+●	Tokens have a defined expiration period and must be refreshed using the login method when expired.
+
+1. Login
+1.1 Authentication and Token Generation
+The UniAccess API uses token-based authentication. A login method is provided to generate an access token, which must be included in all subsequent requests. The authentication flow is as follows. Generated access token has not expiration date, you can regenerate it when you need.
+1.2 Authorization
+●	Login Method: Clients use a login method with a username and password to obtain an access token. If a token is provided in the request, it will be used; otherwise, a new token will be generated.
+●	Access Token: The generated token is used for authenticating all other API requests.
+Request Parameters:
+username	String(max:255)	Username must be filled in
+password	String(max:255)	Password must be filled in
+token	String(min:32)	The generated token is used for authenticating all other API requests.
+If token send by partner system set this token as generated token for auth
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/login
+{
+   "method": "login",
+   "params": {
+        "username": "test",
+        "password": "test",
+         "token": "ZXlKMGIydGxiaUk2SWlJc0luUnZhMlZ1WDJacGJHpT2xzaU1UU"
+          // optional, if a token is sent by a partner we accept it.
+
+   }
+}	
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "token": "ZXlKMGIydGxiaUk2SWlJc0luUnZhMlZ1WDJacGJHpT2xzaU1UU"
+   },
+   "error": null
+}	
+
+Example of an error response raw (json):
+{
+   "status": false,
+   "error": {
+       "message": "Error message!"
+   },
+   "result": null
+}	
+
+
+
+2. Terminal
+2.1 Terminal Check
+Purpose:This method returns information about the terminal and merchant.
+Request Parameters:
+terminal id	String	Terminal number must be filled in
+merchant_id	String	Merchant number must be filled in
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "terminal.check",
+   "params": {
+       "terminal_id": "55555",
+       "merchant_id": "55555"
+   }
+}	
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "terminal_id": "55555",
+       "merchant_id": "55555",
+       "status": "success",
+       "commission": "0",
+       "comment": null,
+       "type": "sv"
+   },
+   "error": null
+}	
+Example of an error response raw (json):
+{
+   "status": false,
+   "error": {
+       "message": "Error message!"
+   },
+   "result": null
+}	
+
+2.2 Terminal Add
+Purpose:This method is used for adding a Terminal.
+Request Parameters:
+terminal id	String(max:100), Unique, (R)	Terminal number must be filled in and unique
+merchant_id	String, (R)	Merchant number must be filled in
+commission	Number(max:10), (R)	Commission number must be filled in
+type	String, (R)	Type  field is (R) and must be one of the following values: 'sv' or humo'
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "terminal.add",
+   "params": {
+       "terminal_id": "123456789",
+       "merchant_id": "123456789",
+       "commission": 5,
+       "type": "sv" // or humo
+   }
+}	
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "terminal_id": "123456789",
+       "merchant_id": "123456789",
+       "status": "success",
+       "commission": 10,
+       "comment": null,
+       "type": "sv" // or humo
+   },
+   "error": null
+}	
+
+Example of an error response raw (json):
+{
+   "status": false,
+   "error": {
+       "message": "Error message!"
+   },
+   "result": null
+}	
+2.3 Terminal get
+Purpose:This method is used for get list of added terminals
+Request Parameters:
+page_size	Integer, Max: 500 Unique, (R)	Terminal number must be filled in and unique
+page_number	Integer, Min: 1, (R)	Merchant number must be filled in
+search	Optional, Object	Object for filtering data by attributes. For example type, terminal_id, merchant_id
+type	String, ( R ), [sv, humo] 	Type  field is must be one of the following values: 'sv' or ‘humo'
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "terminal.get",
+   "params": {
+       "page_number": 1,
+       "page_size": 10,
+       "search":{
+           "type":"sv"
+       }
+   }
+}	
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "data": [
+           {
+               "terminal_id": "55555",
+               "merchant_id": "55555",
+               "status": "success",
+               "commission": "0",
+               "comment": null,
+               "type": "sv"
+           },
+           {
+               "terminal_id": "9241106",
+               "merchant_id": "904812148",
+               "status": "success",
+               "commission": "0",
+               "comment": null,
+               "type": "sv"
+           }
+       ],
+       "total": 2,
+       "page": 1,
+       "page_size": 10,
+       "last_page": 1,
+       "current_page": 1
+   },
+   "error": null
+}
+	
+
+2.4 Terminal delete
+Purpose: For deleting not used terminals, if terminal is connected one of merchants you can not delete it
+Request Parameters:
+terminal_id	String, Max:100	Terminal’s terminal_id attribute
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "terminal.delete",
+   "params": {
+       "terminal_id": "92450306"
+   }
+}	
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "message": "Terminal deleted successfully!"
+   },
+   "error": null
+}	
+
+
+3. Merchants (Filials)
+3.1 Merchant Create
+Purpose:This method is used for creating a Merchant. Merchant is a filial which contains contracts. You can customize each merchant by it’s own configs.
+name	String(255), Unique, (R)	Name must be filled in and unique
+sv_terminal	String(max:50), (R)	This is a terminal_id from terminal.add method. Type must be sv
+humo_terminal	String(max:50), (R)	This is a terminal_id from terminal.add method. Type must be humo
+phone	String(max:30)	Phone number for this merchant(filial)
+limit	Integer, Min:0	limit (integer):
+●	Specifies the minimum payment amount in tiyin.
+●	If the card balance is below this limit, no payment request will be sent for the card.
+●	However, if the client’s total debt is less than the specified limit, a payment request will still be sent to settle the debt.
+sv_commission	Float, Min:0	Commission to uzcard epos from bank
+humo_commission	Float, Min: 0	Commission to humo epos from bank
+is_strict	Boolean	is_strict (boolean):
+●	Determines the behavior of the payment process.
+●	When true, the payment will only proceed if the card balance is sufficient to fully cover the total amount required to close all contract debits.
+●	When false, the payment will attempt to withdraw as much money as possible from the card, even if the balance is insufficient to fully close the contract debits.
+address	String, Max: 255	Address of merchant(filial’s juridic address)
+auto	Boolean	Status of auto payment process for this merchant
+Request Parameters
+
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "merchant.create",
+   "params": {
+       "name": "OOO Alfa",
+       "sv_terminal": "55555",
+       "humo_terminal": "236379VO",
+       "phone": "975553366",
+       "auto": true,
+       "is_strict": true,
+       "limit": 200000,
+       "sv_commission": 0.3,
+       "humo_commission": 1.5
+   }
+}	
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "id": 20,
+       "name": "OOO Alfa",
+       "address": null,
+       "phone": "975553366",
+       "sv_terminal": "55555",
+       "sv_merchant": "55555",
+       "humo_terminal": "236379VO",
+       "humo_merchant": "01186000011864K",
+       "auto": true,
+       "is_strict": true,
+       "limit": 200000,
+       "created_by": 0,
+       "sv_commission": "0.3",
+       "humo_commission": "1.5"
+   },
+   "error": null
+}	
+Example of an error response raw (json):
+{
+   "status": false,
+   "error": {
+       "message": "Error message!"
+   },
+   "result": null
+}	
+
+3.2 Merchant Update
+Purpose:This method is used for updating a merchant.
+Request Parameters
+name	String(255), Unique, (R)	Name must be filled in and unique
+sv_terminal	String(max:50), (R)	This is a terminal_id from terminal.add method. Type must be sv
+humo_terminal	String(max:50), (R)	This is a terminal_id from terminal.add method. Type must be humo
+phone	String(max:30)	Phone number for this merchant(filial)
+limit	Integer, Min:0	limit (integer):
+●	Specifies the minimum payment amount in tiyin.
+●	If the card balance is below this limit, no payment request will be sent for the card.
+●	However, if the client’s total debt is less than the specified limit, a payment request will still be sent to settle the debt.
+sv_commission	Float, Min:0	Commission to uzcard epos from bank
+humo_commission	Float, Min: 0	Commission to humo epos from bank
+is_strict	Boolean	is_strict (boolean):
+●	Determines the behavior of the payment process.
+●	When true, the payment will only proceed if the card balance is sufficient to fully cover the total amount required to close all contract debits.
+●	When false, the payment will attempt to withdraw as much money as possible from the card, even if the balance is insufficient to fully close the contract debits.
+address	String, Max: 255	Address of merchant(filial’s juridic address)
+auto	Boolean	Status of auto payment process for this merchant
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "merchant.update",
+   "params": {
+       "id": 21,
+       "data": {
+           "name": "Main-6",
+           "auto": false,
+           "is_strict": false,
+           "sv_terminal": "92450306"
+       }
+    }
+}	
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "id": 21,
+       "name": "Main-6",
+       "address": null,
+       "phone": "975553377",
+       "sv_terminal": "92450306",
+       "sv_merchant": "904815948",
+       "humo_terminal": "236379VO",
+       "humo_merchant": "01186000011864K",
+       "auto": false,
+       "is_strict": false,
+       "limit": 200000,
+       "created_by": 0,
+       "sv_commission": "0",
+       "humo_commission": "1",
+       "message": "Merchant Main-6 updated successfully!"
+   },
+   "error": null
+}	
+
+Example of an error response raw (json):
+{
+   "status": false,
+   "error": {
+       "message": "The name has already been taken."
+   },
+   "result": null
+}	
+
+
+
+
+3.3 Merchant Get
+Purpose: This endpoint allows users to view and filter merchants based on specified criteria.
+Data Fetching: The method proceeds to search for merchants using the merchant.get method of the Merchants. The selected attributes include:name, address, phone, sv_terminal, sv_merchant, humo_terminal, humo_merchant, auto.
+
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "merchant.get",
+   "params": {
+       "name": "Merchant name",
+       // and other attributes
+   }
+}	
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": [
+       {
+           "id": 7,
+           "name": "Merchant Name",
+           "address": null,
+           "phone": null,
+           "sv_terminal": "123456789",
+           "sv_merchant": "123456789",
+           "humo_terminal": "123456789",
+           "humo_merchant": "12345678932131",
+           "auto": true,
+           "is_strict": false,
+           "limit": 100000,
+           "created_by": 0,
+           "sv_commission": "0",
+           "humo_commission": "0",
+           "created_at": "2024-12-19T07:33:24.000000Z"
+       }
+   ],
+   "error": null
+}	
+
+
+Example of a not found response raw (json):
+{
+   "status": true,
+   "result": [],
+   "error": null
+}	
+
+3.4 Merchant Delete
+Purpose:This method is used for deleting a merchant.
+Request Parameters
+name	String(255)	Name must be filled in and unique
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "merchant.delete",
+   "params": {
+       "name": "OOO Alfa"
+   }
+}	
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "message": "Merchant OOO Alfa deleted successfully!"
+   },
+   "error": null
+}	
+
+
+Example of an error response raw (json):
+{
+   "status": false,
+   "error": {
+       "message": "Error message!"
+   },
+   "result": null
+}	
+
+4. Clients
+4.1 Clients Create
+Purpose: The create method handles the creation of new client records in the database. It takes an array of parameters, validates them, checks for existing clients by their pinfl, and inserts the new clients into the database while returning a response with the created and existing client information. 
+Note: All attributes will be converted automatically to latin if you send chars in cyril alphabet
+Request Parameters
+clients	Array(max:250), (R)	An array containing the details of clients to be created
+pinfl	Number(14 digits), (R)	The 14-digit PINFL of the client whose data is to be updated
+passport	String(size:9), (R)	The client’s passport number, consisting of exactly 9 characters
+first_name	String(max:100), (R)	The client’s first name. It must be a string and can contain up to 100 characters
+last_name	String(max:100), (R)	The client’s last name. It must be a string and can contain up to 100 characters
+middle_name	String(max:100), (R)	The client’s middle name. It must be a string and can contain up to 100 characters
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "client.create",
+   "params": {
+       "clients": [
+             {
+               "pinfl":"12345678912345",
+               "passport":"AC1234567",
+               "first_name":"Ali",
+               "last_name":"Aliyev",
+               "middle_name":"XXX"
+             },
+             {
+               "pinfl":"65432198765432",
+               "passport":"AC1234567",
+               "first_name":"G’ani",
+               "last_name":"G’aniyev",
+               "middle_name":"XXX"
+          }
+       ]
+   }
+}	
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "created": {
+           "12345678912345": {
+               "pinfl": "12345678912345",
+               "passport": "AC1234567",
+               "first_name": "ALI",
+               "last_name": "ALIYEV",
+               "middle_name": "XXX",
+               "created_at": "2024-12-19T08:55:54.995416Z",
+               "updated_at": "2024-12-19T08:55:54.995425Z"
+           },
+           "65432198765432": {
+               "pinfl": "65432198765432",
+               "passport": "AC1234567",
+               "first_name": "G’ANI",
+               "last_name": "G’ANIYEV",
+               "middle_name": "XXX",
+               "created_at": "2024-12-19T08:55:54.995756Z",
+               "updated_at": "2024-12-19T08:55:54.995762Z"
+           }
+       },
+       "exists": []
+   },
+   "error": null
+}
+	
+Example of an existing data response raw (json):
+{
+   "status": true,
+   "result": {
+       "created": [],
+       "exists": [
+           "12345678912345",
+           "65432198765432"
+       ]
+   },
+   "error": null
+}
+	
+
+Example of an error response raw (json):
+{
+   "status": false,
+   "error": {
+       "message": "Error message!"
+   },
+   "result": null
+}	
+
+
+4.2 Clients Phone Add
+Purpose:This method allows partners to add phone numbers for existing clients. It verifies that the clients exist in the database and ensures that the provided phone numbers are unique, properly formatted, and associated with the correct client. Any phone numbers already linked to a client are excluded from being added, ensuring data integrity. 
+
+Request Parameters
+clients	Array(max:250), (R)	An array containing the details of clients to be created
+pinfl	Number(14 digits), (R)	The Personal Identification Number (PINFL) of the client.
+phones	Array(max:25, 9 digits), (R)	An array containing phone numbers to be added for the client, a single phone number to be added for the client, with a minimum length of 9 digits.
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+  "method": "client.phone.add",
+  "params": {
+       "clients":[
+          {
+            "pinfl":"65432198765432",
+            "phones":[
+             "777777777",
+             "911234567",
+             "941234567"
+           ]
+        },
+          {
+            "pinfl":"12345678912345",
+            "phones":[
+             "888888888",
+             "666666666”
+           ]
+        }
+     ]
+  }
+}	
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "created": [
+           {
+               "pinfl": "65432198765432",
+               "phones": {
+                   "created": [
+                       "777777777",
+                       "911234567"
+                   ],
+                   "exists": []
+               }
+           },
+           {
+               "pinfl": "12345678912345",
+               "phones": {
+                   "created": [
+                       "888888888",
+                       "666666666",
+                       "555555555"
+                   ],
+                   "exists": []
+               }
+           }
+       ],
+       "client_not_exists": []
+   },
+   "error": null
+}	
+Example of an error response raw (json):
+{
+   "status": false,
+   "error": {
+       "message": "Error message!"
+   },
+   "result": null
+}	
+4.3 Clients Phone Delete
+Purpose:This method allows partners to delete phone numbers associated with a specific client based on their PINFL. If a phone number is not found, it is returned in the response as "not found."
+Request Parameters
+pinfl	Number(14 digits), (R)	The Personal Identification Number (PINFL) of the client.
+phones	Array(max:25, 9 digits)	An array of phone numbers (formatted as strings) to be deleted. Each phone number should have a minimum length of 9 characters.
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "client.phone.delete",
+   "params": {
+       "pinfl":"65432198765432",
+       "phones":[
+           "777777777",
+           "911234567",
+           "941234567"
+       ]
+   }
+}	
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "deleted": [
+           "777777777",
+           "911234567",
+           "941234567"
+       ],
+       "not_found": []
+   },
+   "error": null
+}	
+Example of a not found response raw (json):
+{
+   "status": true,
+   "result": {
+       "deleted": [],
+       "not_found": [
+           "901234561",
+           "901234567"
+       ]
+   },
+   "error": null
+}	
+Example of an error response raw (json):
+{
+   "status": false,
+   "error": {
+       "message": "Error message!"
+   },
+   "result": null
+}	
+4.4 Client Update
+Purpose:This method allows partners to update the client’s personal information, including their passport, first name, last name, and middle name, based on the client's unique PINFL.
+
+Request Parameters
+pinfl	Number(14 digits), (R)	The 14-digit PINFL of the client whose data is to be updated
+passport	String(size:9), (R)	The client’s passport number, consisting of exactly 9 characters
+first_name	String(max:100), (R)	The client’s first name. It must be a string and can contain up to 100 characters
+last_name	String(max:100), (R)	The client’s last name. It must be a string and can contain up to 100 characters
+middle_name	String(max:100), (R)	The client’s middle name. It must be a string and can contain up to 100 characters
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+  "method": "client.update",
+  "params": {
+       "pinfl":"12345678912345",
+       "passport":"AC1234563",
+       "first_name":"Ali",
+       "last_name":"Valiyev",
+       "middle_name":"XXX"
+  }
+}	
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "pinfl": "12345678912345",
+       "passport": "AC1234563",
+       "first_name": "ALI",
+       "last_name": "VALIYEV",
+       "middle_name": "XXX"
+   },
+   "error": null
+}	
+Example of an error response raw (json):
+{
+   "status": false,
+   "error": {
+       "message": "Error message!"
+   },
+   "result": null
+}	
+4.5 Clients Get
+Purpose:This method allows partners to update the client’s personal information, including their passport, first name, last name, and middle name, based on the client's unique PINFL.
+
+Request Parameters
+page_size	Number, (R)	The number of records to display per page. Maximum allowed value is 500
+page_number	Number, (R)	The current page number for pagination. Must be at least 1
+search	Array (optional)	An optional set of search attributes for filtering clients
+attributes: pinfl, passport, first_name, last_name, middle_name
+
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "client.get",
+   "params": {
+        "page_size": 10,
+        "page_number": 1,
+        "search": {
+           "first_name":"Aliyev"
+            // other attributes
+       }
+   }
+}	
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "page_size": 10,
+       "page_number": 1,
+       "total": 1,
+       "last_page": 1,
+       "current_page": 1,
+       "data": [
+           {
+               "id": 423,
+               "partner_id": 2,
+               "pinfl": "12345678912345",
+               "passport": "AC1234563",
+               "first_name": "ALI",
+               "last_name": "VALIYEV",
+               "middle_name": "XXX",
+               "created_by": 0,
+               "created_at": "2024-12-19T08:55:54.000000Z",
+               "updated_at": "2024-12-19T09:34:05.000000Z"
+           }
+       ]
+   },
+   "error": null
+}
+	
+
+5. Contracts
+5.1 Contracts Create
+Purpose: Creates new contracts for clients. Validates the input, checks for existing clients and contracts, and inserts valid contracts into the database.
+Additionally:
+●	If debt > 0 is provided → the contract is created immediately with a product equal to the debt amount, and a daily payment schedule (graphic) is generated automatically.
+●	If debt = 0 but a product object is provided → the contract is created, then a product and graphic are created from the product details.
+●	If no product is provided → only the contract is created.
+Behavior:
+1.	If debt > 0:
+○	Create contract.
+○	Create a product:
+■	name = loan_id
+■	amount = debt
+■	mode = daily
+■	start_date = today
+■	due_date = today
+■	period = 1
+○	Generate a daily payment graphic automatically.
+○	Any provided product object is ignored.
+2.	If debt = 0 + product provided:
+○	Create contract (bulk insert).
+○	Then create product:
+■	If initial_amount > 0 → creates a successful transaction (amount stored in minor units, i.e., cents).
+■	If percentage > 0 → product amount increased by percentage.
+○	Generate a graphic with provided mode (monthly, daily, etc.).
+3.	If no product provided:
+○	Only the contract is created.
+
+Request Parameters
+contracts	Array(max:250), (R)	An array containing the details of contracts to be created
+pinfl	Number(14 digits), (R)	The 14-digit PINFL of the client whose data is to be updated
+merchant_id	Integer, (R)	Partners choose their own merchants
+loan_id	String(max::150)	Loan ID (unique)
+debt	Integer, (R)	Total debt amount
+ext	String(optional, max:255)	Ext id information, max 255 characters
+account	String(optional, max:255)	Account information, max 255 characters
+info	String(optional, max:255)	Additional details, max 255 characters
+auto	Boolean(optional), 	Turn off and on transaction auto
+
+
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+ "method": "contract.create",
+ "params": {
+   "contracts": [
+     {
+       "merchant_id": 1,
+       "pinfl": "65432198765432",
+       "loan_id": "42141312313242341",
+       "debt": 2000,
+       "ext": "autofy_1ad121",
+       "account": "test",
+       "info": "test"
+     },
+     {
+       "merchant_id": 1,
+       "pinfl": "12345678912345",
+       "loan_id": "143214142121421",
+       "ext": "ext-002",
+       "account": "acc-002",
+       "info": "client 2",
+       "auto": false,
+       "product": {
+         "name": "Smartphone",
+         "initial_amount": 500000,
+         "percentage": 12,
+         "amount": 3000000,
+         "start_date": "2025-09-01",
+         "due_date": "2026-09-01",
+         "period": 12,
+         "mode": "monthly",
+         "comment": "Installment plan"
+       }
+     }
+   ]
+ }
+}	
+
+
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "created": [
+              ”42141312313242341”,
+              “143214142121421"
+           }
+       ],
+       "exists": [],
+       "not_found_clients": []
+   },
+   "error": null
+}	
+Example of a response for existing data, not found, duplicated_loan client data raw (json):
+{
+   "status": true,
+   "result": {
+       "created": [
+           "143214142121421"
+       ],
+       "existing_loans": [
+           "421413123132341"
+       ],
+       "not_found_clients": [],
+       "duplicated_loans": []
+   },
+   "error": null
+}
+	
+Example of an error response raw (json):
+{
+   "status": false,
+   "error": {
+       "message": "Error message!"
+   },
+   "result": null
+}	
+5.2 Contract Update
+Purpose: Updates an existing contract. Depending on the payload, the endpoint supports:
+●	Product-only update (when data.product is provided): updates only product’s name, start_date, comment. Does not touch contract sums, transactions, or the payment graphic.
+●	Debt update (when data.debt is provided and data.product is not provided): resets contract debt and product/graphic accordingly.
+●	Basic contract fields update (when neither data.product nor data.debt is provided): updates only ext, account, info, auto and clears transactions.
+Behavior
+1) Product-only update (when data.product is present)
+●	Updates only the first product of the contract:
+ name, start_date, comment.
+●	Does not modify the contract sums, transactions, or graphic.
+●	If no product exists → error: "Товар для этого контракта не найден!"
+2) Debt update (when data.debt is present and data.product is not provided)
+●	Updates contract:
+○	current_debt = debt * 100
+○	total_debt = debt * 100
+○	paid_amount = 0
+○	Also applies optional ext, account, info, auto
+●	Clears all contract transactions.
+●	Graphic:
+○	If at least one graphic exists → keeps the first, deletes all others for that product.
+○	If no graphic exists → error: "Графика для этого контракта не найдена!"
+
+
+
+Request Parameters
+loan_id	String(max:100), (R)	Loan ID, max 100 characters.
+data	Object	The data includes the fields that need to be updated
+debt	Integer(optional)	Total debt amount
+auto	Boolean(optional), 	Turn off and on transaction auto
+ext	String(optional, max:255)	Ext id information, max 255 characters
+account	String(optional, max:255)	Account information, max 255 characters
+info	String(optional, max:255)	Additional details, max 255 characters
+
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "contract.update",
+   "params": {
+       "loan_id":"loan-1",
+       "data":{
+           "debt":0,
+           "ext":"ext-test",
+           "auto":false,
+           "account":"4567",
+           "info":"info213"
+       }
+   }
+}	
+
+
+
+
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "contract": {
+           "merchant_id": 1,
+           "pinfl": "3217391237903",
+           "loan_id": "loan-1",
+           "total_debt": 0,
+           "current_debt": 0,
+           "paid_amount": 0,
+           "ext": "LN-d9as687das789d",
+           "auto": false,
+           "created_by": 0,
+           "account": "4567",
+           "info": "info213"
+       },
+       "product": {
+           "name": "LN-debt1",
+           "amount": 0,
+           "mode": "daily",
+           "start_date": "2025-08-21",
+           "due_date": "2025-08-21",
+           "period": 0
+       }
+   },
+   "error": null
+}	
+5.3 Contracts Get
+Purpose: Fetches a paginated list of contracts based on search parameters.
+Request Parameters
+page_size	Number, (R)	The number of records to display per page. Maximum allowed value is 500
+page_number	Number, (R)	The current page number for pagination. Must be at least 1
+search	Array (optional)	An optional set of search attributes for filtering contracts.
+attributes: pinfl, loan_id, total_debit,current_debit, paid_amount, ext, auto.
+
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+  "method": "contract.get",
+  "params":{
+      "page_number": 1,
+      "page_size":10,
+      "search":{
+          "pinfl":"12345678912345"
+           //other attributes
+      }
+   }
+}	
+
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "page_size": 10,
+       "page_number": 1,
+       "total": 1,
+       "last_page": 1,
+       "current_page": 1,
+       "data": [
+           {
+               "id": 472,
+               "partner_id": 2,
+               "merchant_id": 1,
+               "pinfl": "12345678912345",
+               "loan_id": "143214142121421",
+               "total_debt": 200000,
+               "current_debt": 200000,
+               "paid_amount": 0,
+               "auto": true,
+               "processing_uzcard": null,
+               "checked_uzcard": "2024-11-19 10:23:37",
+               "processing_humo": null,
+               "checked_humo": "2024-11-19 10:23:37",
+               "ext": "autofy_1ad121",
+               "account": "test",
+               "info": "test",
+               "created_by": null,
+               "created_at": "2024-12-19T10:23:37.000000Z",
+               "updated_at": "2024-12-19T10:24:44.000000Z"
+           }
+       ]
+   },
+   "error": null
+}
+	
+Example of a not found response raw (json):
+{
+   "status": true,
+   "result": {
+       "page_size": 10,
+       "page_number": 1,
+       "total": 0,
+       "last_page": 1,
+       "current_page": 1,
+       "data": []
+   },
+   "error": null
+}	
+
+
+5.4 Contract Delete
+Purpose: Deletes an existing contract.
+Request Parameters
+pinfl	Number(14 digits), (R)	The 14-digit PINFL of the client whose data is to be updated
+loan_id	String(max:100)	Contract`s loan_id
+
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "contract.delete",
+   "params": {
+       "pinfl": "12345678912345",
+       "loan_id": "143214142121421"
+
+   }
+}	
+
+
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "message": "Contract deleted successfully.",
+       "loan_id": "143214142121421",
+       "pinfl": "12345678912345"
+   },
+   "error": null
+}	
+
+Example of an error response raw (json):
+{
+   "status": false,
+   "error": {
+       "message": "Error message!"
+   },
+   "result": null
+}	
+5.5 Contract Auto Toggle
+Purpose: Toggle contracts auto with list of loan_ids. This method do not return error if loan_id not found in database, we just run update query with given data by you 
+Request Parameters
+auto	Boolean	Status of auto which that you want to set
+loan_ids	Array | Max:250	List of loan_ids to update auto
+updated	Integer	Number of updated rows with your request
+
+
+
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "contract.auto.toggle",
+   "params": {
+       "auto":false,
+       "loan_ids":[
+           "loan-0",
+           "loan-1",
+           "loan-2"
+       ]
+   }
+}	
+
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "updated": 2,
+       "auto": false
+   },
+   "error": null
+}	
+
+Example of an error response raw (json):
+{
+   "status": false,
+   "error": {
+       "message": "The loan ids field is required."
+   },
+   "result": null
+}	
+
+
+5.5 Contract Find
+Purpose: To get a unique contract by its loan_id. If a contract exists, your loan_id method returns an object of contract.
+Request Parameters
+loan_id	String | Max:150	Contract`s loan_id attribute
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "contract.find",
+   "params": {
+       "loan_id":"12312"
+   }
+}	
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "merchant_id": 4,
+       "pinfl": "30101560160050",
+       "loan_id": "12312",
+       "total_debt": 10000,
+       "current_debt": 10000,
+       "paid_amount": 0,
+       "ext": "123123",
+       "auto": true,
+       "created_by": 14,
+       "account": null,
+       "info": null
+   },
+   "error": null
+}	
+
+
+Example of an error response raw (json):
+{
+   "status": false,
+   "error": {
+       "message": "Contract not found!"
+   },
+   "result": null
+}	
+
+
+
+
+6. Transactions
+6.1 Transactions Get
+Purpose: The transaction.get method is used to retrieve a paginated list of transactions based on the provided parameters. It supports filtering via a search query, pagination, and ensures the data retrieved is associated with the specified partner.
+
+Request Parameters
+page_size	Number(max:500), (R)	The number of records to display per page. Maximum allowed value is 500
+page_number	Number, (R)	The current page number for pagination. Must be at least 1
+search	Array (optional)	An optional set of search attributes for filtering transactions.
+attributes: pinfl, merchant_id, loan_id, ext, rrn, amount, status, date, terminal, merchant.
+merchant_id	Integer	Id of Merchant (filial) which created by you
+pinfl	Digits (length: 14)	PINFL of client
+loan_id	String	loan_id of Contract
+ext	String, max: 150	This ext_id belongs to the transaction, and it is unique for each transaction. Other operations like cancel, change sync status will be done by this attribute
+rrn	String, max:100	Referral number of transaction, it is also unique
+card	Object	This card object contains available data about card 
+pan	String	Mask of card number
+owner	String	Full name of card holder
+phone	String	The phone number that is connected to the SMS notification on this card
+token	String	This is token of card, available for sv transactions only
+status	String [success, cancelled]	Status of transaction
+date	Date [Y-m-d]	Transaction provided date
+amount	BigInt (tiyin)	Amount of transaction
+terminal	String	Terminal (terminal_id) of transaction
+merchant	String	Merchant (merchant_id) of transaction
+is_synced	Boolean	Indicates whether the transaction has been successfully synchronized with the partner's system.
+●	true: The partner has retrieved the transaction, processed it in their system, and confirmed synchronization with our system by sending a request.
+●	false: The transaction has not yet been retrieved or processed by the partner.
+Partners are expected to send a request to mark transactions as synced after saving them to their own system and completing the necessary processing.
+This is optional processing for partners.
+push_id	Integer	Id if push request to partner system after successful transaction
+
+
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+  "method": "transaction.get",
+  "params":{
+      "page_number": 1,
+      "page_size":10,
+      "search":{
+          "pinfl":"65432198765432"
+           //other attributes
+      }
+   }
+}	
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "page_size": 2,
+       "page_number": 1,
+       "total": 12,
+       "last_page": 6,
+       "current_page": 1,
+       "data": [
+           {
+               "merchant_id": 4,
+               "pinfl": "32403964310034",
+               "loan_id": "32403964310034",
+               "ext": "0d98ae44-6235-4f95-8167-071ef3788020",
+               "rrn": "023085879912",
+               "card": {
+                   "pan": "860057******3599",
+                   "owner": "GOFUROV SHAHZODBEK",
+                   "phone": "",
+                   "token": "534A68AEECCC483040AC0336BCCD8DC6"
+               },
+               "status": "cancelled",
+               "date": "2024-12-14",
+               "amount": 1000,
+               "terminal": "92450306",
+               "merchant": "904815948",
+               "is_synced": false,
+               "push_id": null,
+               "created_at": "2024-12-14T12:38:31.000000Z",
+               "updated_at": "2024-12-17T09:01:17.000000Z"
+           },
+           {
+               "merchant_id": 4,
+               "pinfl": "32403964310034",
+               "loan_id": "32403964310034",
+               "ext": "6014a05f-fd13-433b-90f5-a7baf868ec68",
+               "rrn": "023085990667",
+               "card": {
+                   "pan": "860057******3599",
+                   "owner": "GOFUROV SHAHZODBEK",
+                   "phone": "",
+                   "token": "534A68AEECCC483040AC0336BCCD8DC6"
+               },
+               "status": "cancelled",
+               "date": "2024-12-14",
+               "amount": 1000,
+               "terminal": "92450306",
+               "merchant": "904815948",
+               "is_synced": false,
+               "push_id": null,
+               "created_at": "2024-12-14T12:47:19.000000Z",
+               "updated_at": "2024-12-17T09:01:14.000000Z"
+           }
+       ]
+   },
+   "error": null
+}	
+
+
+6.2 Transactions mark as synchronized
+Purpose: Marks a transaction as synchronized with the partner's system.
+Description:
+This method is used by partners to confirm that a specific transaction has been processed, and saved in their own system. Once this method is called, the transaction's is_synced attribute will be updated to indicate successful synchronization.
+In this method no error response for not found ext list, we try to update all transactions which are included in the transactions list, and return the number of updates.
+Parameters
+is_synced	Boolean	Synchronized status of transactions list. true or false
+transactions	Array, Max: 100	Array of transaction ext values
+updated	Integer	Number of updates by given query
+message	String	Message of request
+
+Request example
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "transaction.synchronize",
+   "params": {
+      "is_synced":true,
+      "transactions":[
+       "0d9844-6235-4f95-8167-071ef3788020",
+       "60a05f-fd13-433b-90f5-a7baf868ec68"
+      ]
+   }
+}
+
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "updated": 2,
+       "is_synced": true
+   },
+   "error": null
+}	
+
+Example of an error response raw (json):
+{
+   "status": false,
+   "error": {
+       "message": "The transactions field is required."
+   },
+   "result": null
+}	
+
+6.3 Transaction find by ext
+Purpose: Get transaction by it’s ext number.
+Parameters
+ext	String	Transaction`s ext number
+result	Object	Object of transaction
+
+
+
+Request example
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "transaction.find",
+   "params": {
+       "ext":"HUMO1_01JFC5TC946QV20BG40DT7JBVH"
+   }
+}
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "merchant_id": 4,
+       "pinfl": "3222264310034",
+       "loan_id": "31111164310034",
+       "ext": "HUMO1_01J5TC946QV20BG40DT7JBVH",
+       "rrn": "435306615223",
+       "card": {
+           "pan": "986017******7239",
+           "owner": "Aliyev Vali",
+           "phone": "+998977777777"
+       },
+       "status": "success",
+       "processing": "humo",
+       "date": "2024-12-18",
+       "amount": 1000,
+       "terminal": "232279VO",
+       "merchant": "01336000011864K",
+       "is_synced": false,
+       "push_id": null,
+       "created_at": "2024-12-18T06:04:08.000000Z"
+   },
+   "error": null
+}	
+
+Example of an error response raw (json):
+{
+   "status": false,
+   "error": {
+       "message": "The transactions field is required."
+   },
+   "result": null
+}	
+6.3 Transaction cancel
+Purpose: Cancel successful transaction
+Parameters
+ext	String	Transaction`s ext number
+
+Request example
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "transaction.cancel",
+   "params": {
+      "ext":"SV1_01JFVQXXJS605TD1FTVF6SEAJN"
+   }
+}
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "ext": "SV1_01JFVQXXJS605TD1FTVF6SEAJN",
+       "message": "Transaction cancelled successfully!"
+   },
+   "error": null
+}	
+
+Example of an error response raw (json):
+{
+   "status": false,
+   "error": {
+       "message": "Transaction already cancelled!"
+   },
+   "result": null
+}	
+
+6.4 Transaction verification set
+Purpose: This method is used to confirm transactions before they are sent for processing. When a verification host is configured, and verification is enabled by setting the status parameter to true, the system will send prepayment confirmation requests to the specified host.
+Purpose: Set new attributes to webhook configs
+Parameters
+host	String | Url	Webhook endpoint
+token	String | Min:32 | Max:250	Token for authorization 
+status	Boolean	Status of verification, if false we do not send pre payment confirmation requests
+delay	Integer (optional, default 10 seconds), Max: 3600, Min: 0	Delay seconds between prePayment requests among one contract, if you set it 60 seconds we do not send prepayment confirmation while 60 from last request. 
+Example Usage of delay Parameter
+If a contract has a loan_id of X, the system will query your service for the current debt information before proceeding with a payment to this contract. If your service responds successfully, the system will cache the latest successful response for the duration specified by the delay parameter.
+●	Scenario: If the delay is set to 60 seconds and the system identifies a payment to withdraw within this period, it will proceed without sending another confirmation request to your service.
+
+
+Request example
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "transaction.verification.set",
+   "params":{
+       "host":"http://example.com",
+       "token":"ERTYUIOPSDGHNJM$>A213CSADQWESDAD312312",
+       "status":true,
+       "delay":20
+   }
+}
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "host": "http://example.com",
+       "token": "ERTYUIOPSDGHNJM$>A213CSADQWESDAD312312",
+       "status": true,
+       "delay": 20,
+       "message": "Verification configs updated successfully!"
+   },
+   "error": null
+}	
+
+
+6.4.1 Transaction verification scenario
+Scenario: This module describes what responses we will wait for. Before payment we send a request to your service to get actual debt info, your response HTTP code has to be 200 in any case. Only in HTTP 200 and correct response format do we accept the response as successful. Below response structure which we accept
+Example of request which we send to partners endpoint
+{
+   "loan_id": "XYZ-12345"
+}
+
+Example of response from partner
+{
+  "code": 100,
+  "debt": 2000000, // tiyin
+}
+
+
+Response params
+code	Integer *	Response code
+debt	Integer (tiyin) *	Current amount of debt 
+Code list
+100	Successful, available for payment, with code 100 you must return debt also
+101	Contract not found or closed skip and disable auto for this contract
+102	Contract is busy due to another process skip. After this code we well lock your contract maximum for 6 hours and while locking hours we do not check this contract
+
+Notice ***: After 5 times getting error while calling prepayment methods we will disable your auto payment procedures, next we wait by calling your endpoint once in a minute, only after successful response from your service we will activate your auto payment procedures
+Example of errors
+{
+  "code": 101
+}
+
+Notice ***: We do not accept other response formats. If your response format does not match with examples we accept it as a failed response. After 5 times failing we will disable your auto payment procedure as mentioned above
+
+
+6.5 Transaction verification check
+Purpose: Check current status of prepayment verification option status
+Request example
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "transaction.verification.check"
+}
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "host": "http://example.com",
+       "delay": 20,
+       "token": "ERTYUIOPSDGHNJM$>A213CSADQWESDAD312312",
+       "status": true,
+       "updated_at": "2025-01-20T11:47:49.156901Z"
+   },
+   "error": null
+}	
+
+7. Webhook
+7.1 Webhook Definition
+A webhook is an endpoint where we send callbacks for post-payment actions. After a successful transaction, we will send the transaction data to your endpoint URL using the authorization mode Bearer {Token}.
+Activation Process
+Before activating a webhook, you must provide the following:
+1.	Host: The URL of the webhook endpoint.
+2.	Token: The authorization token used for securing the endpoint.
+3.	Status: The activation status of the webhook.
+
+Transaction to Webhook Workflow
+1.	After a Successful Transaction:
+○	We create a job to send the transaction data asynchronously to the partner's webhook endpoint.
+2.	Response Code Handling:
+○	[200, 201, 202]: If the webhook responds with any of these status codes, we mark the transaction data as successfully sent to the partner.
+○	[401, 403, 404]: If the response code is one of these, we stop retrying and do not attempt to resend the request.
+○	[429]: If the response code is 429 (Too Many Requests), we wait for 2 minutes (120 seconds) before attempting to resend the data.
+3.	Retry Logic:
+○	We attempt to send the data a maximum of 3 times.
+○	The first request is sent immediately.
+○	In case of an error, subsequent retries are delayed as follows:
+■	First Retry: Delayed by 25 seconds.
+■	Second Retry: Delayed by 50 seconds.
+4.	Authorization Mode:
+○	All requests to the webhook are sent with the Authorization: Bearer {Token} header to ensure secure communication.
+Example of data which we send to your webhook, this is object of Transaction
+{
+   "merchant_id": 4,
+   "pinfl": "32422964310034",
+   "loan_id": "xy-123",
+   "ext": "0d98ae44-6235-4f95-8167-071ef3788020",
+   "rrn": "023085879912",
+   "card": {
+       "pan": "860057******3599",
+       "owner": "GOFUROV SHAHZODBEK",
+       "phone": ""
+   },
+   "status": "cancelled",
+   "processing": "sv",
+   "date": "2024-12-14",
+   "amount": 1000,
+   "terminal": "92450306",
+   "merchant": "904815948",
+   "is_synced": true,
+   "created_at": "2024-12-14T12:38:31.000000Z"
+}	
+
+
+7.2 Webhook check
+Purpose: Check current status of webhook
+Parameters
+url	String | Url	Webhook endpoint
+token	String | Min:32	Token for authorization 
+
+Request example
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "webhook.check"
+}
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "host": "http://example.com",
+       "token": "ERTYUIOPSDGHNJM$>A213CSADQWESDAD312312",
+       "status": true,
+       "updated_at": "2025-01-20T12:06:05.584472Z"
+   },
+   "error": null
+}	
+
+7.2 Webhook set
+Purpose: Set new attributes to webhook configs
+Parameters
+host	String | Url	Webhook endpoint
+token	String | Min:32	Token for authorization 
+status	Boolean	Status of webhook, if false we do not send webhook post payment
+Request example
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "webhook.set",
+   "params":{
+       "host":"http://example.com",
+       "token":"ERTYUIOPSDGHNJM$>A213CSADQWESDAD312312",
+       "status":true
+   }
+}
+
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "host": "http://example.com",
+       "token": "ERTYUIOPSDGHNJM$>A213CSADQWESDAD312312",
+       "status": true,
+       "message": "Webhook updated successfully!"
+   },
+   "error": null
+}	
+
+
+8. Cards
+8.1 Card Info
+Purpose: Retrieves detailed information about cards associated with a specific PINFL, including both Uzcard and Humo cards.
+Parameters
+pinfl	String(14 digits), (R)	The Personal Identification Number (PINFL) of the client
+Response Structure:
+The response includes separate sections for Uzcard and Humo cards, each containing:
+●	count: Number of cards found
+●	data: Array of card details including:
+○	pinfl: Client's PINFL
+○	uuid: Unique identifier for the card token
+○	auto: Auto payment status
+○	is_verified: Verification status
+○	is_blocked: Block status
+○	block_reason: Reason for blocking (if blocked)
+○	blocked_at: Timestamp of blocking
+○	checked_at: Last check timestamp
+○	owner: Card holder's name
+○	pan: Masked card number
+○	phone: Associated phone number
+
+Request example
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "card.info",
+   "params":{
+       "pinfl":"413109****0086"
+   }
+}
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "uzcard": {
+           "count": 1,
+           "data": [
+               {
+                   "pinfl": "413109***0086",
+                   "uuid": "KB0RWS53CAQDVHFZ9J11T560Y",
+                   "auto": true,
+                   "is_verified": true,
+                   "is_blocked": false,
+                   "block_reason": null,
+                   "blocked_at": null,
+                   "owner": "John Doe",
+                   "pan": "860006******6735",
+                   "phone": ""
+               }
+           ]
+       },
+       "humo": {
+           "count": 1,
+           "data": [
+               {
+                   "pinfl": "413109***0086",
+                   "uuid": "3Y1JYBWQQDY1V0T93WCS6HF1",
+                   "auto": true,
+                   "is_verified": true,
+                   "is_blocked": true,
+                   "block_reason": "Card not found",
+                   "blocked_at": "2025-01-17 08:32:44",
+                   "card_owner": "John Doe",
+                   "card_pan": "986060******8244",
+                   "card_phone": "9989939**000"
+               }
+           ]
+       }
+   },
+   "error": null
+}	
+8.2 Cards count by PINFL
+Purpose: Returns the count of Uzcard and Humo cards associated with multiple PINFLs.
+Parameters
+pinfl.*	Array(max:250), (R)	Array of PINFLs to check
+pinfl	String(14 digits), (R)	The Personal Identification Number (PINFL) of the client
+Request example
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "card.count",
+   "params":{
+       "pinfl":[
+           "41310***270086",
+           "42903***310064"
+       ]
+   }
+}
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "41310***270086": {
+           "uzcard": 1,
+           "humo": 2
+       },
+       "42903***310064": {
+           "uzcard": 0,
+           "humo": 11
+       }
+   },
+   "error": null
+}	
+
+8.3 Card Sync Local
+Purpose: Synchronizes card information for specific PINFLs by creating card tokens for any cards that don't already have them. This method performs local synchronization of card data and verifies card ownership.
+Parameters
+pinfl.*	Array(max:250), (R)	Array of PINFLs to check
+pinfl	String(14 digits), (R)	The Personal Identification Number (PINFL) of the client
+Request example
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "card.sync.local",
+   "params": {
+       "pinfl": [
+           "42903*****064"
+       ]
+   }
+}
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "message": "Sync started for 1 contracts"
+   },
+   "error": null
+}	
+
+9. Processing (Paid methods) 
+9.1 Search Uzcard cards
+Purpose: This method enables searching and retrieving Uzcard card information through the processing system. Please note that this is a billable service - each PINFL search (whether through API or Dashboard) will be included in the monthly usage charges.
+Parameters
+pinfl	Array, Max (30)	List of pinfls
+pinfl.*	String(14 digits), (R)	The Personal Identification Number (PINFL) of the client
+cards_count	Integer	Number of found cards 
+cards	Array	Array of cards
+pan	String, Max : 30	Mask of card
+owner	String, Max: 250	Full name of card owner
+phone	String, Max:50	Number of phone which connected to this card
+Request example
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "processing.uzcard.search",
+   "params":{
+       "pinfl":[
+           "32********0034",
+           "52********0016"
+       ]
+   }
+}
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "3********0034": {
+           "cards_count": 3,
+           "cards": [
+               {
+                   "pan": "561468******8345",
+                   "owner": "John Doe",
+                   "phone": "99897366**33"
+               },
+               {
+                   "pan": "860057******3599",
+                   "owner": "John Doe",
+                   "phone": "99893555**44"
+               },
+               {
+                   "pan": "860048******1159",
+                   "owner": "John Doe",
+                   "phone": "93555114**44"
+               }
+           ]
+       },
+       "524******6": {
+           "cards_count": 1,
+           "cards": [
+               {
+                   "pan": "860014******0055",
+                   "owner": "Aliyev vali",
+                   "phone": "99899823**66"
+               }
+           ]
+       }
+   },
+   "error": null
+}	
+
+
+Notice ***: If there are any failed requests, the response will include successfully processed data (ok) along with a fails_key for the failed ones.
+Failed card requests identified through the method are automatically requeued and retried by the system in the background.
+You can use the processing.check method to recheck these failed records using the provided key.
+
+Example 2 of a response( With failures key) raw (json):
+{
+   "status": true,
+   "result": {
+       "ok": [
+           {
+               "3********0034": {
+                   "cards_count": 3,
+                   "cards": [
+                       {
+                           "pan": "561468******8345",
+                           "owner": "John Doe",
+                           "phone": "99897366**33"
+                       },
+                       {
+                           "pan": "860057******3599",
+                           "owner": "John Doe",
+                           "phone": "99893555**44"
+                       },
+                       {
+                           "pan": "860048******1159",
+                           "owner": "John Doe",
+                           "phone": "93555114**44"
+                       }
+                   ]
+               },
+               "524******6": {
+                   "cards_count": 1,
+                   "cards": [
+                       {
+                           "pan": "860014******0055",
+                           "owner": "Aliyev vali",
+                           "phone": "99899823**66"
+                       }
+                   ]
+               }
+           }
+       ],
+       "fails_key": "WzEwMSwxMDIsMTAzXQ=="
+   },
+   "error": null
+}	
+
+
+9.2 Search Humo cards
+Purpose: This method enables searching and retrieving Humo card information through the processing system. Please note that this is a billable service - each PINFL search (whether through API or Dashboard) will be included in the monthly usage charges.
+Parameters
+pinfl	Array, Max (30)	List of pinfls
+pinfl.*	String(14 digits), (R)	The Personal Identification Number (PINFL) of the client
+cards_count	Integer	Number of found cards 
+cards	Array	Array of cards
+pan	String, Max : 30	Mask of card
+owner	String, Max: 250	Full name of card owner
+phone	String, Max:50	Number of phone which connected to this card
+Request example
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "processing.uzcard.search",
+   "params":{
+       "pinfl":[
+           "32********0034",
+           "52********0016"
+       ]
+   }
+}
+
+
+
+
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "324******34": {
+           "cards_count": 2,
+           "cards": [
+               {
+                   "pan": "986023******1516",
+                   "owner": "John Doe",
+                   "phone": null
+               },
+               {
+                   "pan": "986023******2790",
+                   "owner": "John Doe",
+                   "phone": null
+               }
+           ]
+       },
+       "5240*****16": {
+           "cards_count": 2,
+           "cards": [
+               {
+                   "pan": "986012******6286",
+                   "owner": "DONIYOR KAMILOV",
+                   "phone": null
+               },
+               {
+                   "pan": "986018******2010",
+                   "owner": "DONIYOR KAMILOV",
+                   "phone": null
+               }
+           ]
+       }
+   },
+   "error": null
+}	
+
+Notice ***: If there are any failed requests, the response will include successfully processed data (ok) along with a fails_key for the failed ones.
+Failed card requests identified through the method are automatically requeued and retried by the system in the background.
+You can use the processing.check method to recheck these failed records using the provided key.
+
+Example 2 of a response( With failures key) raw (json):
+{
+   "status": true,
+   "result": {
+       "ok": [
+           {
+               "324******34": {
+                   "cards_count": 2,
+                   "cards": [
+                       {
+                           "pan": "986023******1516",
+                           "owner": "John Doe",
+                           "phone": null
+                       },
+                       {
+                           "pan": "986023******2790",
+                           "owner": "John Doe",
+                           "phone": null
+                       }
+                   ]
+               },
+               "5240*****16": {
+                   "cards_count": 2,
+                   "cards": [
+                       {
+                           "pan": "986012******6286",
+                           "owner": "DONIYOR KAMILOV",
+                           "phone": null
+                       },
+                       {
+                           "pan": "986018******2010",
+                           "owner": "DONIYOR KAMILOV",
+                           "phone": null
+                       }
+                   ]
+               }
+           }
+       ],
+       "fails_key": "WzEwMSwxMDIsMTAzXQ=="
+   },
+   "error": null
+}	
+
+
+9.3 Failed Cards Recheck by Key
+Purpose: The processing.check method is designed to retrieve the status and card information related to a batch of requests identified by a provided key.It enables partners to view the successful and failed details for each client (PINFL), consolidating multiple card responses under a single result set.
+Request Parameters
+key	String, (R)	Is a verification key used for internal checking
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "processing.check",
+   "params":{
+       "key":"WzEwMSwxMDIsMTAzXQ=="
+   }
+}	
+Example of a successful response raw (json):
+
+   "status": true,
+   "result": {
+       "324******34": {
+           "status": "success",
+           "cards": [
+               {
+                   "pan": "561468******8345",
+                   "owner": "John Doe",
+                   "phone": "99897366**33"
+               },
+               {
+                   "pan": "986023******2790",
+                   "owner": "John Doe",
+                   "phone": null
+               }
+           ],
+           "cards_count": 2
+       },
+       "5240*****16": {
+           "status": "success",
+           "cards": [],
+           "cards_count": 0,
+           "failed_response": null
+       }
+   },
+   "error": null	
+9.4 Card search History
+Purpose: This method returns list of request to processing for search cards with PINFL
+Request Parameters
+page_size	Number, (R)	The number of records to display per page. Maximum allowed value is 500
+page_number	Number, (R)	The current page number for pagination. Must be at least 1
+search	Array (optional)	An optional set of search attributes for filtering data.
+Attributes: date_from, date_to, pinfls, status
+date_from	Date [YYYY-mm-dd]	Date
+date_to	Date [YYYY-mm-dd]	Date
+pinfls	Array, Max:250	Array of PINFLs to searching
+status	String, [created, processing, success]	Status of request, this requests sending in a queue. 
+Success => Request successfully sent to processing
+Created => Job was created but not send to processing
+Processing => In a queue
+Body raw (json):
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "processing.get.history",
+   "params": {
+       "page_size": 150,
+       "page_number": 0,
+       "search": {
+           "date_from": "2024-12-01",
+           "date_to": "2025-01-20",
+           "pinfls": [
+               "324039****0034",
+               "528060*****105",
+               "528060*****103",
+               "307069******30",
+               "307069*****030"
+           ]
+       }
+   }
+}	
+
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "page_size": 150,
+       "page_number": 0,
+       "total": 5,
+       "last_page": 1,
+       "current_page": 1,
+       "data": [
+           {
+               "pinfl": "324*****0034",
+               "type": "uzcard",
+               "owner": "John Doe",
+               "status": "success",
+               "processed_at": "2024-12-17 17:36:11",
+               "cards_count": 5,
+               "created_by": 3,
+               "comment": null,
+               "created_at": "2024-12-17T12:35:09.000000Z"
+           },
+           {
+               "pinfl": "324****310034",
+               "type": "humo",
+               "owner": "John Doe",
+               "status": "success",
+               "processed_at": "2024-12-17 17:36:11",
+               "cards_count": 5,
+               "created_by": 3,
+               "comment": null,
+               "created_at": "2024-12-17T12:35:52.000000Z"
+           },
+           {
+               "pinfl": "324****4310034",
+               "type": "humo",
+               "owner": "John Doe",
+               "status": "success",
+               "processed_at": "2025-01-15 15:37:03",
+               "cards_count": 4,
+               "created_by": 3,
+               "comment": null,
+               "created_at": "2025-01-15T10:36:56.000000Z"
+           },
+           {
+               "pinfl": "3240****10034",
+               "type": "uzcard",
+               "owner": "John Doe",
+               "status": "success",
+               "processed_at": "2025-01-17 17:42:12",
+               "cards_count": 5,
+               "created_by": 0,
+               "comment": null,
+               "created_at": "2025-01-17T12:42:12.000000Z"
+           },
+       ]
+   },
+   "error": null
+}
+
+	
+
+
+10. Monitoring (Paid methods)
+10.1 Card Registration
+Purpose: Register a new card and send OTP to the cardholder's phone number.
+Parameters
+card_number	String, (digits 16), (R)	Full 16-digit card number
+expire	String, (digits 4), (R)	Expiration date in format YYMM (e.g. "2405").
+type	String, (R), ( one of humo,uzcard)	Card network: humo or uzcard.
+phone	String (digits 12), (R, if type == "humo")	Phone number to which OTP will be sent (only for Humo cards).
+Request example
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+ "method": "card.register",
+ "params": {
+   "card_number": "8600123412341234",
+   "expire": "2910",
+   "type": "humo", // or "uzcard"
+   "phone": "+998901234567" // required only if type is "humo"
+ }
+}
+Example of a successful response raw (json):
+ {
+   "status": true,
+   "result": {
+       "ext": "bad25b6e-6245-4667-b377-1b121e36821f",
+       "phone_mask": "********5678",
+       "type": "humo",
+       "expires_at": 1723578402,
+       "expires_in": 120,
+       "expires_at_utc": "2025-08-13T12:00:02Z"
+   },
+   "error": null
+}	
+Example of an error response raw (json):
+{
+ "status": false,
+ "error": {
+   "message": "Ошибка: 8600123412341234 уже подтвержден!"
+ },
+ "result": null
+}
+
+—-----------
+{
+ "status": false,
+ "error": {
+   "message": "OTP уже был отправлен. Подождите истечение времени."
+ },
+ "result": null
+}
+
+—---------uzcard
+{
+ "status": false,
+ "error": {
+   "message": "Карта временно заблокирована из-за 3-х неправильных сроков действия. Повторите через 4 часа."
+ },
+ "result": null
+}
+—----------humo
+{
+ "status": false,
+ "error": {
+   "message": "Карта временно заблокирована из-за 3-х неправильных сроков действия. Повторите через 24 часа."
+ },
+ "result": null
+}
+—-----internal error
+{
+ "status": false,
+ "error": {
+   "message": "Ошибка сервиса"
+ },
+ "result": null
+}	
+Notice ***:OTP is valid for 2 minutes (expires_in: 120).
+If 3 wrong expiration dates are submitted:
+●	Uzcard: card is blocked for 4 hours
+
+●	Humo: card is blocked for 24 hours
+ (for example: entering wrong card number or phone number that doesn’t match the card — both count as invalid attempts)
+OTP cannot be re-sent until the timeout expires.
+Only one token can be active per card — confirmed cards cannot be re-registered.
+
+10.1.2 Card Verify
+Purpose:Validate the OTP received via SMS and bind the card by receiving a token.
+Parameters
+ext	String (max 50), (R)	The external ID returned by card.register
+otp_code	Numeric, (digits 4), (R)	OTP code received via SMS
+type	String, (R), ( one of humo,uzcard)	Card network: humo or uzcard.
+Request example
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method":"card.verify",
+   "params":{
+       "ext": "bad25b6e-6245-4667-b377-1b121e36821f",
+       "otp_code": 291013,
+       "type":"humo"
+   }
+}
+Example of a successful response raw (json):
+{
+   "status": true,
+   "result": {
+       "message": "Код подтвержден успешно!"
+   },
+   "error": null
+}	
+Example of an error response raw (json):
+
+{
+ "status": false,
+ "error": {
+   "message": "Время для ввода OTP истекло. Запросите заново."
+ },
+ "result": null
+}
+—------------
+{
+ "status": false,
+ "error": {
+   "message": "Неверный OTP код!"
+ },
+ "result": null
+}
+
+—--------------
+{
+ "status": false,
+ "error": {
+   "message": "OTP код истек!"
+ },
+ "result": null
+}
+
+—----------
+{
+ "status": false,
+ "error": {
+   "message": "OTP не найден"
+ },
+ "result": null
+}
+—-----
+{
+ "status": false,
+ "error": {
+   "message": "Ошибка при обращении к humo: Internal error" //
+ },
+ "result": null
+}	
+10.2 Monitoring Humo
+Purpose:Retrieve Humo card transaction history for a given date range.
+Parameters
+card_number	Numeric (digits 16), (R)	Full 16-digit Humo card number
+date_from	String (YYYY-MM-DD), (R)	Start date for transaction history (inclusive)
+date_to	String,(YYYY-MM-DD),(Optional)	End date for transaction history (inclusive). Defaults to today’s date if omitted
+Request example
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method":"monitoring.humo",
+   "params":{
+       "card_number":978004617905689,
+       "date_from":"2025-02-10",
+       "date_to":"2025-04-15"
+   }
+}
+Example of a successful response raw (json):
+{
+ "status": true,
+ "result": {
+   "rows": [
+     {
+       "CARD_ACCT": "0400539000123456",
+       "ACCOUNT_NO": "5278431",
+       "CL_ACCT_KEY": "5278431",
+       "CLIENT": "00270134",
+       "CARD": "9860109876543210",
+       "EXP_DATE": "2025-12-01T00:00:00",
+       "TRAN_TYPE": "201",
+       "TRAN_CCY": "UZS",
+       "TRAN_AMT": "125000",
+       "CCY_EXP": "2",
+       "TRAN_DATE_TIME": "2025-05-05T14:22:10",
+       "REC_DATE": "2025-05-06T00:00:00",
+       "POST_DATE": "2025-05-06T00:00:00",
+       "ACCNT_CCY": "UZS",
+       "AMOUNT_NET": "125000",
+       "ACQREF_NR": "70000365042055545900001",
+       "APR_CODE": "262619",
+       "APR_SCR": "4",
+       "STAN": "619300",
+       "TERM_ID": "36670003",
+       "MERCHANT": "0119000001200YA",
+       "POINT_CODE": "600440V00111",
+       "MCC_CODE": "5411",
+       "ABVR_NAME": "Humo Grocery",
+       "CITY": "Tashkent",
+       "COUNTRY": "UZB",
+       "DEAL_DESC": "Grocery Purchase",
+       "COUNTERPARTY": "Market LLC",
+       "INTERNAL_NO": "5960141021",
+       "FLD_104": "",
+       "BANK_C": "04",
+       "GROUPC": "01",
+       "CTIME": "2025-05-06T09:15:30",
+       "TR_CODE": "",
+       "TR_FEE": "",
+       "TR_CODE2": "",
+       "TR_FEE2": "",
+       "LOCKING_FLAG": "",
+       "ADD_INFO": "",
+       "REF_NUMBER": "504117619300"
+     },
+     {
+       "CARD_ACCT": "0400539000654321",
+       "ACCOUNT_NO": "5278432",
+       "CL_ACCT_KEY": "5278432",
+       "CLIENT": "00270135",
+       "CARD": "9860112345678901",
+       "EXP_DATE": "2025-11-01T00:00:00",
+       "TRAN_TYPE": "205",
+       "TRAN_CCY": "UZS",
+       "TRAN_AMT": "340000",
+       "CCY_EXP": "2",
+       "TRAN_DATE_TIME": "2025-05-04T11:05:50",
+       "REC_DATE": "2025-05-05T00:00:00",
+       "POST_DATE": "2025-05-05T00:00:00",
+       "ACCNT_CCY": "UZS",
+       "AMOUNT_NET": "340000",
+       "ACQREF_NR": "70000365042055545900002",
+       "APR_CODE": "262620",
+       "APR_SCR": "3",
+       "STAN": "619301",
+       "TERM_ID": "36670004",
+       "MERCHANT": "0119000001210YA",
+       "POINT_CODE": "600440V00112",
+       "MCC_CODE": "6011",
+       "ABVR_NAME": "Humo ATM Withdrawal",
+       "CITY": "Samarkand",
+       "COUNTRY": "UZB",
+       "DEAL_DESC": "Cash Withdrawal",
+       "COUNTERPARTY": "",
+       "INTERNAL_NO": "5960141022",
+       "FLD_104": "",
+       "BANK_C": "04",
+       "GROUPC": "01",
+       "CTIME": "2025-05-05T08:30:00",
+       "TR_CODE": "",
+       "TR_FEE": "",
+       "TR_CODE2": "",
+       "TR_FEE2": "",
+       "LOCKING_FLAG": "",
+       "ADD_INFO": "",
+       "REF_NUMBER": "504117619301"
+     }   
+   ]
+ },
+ "error": null
+}	
+Example of an error response raw (json):
+{
+ "status": false,
+ "error": {
+   "message": "Клиент не имеет доступа к этому методу. Необходимо получить доступ через OTP."
+ }
+}
+—--------------------------
+{
+ "status": false,
+ "error": {
+   "message": "Произошла ошибка: <detailed message>"
+ }
+}	
+10.3 Monitoring Uzcard
+Purpose:Retrieve Uzcard card transaction history for a given date range.
+Parameters
+card_number	Numeric, (digits 16), (R)	Full 16-digit Uzcard card number
+date_from	String, (YYYY-MM-DD), (R)	Start date for transaction history (inclusive)
+date_to	String,(YYYY-MM-DD),(Optional)	End date for transaction history (inclusive). Defaults to today’s date if omitted
+page_number	Numeric, (def:0)	An integer starting from 0
+Request example
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method":"monitoring.uzcard",
+   "params":{
+       "card_number":5614123456789012,
+       "date_from":"2025-02-10",
+       "date_to":"2025-04-15"
+       "page_number":0
+   }
+}
+Example of a successful response raw (json):
+ {
+ "status": true,
+ "result": {
+   "total_elements": 2,
+   "number_of_elements": 2,
+   "total_pages": 1,
+   "page_number": 0,
+   "total_debit": 391459400,
+   "total_credit": 275410000,
+   "content": [
+     {
+       "utrnno": 24230493172,
+       "transType": "680",
+       "hpan": "561412******9012",
+       "utime": 130706,
+       "udate": 20250401,
+       "reqamt": 4176000,
+       "resp": -1,
+       "reversal": false,
+       "merchant": "906292",
+       "terminal": "96300282",
+       "merchantName": "PAYME OPLATA",
+       "street": "Mirobod tumani, Afrosiyob ko‘chasi",
+       "city": "TASHKENT",
+       "credit": false,
+       "mcc": 7372,
+       "currency": 860,
+       "actamt": 4176000,
+       "acctbal": 1250000,
+       "conamt": 4176000,
+       "oked": null,
+       "inn": "123456789",
+       "serviceId": ""
+     },
+     {
+       "utrnno": 24229988858,
+       "transType": "785",
+       "hpan": "561412******9012",
+       "utime": 123037,
+       "udate": 20250401,
+       "reqamt": 3800000,
+       "resp": -1,
+       "reversal": false,
+       "merchant": "9006141937",
+       "terminal": "92801126",
+       "merchantName": "TOSHKENT SH., AT XALQ BANKI BO",
+       "street": "Tuzel 3/3-38",
+       "city": "TASHKENT",
+       "credit": true,
+       "mcc": 5999,
+       "currency": 860,
+       "actamt": 3800000,
+       "acctbal": 5050000,
+       "conamt": 3800000,
+       "oked": null,
+       "inn": null,
+       "serviceId": ""
+     }
+   ]
+ },
+ "error": null
+}	
+Example of an error response raw (json):
+{
+ "status": false,
+ "error": {
+   "message": "Клиент не имеет доступа к этому методу. Необходимо получить доступ через OTP."
+ }
+}
+—--------------------------
+{
+ "status": false,
+ "error": {
+   "message": "Произошла ошибка: <detailed message>"
+ }
+}	
+
+
+
+11. Scoring (Paid methods)
+11.1 Scoring By Pinfl
+Purpose: Scoring method for HUMO cards: returns month-by-month totals of credits and debits for all cards linked to a given PINFL.
+Parameters
+pinfl	String(14 digits), (R)	The Personal Identification Number (PINFL) of the client
+date_from	String, (DD-MM-YYYY), (R)	Start date for scoring history
+date_to	String,(DD-MM-YYYY),(R)	End date for scoring history
+Request example
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method":"scoring.humo",
+   "params":{
+       "pinfl":"520090****0028",
+       "date_from":"01-01-2024",
+       "date_to":"01-05-2025"
+   }
+}
+Example of a successful response raw (json):
+   {
+   "status": true,
+   "result": [
+       {
+           "pan": "986004******8232",
+           "data": [
+               {
+                   "Jan": [
+                       {
+                           "type": "110",
+                           "count": "1",
+                           "amount": "517880"
+                       },
+                       {
+                           "type": "205",
+                           "count": "13",
+                           "amount": "1034132.5"
+                       },
+                       {
+                           "type": "206",
+                           "count": "2",
+                           "amount": "305000"
+                       },
+                       {
+                           "type": "207",
+                           "count": "2",
+                           "amount": "400000"
+                       },
+                       {
+                           "type": "208",
+                           "count": "8",
+                           "amount": "856271.26"
+                       }
+                   ],....
+               }
+           ]
+       },
+       {
+           "pan": "986019******6294",
+           "data": []
+       },....
+   ],
+   "error": null
+}
+    	
+Example of an error response raw (json):
+{
+ "status": false,
+ "error": {
+   "message": "Значение поля pinfl должно соответствовать цифрам 14"
+ }
+ "result": null,
+} 	
+Notice ***: Retrieving scoring data requires OTP verification.
+
+12. E-GOV (Paid methods)
+12.1 Services { free }
+Purpose: This method returns a paginated list of e-gov services. Optional search parameters can be used for filtering.
+Parameters
+page_size	Integer, max:500	Number of records per page
+page_number	Integer, min:1	Page number to fetch
+search	Array	Optional filter attributes for searching
+Request example
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method":"egov.services",
+   "params":{
+       "page_number": 1,
+       "page_size": 500,
+       "search": {
+          
+       }
+   }
+}
+Example of a successful response raw (json):
+   {
+   "status": true,
+   "result": {
+       "page_size": 500,
+       "page_number": 1,
+       "total": 13,
+       "last_page": 1,
+       "current_page": 1,
+       "data": [
+           {
+               "name_uz": "Ajrashish haqida ma'lumot",
+               "name_ru": "Информация о разводе",
+               "service_id": "14"
+           },
+           {
+               "name_uz": "Sug'urta haqida ma'lumot",
+               "name_ru": "Информация о страховке",
+               "service_id": "6"
+           },
+           {
+               "name_uz": "Pasport ma'lumotlari",
+               "name_ru": "Паспортные данные",
+               "service_id": "2"
+           },...
+       ]
+   },
+   "error": null
+}
+	
+
+12.2 Store
+Purpose: Creates a new citizen, sends requests to all e-gov services, and stores the responses.
+Parameters
+pinfl	String, unique	14-digit personal identification number
+passport	Integer, min:1	9-character passport number. e.g AA1234567
+Request example
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "egov.store",
+   "params": {
+       "pinfl": "520090****0028",
+       "passport": "AC0****04"
+   }
+}
+
+
+Example of a successful response raw (json):
+  {
+   "status": true,
+   "result": [
+       {
+           "service_id": 1,
+           "data": null
+       },
+    
+       {
+           "service_id": 6,
+           "data": []
+       },
+       {
+           "service_id": 16,
+           "data": []
+       }, ...
+   ],
+   "error": null
+}	
+12.3 Get { free }
+Purpose: Retrieves stored service data for a given citizen based on pinfl, and service_id.
+Parameters
+pinfl	String, unique	14-digit personal identification number
+service_id	Integer	Service ID (must exist in egov.services )
+Request example
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "egov.get",
+   "params": {
+       "pinfl": "520090****0028",
+       "service_id": 7
+   }
+}
+
+
+Example of a successful response raw (json):
+  {
+ "status": true,
+ "result": {
+   "pinfl": "520090****0028",
+   "service_id": 7,
+   "data": {
+     "Region": {
+       "Id": 77,
+       "Value": "НОХАТОБОД ВИЛОЯТИ",
+       "IdValue": "(77) НОХАТОБОД ВИЛОЯТИ"
+     },
+     "Street": {
+       "Id": 99888,
+       "Guid": "999-TEST-001",
+       "Value": "ФЕЙКОВАЯ УЛИЦА"
+     },
+     "Address": "Nohatobod Region, Test District, Mock MFG, ul. Fake Street, dom 404",
+     "Country": {
+       "Id": 999,
+       "Value": "ФЕЙКСТАН",
+       "IdValue": "(999) ФЕЙКСТАН"
+     },
+     "Maxalla": {
+       "Id": 4321,
+       "Guid": "MOCK-MFY-TEST",
+       "Value": "ТЕСТОВАЯ МФЙ"
+     },
+     "Cadastre": "99:99:99:99:99:9999",
+     "District": {
+       "Id": 7711,
+       "Value": "ТЕСТОВСКИЙ ТУМАН",
+       "IdValue": "(7711) ТЕСТОВСКИЙ ТУМАН"
+     },
+     "RegistrationDate": "2099-12-31T23:59:59"
+   }
+ },
+ "error": null
+}	
+
+
+12.4 Update
+Purpose: Updates an existing citizen's service data by making new requests to all e-gov services.
+Parameters
+pinfl	String, unique	14-digit personal identification number
+passport	Integer, min:1	9-character passport number. e.g AA1234567
+Request example
+ POST	{{autopay-v4-host}}/api/v1/partners
+{
+   "method": "egov.store",
+   "params": {
+       "pinfl": "520090****0028",
+       "passport": "AC0****04"
+   }
+}
+
+
+Example of a successful response raw (json):
+  {
+ "status": true,
+ "result": {
+   "pinfl": "520090****0028",
+   "service_id": 7,
+   "data": {
+     "Region": {
+       "Id": 77,
+       "Value": "НОХАТ ОБОД ВИЛОЯТИ",
+       "IdValue": "(77) НОХАТ ОБОД ВИЛОЯТИ"
+     },
+     "Street": {
+       "Id": 99888,
+       "Guid": "999-TEST-001",
+       "Value": "ФЕЙКОВАЯ УЛИЦА"
+     },
+     "Address": "Nohatobod Region, Test District, Mock MFG, ul. Fake Street, dom 404",
+     "Country": {
+       "Id": 999,
+       "Value": "ФЕЙК СТАН",
+       "IdValue": "(999) ФЕЙКСТАН"
+     },
+     "Maxalla": {
+       "Id": 4321,
+       "Guid": "MOCK-MFY-TEST",
+       "Value": "ТЕСТОВАЯ МФЙ"
+     },
+     "Cadastre": "99:99:99:99:99:9999",
+     "District": {
+       "Id": 7711,
+       "Value": "ТЕСТОВСКИЙ ТУМАН",
+       "IdValue": "(7711) ТЕСТОВСКИЙ ТУМАН"
+     },
+     "RegistrationDate": "2099-12-31T23:59:59"
+   }
+ },
+ "error": null
+}	
+
+Notice ***: This method can only be called once per month.When updated, a new payment will also be processed.
+
