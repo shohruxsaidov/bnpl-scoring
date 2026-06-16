@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDealStore } from '@/stores/deal'
 import { useCatalogStore } from '@/stores/catalog'
 import { useClientScoringStore } from '@/stores/client-scoring'
-import { saveSessionStep, confirmPrepayment } from '@/composables/use-deal-session-api'
+import { saveSessionStep, requestPrepayment, confirmPrepayment } from '@/composables/use-deal-session-api'
 import MonoAmount from '@/components/mono-amount.vue'
 
 const deal = useDealStore()
@@ -115,19 +115,47 @@ async function next() {
 /* ── Prepayment dialog ───────────────────────────────────────────────────── */
 
 const showPrepayDialog = ref(false)
+const prepayPhase = ref<'form' | 'otp'>('form')
 const prepayCardNumber = ref('')
 const prepayExpiry = ref('')
 const prepayPhone = ref('')
+const prepaySessionId = ref('')
+const prepayMaskedPhone = ref('')
 const prepayOtp = ref('')
 const prepayLoading = ref(false)
 const prepayError = ref('')
 
+// Resend cooldown
+const PREPAY_RESEND_COOLDOWN = 60
+const prepayResendCooldown = ref(0)
+let prepayResendTimer: ReturnType<typeof setInterval> | null = null
+
+function stopPrepayResendTimer() {
+  if (prepayResendTimer) { clearInterval(prepayResendTimer); prepayResendTimer = null }
+}
+
+function startPrepayResendCooldown() {
+  stopPrepayResendTimer()
+  prepayResendCooldown.value = PREPAY_RESEND_COOLDOWN
+  prepayResendTimer = setInterval(() => {
+    prepayResendCooldown.value -= 1
+    if (prepayResendCooldown.value <= 0) stopPrepayResendTimer()
+  }, 1000)
+}
+
+onUnmounted(stopPrepayResendTimer)
+
 async function openPrepayDialog() {
+  prepayPhase.value = 'form'
   prepayCardNumber.value = ''
   prepayExpiry.value = ''
   prepayPhone.value = ''
+  prepaySessionId.value = ''
+  prepayMaskedPhone.value = ''
   prepayOtp.value = ''
   prepayError.value = ''
+  stopPrepayResendTimer()
+  prepayResendCooldown.value = 0
   // The server needs products.lines to compute the gap — save the step first.
   saving.value = true
   try {
@@ -148,6 +176,35 @@ async function openPrepayDialog() {
 
 function closePrepayDialog() {
   showPrepayDialog.value = false
+  stopPrepayResendTimer()
+}
+
+async function requestPrepayOtp() {
+  if (prepayLoading.value) return
+  prepayLoading.value = true
+  prepayError.value = ''
+  try {
+    const res = await requestPrepayment(deal.dealSessionId!, {
+      cardNumber: prepayCardNumber.value,
+      expiry: prepayExpiry.value,
+      phone: prepayPhone.value,
+    })
+    prepaySessionId.value = res.sessionId
+    prepayMaskedPhone.value = res.maskedPhone
+    prepayOtp.value = ''
+    prepayPhase.value = 'otp'
+    startPrepayResendCooldown()
+  } catch {
+    prepayError.value = tr('stepProducts.prepayRequestError')
+  } finally {
+    prepayLoading.value = false
+  }
+}
+
+async function resendPrepayOtp() {
+  if (prepayResendCooldown.value > 0 || prepayLoading.value) return
+  prepayOtp.value = ''
+  await requestPrepayOtp()
 }
 
 async function submitPrepayment() {
@@ -156,13 +213,12 @@ async function submitPrepayment() {
   prepayError.value = ''
   try {
     const session = await confirmPrepayment(deal.dealSessionId!, {
-      cardNumber: prepayCardNumber.value,
-      expiry: prepayExpiry.value,
-      phone: prepayPhone.value,
+      sessionId: prepaySessionId.value,
       otp: prepayOtp.value,
     })
     deal.setPrepayment(session.stepData.prepayment!.amount)
     showPrepayDialog.value = false
+    stopPrepayResendTimer()
   } catch {
     prepayError.value = tr('stepProducts.prepayError')
   } finally {
@@ -334,37 +390,69 @@ async function submitPrepayment() {
           <MonoAmount :value="prepaymentGap" size="lg" />
         </div>
 
-        <div class="dialog-fields">
-          <label>
-            <span>{{ $t('stepProducts.prepayCardNumber') }}</span>
-            <input v-model="prepayCardNumber" type="text" maxlength="19" placeholder="0000 0000 0000 0000" />
-          </label>
-          <label>
-            <span>{{ $t('stepProducts.prepayExpiry') }}</span>
-            <input v-model="prepayExpiry" type="text" maxlength="5" placeholder="MM/YY" />
-          </label>
-          <label>
-            <span>{{ $t('stepProducts.prepayPhone') }}</span>
-            <input v-model="prepayPhone" type="text" placeholder="+998 90 000 00 00" />
-          </label>
-          <label>
-            <span>{{ $t('stepProducts.prepayOtp') }}</span>
-            <input v-model="prepayOtp" type="text" maxlength="6" placeholder="000000" />
-          </label>
-        </div>
+        <!-- Phase 1: card details -->
+        <template v-if="prepayPhase === 'form'">
+          <div class="dialog-fields">
+            <label>
+              <span>{{ $t('stepProducts.prepayCardNumber') }}</span>
+              <input v-model="prepayCardNumber" type="text" maxlength="19" placeholder="0000 0000 0000 0000" />
+            </label>
+            <label>
+              <span>{{ $t('stepProducts.prepayExpiry') }}</span>
+              <input v-model="prepayExpiry" type="text" maxlength="5" placeholder="MM/YY" />
+            </label>
+            <label>
+              <span>{{ $t('stepProducts.prepayPhone') }}</span>
+              <input v-model="prepayPhone" type="text" placeholder="+998 90 000 00 00" />
+            </label>
+          </div>
+          <p v-if="prepayError" class="dialog-error">
+            <i class="pi pi-exclamation-triangle" /> {{ prepayError }}
+          </p>
+          <button
+            class="btn-gradient dialog-confirm"
+            :disabled="!prepayCardNumber || !prepayExpiry || !prepayPhone || prepayLoading"
+            @click="requestPrepayOtp"
+          >
+            <i v-if="prepayLoading" class="pi pi-spin pi-spinner" />
+            {{ $t('stepProducts.prepayRequestOtp') }}
+          </button>
+        </template>
 
-        <p v-if="prepayError" class="dialog-error">
-          <i class="pi pi-exclamation-triangle" /> {{ prepayError }}
-        </p>
-
-        <button
-          class="btn-gradient dialog-confirm"
-          :disabled="!prepayCardNumber || !prepayExpiry || !prepayPhone || !prepayOtp || prepayLoading"
-          @click="submitPrepayment"
-        >
-          <i v-if="prepayLoading" class="pi pi-spin pi-spinner" />
-          {{ $t('stepProducts.prepayConfirm') }}
-        </button>
+        <!-- Phase 2: OTP entry -->
+        <template v-else>
+          <div class="dialog-otp-hint">
+            <i class="pi pi-mobile" />
+            {{ $t('stepProducts.prepayOtpSentTo', { phone: prepayMaskedPhone }) }}
+          </div>
+          <div class="dialog-fields">
+            <label>
+              <span>{{ $t('stepProducts.prepayOtp') }}</span>
+              <input v-model="prepayOtp" type="text" maxlength="6" placeholder="000000" inputmode="numeric" />
+            </label>
+          </div>
+          <button
+            class="btn-link dialog-resend"
+            :disabled="prepayResendCooldown > 0 || prepayLoading"
+            @click="resendPrepayOtp"
+          >
+            <i class="pi pi-refresh" />
+            {{ prepayResendCooldown > 0
+              ? $t('stepProducts.prepayResendIn', { seconds: prepayResendCooldown })
+              : $t('stepProducts.prepayResendOtp') }}
+          </button>
+          <p v-if="prepayError" class="dialog-error">
+            <i class="pi pi-exclamation-triangle" /> {{ prepayError }}
+          </p>
+          <button
+            class="btn-gradient dialog-confirm"
+            :disabled="!prepayOtp || prepayLoading"
+            @click="submitPrepayment"
+          >
+            <i v-if="prepayLoading" class="pi pi-spin pi-spinner" />
+            {{ $t('stepProducts.prepayConfirm') }}
+          </button>
+        </template>
       </div>
     </div>
   </Teleport>
@@ -954,6 +1042,26 @@ async function submitPrepayment() {
 .dialog-confirm {
   width: 100%;
   justify-content: center;
+}
+
+.dialog-otp-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.dialog-resend {
+  align-self: flex-start;
+  font-size: 0.82rem;
+}
+
+.dialog-resend:disabled {
+  color: var(--text-secondary);
+  cursor: not-allowed;
+  text-decoration: none;
 }
 
 @media (max-width: 900px) {

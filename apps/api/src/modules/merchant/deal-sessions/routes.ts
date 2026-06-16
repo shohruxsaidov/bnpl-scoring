@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { Type } from '@sinclair/typebox'
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import type { FastifyInstance } from 'fastify'
@@ -121,22 +122,30 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
   const IdParams = Type.Object({ id: Type.String() })
 
-  /* ── POST /:id/prepayment — confirm a mocked acquiring flow (ADR-0026) ─── */
+  /* ── POST /:id/prepayment/request + confirm — two-step mocked acquiring ── */
   //
-  // The server computes the gap from session data and stamps it.  The acquiring
-  // call is mocked (always succeeds) — replace the body of this handler with a
-  // real processor call when one is integrated.
+  // Phase 1 (request): validate the session gap, store a pending token, return
+  // a sessionId + maskedPhone so the frontend can render the OTP phase.
+  // Phase 2 (confirm): look up the token by sessionId, stamp prepayment.
+  // Both sides are mocked — replace with a real processor when one is chosen.
 
-  const PrepaymentBody = Type.Object({
+  const pendingPrepayments = new Map<string, { gap: number }>()
+
+  function maskPhone(phone: string): string {
+    const digits = phone.replace(/\D/g, '')
+    if (digits.length < 7) return phone
+    return `+${digits.slice(0, 3)} ** *** ${digits.slice(-4, -2)} ${digits.slice(-2)}`
+  }
+
+  const PrepayRequestBody = Type.Object({
     cardNumber: Type.String(),
     expiry: Type.String(),
     phone: Type.String(),
-    otp: Type.String(),
   })
 
   fastify.post(
-    '/:id/prepayment',
-    { schema: { params: IdParams, body: PrepaymentBody }, preHandler: guards },
+    '/:id/prepayment/request',
+    { schema: { params: IdParams, body: PrepayRequestBody }, preHandler: guards },
     async (request, reply) => {
       const p = payload(request)
       let session: DealSessionRow
@@ -153,7 +162,6 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       if (!data.tariff) return reply.code(409).sendError('tariff_step_missing')
       if (!data.scoring) return reply.code(409).sendError('scoring_missing')
 
-      // Compute gap: totalWithMarkup - effectiveLimit
       const basketBase = data.products.lines.reduce(
         (sum, l) => sum + Math.round(parseFloat(l.price) * 100) * l.quantity,
         0,
@@ -164,8 +172,36 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
       if (gap <= 0) return reply.code(409).sendError('no_prepayment_needed')
 
-      // Mocked acquiring — always succeeds. Replace this with a real processor call.
-      await stampPrepayment(db, session, { amount: gap, confirmedAt: new Date().toISOString() })
+      const sessionId = randomUUID()
+      pendingPrepayments.set(sessionId, { gap })
+
+      return { sessionId, maskedPhone: maskPhone(request.body.phone) }
+    },
+  )
+
+  const PrepayConfirmBody = Type.Object({
+    sessionId: Type.String(),
+    otp: Type.String(),
+  })
+
+  fastify.post(
+    '/:id/prepayment/confirm',
+    { schema: { params: IdParams, body: PrepayConfirmBody }, preHandler: guards },
+    async (request, reply) => {
+      const pending = pendingPrepayments.get(request.body.sessionId)
+      if (!pending) return reply.code(409).sendError('prepayment_session_not_found')
+
+      let session: DealSessionRow
+      try {
+        session = await loadOwnedActiveSession(db, request.params.id, BigInt(payload(request).sub))
+      } catch (err: any) {
+        if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found')
+        if (err.code === 'session_not_active') return reply.code(409).sendError('session_not_active')
+        throw err
+      }
+
+      pendingPrepayments.delete(request.body.sessionId)
+      await stampPrepayment(db, session, { amount: pending.gap, confirmedAt: new Date().toISOString() })
 
       const [updated] = await db
         .select()

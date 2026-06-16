@@ -102,13 +102,24 @@ export async function saveSessionStep(
   return res.session
 }
 
-/** Confirm the prepayment for an over-limit basket (ADR-0026). */
+/** Phase 1 — send card details, get back an OTP session (ADR-0026). */
+export async function requestPrepayment(
+  dealSessionId: string,
+  payload: { cardNumber: string; expiry: string; phone: string },
+): Promise<{ sessionId: string; maskedPhone: string }> {
+  return apiFetch<{ sessionId: string; maskedPhone: string }>(
+    `/merchant/deal-sessions/${dealSessionId}/prepayment/request`,
+    { method: 'POST', body: JSON.stringify(payload) },
+  )
+}
+
+/** Phase 2 — confirm OTP and stamp the prepayment (ADR-0026). */
 export async function confirmPrepayment(
-  sessionId: string,
-  payload: { cardNumber: string; expiry: string; phone: string; otp: string },
+  dealSessionId: string,
+  payload: { sessionId: string; otp: string },
 ): Promise<DealSessionDto> {
   const res = await apiFetch<{ session: DealSessionDto }>(
-    `/merchant/deal-sessions/${sessionId}/prepayment`,
+    `/merchant/deal-sessions/${dealSessionId}/prepayment/confirm`,
     { method: 'POST', body: JSON.stringify(payload) },
   )
   return res.session

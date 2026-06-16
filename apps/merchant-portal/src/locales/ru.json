@@ -535,9 +535,14 @@
     "prepayCardNumber": "Номер карты",
     "prepayExpiry": "Срок действия",
     "prepayPhone": "Телефон",
+    "prepayRequestOtp": "Отправить код",
+    "prepayOtpSentTo": "Код отправлен на {phone}",
     "prepayOtp": "Код подтверждения",
     "prepayConfirm": "Подтвердить оплату",
-    "prepayError": "Не удалось подтвердить аванс. Повторите попытку."
+    "prepayResendIn": "Отправить повторно через {seconds} с",
+    "prepayResendOtp": "Отправить код повторно",
+    "prepayRequestError": "Не удалось отправить код. Повторите попытку.",
+    "prepayError": "Неверный код. Повторите попытку."
   },
   "stepPayment": {
     "title": "День оплаты",
