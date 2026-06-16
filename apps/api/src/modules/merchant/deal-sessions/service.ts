@@ -175,7 +175,7 @@ export async function createSession(
         merchantId: input.merchantId,
         branchId: input.branchId,
         agentId: input.agentId,
-        clientId: input.clientId ? BigInt(input.clientId): undefined,
+        clientId: input.clientId ? BigInt(input.clientId) : undefined,
       })
       .returning();
     if (!session) throw new Error('session_insert_failed');
@@ -283,7 +283,7 @@ export async function stampKatm(db: Db, session: DealSessionRow, stamp: KatmStam
   const { katmPending: _drop, ...rest } = data;
   await db
     .update(dealSessions)
-    .set({ stepData: { ...rest, katm: stamp }, clientId: BigInt(stamp.clientId), updatedAt: new Date() })
+    .set({ stepData: { ...rest, katm: stamp }, updatedAt: new Date() })
     .where(eq(dealSessions.id, session.id));
   await logEvent(db, session.id, 'katm', stamp);
 }
