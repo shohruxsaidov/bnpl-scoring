@@ -69,7 +69,6 @@ export interface Client {
 export interface ClientOverview extends Client {
   creditLimit: number | null
   availableBalance: number | null
-  creditLimitSource: 'self-service' | 'wizard' | null
   creditLimitScoredAt: string | null
 }
 

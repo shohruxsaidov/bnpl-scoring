@@ -16,12 +16,6 @@ import type { Db } from '../../../db';
 import { env } from '../../../env';
 import { IntegrationError } from '../../../lib/integrations';
 import { logIntegration } from '../log';
-import {
-  mockCheckCreditBan,
-  mockRegisterClaim,
-  mockRequestReport,
-  mockCheckReportStatus,
-} from './mock';
 
 // ---------------------------------------------------------------------------
 // Result codes
@@ -141,8 +135,6 @@ export async function checkCreditBan(
   db: Db,
   params: { pinfl: string },
 ): Promise<{ banned: boolean }> {
-  if (env.KATM_MOCK) return mockCheckCreditBan(params);
-
   const data = await callKatm<{ status?: number }>(db, 'client/credit/ban/status', {
     security: security(),
     data: {
@@ -186,15 +178,13 @@ export async function registerClaim(
   db: Db,
   params: RegisterClaimParams,
 ): Promise<RegisterClaimResult> {
-  if (env.KATM_MOCK) return mockRegisterClaim(params);
-
   const now = new Date();
   const creditEndDate = new Date(now);
   creditEndDate.setMonth(creditEndDate.getMonth() + env.KATM_CLAIM_TERM_MONTHS);
 
   const data = await callKatm<Record<string, unknown> & { clientId?: string }>(
     db,
-    'claim/registration',
+    'v1/claim/registration',
     {
       security: security(),
       data: {
@@ -235,7 +225,7 @@ export type ReportOutcome =
 
 interface ReportData {
   reportBase64?: string;
-  Token?: string;
+  token?: string;
 }
 
 function decodeReport(methodName: string, base64: string): KatmResult {
@@ -248,17 +238,18 @@ function decodeReport(methodName: string, base64: string): KatmResult {
   return parseKatmResponse(parsed);
 }
 
-export async function requestReport(db: Db, params: { claimId: string }): Promise<ReportOutcome> {
-  if (env.KATM_MOCK) return mockRequestReport(params);
-
-  const data = await callKatm<ReportData>(db, 'credit/report', {
+export async function request077Report(
+  db: Db,
+  params: { claimId: string },
+): Promise<ReportOutcome> {
+  const data = await callKatm<ReportData>(db, 'v1/credit/report', {
     security: security(),
     data: {
       pHead: env.KATM_HEAD,
       pCode: env.KATM_CODE,
       pLegal: 1, // 1 — physical person (per spec v12.4)
       pClaimId: params.claimId,
-      pReportId: env.KATM_REPORT_ID,
+      pReportId: '077',
       pLang: 'ru',
       pReportFormat: 1, // JSON
     },
@@ -266,9 +257,9 @@ export async function requestReport(db: Db, params: { claimId: string }): Promis
   assertOk('credit/report', data, [KATM_REPORT_PENDING]);
 
   if (data.result === KATM_REPORT_PENDING) {
-    if (!data.Token)
+    if (!data.token)
       throw new KatmVendorError('credit/report', data.result, 'pending without Token');
-    return { status: 'pending', token: data.Token };
+    return { status: 'pending', token: data.token };
   }
   if (!data.reportBase64) {
     throw new KatmVendorError('credit/report', data.result ?? null, 'success without reportBase64');
@@ -280,9 +271,7 @@ export async function checkReportStatus(
   db: Db,
   params: { claimId: string; token: string },
 ): Promise<ReportOutcome> {
-  if (env.KATM_MOCK) return mockCheckReportStatus(params);
-
-  const data = await callKatm<ReportData>(db, 'credit/report/status', {
+  const data = await callKatm<ReportData>(db, 'v1/credit/report/status', {
     security: security(),
     data: {
       pHead: env.KATM_HEAD,

@@ -2,9 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import { Type } from '@sinclair/typebox'
 import {
-  getUserLimit,
   getScoringSessionStatus,
-  startScoringSession,
   addScoringCard,
   confirmScoringCard,
   completeScoringCard,
@@ -20,50 +18,6 @@ export default async function scoringRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
 
   const SessionParams = Type.Object({ sessionId: Type.String({ minLength: 1 }) })
-
-  // ── GET /client/scoring/limit ─────────────────────────────────────────────
-  // Returns the client's current User Limit, or null if not yet scored.
-  fastify.get(
-    '/limit',
-    { preHandler: app.verifyClientJwt },
-    async (request) => {
-      const limit = await getUserLimit(app.db, userId(request))
-      return { limit }
-    },
-  )
-
-  // ── POST /client/scoring/start ────────────────────────────────────────────
-  // Creates a Scoring Session and runs the KATM consume flow (ADR-0025):
-  // server-side consent record → ban pre-check → claim registration → report.
-  // Returns { sessionId, katm, pending } — katm is null and pending true while
-  // KATM builds the report asynchronously (poll GET /:sessionId/status).
-  // Optional katmDetails backfills address/region/district/docType for users
-  // rows created before those fields were captured from MyID.
-  fastify.post(
-    '/start',
-    {
-      schema: {
-        body: Type.Object({
-          katmDetails: Type.Optional(
-            Type.Object({
-              address: Type.String({ minLength: 1, maxLength: 100 }),
-              regionCode: Type.String({ minLength: 1, maxLength: 2, pattern: '^\\d{1,2}$' }),
-              districtCode: Type.String({ minLength: 1, maxLength: 3, pattern: '^\\d{1,3}$' }),
-              docType: Type.Union([Type.Literal(0), Type.Literal(6)]),
-            }),
-          ),
-        }),
-      },
-      preHandler: app.verifyClientJwt,
-    },
-    async (request, reply) => {
-      const result = await startScoringSession(app.db, app.katmPollQueue, {
-        userId: userId(request),
-        katmDetails: request.body.katmDetails,
-      })
-      return reply.code(201).send(result)
-    },
-  )
 
   // ── GET /client/scoring/:sessionId/status ─────────────────────────────────
   // Polled by the portal while the KATM report is pending.

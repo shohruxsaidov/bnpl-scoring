@@ -119,11 +119,8 @@ function paymentStatusBg(status: string): string {
           class="limit-value"
         />
         <span v-else class="limit-value muted">—</span>
-        <span v-if="store.detail.creditLimitSource" class="limit-source muted">
-          {{ sourceLabel(store.detail.creditLimitSource) }}
-          <template v-if="store.detail.creditLimitScoredAt">
-            · {{ formatDate(store.detail.creditLimitScoredAt) }}
-          </template>
+        <span v-if="store.detail.creditLimitScoredAt" class="limit-source muted">
+          {{ formatDate(store.detail.creditLimitScoredAt) }}
         </span>
       </div>
       <div class="limit-card surface-card">

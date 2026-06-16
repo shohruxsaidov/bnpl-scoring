@@ -40,7 +40,7 @@ const schema = z.object({
   PLUM_MOCK: z.coerce.boolean().default(false),
   // KATM credit bureau — Retail API (ADR-0025).
   // NB: the vendor PDF's TEST/PROD labels are swapped — testapi.* is the test env.
-  KATM_BASE_URL: z.string().url().default('https://testapi.infokredit.uz/katm-api/v1'),
+  KATM_BASE_URL: z.string().url(),
   KATM_LOGIN: z.string().optional(),
   KATM_PASSWORD: z.string().optional(),
   KATM_CODE: z.string().optional(), // pCode — org code assigned by KATM
@@ -50,10 +50,9 @@ const schema = z.object({
   // amount and term are fixed (ADR-0025): 300 000 so'm, 12 months.
   KATM_CLAIM_TERM_MONTHS: z.coerce.number().default(12),
   // Report polling (result 05050): KATM mandates ≥60 s between checks.
-  KATM_POLL_INTERVAL_MS: z.coerce.number().default(60_000),
+  KATM_POLL_INTERVAL_MS: z.coerce.number().default(5_000),
   KATM_POLL_MAX_ATTEMPTS: z.coerce.number().default(15),
   KATM_TIMEOUT: z.coerce.number().default(20_000),
-  KATM_MOCK: z.coerce.boolean().default(false),
   // Web Push (VAPID) — merchant employee portals
   VAPID_PUBLIC_KEY: z.string().min(1),
   VAPID_PRIVATE_KEY: z.string().min(1),

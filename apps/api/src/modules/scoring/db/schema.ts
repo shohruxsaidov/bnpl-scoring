@@ -38,10 +38,3 @@ export const scoringPipelines = pgTable('scoring_pipelines', {
   completedAt: timestamp('completed_at', { withTimezone: true }),
 })
 
-export const userLimits = pgTable('user_limits', {
-  userId: bigint('user_id', { mode: 'bigint' }).primaryKey().references(() => users.id),
-  limitAmount: bigint('limit_amount', { mode: 'bigint' }).notNull(),
-  sessionId: uuid('session_id').notNull().references(() => scoringSessions.id),
-  scoredAt: timestamp('scored_at', { withTimezone: true }).notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-})

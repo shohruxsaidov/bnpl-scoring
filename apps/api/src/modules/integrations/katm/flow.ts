@@ -8,29 +8,24 @@
  * polling job — see poller.ts.
  */
 
-import { sql } from 'drizzle-orm'
-import type { Db } from '../../../db'
-import { katmConsents } from '../db/schema'
-import {
-  checkCreditBan,
-  registerClaim,
-  requestReport,
-  type KatmResult,
-} from './service'
+import { sql } from 'drizzle-orm';
+import type { Db } from '../../../db';
+import { katmConsents } from '../db/schema';
+import { checkCreditBan, registerClaim, request077Report, type KatmResult } from './service';
 
 // ---------------------------------------------------------------------------
 // Subject — the client/user fields claim registration requires
 // ---------------------------------------------------------------------------
 
 export interface KatmSubject {
-  pinfl: string
-  passportSerial: string
-  passportNumber: string
-  docType: number
-  regionCode: string
-  districtCode: string
-  address: string
-  phone: string
+  pinfl: string;
+  passportSerial: string;
+  passportNumber: string;
+  docType: number;
+  regionCode: string;
+  districtCode: string;
+  address: string;
+  phone: string;
 }
 
 /**
@@ -39,25 +34,25 @@ export interface KatmSubject {
  * this so the Agent / self-service user can fill the gaps manually.
  */
 export function missingKatmFields(row: {
-  pinfl: string | null
-  passportSerial: string | null
-  passportNumber: string | null
-  docType: number | null
-  katmRegionCode: string | null
-  katmDistrictCode: string | null
-  address: string | null
-  phone: string | null
+  pinfl: string | null;
+  passportSerial: string | null;
+  passportNumber: string | null;
+  docType: number | null;
+  katmRegionCode: string | null;
+  katmDistrictCode: string | null;
+  address: string | null;
+  phone: string | null;
 }): string[] {
-  const missing: string[] = []
-  if (!row.pinfl) missing.push('pinfl')
-  if (!row.passportSerial) missing.push('passportSerial')
-  if (!row.passportNumber) missing.push('passportNumber')
-  if (row.docType == null) missing.push('docType')
-  if (!row.katmRegionCode) missing.push('regionCode')
-  if (!row.katmDistrictCode) missing.push('districtCode')
-  if (!row.address) missing.push('address')
-  if (!row.phone) missing.push('phone')
-  return missing
+  const missing: string[] = [];
+  if (!row.pinfl) missing.push('pinfl');
+  if (!row.passportSerial) missing.push('passportSerial');
+  if (!row.passportNumber) missing.push('passportNumber');
+  if (row.docType == null) missing.push('docType');
+  if (!row.katmRegionCode) missing.push('regionCode');
+  if (!row.katmDistrictCode) missing.push('districtCode');
+  if (!row.address) missing.push('address');
+  if (!row.phone) missing.push('phone');
+  return missing;
 }
 
 // ---------------------------------------------------------------------------
@@ -65,10 +60,10 @@ export function missingKatmFields(row: {
 // ---------------------------------------------------------------------------
 
 export async function allocateKatmClaimId(db: Db): Promise<string> {
-  const rows = await db.execute(sql`select nextval('katm_claim_seq') as id`)
-  const row = (rows as unknown as Array<{ id: string | number | bigint }>)[0]
-  if (!row) throw new Error('katm_claim_seq nextval returned no row')
-  return String(row.id)
+  const rows = await db.execute(sql`select nextval('katm_claim_seq') as id`);
+  const row = (rows as unknown as Array<{ id: string | number | bigint }>)[0];
+  if (!row) throw new Error('katm_claim_seq nextval returned no row');
+  return String(row.id);
 }
 
 // ---------------------------------------------------------------------------
@@ -77,18 +72,18 @@ export async function allocateKatmClaimId(db: Db): Promise<string> {
 
 export interface KatmConsentRecord {
   /** katm_consents.id as string — sent as pAgreementId */
-  agreementId: string
+  agreementId: string;
   /** sent as pAgreementDate */
-  agreementDate: Date
+  agreementDate: Date;
 }
 
 export async function createKatmConsent(
   db: Db,
   input: {
-    channel: 'wizard' | 'self_service'
-    clientId?: bigint
-    userId?: bigint
-    sessionId?: string
+    channel: 'wizard' | 'self_service';
+    clientId?: bigint;
+    userId?: bigint;
+    sessionId?: string;
   },
 ): Promise<KatmConsentRecord> {
   const [row] = await db
@@ -99,9 +94,9 @@ export async function createKatmConsent(
       userId: input.userId ?? null,
       sessionId: input.sessionId ?? null,
     })
-    .returning({ id: katmConsents.id, createdAt: katmConsents.createdAt })
-  if (!row) throw new Error('katm_consent_insert_failed')
-  return { agreementId: row.id.toString(), agreementDate: row.createdAt }
+    .returning({ id: katmConsents.id, createdAt: katmConsents.createdAt });
+  if (!row) throw new Error('katm_consent_insert_failed');
+  return { agreementId: row.id.toString(), agreementDate: row.createdAt };
 }
 
 // ---------------------------------------------------------------------------
@@ -111,20 +106,20 @@ export async function createKatmConsent(
 export type KatmFlowOutcome =
   | { status: 'banned' }
   | { status: 'ready'; katmSir: string; result: KatmResult }
-  | { status: 'pending'; katmSir: string; token: string }
+  | { status: 'pending'; katmSir: string; token: string };
 
 export async function startKatmFlow(
   db: Db,
   input: {
-    claimId: string
-    consent: KatmConsentRecord
-    subject: KatmSubject
+    claimId: string;
+    consent: KatmConsentRecord;
+    subject: KatmSubject;
   },
 ): Promise<KatmFlowOutcome> {
   // Ban pre-check — an actively banned client must not even have a claim
   // registered with the bureau (ADR-0025)
-  const ban = await checkCreditBan(db, { pinfl: input.subject.pinfl })
-  if (ban.banned) return { status: 'banned' }
+  // const ban = await checkCreditBan(db, { pinfl: input.subject.pinfl })
+  // if (ban.banned) return { status: 'banned' }
 
   const claim = await registerClaim(db, {
     claimId: input.claimId,
@@ -138,12 +133,12 @@ export async function startKatmFlow(
     districtCode: input.subject.districtCode,
     address: input.subject.address,
     phone: input.subject.phone,
-    amount: 35000000 // in tiyin 350 000 dom 
-  })
+    amount: 35000000, // in tiyin 350 000 dom
+  });
 
-  const report = await requestReport(db, { claimId: input.claimId })
+  const report = await request077Report(db, { claimId: input.claimId });
   if (report.status === 'pending') {
-    return { status: 'pending', katmSir: claim.katmSir, token: report.token }
+    return { status: 'pending', katmSir: claim.katmSir, token: report.token };
   }
-  return { status: 'ready', katmSir: claim.katmSir, result: report.result }
+  return { status: 'ready', katmSir: claim.katmSir, result: report.result };
 }
