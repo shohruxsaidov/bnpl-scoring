@@ -42,16 +42,64 @@ const CRITERIA_LABELS: Record<string, string> = {
   katmScore: "KATM bahosi",
   activeLoans: "Faol kreditlar",
   overdueCount: "Muddati o'tgan kreditlar",
+  // new nested keys
+  openCredits: "Faol kreditlar",
+  totalDebt: "Umumiy qarz",
+  overdueInOpenCredits: "Muddati o'tgan qarz",
+  totalContracts: "Jami shartnomalar",
+  totalClaims: "Jami so'rovlar",
+  maxOverdueDays: "Maks. kechikish (kun)",
+  maxOverdueSum: "Maks. muddati o'tgan summa",
+  avgMonthlyPayment: "O'rt. oylik to'lov",
 }
 
 function criteriaToFactors(
-  criteriaScores: Record<string, number> | null | undefined,
+  criteriaScores: Record<string, unknown> | null | undefined,
 ): ScoringFactor[] {
   if (!criteriaScores) return []
-  return Object.entries(criteriaScores).map(([key, score]) => ({
-    label: CRITERIA_LABELS[key] ?? key,
-    score: Number(score),
-  }))
+
+  // New nested format: { katm: { katmScore, detail: {...} }, card: { score } }
+  const hasNestedBuckets =
+    typeof criteriaScores.katm === "object" || typeof criteriaScores.card === "object"
+
+  if (hasNestedBuckets) {
+    const factors: ScoringFactor[] = []
+    const katm = criteriaScores.katm as Record<string, unknown> | undefined
+    const card = criteriaScores.card as Record<string, unknown> | undefined
+    // client bucket contains identity data (birthDate, gender, nationality) — not scoring signals
+
+    if (katm?.katmScore != null) {
+      factors.push({ label: CRITERIA_LABELS.katmScore, score: Number(katm.katmScore) })
+    }
+    const katmDetail = katm?.detail as Record<string, unknown> | undefined
+    if (katmDetail) {
+      const numericKeys: (keyof typeof CRITERIA_LABELS)[] = [
+        "openCredits", "totalDebt", "overdueInOpenCredits", "totalContracts",
+        "totalClaims", "overdueCount", "maxOverdueDays", "maxOverdueSum", "avgMonthlyPayment",
+      ]
+      for (const key of numericKeys) {
+        if (katmDetail[key] != null && typeof katmDetail[key] === "number") {
+          factors.push({ label: CRITERIA_LABELS[key] ?? key, score: katmDetail[key] as number })
+        }
+      }
+    }
+
+    const cardDetail = card?.detail as Record<string, unknown> | undefined
+    const cardScore = (cardDetail?.score ?? card?.score)
+    if (cardScore != null) {
+      factors.push({ label: CRITERIA_LABELS.cardScore, score: Number(cardScore) })
+    }
+
+    return factors
+  }
+
+  // Legacy flat format: { katmScore: 400, cardScore: 400, ... }
+  return Object.entries(criteriaScores)
+    .filter(([, v]) => typeof v === "number")
+    .map(([key, score]) => ({
+      label: CRITERIA_LABELS[key] ?? key,
+      score: Number(score),
+    }))
 }
 
 function detailStatus(decision: string): "review" | "approved" | "declined" {
@@ -113,7 +161,7 @@ export async function getScoring(db: Db, id: bigint): Promise<ScoringDetail | nu
     pinfl: scoring.pinfl ?? "—",
     passport,
     coefficient: scoring.coefficient != null ? Number(scoring.coefficient) : null,
-    factors: criteriaToFactors(scoring.criteriaScores as Record<string, number> | null),
+    factors: criteriaToFactors(scoring.criteriaScores as Record<string, unknown> | null),
     platformStats,
   }
 }

@@ -10,7 +10,7 @@ export interface CreateScoringInput {
   coefficient: number | null
   decision: string
   platformCreditLimit: bigint
-  criteriaScores: Record<string, number> | null
+  criteriaScores: Record<string, unknown> | null
 }
 
 export async function createScoring(db: Db, input: CreateScoringInput): Promise<{ id: string }> {

@@ -33,6 +33,10 @@ export interface KatmStamp {
   allDebtSum: number;
   overdueCount: number;
   overdueAmount: number;
+  maxOverdueDays: number;
+  totalContracts: number;
+  totalClaims: number;
+  avgMonthlyPayment: number;
   hasDefaults: boolean;
   hasCreditBan: boolean;
   raw: unknown;
@@ -48,7 +52,7 @@ export interface ScoringStamp {
   decision: string;
   /** tiyin */
   platformCreditLimit: number;
-  criteriaScores: Record<string, number>;
+  criteriaScores: Record<string, unknown>;
 }
 
 /** Async-report state while a BullMQ job polls KATM (ADR-0025). */

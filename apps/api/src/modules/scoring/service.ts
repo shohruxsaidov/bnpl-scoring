@@ -38,12 +38,81 @@ function computeCoefficient(score: number): number {
   return 0
 }
 
-function buildCriteriaScores(cardScore: number, katmResult: KatmResult): Record<string, number> {
+export interface KatmCriteriaDetail {
+  katmScore: number
+  katmClass: string
+  scoringLevel: string
+  openCredits: number
+  totalDebt: number
+  overdueInOpenCredits: number
+  totalContracts: number
+  totalClaims: number
+  overdueCount: number
+  maxOverdueDays: number
+  maxOverdueSum: number
+  avgMonthlyPayment: number
+  hasCreditBan: boolean
+}
+
+export interface CardCriteriaDetail {
+  score: number
+  limit: number
+  decision: string
+  pcType: 'uzcard' | 'humo'
+  bank?: string
+  maskedPan?: string
+  holderName?: string
+}
+
+export interface ClientCriteriaDetail {
+  birthDate: string
+  gender: string
+  nationality: string
+}
+
+export interface CriteriaScores {
+  katm?: { katmScore: number; detail: KatmCriteriaDetail }
+  card?: { score: number; detail: CardCriteriaDetail }
+  client?: { detail: ClientCriteriaDetail }
+}
+
+function buildCriteriaScores(
+  plumResult: { score: number; limit: number; decision: string },
+  pcType: 'uzcard' | 'humo',
+  katmResult: KatmResult,
+  clientData?: ClientCriteriaDetail,
+  cardMeta?: { bank?: string; maskedPan?: string; holderName?: string },
+): CriteriaScores {
   return {
-    cardScore,
-    katmScore: katmResult.score,
-    activeLoans: katmResult.activeLoans,
-    overdueCount: katmResult.overdueCount,
+    katm: {
+      katmScore: katmResult.score,
+      detail: {
+        katmScore: katmResult.score,
+        katmClass: katmResult.scoringClass,
+        scoringLevel: katmResult.scoringLevel,
+        openCredits: katmResult.activeLoans,
+        totalDebt: katmResult.allDebtSum,
+        overdueInOpenCredits: katmResult.overdueAmount,
+        totalContracts: katmResult.totalContracts,
+        totalClaims: katmResult.totalClaims,
+        overdueCount: katmResult.overdueCount,
+        maxOverdueDays: katmResult.maxOverdueDays,
+        maxOverdueSum: katmResult.overdueAmount,
+        avgMonthlyPayment: katmResult.avgMonthlyPayment,
+        hasCreditBan: katmResult.hasCreditBan,
+      },
+    },
+    card: {
+      score: plumResult.score,
+      detail: {
+        score: plumResult.score,
+        limit: plumResult.limit,
+        decision: plumResult.decision,
+        pcType,
+        ...cardMeta,
+      },
+    },
+    ...(clientData && { client: { detail: clientData } }),
   }
 }
 
@@ -129,7 +198,7 @@ export interface CompleteScoringResult {
   coefficient: number
   decision: string
   platformCreditLimit: number
-  criteriaScores: Record<string, number>
+  criteriaScores: CriteriaScores
 }
 
 export async function completeScoringCard(
@@ -169,7 +238,6 @@ export async function completeScoringCard(
     })
 
     const coefficient = computeCoefficient(plumResult.score)
-    const criteriaScores = buildCriteriaScores(plumResult.score, katmResult)
     const platformCreditLimit = BigInt(plumResult.limit)
     const now = new Date()
 
@@ -196,10 +264,20 @@ export async function completeScoringCard(
         passportNumber: users.passportNumber,
         pinfl: users.pinfl,
         phone: users.phone,
+        birthDate: users.birthDate,
+        gender: users.gender,
+        nationality: users.nationality,
       })
       .from(users)
       .where(eq(users.id, input.userId))
       .limit(1)
+
+    const criteriaScores = buildCriteriaScores(
+      plumResult,
+      input.pcType,
+      katmResult,
+      user ? { birthDate: user.birthDate, gender: user.gender, nationality: user.nationality } : undefined,
+    )
 
     // Look up any existing clients row for this PINFL (may span multiple merchants)
     const [existingClient] = user?.pinfl

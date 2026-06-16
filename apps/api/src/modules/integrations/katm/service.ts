@@ -352,7 +352,11 @@ export interface KatmResult {
   activeLoans: number;
   allDebtSum: number; // UZS (not tiyin — KATM uses UZS directly)
   overdueCount: number;
-  overdueAmount: number; // UZS
+  overdueAmount: number; // UZS — max_overdue_principal_sum
+  maxOverdueDays: number; // max_overdue_principal_days
+  totalContracts: number; // overview.contracts_qty — all-time credit count
+  totalClaims: number; // overview.claims_qty — bureau inquiries ever
+  avgMonthlyPayment: number; // overview.actual_average_monthly_payment (UZS)
   hasDefaults: boolean;
   hasCreditBan: boolean;
   /** Full raw vendor payload — persisted on the session stamp */
@@ -393,6 +397,10 @@ export function parseKatmResponse(data: KatmResponse): KatmResult {
     allDebtSum: toFloat(open_contracts?.all_debt_sum),
     overdueCount: toInt(overview?.overdue_principal_qty),
     overdueAmount: toFloat(overview?.max_overdue_principal_sum),
+    maxOverdueDays: overdueMaxDays,
+    totalContracts: toInt(overview?.contracts_qty),
+    totalClaims: toInt(overview?.claims_qty),
+    avgMonthlyPayment: toFloat(overview?.actual_average_monthly_payment),
     hasDefaults: overdueMaxDays > 0 || toFloat(open_contracts?.all_overdue_debt_sum) > 0,
     hasCreditBan: credit_ban?.credit_ban_status !== '0',
     raw: data,

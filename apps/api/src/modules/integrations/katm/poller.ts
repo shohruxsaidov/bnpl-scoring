@@ -88,6 +88,10 @@ export function katmSummary(result: KatmResult) {
     allDebtSum: result.allDebtSum,
     overdueCount: result.overdueCount,
     overdueAmount: result.overdueAmount,
+    maxOverdueDays: result.maxOverdueDays,
+    totalContracts: result.totalContracts,
+    totalClaims: result.totalClaims,
+    avgMonthlyPayment: result.avgMonthlyPayment,
     hasDefaults: result.hasDefaults,
     hasCreditBan: result.hasCreditBan,
   }

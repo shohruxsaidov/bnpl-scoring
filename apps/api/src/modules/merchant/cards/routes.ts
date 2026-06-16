@@ -11,6 +11,7 @@ import {
 } from '../../integrations/plumgate/service'
 import { createScoring } from '../scoringHistory/commands/create-scoring'
 import { loadOwnedActiveSession, saveStep, stampScoring, type SessionStepData } from '../deal-sessions/service'
+import type { CriteriaScores } from '../../scoring/service'
 
 export default async function merchantCardRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
@@ -143,14 +144,58 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
       const coefficient = result.score >= 700 ? 1.0 : result.score >= 600 ? 0.8 : 0
       console.log('[score] coefficient:', coefficient)
 
-      // Scoring breakdown: card score + KATM-derived credit signals from the session
+      // Scoring breakdown: KATM bureau, card (Plum), client identity (MyID)
       const katm = (session.stepData as SessionStepData).katm
       console.log('[score] katm from session:', JSON.stringify(katm))
-      const criteriaScores: Record<string, number> = { cardScore: result.score }
-      if (katm) {
-        criteriaScores['katmScore'] = katm.score
-        criteriaScores['activeLoans'] = katm.activeLoans
-        criteriaScores['overdueCount'] = katm.overdueCount
+
+      const [clientRow] = await db
+        .select({ birthDate: clients.birthDate, gender: clients.gender, nationality: clients.nationality })
+        .from(clients)
+        .where(eq(clients.id, BigInt(clientId)))
+        .limit(1)
+
+      const criteriaScores: CriteriaScores = {
+        ...(katm && {
+          katm: {
+            katmScore: katm.score,
+            detail: {
+              katmScore: katm.score,
+              katmClass: katm.scoringClass,
+              scoringLevel: katm.scoringLevel,
+              openCredits: katm.activeLoans,
+              totalDebt: katm.allDebtSum,
+              overdueInOpenCredits: katm.overdueAmount,
+              totalContracts: katm.totalContracts,
+              totalClaims: katm.totalClaims,
+              overdueCount: katm.overdueCount,
+              maxOverdueDays: katm.maxOverdueDays,
+              maxOverdueSum: katm.overdueAmount,
+              avgMonthlyPayment: katm.avgMonthlyPayment,
+              hasCreditBan: katm.hasCreditBan,
+            },
+          },
+        }),
+        card: {
+          score: result.score,
+          detail: {
+            score: result.score,
+            limit: result.limit,
+            decision: result.decision,
+            pcType,
+            bank,
+            maskedPan,
+            holderName,
+          },
+        },
+        ...(clientRow && {
+          client: {
+            detail: {
+              birthDate: clientRow.birthDate,
+              gender: clientRow.gender,
+              nationality: clientRow.nationality,
+            },
+          },
+        }),
       }
       console.log('[score] criteriaScores:', JSON.stringify(criteriaScores))
 
@@ -166,7 +211,7 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
           coefficient,
           decision: result.decision,
           platformCreditLimit: BigInt(Math.round(result.limit)),
-          criteriaScores,
+          criteriaScores: criteriaScores as Record<string, unknown>,
         })
         scoringId = res.id
         console.log('[score] createScoring OK, scoringId:', scoringId)
@@ -196,7 +241,7 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
         coefficient,
         decision: result.decision,
         platformCreditLimit: result.limit,
-        criteriaScores,
+        criteriaScores: criteriaScores as Record<string, unknown>,
       })
       console.log('[score] stampScoring OK')
 

@@ -199,7 +199,7 @@ interface ServerScoreResult {
   decision: string
   scoringId: string | null
   coefficient: number
-  criteriaScores: Record<string, number>
+  criteriaScores: Record<string, unknown>
 }
 
 const scoring = ref(false)

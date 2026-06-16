@@ -24,7 +24,7 @@ export default async function merchantScoringHistoryRoutes(app: FastifyInstance)
     coefficient: Type.Optional(Type.Number()),
     decision: Type.String({ minLength: 1 }),
     platformCreditLimit: Type.Number(),
-    criteriaScores: Type.Optional(Type.Record(Type.String(), Type.Number())),
+    criteriaScores: Type.Optional(Type.Unknown()),
   })
 
   /* ── POST / — record a scoring run (before any deal exists) ────────────── */
@@ -41,7 +41,7 @@ export default async function merchantScoringHistoryRoutes(app: FastifyInstance)
           coefficient: request.body.coefficient ?? null,
           decision: request.body.decision,
           platformCreditLimit: BigInt(Math.round(request.body.platformCreditLimit)),
-          criteriaScores: request.body.criteriaScores ?? null,
+          criteriaScores: (request.body.criteriaScores as Record<string, unknown>) ?? null,
         })
         return reply.code(201).send(res)
       } catch (err: any) {

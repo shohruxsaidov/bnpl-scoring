@@ -31,7 +31,7 @@ export interface SessionScoring {
   coefficient: number
   decision: string
   platformCreditLimit: number
-  criteriaScores: Record<string, number>
+  criteriaScores: Record<string, unknown>
 }
 
 export interface SessionStepData {

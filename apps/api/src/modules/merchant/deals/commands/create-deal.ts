@@ -30,7 +30,7 @@ export interface CreateDealInput {
   scoringDecision: string | null
   coefficient?: number | null
   platformCreditLimit?: bigint | null
-  criteriaScores?: Record<string, number> | null
+  criteriaScores?: Record<string, unknown> | null
   scoringId?: bigint | null
   lang: "ru" | "uz"
   // KATM audit trail copied from the Deal Session (ADR-0024)
