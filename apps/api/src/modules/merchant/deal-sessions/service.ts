@@ -1,109 +1,123 @@
-import { and, eq } from 'drizzle-orm'
-import type { Db } from '../../../db'
-import { dealSessions, dealSessionEvents } from '../../deals/db/schema'
-import { clients, products, tariffs } from '../../id/db/schema'
+import { and, eq } from 'drizzle-orm';
+import type { Db } from '../../../db';
+import { dealSessions, dealSessionEvents } from '../../deals/db/schema';
+import { clients, products, tariffs } from '../../id/db/schema';
 
 // Wizard steps in order. 'done' is a frontend-only pseudo-step; the session's
 // currentStep never goes past 'verification' — completion is a status change.
-export const WIZARD_STEPS = ['client', 'card', 'tariff', 'products', 'payment', 'verification'] as const
-export type WizardStep = (typeof WIZARD_STEPS)[number]
+export const WIZARD_STEPS = [
+  'client',
+  'card',
+  'tariff',
+  'products',
+  'payment',
+  'verification',
+] as const;
+export type WizardStep = (typeof WIZARD_STEPS)[number];
 
 export function isWizardStep(s: string): s is WizardStep {
-  return (WIZARD_STEPS as readonly string[]).includes(s)
+  return (WIZARD_STEPS as readonly string[]).includes(s);
 }
 
 /** KATM result stamped by the server at /merchant/katm/query. */
 export interface KatmStamp {
-  clientId: string
-  claimId: string
-  demandId: string
-  consentId: string
-  consentDate: string
-  score: number
-  scoringClass: string
-  scoringLevel: string
-  activeLoans: number
-  allDebtSum: number
-  overdueCount: number
-  overdueAmount: number
-  hasDefaults: boolean
-  hasCreditBan: boolean
-  raw: unknown
+  clientId: string;
+  claimId: string;
+  demandId: string;
+  consentId: string;
+  consentDate: string;
+  score: number;
+  scoringClass: string;
+  scoringLevel: string;
+  activeLoans: number;
+  allDebtSum: number;
+  overdueCount: number;
+  overdueAmount: number;
+  hasDefaults: boolean;
+  hasCreditBan: boolean;
+  raw: unknown;
 }
 
 /** Scoring result stamped by the server at /merchant/cards/score. */
 export interface ScoringStamp {
-  cardId: string
+  cardId: string;
   /** scoring_histories.id as string */
-  scoringId: string | null
-  scoreSum: number
-  coefficient: number
-  decision: string
+  scoringId: string | null;
+  scoreSum: number;
+  coefficient: number;
+  decision: string;
   /** tiyin */
-  platformCreditLimit: number
-  criteriaScores: Record<string, number>
+  platformCreditLimit: number;
+  criteriaScores: Record<string, number>;
 }
 
 /** Async-report state while a BullMQ job polls KATM (ADR-0025). */
 export interface KatmPendingState {
-  status: 'pending' | 'failed'
-  startedAt: string
-  error?: string
+  status: 'pending' | 'failed';
+  startedAt: string;
+  error?: string;
 }
 
 /** Prepayment confirmed server-side at POST /prepayment (ADR-0026). */
 export interface PrepaymentStamp {
   /** Gap in tiyin: totalWithMarkup - effectiveLimit. Installments run on this less. */
-  amount: number
-  confirmedAt: string
+  amount: number;
+  confirmedAt: string;
 }
 
 export interface SessionStepData {
-  client?: { clientId: string; isNewClient: boolean; myidVerified: boolean; katmConsent: boolean }
-  card?: { cardId: string; maskedPan: string; pcType: string; bank: string; holderName: string; expiry: string }
+  client?: { clientId: string; isNewClient: boolean; myidVerified: boolean; katmConsent: boolean };
+  card?: {
+    cardId: string;
+    maskedPan: string;
+    pcType: string;
+    bank: string;
+    holderName: string;
+    expiry: string;
+  };
   // Tariff params snapshotted server-side at save time (amounts in tiyin, as strings)
   tariff?: {
-    tariffId: string
-    name: string
-    termMonths: number
-    markupPercent: number
-    minAmount: string | null
-    maxAmount: string | null
-  }
+    tariffId: string;
+    name: string;
+    termMonths: number;
+    markupPercent: number;
+    minAmount: string | null;
+    maxAmount: string | null;
+  };
   // Basket lines with server-snapshotted prices — what the Client consents to is
   // what the Deal is built from, even if the Product is edited afterwards
   products?: {
     lines: Array<{
-      productId: string
-      productName: string
-      price: string
-      mxikCode: string | null
-      packageCode: number | null
-      packageName: string | null
-      quantity: number
-    }>
-  }
-  payment?: { paymentDay: number }
-  verification?: { lang: 'ru' | 'uz'; otpVerifiedAt: string | null }
-  katm?: KatmStamp
-  katmPending?: KatmPendingState
-  scoring?: ScoringStamp
+      productId: string;
+      productName: string;
+      price: string;
+      mxikCode: string | null;
+      packageCode: number | null;
+      packageName: string | null;
+      quantity: number;
+    }>;
+  };
+  payment?: { paymentDay: number };
+  verification?: { lang: 'ru' | 'uz'; otpVerifiedAt: string | null };
+  katm?: KatmStamp;
+  katmPending?: KatmPendingState;
+  scoring?: ScoringStamp;
   // Stamped by POST /prepayment; cleared whenever products step is redone (ADR-0026)
-  prepayment?: PrepaymentStamp
+  prepayment?: PrepaymentStamp;
 }
 
-export type DealSessionRow = typeof dealSessions.$inferSelect
+export type DealSessionRow = typeof dealSessions.$inferSelect;
 
 function err(code: string): Error & { code: string } {
-  return Object.assign(new Error(code), { code })
+  return Object.assign(new Error(code), { code });
 }
 
 function stepDataOf(session: DealSessionRow): SessionStepData {
-  return (session.stepData ?? {}) as SessionStepData
+  return (session.stepData ?? {}) as SessionStepData;
 }
 
 async function logEvent(db: Db, sessionId: string, step: string, payload: unknown) {
-  await db.insert(dealSessionEvents).values({ sessionId, step, payload })
+  await db.insert(dealSessionEvents).values({ sessionId, step, payload });
 }
 
 /** The agent's single active session, or null. */
@@ -112,19 +126,23 @@ export async function getActiveSession(db: Db, agentId: bigint): Promise<DealSes
     .select()
     .from(dealSessions)
     .where(and(eq(dealSessions.agentId, agentId), eq(dealSessions.status, 'active')))
-    .limit(1)
-  return row ?? null
+    .limit(1);
+  return row ?? null;
 }
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Load a session by id and assert it is the agent's own active session. */
-export async function loadOwnedActiveSession(db: Db, id: string, agentId: bigint): Promise<DealSessionRow> {
-  if (!UUID_RE.test(id)) throw err('session_not_found')
-  const [row] = await db.select().from(dealSessions).where(eq(dealSessions.id, id)).limit(1)
-  if (!row || row.agentId !== agentId) throw err('session_not_found')
-  if (row.status !== 'active') throw err('session_not_active')
-  return row
+export async function loadOwnedActiveSession(
+  db: Db,
+  id: string,
+  agentId: bigint,
+): Promise<DealSessionRow> {
+  if (!UUID_RE.test(id)) throw err('session_not_found');
+  const [row] = await db.select().from(dealSessions).where(eq(dealSessions.id, id)).limit(1);
+  if (!row || row.agentId !== agentId) throw err('session_not_found');
+  if (row.status !== 'active') throw err('session_not_active');
+  return row;
 }
 
 /**
@@ -133,41 +151,48 @@ export async function loadOwnedActiveSession(db: Db, id: string, agentId: bigint
  */
 export async function createSession(
   db: Db,
-  input: { merchantId: bigint; branchId: bigint; agentId: bigint },
+  input: { merchantId: bigint; branchId: bigint; agentId: bigint; clientId: number },
 ): Promise<DealSessionRow> {
   return db.transaction(async (tx) => {
     const [existing] = await tx
       .select()
       .from(dealSessions)
       .where(and(eq(dealSessions.agentId, input.agentId), eq(dealSessions.status, 'active')))
-      .limit(1)
+      .limit(1);
     if (existing) {
       await tx
         .update(dealSessions)
         .set({ status: 'abandoned', updatedAt: new Date() })
-        .where(eq(dealSessions.id, existing.id))
+        .where(eq(dealSessions.id, existing.id));
       await tx
         .insert(dealSessionEvents)
-        .values({ sessionId: existing.id, step: 'abandoned', payload: { reason: 'superseded' } })
+        .values({ sessionId: existing.id, step: 'abandoned', payload: { reason: 'superseded' } });
     }
 
     const [session] = await tx
       .insert(dealSessions)
-      .values({ merchantId: input.merchantId, branchId: input.branchId, agentId: input.agentId })
-      .returning()
-    if (!session) throw new Error('session_insert_failed')
+      .values({
+        merchantId: input.merchantId,
+        branchId: input.branchId,
+        agentId: input.agentId,
+        clientId: input.clientId ? BigInt(input.clientId): undefined,
+      })
+      .returning();
+    if (!session) throw new Error('session_insert_failed');
 
-    await tx.insert(dealSessionEvents).values({ sessionId: session.id, step: 'opened', payload: null })
-    return session
-  })
+    await tx
+      .insert(dealSessionEvents)
+      .values({ sessionId: session.id, step: 'opened', payload: null });
+    return session;
+  });
 }
 
 export async function abandonSession(db: Db, session: DealSessionRow): Promise<void> {
   await db
     .update(dealSessions)
     .set({ status: 'abandoned', updatedAt: new Date() })
-    .where(eq(dealSessions.id, session.id))
-  await logEvent(db, session.id, 'abandoned', { reason: 'closed' })
+    .where(eq(dealSessions.id, session.id));
+  await logEvent(db, session.id, 'abandoned', { reason: 'closed' });
 }
 
 /**
@@ -181,71 +206,86 @@ export async function saveStep(
   step: WizardStep,
   body: Record<string, unknown>,
 ): Promise<DealSessionRow> {
-  console.log('[saveStep] called', { sessionId: session.id, step, body })
+  console.log('[saveStep] called', { sessionId: session.id, step, body });
 
-  const data = stepDataOf(session)
-  console.log('[saveStep] current stepData', data)
+  const data = stepDataOf(session);
+  console.log('[saveStep] current stepData', data);
 
-  const saved = await buildStepPayload(db, session, step, body, data)
-  console.log('[saveStep] buildStepPayload result', saved)
+  const saved = await buildStepPayload(db, session, step, body, data);
+  console.log('[saveStep] buildStepPayload result', saved);
 
-  const next: SessionStepData = { ...data, [step]: saved }
+  const next: SessionStepData = { ...data, [step]: saved };
 
   // Invalidate all later steps
-  const idx = WIZARD_STEPS.indexOf(step)
-  for (const later of WIZARD_STEPS.slice(idx + 1)) delete next[later]
-  console.log('[saveStep] next stepData after invalidation', next)
+  const idx = WIZARD_STEPS.indexOf(step);
+  for (const later of WIZARD_STEPS.slice(idx + 1)) delete next[later];
+  console.log('[saveStep] next stepData after invalidation', next);
 
   // Server stamps are tied to the inputs they were computed from
   if (step === 'client') {
-    const clientId = (saved as NonNullable<SessionStepData['client']>).clientId
-    console.log('[saveStep] client step — clientId', clientId, 'katm.clientId', next.katm?.clientId)
-    if (next.katm && next.katm.clientId !== clientId) { console.log('[saveStep] dropping katm (clientId mismatch)'); delete next.katm }
-    if (next.scoring) { console.log('[saveStep] dropping scoring (client changed)'); delete next.scoring }
+    const clientId = (saved as NonNullable<SessionStepData['client']>).clientId;
+    console.log(
+      '[saveStep] client step — clientId',
+      clientId,
+      'katm.clientId',
+      next.katm?.clientId,
+    );
+    if (next.katm && next.katm.clientId !== clientId) {
+      console.log('[saveStep] dropping katm (clientId mismatch)');
+      delete next.katm;
+    }
+    if (next.scoring) {
+      console.log('[saveStep] dropping scoring (client changed)');
+      delete next.scoring;
+    }
   }
   if (step === 'card') {
-    const cardId = (saved as NonNullable<SessionStepData['card']>).cardId
-    console.log('[saveStep] card step — cardId', cardId, 'scoring.cardId', next.scoring?.cardId)
-    if (next.scoring && next.scoring.cardId !== cardId) { console.log('[saveStep] dropping scoring (cardId mismatch)'); delete next.scoring }
+    const cardId = (saved as NonNullable<SessionStepData['card']>).cardId;
+    console.log('[saveStep] card step — cardId', cardId, 'scoring.cardId', next.scoring?.cardId);
+    if (next.scoring && next.scoring.cardId !== cardId) {
+      console.log('[saveStep] dropping scoring (cardId mismatch)');
+      delete next.scoring;
+    }
   }
   // Prepayment amount is tied to the basket total; a basket change invalidates it (ADR-0026)
   if (step === 'products' && next.prepayment) {
-    console.log('[saveStep] dropping prepayment (products changed)')
-    delete next.prepayment
+    console.log('[saveStep] dropping prepayment (products changed)');
+    delete next.prepayment;
   }
 
-  const after = WIZARD_STEPS[idx + 1] ?? 'verification'
-  console.log('[saveStep] advancing currentStep to', after)
+  const after = WIZARD_STEPS[idx + 1] ?? 'verification';
+  console.log('[saveStep] advancing currentStep to', after);
 
   const [updated] = await db
     .update(dealSessions)
     .set({
       stepData: next,
       currentStep: after,
-      clientId: step === 'client'
-        ? BigInt((saved as NonNullable<SessionStepData['client']>).clientId)
-        : session.clientId,
+      clientId:
+        step === 'client'
+          ? BigInt((saved as NonNullable<SessionStepData['client']>).clientId)
+          : session.clientId,
       updatedAt: new Date(),
     })
     .where(eq(dealSessions.id, session.id))
-    .returning()
-  console.log('[saveStep] db.update result', updated ?? 'NOT FOUND')
-  if (!updated) throw err('session_not_found')
+    .returning();
+  console.log('[saveStep] db.update result', updated ?? 'NOT FOUND');
+  if (!updated) throw err('session_not_found');
 
-  await logEvent(db, session.id, step, saved)
-  console.log('[saveStep] done — returning updated session')
-  return updated
+  await logEvent(db, session.id, step, saved);
+  console.log('[saveStep] done — returning updated session');
+  return updated;
 }
 
 /** Merge a server-side KATM result into the session head + event trail. */
 export async function stampKatm(db: Db, session: DealSessionRow, stamp: KatmStamp): Promise<void> {
-  const data = stepDataOf(session)
-  const { katmPending: _drop, ...rest } = data
+  const data = stepDataOf(session);
+  const { katmPending: _drop, ...rest } = data;
   await db
     .update(dealSessions)
-    .set({ stepData: { ...rest, katm: stamp }, updatedAt: new Date() })
-    .where(eq(dealSessions.id, session.id))
-  await logEvent(db, session.id, 'katm', stamp)
+    .set({ stepData: { ...rest, katm: stamp }, clientId: BigInt(stamp.clientId), updatedAt: new Date() })
+    .where(eq(dealSessions.id, session.id));
+  await logEvent(db, session.id, 'katm', stamp);
 }
 
 /** Record/refresh the async KATM-report state on the session (ADR-0025). */
@@ -254,46 +294,58 @@ export async function stampKatmPending(
   session: DealSessionRow,
   state: KatmPendingState,
 ): Promise<void> {
-  const data = stepDataOf(session)
+  const data = stepDataOf(session);
   await db
     .update(dealSessions)
     .set({ stepData: { ...data, katmPending: state }, updatedAt: new Date() })
-    .where(eq(dealSessions.id, session.id))
-  await logEvent(db, session.id, 'katm_pending', state)
+    .where(eq(dealSessions.id, session.id));
+  await logEvent(db, session.id, 'katm_pending', state);
 }
 
 /** Persist the KATM Claim ID allocated for this run (ADR-0025). */
-export async function setKatmClaimId(db: Db, session: DealSessionRow, claimId: string): Promise<void> {
+export async function setKatmClaimId(
+  db: Db,
+  session: DealSessionRow,
+  claimId: string,
+): Promise<void> {
   await db
     .update(dealSessions)
     .set({ katmClaimId: claimId, updatedAt: new Date() })
-    .where(eq(dealSessions.id, session.id))
+    .where(eq(dealSessions.id, session.id));
 }
 
 /** Stamp the confirmed prepayment onto the session head + event trail (ADR-0026). */
-export async function stampPrepayment(db: Db, session: DealSessionRow, stamp: PrepaymentStamp): Promise<void> {
-  const data = stepDataOf(session)
+export async function stampPrepayment(
+  db: Db,
+  session: DealSessionRow,
+  stamp: PrepaymentStamp,
+): Promise<void> {
+  const data = stepDataOf(session);
   await db
     .update(dealSessions)
     .set({ stepData: { ...data, prepayment: stamp }, updatedAt: new Date() })
-    .where(eq(dealSessions.id, session.id))
-  await logEvent(db, session.id, 'prepayment', stamp)
+    .where(eq(dealSessions.id, session.id));
+  await logEvent(db, session.id, 'prepayment', stamp);
 }
 
 /** Merge a server-side scoring result into the session head + event trail. */
-export async function stampScoring(db: Db, session: DealSessionRow, stamp: ScoringStamp): Promise<void> {
-  const data = stepDataOf(session)
+export async function stampScoring(
+  db: Db,
+  session: DealSessionRow,
+  stamp: ScoringStamp,
+): Promise<void> {
+  const data = stepDataOf(session);
   await db
     .update(dealSessions)
     .set({ stepData: { ...data, scoring: stamp }, updatedAt: new Date() })
-    .where(eq(dealSessions.id, session.id))
-  await logEvent(db, session.id, 'scoring', stamp)
+    .where(eq(dealSessions.id, session.id));
+  await logEvent(db, session.id, 'scoring', stamp);
 }
 
 /* ── Per-step validation & server-side enrichment ─────────────────────────── */
 
 function str(v: unknown): string | null {
-  return typeof v === 'string' && v.length > 0 ? v : null
+  return typeof v === 'string' && v.length > 0 ? v : null;
 }
 
 async function buildStepPayload(
@@ -303,35 +355,35 @@ async function buildStepPayload(
   body: Record<string, unknown>,
   _data: SessionStepData,
 ): Promise<SessionStepData[WizardStep]> {
-  console.log('[buildStepPayload] called', { sessionId: session.id, step, body })
+  console.log('[buildStepPayload] called', { sessionId: session.id, step, body });
 
   switch (step) {
     case 'client': {
-      const clientId = str(body['clientId'])
-      console.log('[buildStepPayload:client] clientId', clientId)
-      if (!clientId || !/^\d+$/.test(clientId)) throw err('invalid_step_payload')
+      const clientId = str(body['clientId']);
+      console.log('[buildStepPayload:client] clientId', clientId);
+      if (!clientId || !/^\d+$/.test(clientId)) throw err('invalid_step_payload');
       const [client] = await db
         .select({ id: clients.id })
         .from(clients)
         .where(eq(clients.id, BigInt(clientId)))
-        .limit(1)
-      console.log('[buildStepPayload:client] db lookup result', client ?? 'NOT FOUND')
-      if (!client) throw err('client_not_found')
+        .limit(1);
+      console.log('[buildStepPayload:client] db lookup result', client ?? 'NOT FOUND');
+      if (!client) throw err('client_not_found');
       const result = {
         clientId,
         isNewClient: body['isNewClient'] === true,
         myidVerified: body['myidVerified'] === true,
         katmConsent: body['katmConsent'] === true,
-      }
-      console.log('[buildStepPayload:client] returning', result)
-      return result
+      };
+      console.log('[buildStepPayload:client] returning', result);
+      return result;
     }
 
     case 'card': {
-      const cardId = str(body['cardId'])
-      const maskedPan = str(body['maskedPan'])
-      console.log('[buildStepPayload:card] cardId', cardId, 'maskedPan', maskedPan)
-      if (!cardId || !maskedPan) throw err('invalid_step_payload')
+      const cardId = str(body['cardId']);
+      const maskedPan = str(body['maskedPan']);
+      console.log('[buildStepPayload:card] cardId', cardId, 'maskedPan', maskedPan);
+      if (!cardId || !maskedPan) throw err('invalid_step_payload');
       const result = {
         cardId,
         maskedPan,
@@ -339,18 +391,27 @@ async function buildStepPayload(
         bank: str(body['bank']) ?? '',
         holderName: str(body['holderName']) ?? '',
         expiry: str(body['expiry']) ?? '',
-      }
-      console.log('[buildStepPayload:card] returning', result)
-      return result
+      };
+      console.log('[buildStepPayload:card] returning', result);
+      return result;
     }
 
     case 'tariff': {
-      const tariffId = str(body['tariffId'])
-      console.log('[buildStepPayload:tariff] tariffId', tariffId)
-      if (!tariffId || !/^\d+$/.test(tariffId)) throw err('invalid_step_payload')
-      const [tariff] = await db.select().from(tariffs).where(eq(tariffs.id, BigInt(tariffId))).limit(1)
-      console.log('[buildStepPayload:tariff] db lookup result', tariff ?? 'NOT FOUND', 'active', tariff?.active)
-      if (!tariff || !tariff.active) throw err('tariff_not_found')
+      const tariffId = str(body['tariffId']);
+      console.log('[buildStepPayload:tariff] tariffId', tariffId);
+      if (!tariffId || !/^\d+$/.test(tariffId)) throw err('invalid_step_payload');
+      const [tariff] = await db
+        .select()
+        .from(tariffs)
+        .where(eq(tariffs.id, BigInt(tariffId)))
+        .limit(1);
+      console.log(
+        '[buildStepPayload:tariff] db lookup result',
+        tariff ?? 'NOT FOUND',
+        'active',
+        tariff?.active,
+      );
+      if (!tariff || !tariff.active) throw err('tariff_not_found');
       const result = {
         tariffId,
         name: tariff.name,
@@ -358,29 +419,39 @@ async function buildStepPayload(
         markupPercent: parseFloat(tariff.markupPercent),
         minAmount: tariff.minAmount?.toString() ?? null,
         maxAmount: tariff.maxAmount?.toString() ?? null,
-      }
-      console.log('[buildStepPayload:tariff] returning', result)
-      return result
+      };
+      console.log('[buildStepPayload:tariff] returning', result);
+      return result;
     }
 
     case 'products': {
-      const rawLines = Array.isArray(body['lines']) ? (body['lines'] as unknown[]) : []
-      console.log('[buildStepPayload:products] rawLines', rawLines)
-      if (rawLines.length === 0) throw err('invalid_step_payload')
+      const rawLines = Array.isArray(body['lines']) ? (body['lines'] as unknown[]) : [];
+      console.log('[buildStepPayload:products] rawLines', rawLines);
+      if (rawLines.length === 0) throw err('invalid_step_payload');
       const lines = rawLines.map((l) => {
-        const line = l as Record<string, unknown>
-        const productId = str(line['productId'])
-        const quantity = typeof line['quantity'] === 'number' ? Math.floor(line['quantity']) : 0
-        console.log('[buildStepPayload:products] parsed line', { productId, quantity })
-        if (!productId || !/^\d+$/.test(productId) || quantity < 1) throw err('invalid_step_payload')
-        return { productId, quantity }
-      })
+        const line = l as Record<string, unknown>;
+        const productId = str(line['productId']);
+        const quantity = typeof line['quantity'] === 'number' ? Math.floor(line['quantity']) : 0;
+        console.log('[buildStepPayload:products] parsed line', { productId, quantity });
+        if (!productId || !/^\d+$/.test(productId) || quantity < 1)
+          throw err('invalid_step_payload');
+        return { productId, quantity };
+      });
 
-      const resolved = []
+      const resolved = [];
       for (const line of lines) {
-        const [p] = await db.select().from(products).where(eq(products.id, BigInt(line.productId))).limit(1)
-        console.log('[buildStepPayload:products] product lookup', { productId: line.productId, found: !!p, active: p?.active, merchantMatch: p?.merchantId === session.merchantId })
-        if (!p || !p.active || p.merchantId !== session.merchantId) throw err('product_not_found')
+        const [p] = await db
+          .select()
+          .from(products)
+          .where(eq(products.id, BigInt(line.productId)))
+          .limit(1);
+        console.log('[buildStepPayload:products] product lookup', {
+          productId: line.productId,
+          found: !!p,
+          active: p?.active,
+          merchantMatch: p?.merchantId === session.merchantId,
+        });
+        if (!p || !p.active || p.merchantId !== session.merchantId) throw err('product_not_found');
         resolved.push({
           productId: line.productId,
           productName: p.name,
@@ -390,29 +461,34 @@ async function buildStepPayload(
           packageCode: p.packageCode ?? null,
           packageName: p.packageName ?? null,
           quantity: line.quantity,
-        })
+        });
       }
-      console.log('[buildStepPayload:products] returning', resolved)
-      return { lines: resolved }
+      console.log('[buildStepPayload:products] returning', resolved);
+      return { lines: resolved };
     }
 
     case 'payment': {
-      const day = body['paymentDay']
-      console.log('[buildStepPayload:payment] paymentDay', day)
+      const day = body['paymentDay'];
+      console.log('[buildStepPayload:payment] paymentDay', day);
       if (typeof day !== 'number' || !Number.isInteger(day) || day < 1 || day > 28) {
-        throw err('invalid_step_payload')
+        throw err('invalid_step_payload');
       }
-      console.log('[buildStepPayload:payment] returning', { paymentDay: day })
-      return { paymentDay: day }
+      console.log('[buildStepPayload:payment] returning', { paymentDay: day });
+      return { paymentDay: day };
     }
 
     case 'verification': {
-      const lang = body['lang']
-      console.log('[buildStepPayload:verification] lang', lang, 'otpVerifiedAt', body['otpVerifiedAt'])
-      if (lang !== 'ru' && lang !== 'uz') throw err('invalid_step_payload')
-      const result = { lang, otpVerifiedAt: str(body['otpVerifiedAt']) } as any
-      console.log('[buildStepPayload:verification] returning', result)
-      return result
+      const lang = body['lang'];
+      console.log(
+        '[buildStepPayload:verification] lang',
+        lang,
+        'otpVerifiedAt',
+        body['otpVerifiedAt'],
+      );
+      if (lang !== 'ru' && lang !== 'uz') throw err('invalid_step_payload');
+      const result = { lang, otpVerifiedAt: str(body['otpVerifiedAt']) } as any;
+      console.log('[buildStepPayload:verification] returning', result);
+      return result;
     }
   }
 }
