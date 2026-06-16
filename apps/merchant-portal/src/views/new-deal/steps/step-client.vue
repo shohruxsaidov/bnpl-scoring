@@ -137,6 +137,7 @@ async function checkKatmStatus() {
       katmPending.value = false
       deal.setKatmResult(res)
       katmDone.value = true
+      onNext()
     } else if (res.status === 'failed') {
       stopKatmPolling()
       katmPending.value = false

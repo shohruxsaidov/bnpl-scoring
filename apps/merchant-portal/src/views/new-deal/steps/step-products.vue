@@ -795,8 +795,8 @@ async function submitPrepayment() {
 .basket-foot {
   margin-top: 1.2rem;
   display: flex;
+  flex-direction: column;
   gap: 0.6rem;
-  flex-wrap: wrap;
 }
 
 .basket-foot button {
