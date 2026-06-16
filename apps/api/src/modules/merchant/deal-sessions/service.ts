@@ -302,6 +302,19 @@ export async function stampKatmPending(
   await logEvent(db, session.id, 'katm_pending', state);
 }
 
+/** Anchor the chosen client to the session as early as possible (e.g. at KATM query time). */
+export async function setSessionClientId(
+  db: Db,
+  session: DealSessionRow,
+  clientId: bigint,
+): Promise<void> {
+  if (session.clientId === clientId) return;
+  await db
+    .update(dealSessions)
+    .set({ clientId, updatedAt: new Date() })
+    .where(eq(dealSessions.id, session.id));
+}
+
 /** Persist the KATM Claim ID allocated for this run (ADR-0025). */
 export async function setKatmClaimId(
   db: Db,

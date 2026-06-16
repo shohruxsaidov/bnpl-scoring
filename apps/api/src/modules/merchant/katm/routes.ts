@@ -13,6 +13,7 @@ import { enqueueKatmPoll, katmSummary, saveKatmSir } from '../../integrations/ka
 import {
   loadOwnedActiveSession,
   setKatmClaimId,
+  setSessionClientId,
   stampKatm,
   stampKatmPending,
   type SessionStepData,
@@ -63,6 +64,8 @@ export default async function merchantKatmRoutes(app: FastifyInstance) {
         .limit(1)
 
       if (!client) return reply.code(404).sendError('client_not_found')
+
+      await setSessionClientId(db, session, client.id)
 
       // Claim registration needs the full subject — surface what's missing so
       // the Agent can fill the gaps manually (pre-ADR-0025 rows lack them)
