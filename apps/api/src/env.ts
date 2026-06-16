@@ -46,10 +46,8 @@ const schema = z.object({
   KATM_CODE: z.string().optional(), // pCode — org code assigned by KATM
   KATM_HEAD: z.string().optional(), // pHead — head org code (retail = 'RET')
   KATM_REPORT_ID: z.coerce.number().default(77), // pReportId — InfoScore 077
-  KATM_CURRENCY_CODE: z.string().default('000'), // dict 017 — UZS
   // Claim registration happens before Tariff/Basket exist, so the applied
   // amount and term are fixed (ADR-0025): 300 000 so'm, 12 months.
-  KATM_CLAIM_AMOUNT_TIYIN: z.coerce.number().default(30_000_000),
   KATM_CLAIM_TERM_MONTHS: z.coerce.number().default(12),
   // Report polling (result 05050): KATM mandates ≥60 s between checks.
   KATM_POLL_INTERVAL_MS: z.coerce.number().default(60_000),

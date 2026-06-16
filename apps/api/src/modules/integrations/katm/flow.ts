@@ -138,6 +138,7 @@ export async function startKatmFlow(
     districtCode: input.subject.districtCode,
     address: input.subject.address,
     phone: input.subject.phone,
+    amount: 35000000 // in tiyin 350 000 dom 
   })
 
   const report = await requestReport(db, { claimId: input.claimId })
