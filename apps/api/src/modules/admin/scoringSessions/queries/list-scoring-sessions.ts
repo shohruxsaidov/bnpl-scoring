@@ -1,44 +1,55 @@
 import { desc, eq } from 'drizzle-orm'
 import type { Db } from '../../../../db'
-import { scoringSessions } from '../../../scoring/db/schema'
-import { users } from '../../../id/db/schema'
+import { dealSessions } from '../../../deals/db/schema'
+import { clients, merchants, merchantUsers } from '../../../id/db/schema'
 
-export interface ScoringSessionListItem {
+export interface DealSessionListItem {
   id: string
-  clientName: string
-  clientPhone: string
-  clientPinfl: string
+  clientName: string | null
+  clientPhone: string | null
+  clientPinfl: string | null
+  merchantName: string
+  agentName: string
   status: string
-  consentDate: string
+  currentStep: string
+  katmClaimId: string | null
   createdAt: string
-  scoredAt: string | null
+  updatedAt: string
 }
 
-export async function listScoringSessions(db: Db): Promise<ScoringSessionListItem[]> {
+export async function listScoringSessions(db: Db): Promise<DealSessionListItem[]> {
   const rows = await db
     .select({
-      id: scoringSessions.id,
-      status: scoringSessions.status,
-      consentDate: scoringSessions.consentDate,
-      createdAt: scoringSessions.createdAt,
-      scoredAt: scoringSessions.scoredAt,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      phone: users.phone,
-      pinfl: users.pinfl,
+      id: dealSessions.id,
+      status: dealSessions.status,
+      currentStep: dealSessions.currentStep,
+      katmClaimId: dealSessions.katmClaimId,
+      createdAt: dealSessions.createdAt,
+      updatedAt: dealSessions.updatedAt,
+      merchantName: merchants.name,
+      agentName: merchantUsers.fullName,
+      clientFirstName: clients.firstName,
+      clientLastName: clients.lastName,
+      clientPhone: clients.phone,
+      clientPinfl: clients.pinfl,
     })
-    .from(scoringSessions)
-    .innerJoin(users, eq(users.id, scoringSessions.userId))
-    .orderBy(desc(scoringSessions.createdAt))
+    .from(dealSessions)
+    .innerJoin(merchants, eq(merchants.id, dealSessions.merchantId))
+    .innerJoin(merchantUsers, eq(merchantUsers.id, dealSessions.agentId))
+    .leftJoin(clients, eq(clients.id, dealSessions.clientId))
+    .orderBy(desc(dealSessions.createdAt))
 
   return rows.map((r) => ({
     id: r.id,
-    clientName: `${r.lastName} ${r.firstName}`,
-    clientPhone: r.phone,
-    clientPinfl: r.pinfl,
+    clientName: r.clientFirstName ? `${r.clientLastName} ${r.clientFirstName}` : null,
+    clientPhone: r.clientPhone ?? null,
+    clientPinfl: r.clientPinfl ?? null,
+    merchantName: r.merchantName,
+    agentName: r.agentName,
     status: r.status,
-    consentDate: r.consentDate,
+    currentStep: r.currentStep,
+    katmClaimId: r.katmClaimId ?? null,
     createdAt: r.createdAt.toISOString(),
-    scoredAt: r.scoredAt ? r.scoredAt.toISOString() : null,
+    updatedAt: r.updatedAt.toISOString(),
   }))
 }

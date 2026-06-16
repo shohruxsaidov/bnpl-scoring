@@ -18,10 +18,9 @@ onMounted(() => store.fetchList())
 
 const statusOptions = computed(() => [
   { label: t('scoringSessions.allStatuses'), value: null },
-  { label: t('scoringSessions.statusPending'), value: 'pending' },
-  { label: t('scoringSessions.statusRunning'), value: 'running' },
+  { label: t('scoringSessions.statusActive'), value: 'active' },
   { label: t('scoringSessions.statusCompleted'), value: 'completed' },
-  { label: t('scoringSessions.statusFailed'), value: 'failed' },
+  { label: t('scoringSessions.statusAbandoned'), value: 'abandoned' },
 ])
 
 const filtered = computed<ScoringSessionListItem[]>(() => {
@@ -31,19 +30,20 @@ const filtered = computed<ScoringSessionListItem[]>(() => {
     const q = search.value.toLowerCase()
     list = list.filter(
       (r) =>
-        r.clientName.toLowerCase().includes(q) ||
-        r.clientPhone.includes(q) ||
-        r.clientPinfl.includes(q),
+        r.clientName?.toLowerCase().includes(q) ||
+        r.clientPhone?.includes(q) ||
+        r.clientPinfl?.includes(q) ||
+        r.merchantName.toLowerCase().includes(q) ||
+        r.agentName.toLowerCase().includes(q),
     )
   }
   return list
 })
 
 const STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
-  pending: { fg: 'var(--warning)', bg: 'var(--warning-bg)' },
-  running: { fg: 'var(--accent-2)', bg: 'color-mix(in srgb, var(--accent-2) 12%, transparent)' },
+  active: { fg: 'var(--accent-2)', bg: 'color-mix(in srgb, var(--accent-2) 12%, transparent)' },
   completed: { fg: 'var(--success)', bg: 'var(--success-bg)' },
-  failed: { fg: 'var(--danger)', bg: 'var(--danger-bg)' },
+  abandoned: { fg: 'var(--text-secondary)', bg: 'color-mix(in srgb, var(--text-secondary) 10%, transparent)' },
 }
 
 function statusLabel(s: string): string {
@@ -106,9 +106,20 @@ function openDetail(row: ScoringSessionListItem) {
           <Column :header="$t('scoringSessions.client')">
             <template #body="{ data }">
               <div class="client-cell">
-                <span class="client-name">{{ data.clientName }}</span>
-                <span class="client-sub">{{ data.clientPhone }} · {{ data.clientPinfl }}</span>
+                <span v-if="data.clientName" class="client-name">{{ data.clientName }}</span>
+                <span v-else class="client-name muted">{{ $t('scoringSessions.noClient') }}</span>
+                <span v-if="data.clientPhone" class="client-sub">
+                  {{ data.clientPhone }}
+                  <template v-if="data.clientPinfl"> · {{ data.clientPinfl }}</template>
+                </span>
               </div>
+            </template>
+          </Column>
+          <Column :header="$t('scoringSessions.merchant')" field="merchantName" />
+          <Column :header="$t('scoringSessions.agent')" field="agentName" />
+          <Column :header="$t('scoringSessions.currentStep')">
+            <template #body="{ data }">
+              <span class="step-badge">{{ data.currentStep }}</span>
             </template>
           </Column>
           <Column :header="$t('scoringSessions.status')">
@@ -124,12 +135,8 @@ function openDetail(row: ScoringSessionListItem) {
               </span>
             </template>
           </Column>
-          <Column :header="$t('scoringSessions.consentDate')" field="consentDate" />
           <Column :header="$t('scoringSessions.createdAt')">
             <template #body="{ data }">{{ formatDateTime(data.createdAt) }}</template>
-          </Column>
-          <Column :header="$t('scoringSessions.scoredAt')">
-            <template #body="{ data }">{{ formatDateTime(data.scoredAt) }}</template>
           </Column>
         </DataTable>
       </div>
@@ -229,9 +236,22 @@ function openDetail(row: ScoringSessionListItem) {
   font-size: 0.9rem;
 }
 
+.client-name.muted {
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
 .client-sub {
   font-size: 0.78rem;
   color: var(--text-secondary);
+}
+
+.step-badge {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-family: var(--font-mono, monospace);
 }
 
 .status-badge {

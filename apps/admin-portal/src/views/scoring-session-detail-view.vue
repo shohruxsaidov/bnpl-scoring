@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import { useScoringSessionsStore } from '@/stores/scoring-sessions'
-import MonoAmount from '@/components/mono-amount.vue'
 import { formatDateTime } from '@/utils/money'
 
 const route = useRoute()
@@ -17,22 +16,15 @@ const id = computed(() => route.params.id as string)
 
 onMounted(() => store.fetchDetail(id.value))
 
-const SESSION_STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
-  pending: { fg: 'var(--warning)', bg: 'var(--warning-bg)' },
-  running: { fg: 'var(--accent-2)', bg: 'color-mix(in srgb, var(--accent-2) 12%, transparent)' },
+const STATUS_COLORS: Record<string, { fg: string; bg: string }> = {
+  active: { fg: 'var(--accent-2)', bg: 'color-mix(in srgb, var(--accent-2) 12%, transparent)' },
   completed: { fg: 'var(--success)', bg: 'var(--success-bg)' },
-  failed: { fg: 'var(--danger)', bg: 'var(--danger-bg)' },
+  abandoned: { fg: 'var(--text-secondary)', bg: 'color-mix(in srgb, var(--text-secondary) 10%, transparent)' },
 }
 
 function statusLabel(s: string): string {
   const key = `scoringSessions.status${s.charAt(0).toUpperCase() + s.slice(1)}`
   return t(key)
-}
-
-function pipelineTypeLabel(type: string): string {
-  if (type === 'katm') return 'KATM'
-  if (type === 'card_scoring') return t('scoringSessions.cardScoring')
-  return type
 }
 </script>
 
@@ -58,18 +50,20 @@ function pipelineTypeLabel(type: string): string {
       <div class="surface-card header-card">
         <div class="header-top">
           <div>
-            <h1 class="client-name">{{ store.detail.clientName }}</h1>
-            <div class="client-meta">
+            <h1 class="client-name">
+              {{ store.detail.clientName ?? $t('scoringSessions.noClient') }}
+            </h1>
+            <div v-if="store.detail.clientPhone" class="client-meta">
               <span>{{ store.detail.clientPhone }}</span>
-              <span class="sep">·</span>
-              <span>{{ store.detail.clientPinfl }}</span>
+              <span v-if="store.detail.clientPinfl" class="sep">·</span>
+              <span v-if="store.detail.clientPinfl">{{ store.detail.clientPinfl }}</span>
             </div>
           </div>
           <span
             class="status-badge lg"
             :style="{
-              color: SESSION_STATUS_COLORS[store.detail.status]?.fg,
-              background: SESSION_STATUS_COLORS[store.detail.status]?.bg,
+              color: STATUS_COLORS[store.detail.status]?.fg,
+              background: STATUS_COLORS[store.detail.status]?.bg,
             }"
           >
             {{ statusLabel(store.detail.status) }}
@@ -78,12 +72,16 @@ function pipelineTypeLabel(type: string): string {
 
         <div class="info-grid">
           <div class="info-item">
-            <span class="info-label">{{ $t('scoringSessions.consentId') }}</span>
-            <span class="info-value mono">{{ store.detail.consentId }}</span>
+            <span class="info-label">{{ $t('scoringSessions.merchant') }}</span>
+            <span class="info-value">{{ store.detail.merchantName }}</span>
           </div>
           <div class="info-item">
-            <span class="info-label">{{ $t('scoringSessions.consentDate') }}</span>
-            <span class="info-value">{{ store.detail.consentDate }}</span>
+            <span class="info-label">{{ $t('scoringSessions.agent') }}</span>
+            <span class="info-value">{{ store.detail.agentName }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">{{ $t('scoringSessions.currentStep') }}</span>
+            <span class="info-value mono">{{ store.detail.currentStep }}</span>
           </div>
           <div class="info-item">
             <span class="info-label">{{ $t('scoringSessions.katmClaimId') }}</span>
@@ -94,64 +92,23 @@ function pipelineTypeLabel(type: string): string {
             <span class="info-value">{{ formatDateTime(store.detail.createdAt) }}</span>
           </div>
           <div class="info-item">
-            <span class="info-label">{{ $t('scoringSessions.scoredAt') }}</span>
-            <span class="info-value">{{ formatDateTime(store.detail.scoredAt) }}</span>
+            <span class="info-label">{{ $t('scoringSessions.updatedAt') }}</span>
+            <span class="info-value">{{ formatDateTime(store.detail.updatedAt) }}</span>
           </div>
         </div>
       </div>
 
-      <!-- User limit card -->
-      <div v-if="store.detail.userLimit" class="surface-card limit-card">
-        <div class="section-title">{{ $t('scoringSessions.userLimit') }}</div>
-        <div class="limit-amount-row">
-          <MonoAmount :value="store.detail.userLimit.limitAmount" size="lg" />
-          <span class="limit-label">{{ $t('scoringSessions.approvedLimit') }}</span>
-        </div>
-        <div class="info-grid mt">
-          <div class="info-item">
-            <span class="info-label">{{ $t('scoringSessions.limitScoredAt') }}</span>
-            <span class="info-value">{{ formatDateTime(store.detail.userLimit.scoredAt) }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">{{ $t('scoringSessions.limitUpdatedAt') }}</span>
-            <span class="info-value">{{ formatDateTime(store.detail.userLimit.updatedAt) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Pipelines table -->
-      <div class="surface-card pipelines-card">
-        <div class="section-title">{{ $t('scoringSessions.pipelines') }}</div>
-        <DataTable :value="store.detail.pipelines" striped-rows>
-          <Column :header="$t('scoringSessions.pipelineType')">
+      <!-- Events table -->
+      <div class="surface-card events-card">
+        <div class="section-title">{{ $t('scoringSessions.events') }}</div>
+        <DataTable :value="store.detail.events" striped-rows>
+          <Column :header="$t('scoringSessions.eventStep')">
             <template #body="{ data }">
-              <span class="pipeline-type">{{ pipelineTypeLabel(data.type) }}</span>
+              <span class="step-tag">{{ data.step }}</span>
             </template>
           </Column>
-          <Column :header="$t('scoringSessions.status')">
-            <template #body="{ data }">
-              <span
-                class="status-badge"
-                :style="{
-                  color: SESSION_STATUS_COLORS[data.status]?.fg,
-                  background: SESSION_STATUS_COLORS[data.status]?.bg,
-                }"
-              >
-                {{ statusLabel(data.status) }}
-              </span>
-            </template>
-          </Column>
-          <Column :header="$t('scoringSessions.startedAt')">
-            <template #body="{ data }">{{ formatDateTime(data.startedAt) }}</template>
-          </Column>
-          <Column :header="$t('scoringSessions.completedAt')">
-            <template #body="{ data }">{{ formatDateTime(data.completedAt) }}</template>
-          </Column>
-          <Column :header="$t('scoringSessions.pipelineError')">
-            <template #body="{ data }">
-              <span v-if="data.error" class="pipeline-error">{{ data.error }}</span>
-              <span v-else class="no-error">—</span>
-            </template>
+          <Column :header="$t('scoringSessions.eventCreatedAt')">
+            <template #body="{ data }">{{ formatDateTime(data.createdAt) }}</template>
           </Column>
         </DataTable>
       </div>
@@ -234,10 +191,6 @@ function pipelineTypeLabel(type: string): string {
   gap: 1rem 1.5rem;
 }
 
-.info-grid.mt {
-  margin-top: 1rem;
-}
-
 .info-item {
   display: flex;
   flex-direction: column;
@@ -263,11 +216,7 @@ function pipelineTypeLabel(type: string): string {
   font-size: 0.84rem;
 }
 
-.limit-card {
-  padding: 1.25rem 1.5rem;
-}
-
-.pipelines-card {
+.events-card {
   padding: 1.25rem 1.5rem 0;
 }
 
@@ -278,32 +227,15 @@ function pipelineTypeLabel(type: string): string {
   color: var(--text-primary);
 }
 
-.limit-amount-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.limit-label {
-  font-size: 0.84rem;
-  color: var(--text-secondary);
-}
-
-.pipeline-type {
+.step-tag {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent-2) 10%, transparent);
+  color: var(--accent-2);
+  font-size: 0.78rem;
   font-weight: 700;
-  font-size: 0.88rem;
-}
-
-.pipeline-error {
-  font-size: 0.8rem;
-  color: var(--danger);
-  max-width: 280px;
-  display: block;
-  word-break: break-word;
-}
-
-.no-error {
-  color: var(--text-secondary);
+  font-family: var(--font-mono, monospace);
 }
 
 .skeleton-block {

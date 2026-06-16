@@ -4,42 +4,38 @@ import { apiFetch } from '@/utils/apiFetch'
 
 export interface ScoringSessionListItem {
   id: string
-  clientName: string
-  clientPhone: string
-  clientPinfl: string
+  clientName: string | null
+  clientPhone: string | null
+  clientPinfl: string | null
+  merchantName: string
+  agentName: string
   status: string
-  consentDate: string
+  currentStep: string
+  katmClaimId: string | null
   createdAt: string
-  scoredAt: string | null
+  updatedAt: string
 }
 
-export interface ScoringPipelineItem {
+export interface DealSessionEventItem {
   id: string
-  type: string
-  status: string
-  result: unknown
-  error: string | null
-  startedAt: string | null
-  completedAt: string | null
+  step: string
+  createdAt: string
 }
 
 export interface ScoringSessionDetail {
   id: string
-  clientName: string
-  clientPhone: string
-  clientPinfl: string
+  clientName: string | null
+  clientPhone: string | null
+  clientPinfl: string | null
+  merchantName: string
+  agentName: string
   status: string
-  consentId: string
-  consentDate: string
+  currentStep: string
   katmClaimId: string | null
+  stepData: Record<string, unknown>
   createdAt: string
-  scoredAt: string | null
-  pipelines: ScoringPipelineItem[]
-  userLimit: {
-    limitAmount: number
-    scoredAt: string
-    updatedAt: string
-  } | null
+  updatedAt: string
+  events: DealSessionEventItem[]
 }
 
 export const useScoringSessionsStore = defineStore('scoringSessions', () => {
