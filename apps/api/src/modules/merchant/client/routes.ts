@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { eq } from 'drizzle-orm';
-import { clients } from '@db/schema';
+import { clients, users } from '@db/schema';
 import { searchClients, findClientByPinflAndMerchant } from './queries/search-client';
 import { createClient } from './commands/create-client';
 import { createOtp, verifyOtp } from '../../auth/client/service';
@@ -10,12 +10,14 @@ import { createMyidSession, exchangeMyidCode } from '../../auth/client/myid';
 import { createDealFromSession } from '../deals/commands/create-deal';
 import { loadOwnedActiveSession } from '../deal-sessions/service';
 import { env } from '../../../env';
+import { createUserHandler } from 'src/modules/id/users';
+import { findUsersHandler } from 'src/modules/id/users/queries/find-user/find-user.handler';
 
 function formatDealNumber(n: number | null | undefined): string {
   return n != null ? `CN-${String(n).padStart(7, '0')}` : '—';
 }
 
-function toClientDto(c: typeof clients.$inferSelect) {
+function toClientDto(c: typeof users.$inferSelect) {
   return {
     id: c.id.toString(),
     pinfl: c.pinfl,
@@ -25,7 +27,7 @@ function toClientDto(c: typeof clients.$inferSelect) {
     birthDate: c.birthDate,
     gender: c.gender,
     nationality: c.nationality,
-    passportSerial: c.passportSerial,
+    passportSeries: c.passportSeries,
     passportNumber: c.passportNumber,
     photoUrl: c.photoUrl,
     address: c.address,
@@ -80,9 +82,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
     '/search',
     { schema: { querystring: SearchQuery }, preHandler: app.verifyMerchantJwt },
     async (request) => {
-      const payload = request.user as { sub: string; merchantId: string };
-      const { q } = request.query;
-      const results = await searchClients(db, q, Number(payload.merchantId));
+      const results = await findUsersHandler({ query: request.query.q });
       return { clients: results.map(toClientDto) };
     },
   );
@@ -190,26 +190,24 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
       const merchantId = Number(phase2.merchantId);
       const branchId = Number(phase2.branchId);
 
-      const existing = await findClientByPinflAndMerchant(db, phase2.pinfl, merchantId);
-      if (existing) return { client: toClientDto(existing), isNew: false };
+      const existing = await findUsersHandler({ query: phase2.pinfl });
+      if (existing.length) return { client: toClientDto(existing[0]), isNew: false };
 
-      const client = await createClient(db, {
+      const client = await createUserHandler({
         phone: phase2.phone,
         pinfl: myidUser.pinfl,
         firstName: myidUser.firstName,
         lastName: myidUser.lastName,
+        middleName: myidUser.middleName || '',
         birthDate: myidUser.birthDate,
-        gender: myidUser.gender,
         nationality: myidUser.nationality,
-        passportSerial: myidUser.passportSerial,
+        passportSeries: myidUser.passportSerial,
         passportNumber: myidUser.passportNumber,
-        photoUrl: myidUser.photoUrl,
-        address: myidUser.address,
-        katmRegionCode: myidUser.regionCode,
-        katmDistrictCode: myidUser.districtCode,
-        docType: myidUser.docType,
-        merchantId,
-        branchId,
+        address: myidUser.address || undefined,
+        regionCode: myidUser.regionCode,
+        districtCode: myidUser.districtCode,
+        docType: myidUser.docType || 1,
+        gender: 1,
       });
 
       return { client: toClientDto(client), isNew: true };
@@ -224,38 +222,6 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
     katmDistrictCode: Type.String({ minLength: 1, maxLength: 3, pattern: '^\\d{1,3}$' }),
     docType: Type.Union([Type.Literal(0), Type.Literal(6)]),
   });
-
-  /**
-   * PATCH /merchant/client/:id/katm-details
-   * Agent manual entry of the KATM claim-registration fields for client rows
-   * created before they were captured from MyID (ADR-0025). The Wizard offers
-   * this form when /merchant/katm/query answers client_katm_fields_missing.
-   */
-  fastify.patch(
-    '/:id/katm-details',
-    {
-      schema: {
-        params: Type.Object({ id: Type.String({ pattern: '^\\d+$' }) }),
-        body: KatmDetailsBody,
-      },
-      preHandler: app.verifyMerchantJwt,
-    },
-    async (request, reply) => {
-      const id = Number(request.params.id);
-      const [updated] = await db
-        .update(clients)
-        .set({
-          address: request.body.address,
-          regionCode: request.body.katmRegionCode.padStart(2, '0'),
-          districtCode: request.body.katmDistrictCode.padStart(3, '0'),
-          docType: request.body.docType,
-        })
-        .where(eq(clients.id, id))
-        .returning();
-      if (!updated) return reply.code(404).sendError('client_not_found');
-      return { client: toClientDto(updated) };
-    },
-  );
 
   /* ── Kontrakt signing OTP ───────────────────────────────────────────────── */
 

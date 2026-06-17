@@ -20,15 +20,15 @@ export interface MyidUserData {
   middleName: string | null;
   gender: 'male' | 'female';
   nationality: string;
-  passportSerial: string | null;
-  passportNumber: string | null;
+  passportSerial: string;
+  passportNumber: string;
   photoUrl: string | null;
   // KATM claim registration fields (ADR-0025) — registration address + doc
   // type. Region/district codes are best-effort mapped from MyID's catalog
   // ids; when absent the Agent enters them manually.
   address: string | null;
-  regionCode: string | null; // KATM dict 016
-  districtCode: string | null; // KATM dict 052
+  regionCode: string; // KATM dict 016
+  districtCode: string; // KATM dict 052
   docType: number | null; // 0 — ID card, 6 — biometric passport
 }
 

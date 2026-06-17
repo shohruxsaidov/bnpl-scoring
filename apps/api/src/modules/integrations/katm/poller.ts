@@ -13,9 +13,9 @@ import type { Queue } from 'bullmq'
 import type { Db } from '../../../db'
 import { env } from '../../../env'
 import { ssePush } from '../../../lib/sse'
-import { dealSessions } from '../../deals/db/schema'
+import { dealSessions } from '../../deals/schema'
 import { clients, users } from '@db/schema'
-import { scoringPipelines, scoringSessions } from '../../scoring/db/schema'
+import { scoringPipelines, scoringSessions } from '../../scoring/schema'
 import {
   stampKatm,
   stampKatmPending,

@@ -1,7 +1,7 @@
 import webpush from 'web-push';
 import { and, eq } from 'drizzle-orm';
 import type { Db } from '../../db';
-import { pushSubscriptions } from './db/schema';
+import { pushSubscriptions } from './schema';
 import { env } from '../../env';
 
 webpush.setVapidDetails(env.VAPID_SUBJECT, env.VAPID_PUBLIC_KEY, env.VAPID_PRIVATE_KEY);

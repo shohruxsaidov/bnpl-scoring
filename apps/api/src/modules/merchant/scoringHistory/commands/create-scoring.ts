@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import type { Db } from '../../../../db';
-import { scoringHistories } from '../../../deals/db/schema';
+import { scoringHistories } from '../../../deals/schema';
 import { clients } from '@db/schema';
 
 export interface CreateScoringInput {

@@ -4,7 +4,7 @@ import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import type { FastifyInstance } from 'fastify'
 import { eq } from 'drizzle-orm'
 import { clients } from '@db/schema'
-import { dealSessions } from '../../deals/db/schema'
+import { dealSessions } from '../../deals/schema'
 import {
   abandonSession,
   createSession,

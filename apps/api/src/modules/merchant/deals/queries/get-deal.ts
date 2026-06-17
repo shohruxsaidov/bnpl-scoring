@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import type { Db } from '../../../../db';
-import { deals, dealItems, dealPaymentSchedules } from '../../../deals/db/schema';
+import { deals, dealItems, dealPaymentSchedules } from '../../../deals/schema';
 import { clients, tariffs, merchantUsers, merchants, branches } from '@db/schema';
 
 function serializeNumber(v: number | null | undefined): string | null {

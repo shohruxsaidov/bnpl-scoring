@@ -10,7 +10,7 @@ export const users = pgTable('users', {
   birthDate: date('birth_date').notNull(),
   gender: integer('gender').notNull(), // for male = 1; for female = 2;
   nationality: varchar('nationality', { length: 100 }).notNull(),
-  passportSerial: varchar('passport_serial', { length: 2 }),
+  passportSeries: varchar('passport_series', { length: 2 }),
   passportNumber: varchar('passport_number', { length: 7 }),
   photoUrl: text('photo_url'),
   verifiedAt: timestamp('verified_at', { withTimezone: true }),
@@ -19,4 +19,5 @@ export const users = pgTable('users', {
   districtCode: varchar('district_code', { length: 3 }), // dict 052
   docType: integer('doc_type'), // 0 — ID card, 6 — biometric passport
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  hashPassword: varchar('hash_password'),
 });

@@ -10,7 +10,7 @@
 
 import { sql } from 'drizzle-orm';
 import type { Db } from '../../../db';
-import { agreements } from '../db/schema';
+import { agreements } from '../schema';
 import { checkCreditBan, registerClaim, request077Report, type KatmResult } from './service';
 
 // ---------------------------------------------------------------------------

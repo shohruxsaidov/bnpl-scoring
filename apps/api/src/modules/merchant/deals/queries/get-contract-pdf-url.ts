@@ -1,7 +1,7 @@
 import type { Client as MinioClient } from "minio"
 import { and, eq } from "drizzle-orm"
 import type { Db } from "../../../../db"
-import { deals as dealsTable, dealDocuments } from "../../../deals/db/schema"
+import { deals as dealsTable, dealDocuments } from "../../../deals/schema"
 import { env } from "../../../../env"
 import { recordFile, deleteFile } from "../../../../lib/file-storage"
 import { minioPresign } from "../../../../lib/minio-presign"

@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox'
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import type { FastifyInstance } from 'fastify'
 import { desc, eq, ilike, or } from 'drizzle-orm'
-import { notificationBroadcasts } from '../../notifications/db/schema'
+import { notificationBroadcasts } from '../../notifications/schema'
 import { createNotification } from '../../notifications/service'
 import { merchantUsers, users } from '@db/schema'
 

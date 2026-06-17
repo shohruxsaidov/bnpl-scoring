@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import type { Db } from '../../../db';
-import { dealSessions, dealSessionEvents } from '../../deals/db/schema';
+import { dealSessions, dealSessionEvents } from '../../deals/schema';
 import { clients, products, tariffs } from '@db/schema';
 
 // Wizard steps in order. 'done' is a frontend-only pseudo-step; the session's

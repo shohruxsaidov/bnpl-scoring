@@ -1,11 +1,11 @@
 import { and, eq } from 'drizzle-orm';
 import type { Db } from '../../db';
 import { users, clients } from '@db/schema';
-import { scoringHistories } from '../deals/db/schema';
+import { scoringHistories } from '../deals/schema';
 import { katmSummary } from '../integrations/katm/poller';
 import { addCard, confirmCard, scoreCard } from '../integrations/plumgate/service';
 import type { KatmResult } from '../integrations/katm/service';
-import { scoringSessions, scoringPipelines } from './db/schema';
+import { scoringSessions, scoringPipelines } from './schema';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -261,7 +261,7 @@ export async function completeScoringCard(
         firstName: users.firstName,
         lastName: users.lastName,
         middleName: users.middleName,
-        passportSerial: users.passportSerial,
+        passportSeries: users.passportSeries,
         passportNumber: users.passportNumber,
         pinfl: users.pinfl,
         phone: users.phone,
@@ -297,7 +297,7 @@ export async function completeScoringCard(
       lastName: user?.lastName ?? null,
       middleName: user?.middleName ?? null,
       passportNumber: user?.passportNumber ?? null,
-      passportSeries: user?.passportSerial ?? null,
+      passportSeries: user?.passportSeries ?? null,
       pinfl: user?.pinfl ?? null,
       phoneNumber: user?.phone ?? null,
       criteriaScores,

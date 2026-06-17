@@ -1,35 +1,26 @@
-import { createHash, randomBytes, randomUUID } from "node:crypto";
-import { and, eq, gt, ilike, isNull, or } from "drizzle-orm";
-import type { Db } from "../../../db/index.js";
-import {
-  clientDevices,
-  clientSessions,
-  otpVerifications,
-  users,
-} from '@db/schema';
-import { env } from "../../../env.js";
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { and, eq, gt, ilike, isNull, or } from 'drizzle-orm';
+import type { Db } from '../../../db/index.js';
+import { clientDevices, clientSessions, otpVerifications, users } from '@db/schema';
+import { env } from '../../../env.js';
 
-export type OtpPurpose = "login" | "register" | "client_registration" | "deal_signing";
+export type OtpPurpose = 'login' | 'register' | 'client_registration' | 'deal_signing';
 
 /** Hash a raw token with SHA-256, hex-encoded. */
 function hashToken(token: string): string {
-  return createHash("sha256").update(token).digest("hex");
+  return createHash('sha256').update(token).digest('hex');
 }
 
 /** Generate a random 4-digit OTP string (zero-padded). */
 export function generateOtp(): string {
-  return String(Math.floor(Math.random() * 10000)).padStart(4, "0");
+  return String(Math.floor(Math.random() * 10000)).padStart(4, '0');
 }
 
 /**
  * Delete any existing unused OTPs for the same phone+purpose, then insert a
  * fresh code valid for 5 minutes. Returns the generated code.
  */
-export async function createOtp(
-  db: Db,
-  phone: string,
-  purpose: OtpPurpose,
-): Promise<string> {
+export async function createOtp(db: Db, phone: string, purpose: OtpPurpose): Promise<string> {
   await db
     .delete(otpVerifications)
     .where(
@@ -83,20 +74,12 @@ export async function verifyOtp(
 }
 
 export async function findUserByPhone(db: Db, phone: string) {
-  const [row] = await db
-    .select()
-    .from(users)
-    .where(eq(users.phone, phone))
-    .limit(1);
+  const [row] = await db.select().from(users).where(eq(users.phone, phone)).limit(1);
   return row;
 }
 
 export async function findUserById(db: Db, id: number) {
-  const [row] = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, id))
-    .limit(1);
+  const [row] = await db.select().from(users).where(eq(users.id, id)).limit(1);
   return row;
 }
 
@@ -105,58 +88,13 @@ export async function searchUsers(db: Db, q: string, limit = 20) {
   return db
     .select()
     .from(users)
-    .where(
-      or(
-        ilike(users.firstName, term),
-        ilike(users.lastName, term),
-        ilike(users.pinfl, term),
-      ),
-    )
+    .where(or(ilike(users.firstName, term), ilike(users.lastName, term), ilike(users.pinfl, term)))
     .limit(limit);
 }
 
 export async function findUserByPinfl(db: Db, pinfl: string) {
-  const [row] = await db
-    .select()
-    .from(users)
-    .where(eq(users.pinfl, pinfl))
-    .limit(1);
+  const [row] = await db.select().from(users).where(eq(users.pinfl, pinfl)).limit(1);
   return row;
-}
-
-export async function createUser(
-  db: Db,
-  input: {
-    phone: string;
-    pinfl: string;
-    firstName: string;
-    lastName: string;
-    middleName: string | null;
-    birthDate: string;
-    gender: number;
-    nationality: string;
-    passportSerial: string | null;
-    passportNumber: string | null;
-    photoUrl: string | null;
-  },
-) {
-  const [row] = await db
-    .insert(users)
-    .values({
-      phone: input.phone,
-      pinfl: input.pinfl,
-      firstName: input.firstName,
-      lastName: input.lastName,
-      birthDate: input.birthDate,
-      gender: input.gender,
-      nationality: input.nationality,
-      passportSerial: input.passportSerial,
-      passportNumber: input.passportNumber,
-      photoUrl: input.photoUrl,
-      verifiedAt: new Date(),
-    })
-    .returning();
-  return row!;
 }
 
 /**
@@ -167,11 +105,9 @@ export async function createSession(
   db: Db,
   userId: number,
 ): Promise<{ sessionId: string; sessionToken: string }> {
-  const sessionToken = randomUUID() + randomBytes(16).toString("hex");
+  const sessionToken = randomUUID() + randomBytes(16).toString('hex');
   const sessionTokenHash = hashToken(sessionToken);
-  const expiresAt = new Date(
-    Date.now() + env.SESSION_EXPIRES_DAYS * 24 * 60 * 60 * 1000,
-  );
+  const expiresAt = new Date(Date.now() + env.SESSION_EXPIRES_DAYS * 24 * 60 * 60 * 1000);
 
   const [row] = await db
     .insert(clientSessions)
@@ -210,7 +146,13 @@ export async function verifySession(db: Db, sessionToken: string) {
 
 export async function upsertDevice(
   db: Db,
-  input: { userId: number; deviceId: string; fcmToken: string; platform: 'ios' | 'android'; appVersion: string },
+  input: {
+    userId: number;
+    deviceId: string;
+    fcmToken: string;
+    platform: 'ios' | 'android';
+    appVersion: string;
+  },
 ): Promise<void> {
   await db
     .insert(clientDevices)
@@ -235,10 +177,7 @@ export async function clearDeviceFcmToken(db: Db, deviceId: string): Promise<voi
 }
 
 /** Revoke the session matching the given raw token, if any. */
-export async function revokeSession(
-  db: Db,
-  sessionToken: string,
-): Promise<void> {
+export async function revokeSession(db: Db, sessionToken: string): Promise<void> {
   const sessionTokenHash = hashToken(sessionToken);
   await db
     .update(clientSessions)

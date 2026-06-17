@@ -1,6 +1,6 @@
 import { eq, inArray } from "drizzle-orm"
 import type { Db } from "../../../../db"
-import { deals, dealItems, dealPaymentSchedules, dealSessions, dealSessionEvents, scoringHistories, buyouts } from "../../../deals/db/schema"
+import { deals, dealItems, dealPaymentSchedules, dealSessions, dealSessionEvents, scoringHistories, buyouts } from "../../../deals/schema"
 import { calcTotalPayable, splitInstallments } from "../../../deals/installments"
 import { clients, products } from '@db/schema'
 import type { DealSessionRow, SessionStepData } from "../../deal-sessions/service"
