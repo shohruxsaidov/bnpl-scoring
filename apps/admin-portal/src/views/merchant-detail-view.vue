@@ -90,17 +90,40 @@ async function loadEmployeesForBranches() {
   await Promise.all(branches.value.map((b) => merchants.fetchEmployees(b.id)))
 }
 
+const tabLoaded = ref(new Set<string>())
+
+function loadTab(tab: Tab) {
+  if ((tab === 'Branches' || tab === 'Employees') && !tabLoaded.value.has('employees')) {
+    tabLoaded.value.add('employees')
+    loadEmployeesForBranches().catch(() => notifyError('merchantDetail.loadFailed'))
+  }
+  if ((tab === 'Categories' || tab === 'Products') && !tabLoaded.value.has('categories')) {
+    tabLoaded.value.add('categories')
+    merchants.fetchCategories(merchantId.value).catch(() => notifyError('merchantDetail.loadFailed'))
+  }
+  if (tab === 'Products' && !tabLoaded.value.has('products')) {
+    tabLoaded.value.add('products')
+    merchants.fetchProducts(merchantId.value).catch(() => notifyError('merchantDetail.loadFailed'))
+  }
+  if (tab === 'Documents' && !tabLoaded.value.has('documents')) {
+    tabLoaded.value.add('documents')
+    merchants.fetchDocuments(merchantId.value).catch(() => notifyError('merchantDetail.loadFailed'))
+  }
+  if (tab === 'Tariffs' && !tabLoaded.value.has('tariffs')) {
+    tabLoaded.value.add('tariffs')
+    merchants.fetchMerchantTariffs(merchantId.value).catch(() => notifyError('merchantDetail.loadFailed'))
+  }
+  if (tab === 'ScoringModel' && !tabLoaded.value.has('scoring-model')) {
+    tabLoaded.value.add('scoring-model')
+    scoringModels.fetchModels().catch(() => notifyError('merchantDetail.loadFailed'))
+  }
+}
+
 onMounted(async () => {
   try {
     await merchants.fetchOne(merchantId.value)
     await merchants.fetchBranches(merchantId.value)
-    await Promise.all([
-      loadEmployeesForBranches(),
-      merchants.fetchCategories(merchantId.value),
-      merchants.fetchProducts(merchantId.value),
-      merchants.fetchDocuments(merchantId.value),
-      merchants.fetchMerchantTariffs(merchantId.value),
-    ])
+    loadTab(activeTab.value)
   } catch {
     notifyError('merchantDetail.loadFailed')
   }
@@ -341,6 +364,7 @@ const {
 
 watch(activeTab, (tab) => {
   router.replace({ query: { ...route.query, tab: tab.toLowerCase() } })
+  loadTab(tab)
 })
 
 watch(
@@ -562,17 +586,6 @@ const effectiveModel = computed(() => {
 })
 
 const modelAssigning = ref(false)
-const modelsRequested = ref(false)
-
-watch(
-  activeTab,
-  (tab) => {
-    if (tab !== 'ScoringModel' || modelsRequested.value) return
-    modelsRequested.value = true
-    scoringModels.fetchModels().catch(() => notifyError('merchantDetail.loadFailed'))
-  },
-  { immediate: true },
-)
 
 async function assignScoringModel(radioValue: number) {
   if (modelAssigning.value || radioValue === assignedModelRadio.value) return
