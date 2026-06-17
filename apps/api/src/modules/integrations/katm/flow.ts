@@ -10,7 +10,7 @@
 
 import { sql } from 'drizzle-orm';
 import type { Db } from '../../../db';
-import { katmConsents } from '../db/schema';
+import { agreements } from '../db/schema';
 import { checkCreditBan, registerClaim, request077Report, type KatmResult } from './service';
 
 // ---------------------------------------------------------------------------
@@ -70,7 +70,7 @@ export async function allocateKatmClaimId(db: Db): Promise<string> {
 // KATM Consent — the sequence-numbered record behind pAgreementId (ADR-0025)
 // ---------------------------------------------------------------------------
 
-export interface KatmConsentRecord {
+export interface AgreementRecord {
   /** katm_consents.id as string — sent as pAgreementId */
   agreementId: string;
   /** sent as pAgreementDate */
@@ -85,16 +85,16 @@ export async function createKatmConsent(
     userId?: number;
     sessionId?: string;
   },
-): Promise<KatmConsentRecord> {
+): Promise<AgreementRecord> {
   const [row] = await db
-    .insert(katmConsents)
+    .insert(agreements)
     .values({
       channel: input.channel,
       clientId: input.clientId ?? null,
       userId: input.userId ?? null,
       sessionId: input.sessionId ?? null,
     })
-    .returning({ id: katmConsents.id, createdAt: katmConsents.createdAt });
+    .returning({ id: agreements.id, createdAt: agreements.createdAt });
   if (!row) throw new Error('katm_consent_insert_failed');
   return { agreementId: row.id.toString(), agreementDate: row.createdAt };
 }
@@ -112,7 +112,7 @@ export async function startKatmFlow(
   db: Db,
   input: {
     claimId: string;
-    consent: KatmConsentRecord;
+    consent: AgreementRecord;
     subject: KatmSubject;
   },
 ): Promise<KatmFlowOutcome> {

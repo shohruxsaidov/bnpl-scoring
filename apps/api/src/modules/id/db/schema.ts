@@ -348,9 +348,7 @@ export const merchantDocuments = pgTable('merchant_documents', {
     .references(() => merchants.id),
   fileUrl: text('file_url').notNull(),
   documentType: varchar('document_type', { length: 50 }).notNull(),
-  uploadedByAdminId: integer('uploaded_by_admin_id').references(
-    () => adminUsers.id,
-  ),
+  uploadedByAdminId: integer('uploaded_by_admin_id').references(() => adminUsers.id),
   uploadedAt: timestamp('uploaded_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
@@ -386,7 +384,7 @@ export const blacklist = pgTable(
   (t) => [unique().on(t.type, t.value)],
 );
 
-export const merchantSessions = pgTable('merchant_sessions', {
+export const merchantUserSessions = pgTable('merchant_user_sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
   merchantUserId: integer('merchant_user_id')
     .notNull()

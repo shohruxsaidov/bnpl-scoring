@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from 'no
 import { promisify } from 'node:util';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import type { Db } from '../../../db/index.js';
-import { merchantSessions, merchantUsers } from '../../id/db/schema.js';
+import { merchantUserSessions, merchantUsers } from '../../id/db/schema.js';
 import { env } from '../../../env.js';
 
 const scryptAsync = promisify(scrypt);
@@ -52,9 +52,9 @@ export async function createMerchantSession(
   const expiresAt = new Date(Date.now() + env.SESSION_EXPIRES_DAYS * 24 * 60 * 60 * 1000);
 
   const [row] = await db
-    .insert(merchantSessions)
+    .insert(merchantUserSessions)
     .values({ merchantUserId, selectedRole, sessionTokenHash, expiresAt })
-    .returning({ id: merchantSessions.id });
+    .returning({ id: merchantUserSessions.id });
 
   return { sessionId: row!.id, sessionToken };
 }
@@ -64,12 +64,12 @@ export async function verifyMerchantSession(db: Db, sessionToken: string) {
 
   const [session] = await db
     .select()
-    .from(merchantSessions)
+    .from(merchantUserSessions)
     .where(
       and(
-        eq(merchantSessions.sessionTokenHash, sessionTokenHash),
-        isNull(merchantSessions.revokedAt),
-        gt(merchantSessions.expiresAt, new Date()),
+        eq(merchantUserSessions.sessionTokenHash, sessionTokenHash),
+        isNull(merchantUserSessions.revokedAt),
+        gt(merchantUserSessions.expiresAt, new Date()),
       ),
     )
     .limit(1);
@@ -97,7 +97,7 @@ export async function changeMerchantPassword(
 export async function revokeMerchantSession(db: Db, sessionToken: string): Promise<void> {
   const sessionTokenHash = hashToken(sessionToken);
   await db
-    .update(merchantSessions)
+    .update(merchantUserSessions)
     .set({ revokedAt: new Date() })
-    .where(eq(merchantSessions.sessionTokenHash, sessionTokenHash));
+    .where(eq(merchantUserSessions.sessionTokenHash, sessionTokenHash));
 }
