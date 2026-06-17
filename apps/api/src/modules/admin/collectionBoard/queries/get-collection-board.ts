@@ -24,7 +24,7 @@ const EXCLUDED_STATUSES = ["draft", "scoring", "declined", "closed"] as const
 
 export async function getCollectionBoard(
   db: Db,
-  filters: { merchantId?: bigint } = {},
+  filters: { merchantId?: number } = {},
 ): Promise<AgingBucket[]> {
   const today = new Date().toISOString().slice(0, 10)
 

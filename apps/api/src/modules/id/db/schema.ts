@@ -1,8 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
   AnyPgColumn,
-  bigint,
-  bigserial,
   boolean,
   date,
   integer,
@@ -24,11 +22,11 @@ import {
 export const roles = pgTable(
   'roles',
   {
-    id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+    id: serial('id').primaryKey(),
     key: varchar('key', { length: 50 }).notNull(),
     name: varchar('name', { length: 100 }).notNull(),
     platform: varchar('platform', { length: 10 }).notNull(), // 'merchant' | 'admin'
-    isSuperadmin: boolean('is_superadmin').notNull().default(false),
+    isSuperAdmin: boolean('is_superadmin').notNull().default(false),
     isSystem: boolean('is_system').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
@@ -40,7 +38,7 @@ export const roles = pgTable(
 export const rolePermissions = pgTable(
   'role_permissions',
   {
-    roleId: bigint('role_id', { mode: 'bigint' })
+    roleId: integer('role_id')
       .notNull()
       .references(() => roles.id, { onDelete: 'cascade' }),
     feature: varchar('feature', { length: 50 }).notNull(),
@@ -49,7 +47,7 @@ export const rolePermissions = pgTable(
 );
 
 export const users = pgTable('users', {
-  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+  id: serial('id').primaryKey(),
   phone: varchar('phone', { length: 20 }).notNull().unique(),
   pinfl: varchar('pinfl', { length: 14 }).notNull().unique(),
   firstName: varchar('first_name', { length: 100 }).notNull(),
@@ -58,14 +56,14 @@ export const users = pgTable('users', {
   birthDate: date('birth_date').notNull(),
   gender: varchar('gender', { length: 10 }).notNull(),
   nationality: varchar('nationality', { length: 100 }).notNull(),
-  passportSerial: varchar('passport_serial', { length: 5 }),
-  passportNumber: varchar('passport_number', { length: 10 }),
+  passportSerial: varchar('passport_serial', { length: 2 }),
+  passportNumber: varchar('passport_number', { length: 7 }),
   photoUrl: text('photo_url'),
   myidVerifiedAt: timestamp('myid_verified_at', { withTimezone: true }).notNull(),
   // KATM claim registration fields (ADR-0025) — sourced from MyID, with
   // manual entry as fallback for rows created before these were captured.
   address: varchar('address', { length: 100 }),
-  katmRegionCode: varchar('katm_region_code', { length: 2 }), // dict 016
+  katmRegionCode: varchar('katm_region_code', { length: 3 }), // dict 016
   katmDistrictCode: varchar('katm_district_code', { length: 3 }), // dict 052
   docType: integer('doc_type'), // 0 — ID card, 6 — biometric passport
   // KATM-SIR — the bureau's subject identifier, returned at claim registration
@@ -75,7 +73,7 @@ export const users = pgTable('users', {
 
 export const clientSessions = pgTable('client_sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: bigserial('user_id', { mode: 'bigint' })
+  userId: serial('user_id')
     .notNull()
     .references(() => users.id, { onDelete: 'cascade' }),
   sessionTokenHash: varchar('session_token_hash', { length: 255 }).notNull(),
@@ -86,11 +84,13 @@ export const clientSessions = pgTable('client_sessions', {
 
 export const clientDevices = pgTable('client_devices', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: bigint('user_id', { mode: 'bigint' }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
   deviceId: varchar('device_id', { length: 255 }).notNull().unique(),
   fcmToken: text('fcm_token'),
   platform: varchar('platform', { length: 10 }).notNull().$type<'ios' | 'android'>(),
-  appVersion: varchar('app_version', { length: 50 }).notNull(),
+  appVersion: varchar('app_version', { length: 10 }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
@@ -108,7 +108,7 @@ export const otpVerifications = pgTable('otp_verifications', {
 export const clients = pgTable(
   'clients',
   {
-    id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+    id: serial('id').primaryKey(),
     phone: varchar('phone', { length: 20 }).notNull(),
     pinfl: varchar('pinfl', { length: 14 }).notNull(),
     firstName: varchar('first_name', { length: 100 }).notNull(),
@@ -124,34 +124,34 @@ export const clients = pgTable(
     // KATM claim registration fields (ADR-0025) — sourced from MyID, with
     // Agent manual entry as fallback for rows created before these were captured.
     address: varchar('address', { length: 100 }),
-    katmRegionCode: varchar('katm_region_code', { length: 2 }), // dict 016
-    katmDistrictCode: varchar('katm_district_code', { length: 3 }), // dict 052
+    districtCode: varchar('district_code', { length: 3 }), // dict 052
+    regionCode: varchar('region_code', { length: 3 }), // dict 016
     docType: integer('doc_type'), // 0 — ID card, 6 — biometric passport
     // KATM-SIR — the bureau's subject identifier, returned at claim registration
     katmSir: varchar('katm_sir', { length: 20 }),
-    merchantId: bigint('merchant_id', { mode: 'bigint' }).notNull(),
-    branchId: bigint('branch_id', { mode: 'bigint' }).notNull(),
+    merchantId: integer('merchant_id').notNull(),
+    branchId: integer('branch_id').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [unique().on(t.pinfl, t.merchantId)],
 );
 
 export const adminUsers = pgTable('admin_users', {
-  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+  id: serial('id').primaryKey(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   passwordHash: varchar('password_hash', { length: 500 }).notNull(),
   fullName: varchar('full_name', { length: 200 }).notNull(),
   // Exactly one admin Role; nullable only to ease migration/backfill of existing rows.
-  roleId: bigint('role_id', { mode: 'bigint' }).references(() => roles.id),
+  roleId: integer('role_id').references(() => roles.id),
   active: boolean('active').notNull().default(true),
   mustChangePassword: boolean('must_change_password').notNull().default(true),
-  createdById: bigint('created_by_id', { mode: 'bigint' }), // null for the initial seeded admin
+  createdById: integer('created_by_id'), // null for the initial seeded admin
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const adminSessions = pgTable('admin_sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
-  adminUserId: bigint('admin_user_id', { mode: 'bigint' })
+  adminUserId: integer('admin_user_id')
     .notNull()
     .references(() => adminUsers.id, { onDelete: 'cascade' }),
   sessionTokenHash: varchar('session_token_hash', { length: 255 }).notNull(),
@@ -176,7 +176,7 @@ export const regions = pgTable('regions', {
 
 // merchant_id and branch_id reference merchants/branches tables not yet built.
 export const merchants = pgTable('merchants', {
-  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+  id: serial('id').primaryKey(),
   name: varchar('name', { length: 200 }).notNull(),
   legalName: varchar('legal_name', { length: 200 }).notNull(),
   inn: varchar('inn', { length: 20 }).notNull().unique(),
@@ -202,8 +202,8 @@ export const bankMfoCache = pgTable('bank_mfo_cache', {
 });
 
 export const branches = pgTable('branches', {
-  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
-  merchantId: bigint('merchant_id', { mode: 'bigint' })
+  id: serial('id').primaryKey(),
+  merchantId: integer('merchant_id')
     .notNull()
     .references(() => merchants.id),
   name: varchar('name', { length: 200 }).notNull(),
@@ -215,7 +215,7 @@ export const branches = pgTable('branches', {
 });
 
 export const categories = pgTable('categories', {
-  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+  id: serial('id').primaryKey(),
   name: varchar('name', { length: 200 }).notNull(),
   active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -224,10 +224,10 @@ export const categories = pgTable('categories', {
 export const merchantCategories = pgTable(
   'merchant_categories',
   {
-    categoryId: bigint('category_id', { mode: 'bigint' })
+    categoryId: integer('category_id')
       .notNull()
       .references(() => categories.id, { onDelete: 'cascade' }),
-    merchantId: bigint('merchant_id', { mode: 'bigint' })
+    merchantId: integer('merchant_id')
       .notNull()
       .references(() => merchants.id, { onDelete: 'cascade' }),
   },
@@ -235,11 +235,11 @@ export const merchantCategories = pgTable(
 );
 
 export const products = pgTable('products', {
-  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
-  merchantId: bigint('merchant_id', { mode: 'bigint' })
+  id: serial('id').primaryKey(),
+  merchantId: integer('merchant_id')
     .notNull()
     .references(() => merchants.id),
-  categoryId: bigint('category_id', { mode: 'bigint' })
+  categoryId: integer('category_id')
     .notNull()
     .references(() => categories.id),
   name: varchar('name', { length: 200 }).notNull(),
@@ -274,7 +274,11 @@ export const scoringModels = pgTable(
     isGlobal: boolean('is_global').notNull().default(false),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
-  (t) => [uniqueIndex('scoring_models_single_global_idx').on(t.isGlobal).where(sql`${t.isGlobal}`)],
+  (t) => [
+    uniqueIndex('scoring_models_single_global_idx')
+      .on(t.isGlobal)
+      .where(sql`${t.isGlobal}`),
+  ],
 );
 
 // scoringModelId is nullable only so the column can be added to a populated
@@ -287,17 +291,17 @@ export const scoringModelRevisions = pgTable('scoring_model_revisions', {
   version: varchar('version', { length: 50 }).notNull(),
   params: jsonb('params').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  createdBy: bigint('created_by', { mode: 'bigint' }).references(() => adminUsers.id),
+  createdBy: integer('created_by').references(() => adminUsers.id),
 });
 
 export const tariffs = pgTable('tariffs', {
-  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+  id: serial('id').primaryKey(),
   name: varchar('name', { length: 200 }).notNull(),
   termMonths: integer('term_months').notNull(),
   markupPercent: numeric('markup_percent', { precision: 5, scale: 2 }).notNull(),
   // Credit Range (tiyin); null bound = unbounded on that side
-  minAmount: bigint('min_amount', { mode: 'bigint' }),
-  maxAmount: bigint('max_amount', { mode: 'bigint' }),
+  minAmount: integer('min_amount'),
+  maxAmount: integer('max_amount'),
   active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
@@ -305,10 +309,10 @@ export const tariffs = pgTable('tariffs', {
 export const merchantTariffs = pgTable(
   'merchant_tariffs',
   {
-    merchantId: bigint('merchant_id', { mode: 'bigint' })
+    merchantId: integer('merchant_id')
       .notNull()
       .references(() => merchants.id, { onDelete: 'cascade' }),
-    tariffId: bigint('tariff_id', { mode: 'bigint' })
+    tariffId: integer('tariff_id')
       .notNull()
       .references(() => tariffs.id, { onDelete: 'cascade' }),
     addedAt: timestamp('added_at', { withTimezone: true }).defaultNow().notNull(),
@@ -317,7 +321,7 @@ export const merchantTariffs = pgTable(
 );
 
 export const scoringTestCases = pgTable('scoring_test_cases', {
-  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+  id: serial('id').primaryKey(),
   name: varchar('name', { length: 200 }).notNull(),
   description: text('description'),
   inputs: jsonb('inputs').notNull(),
@@ -327,8 +331,10 @@ export const scoringTestCases = pgTable('scoring_test_cases', {
 });
 
 export const scoringTestRuns = pgTable('scoring_test_runs', {
-  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
-  modelRevisionId: integer('model_revision_id').notNull().references(() => scoringModelRevisions.id),
+  id: serial('id').primaryKey(),
+  modelRevisionId: integer('model_revision_id')
+    .notNull()
+    .references(() => scoringModelRevisions.id),
   ranAt: timestamp('ran_at', { withTimezone: true }).defaultNow().notNull(),
   passCount: integer('pass_count').notNull(),
   failCount: integer('fail_count').notNull(),
@@ -336,27 +342,27 @@ export const scoringTestRuns = pgTable('scoring_test_runs', {
 });
 
 export const merchantDocuments = pgTable('merchant_documents', {
-  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
-  merchantId: bigint('merchant_id', { mode: 'bigint' })
+  id: serial('id').primaryKey(),
+  merchantId: integer('merchant_id')
     .notNull()
     .references(() => merchants.id),
   fileUrl: text('file_url').notNull(),
   documentType: varchar('document_type', { length: 50 }).notNull(),
-  uploadedByAdminId: bigint('uploaded_by_admin_id', { mode: 'bigint' }).references(
+  uploadedByAdminId: integer('uploaded_by_admin_id').references(
     () => adminUsers.id,
   ),
   uploadedAt: timestamp('uploaded_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
 export const merchantUsers = pgTable('merchant_users', {
-  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+  id: serial('id').primaryKey(),
   phone: varchar('phone', { length: 20 }).notNull().unique(),
   passwordHash: varchar('password_hash', { length: 500 }).notNull(),
   fullName: varchar('full_name', { length: 200 }).notNull(),
-  merchantId: bigint('merchant_id', { mode: 'bigint' })
+  merchantId: integer('merchant_id')
     .notNull()
     .references(() => merchants.id),
-  branchId: bigint('branch_id', { mode: 'bigint' })
+  branchId: integer('branch_id')
     .notNull()
     .references(() => branches.id),
   roles: text('roles').array().notNull(),
@@ -368,11 +374,11 @@ export const merchantUsers = pgTable('merchant_users', {
 export const blacklist = pgTable(
   'blacklist',
   {
-    id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+    id: serial('id').primaryKey(),
     type: varchar('type', { length: 10 }).notNull(), // 'pinfl' | 'inn'
     value: varchar('value', { length: 20 }).notNull(),
     reason: text('reason'),
-    addedByAdminId: bigint('added_by_admin_id', { mode: 'bigint' })
+    addedByAdminId: integer('added_by_admin_id')
       .notNull()
       .references(() => adminUsers.id),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
@@ -382,7 +388,7 @@ export const blacklist = pgTable(
 
 export const merchantSessions = pgTable('merchant_sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
-  merchantUserId: bigint('merchant_user_id', { mode: 'bigint' })
+  merchantUserId: integer('merchant_user_id')
     .notNull()
     .references(() => merchantUsers.id, { onDelete: 'cascade' }),
   selectedRole: varchar('selected_role', { length: 50 }).notNull(),

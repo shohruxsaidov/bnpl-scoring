@@ -1,15 +1,15 @@
-import type { FastifyInstance } from 'fastify'
-import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
-import { Type } from '@sinclair/typebox'
-import { eq } from 'drizzle-orm'
-import { clients } from '../../id/db/schema'
+import type { FastifyInstance } from 'fastify';
+import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
+import { Type } from '@sinclair/typebox';
+import { eq } from 'drizzle-orm';
+import { clients } from '../../id/db/schema';
 import {
   allocateKatmClaimId,
   createKatmConsent,
   missingKatmFields,
   startKatmFlow,
-} from '../../integrations/katm/flow'
-import { enqueueKatmPoll, katmSummary, saveKatmSir } from '../../integrations/katm/poller'
+} from '../../integrations/katm/flow';
+import { enqueueKatmPoll, katmSummary, saveKatmSir } from '../../integrations/katm/poller';
 import {
   loadOwnedActiveSession,
   setKatmClaimId,
@@ -17,18 +17,18 @@ import {
   stampKatm,
   stampKatmPending,
   type SessionStepData,
-} from '../deal-sessions/service'
+} from '../deal-sessions/service';
 
-type JwtPayload = { sub: string; merchantId: string; branchId: string; role: string }
+type JwtPayload = { sub: string; merchantId: string; branchId: string; role: string };
 
 export default async function merchantKatmRoutes(app: FastifyInstance) {
-  const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
-  const db = app.db
+  const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
+  const db = app.db;
 
   const QueryBody = Type.Object({
     clientId: Type.String({ minLength: 1 }),
     dealSessionId: Type.String({ minLength: 1 }),
-  })
+  });
 
   /**
    * POST /merchant/katm/query
@@ -45,33 +45,34 @@ export default async function merchantKatmRoutes(app: FastifyInstance) {
     '/query',
     { schema: { body: QueryBody }, preHandler: app.verifyMerchantJwt },
     async (request, reply) => {
-      const p = request.user as JwtPayload
-      const { clientId, dealSessionId } = request.body
+      const p = request.user as JwtPayload;
+      const { clientId, dealSessionId } = request.body;
 
-      let session
+      let session;
       try {
-        session = await loadOwnedActiveSession(db, dealSessionId, BigInt(p.sub))
+        session = await loadOwnedActiveSession(db, dealSessionId, Number(p.sub));
       } catch (err: any) {
-        if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found')
-        if (err.code === 'session_not_active') return reply.code(409).sendError('session_not_active')
-        throw err
+        if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found');
+        if (err.code === 'session_not_active')
+          return reply.code(409).sendError('session_not_active');
+        throw err;
       }
 
       const [client] = await db
         .select()
         .from(clients)
-        .where(eq(clients.id, BigInt(clientId)))
-        .limit(1)
+        .where(eq(clients.id, Number(clientId)))
+        .limit(1);
 
-      if (!client) return reply.code(404).sendError('client_not_found')
+      if (!client) return reply.code(404).sendError('client_not_found');
 
-      await setSessionClientId(db, session, client.id)
+      await setSessionClientId(db, session, client.id);
 
       // Claim registration needs the full subject — surface what's missing so
       // the Agent can fill the gaps manually (pre-ADR-0025 rows lack them)
-      const missing = missingKatmFields(client)
+      const missing = missingKatmFields(client);
       if (missing.length > 0) {
-        return reply.code(422).sendError('client_katm_fields_missing', { missing })
+        return reply.code(422).sendError('client_katm_fields_missing', { missing });
       }
 
       // Sequence-numbered consent record — the auditable artifact behind
@@ -80,13 +81,13 @@ export default async function merchantKatmRoutes(app: FastifyInstance) {
         channel: 'wizard',
         clientId: client.id,
         sessionId: session.id,
-      })
+      });
 
       // One claim per Wizard run — reuse the id if the Agent redoes the step
-      const claimId = session.katmClaimId ?? (await allocateKatmClaimId(db))
+      const claimId = session.katmClaimId ?? (await allocateKatmClaimId(db));
       if (!session.katmClaimId) {
-        await setKatmClaimId(db, session, claimId)
-        session = { ...session, katmClaimId: claimId }
+        await setKatmClaimId(db, session, claimId);
+        session = { ...session, katmClaimId: claimId };
       }
 
       const outcome = await startKatmFlow(db, {
@@ -97,31 +98,31 @@ export default async function merchantKatmRoutes(app: FastifyInstance) {
           passportSerial: client.passportSerial!,
           passportNumber: client.passportNumber!,
           docType: client.docType!,
-          regionCode: client.katmRegionCode!,
-          districtCode: client.katmDistrictCode!,
+          regionCode: client.regionCode!,
+          districtCode: client.districtCode!,
           address: client.address!,
           phone: client.phone,
         },
-      })
+      });
 
       if (outcome.status === 'banned') {
         await stampKatmPending(db, session, {
           status: 'failed',
           startedAt: new Date().toISOString(),
           error: 'credit_ban',
-        })
-        return reply.code(409).sendError('client_credit_banned')
+        });
+        return reply.code(409).sendError('client_credit_banned');
       }
 
-      await saveKatmSir(db, { clientId: client.id }, outcome.katmSir)
+      await saveKatmSir(db, { clientId: client.id }, outcome.katmSir);
 
-      const consentDate = consent.agreementDate.toISOString()
+      const consentDate = consent.agreementDate.toISOString();
 
       if (outcome.status === 'pending') {
         await stampKatmPending(db, session, {
           status: 'pending',
           startedAt: new Date().toISOString(),
-        })
+        });
         await enqueueKatmPoll(app.katmPollQueue, {
           flow: 'wizard',
           sessionId: session.id,
@@ -129,11 +130,11 @@ export default async function merchantKatmRoutes(app: FastifyInstance) {
           token: outcome.token,
           consentId: consent.agreementId,
           consentDate,
-        })
-        return { status: 'pending' as const }
+        });
+        return { status: 'pending' as const };
       }
 
-      const summary = katmSummary(outcome.result)
+      const summary = katmSummary(outcome.result);
       await stampKatm(db, session, {
         clientId,
         claimId,
@@ -141,11 +142,11 @@ export default async function merchantKatmRoutes(app: FastifyInstance) {
         consentDate: consentDate.slice(0, 10),
         raw: outcome.result.raw ?? null,
         ...summary,
-      })
+      });
 
-      return { status: 'completed' as const, ...summary }
+      return { status: 'completed' as const, ...summary };
     },
-  )
+  );
 
   /**
    * GET /merchant/katm/status?dealSessionId=…
@@ -160,26 +161,34 @@ export default async function merchantKatmRoutes(app: FastifyInstance) {
       preHandler: app.verifyMerchantJwt,
     },
     async (request, reply) => {
-      const p = request.user as JwtPayload
+      const p = request.user as JwtPayload;
 
-      let session
+      let session;
       try {
-        session = await loadOwnedActiveSession(db, request.query.dealSessionId, BigInt(p.sub))
+        session = await loadOwnedActiveSession(db, request.query.dealSessionId, Number(p.sub));
       } catch (err: any) {
-        if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found')
-        if (err.code === 'session_not_active') return reply.code(409).sendError('session_not_active')
-        throw err
+        if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found');
+        if (err.code === 'session_not_active')
+          return reply.code(409).sendError('session_not_active');
+        throw err;
       }
 
-      const data = (session.stepData ?? {}) as SessionStepData
+      const data = (session.stepData ?? {}) as SessionStepData;
       if (data.katm) {
-        const { raw: _raw, clientId: _c, claimId: _cl, consentId: _ci, consentDate: _cd, ...summary } = data.katm
-        return { status: 'completed' as const, ...summary }
+        const {
+          raw: _raw,
+          clientId: _c,
+          claimId: _cl,
+          consentId: _ci,
+          consentDate: _cd,
+          ...summary
+        } = data.katm;
+        return { status: 'completed' as const, ...summary };
       }
       if (data.katmPending) {
-        return { status: data.katmPending.status, error: data.katmPending.error ?? null }
+        return { status: data.katmPending.status, error: data.katmPending.error ?? null };
       }
-      return { status: 'none' as const }
+      return { status: 'none' as const };
     },
-  )
+  );
 }

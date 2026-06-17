@@ -1,11 +1,10 @@
 import {
-  bigint,
-  bigserial,
   index,
   integer,
   jsonb,
   pgSequence,
   pgTable,
+  serial,
   text,
   timestamp,
   uuid,
@@ -51,10 +50,10 @@ export const katmClaimSeq = pgSequence("katm_claim_seq", { startWith: 1000 });
 // is no paper document.
 // ---------------------------------------------------------------------------
 export const katmConsents = pgTable("katm_consents", {
-  id: bigserial("id", { mode: "bigint" }).primaryKey(),
+  id: serial("id").primaryKey(),
   // Exactly one of the two subjects is set, matching the channel
-  clientId: bigint("client_id", { mode: "bigint" }).references(() => clients.id),
-  userId: bigint("user_id", { mode: "bigint" }).references(() => users.id),
+  clientId: integer("client_id").references(() => clients.id),
+  userId: integer("user_id").references(() => users.id),
   // 'wizard' | 'self_service'
   channel: varchar("channel", { length: 20 }).notNull(),
   // The owning run — deal_sessions.id or scoring_sessions.id (no FK: the

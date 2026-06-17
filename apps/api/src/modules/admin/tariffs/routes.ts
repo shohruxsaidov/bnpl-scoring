@@ -49,9 +49,9 @@ export default async function adminTariffRoutes(app: FastifyInstance) {
     }),
   )
 
-  function toBound(value: number | null | undefined): bigint | null | undefined {
+  function toBound(value: number | null | undefined): number | null | undefined {
     if (value === undefined) return undefined
-    return value === null ? null : BigInt(value)
+    return value === null ? null : Number(value)
   }
 
   fastify.get("/", { preHandler }, async () => {
@@ -75,11 +75,11 @@ export default async function adminTariffRoutes(app: FastifyInstance) {
   fastify.patch("/:id", { schema: { params: IdParams, body: UpdateBody }, preHandler }, async (request, reply) => {
     const { markupPercent, minAmount, maxAmount, ...rest } = request.body
     if (minAmount !== undefined || maxAmount !== undefined) {
-      const current = await getTariff(db, BigInt(request.params.id))
+      const current = await getTariff(db, Number(request.params.id))
       if (!current) return reply.code(404).sendError("not_found")
       const effectiveMin = minAmount !== undefined ? minAmount : current.minAmount
       const effectiveMax = maxAmount !== undefined ? maxAmount : current.maxAmount
-      if (effectiveMin != null && effectiveMax != null && BigInt(effectiveMin) > BigInt(effectiveMax))
+      if (effectiveMin != null && effectiveMax != null && Number(effectiveMin) > Number(effectiveMax))
         return reply.code(400).sendError("invalid_credit_range")
     }
     const input = {
@@ -88,19 +88,19 @@ export default async function adminTariffRoutes(app: FastifyInstance) {
       ...(minAmount !== undefined && { minAmount: toBound(minAmount) }),
       ...(maxAmount !== undefined && { maxAmount: toBound(maxAmount) }),
     }
-    const tariff = await updateTariff(db, BigInt(request.params.id), input)
+    const tariff = await updateTariff(db, Number(request.params.id), input)
     if (!tariff) return reply.code(404).sendError("not_found")
     return { tariff: serialize(tariff) }
   })
 
   fastify.delete("/:id", { schema: { params: IdParams }, preHandler }, async (request, reply) => {
-    const tariff = await updateTariff(db, BigInt(request.params.id), { active: false })
+    const tariff = await updateTariff(db, Number(request.params.id), { active: false })
     if (!tariff) return reply.code(404).sendError("not_found")
     return { tariff: serialize(tariff) }
   })
 
   fastify.get("/:id/merchants", { schema: { params: IdParams }, preHandler }, async (request) => {
-    const rows = await getTariffMerchants(db, BigInt(request.params.id))
+    const rows = await getTariffMerchants(db, Number(request.params.id))
     return {
       merchants: rows.map((m) => ({
         id: m.id.toString(),

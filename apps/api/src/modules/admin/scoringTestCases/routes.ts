@@ -124,7 +124,7 @@ export default async function adminScoringTestCasesRoutes(app: FastifyInstance) 
       },
     },
     async (request, reply) => {
-      const id = BigInt(request.params.id)
+      const id = Number(request.params.id)
       const { name, description, inputs, expectedOutcome } = request.body
 
       const existing = await db
@@ -164,7 +164,7 @@ export default async function adminScoringTestCasesRoutes(app: FastifyInstance) 
     "/:id",
     { schema: { params: Type.Object({ id: Type.String() }) } },
     async (request, reply) => {
-      const id = BigInt(request.params.id)
+      const id = Number(request.params.id)
       const deleted = await db
         .delete(scoringTestCases)
         .where(eq(scoringTestCases.id, id))
@@ -280,7 +280,7 @@ export default async function adminScoringTestCasesRoutes(app: FastifyInstance) 
     "/runs/:id",
     { schema: { params: Type.Object({ id: Type.String() }) } },
     async (request, reply) => {
-      const id = BigInt(request.params.id)
+      const id = Number(request.params.id)
       const [row] = await db
         .select()
         .from(scoringTestRuns)
@@ -303,7 +303,7 @@ export default async function adminScoringTestCasesRoutes(app: FastifyInstance) 
     "/runs/:id/capture",
     { schema: { params: Type.Object({ id: Type.String() }) } },
     async (request, reply) => {
-      const id = BigInt(request.params.id)
+      const id = Number(request.params.id)
       const [run] = await db
         .select()
         .from(scoringTestRuns)
@@ -317,7 +317,7 @@ export default async function adminScoringTestCasesRoutes(app: FastifyInstance) 
           db
             .update(scoringTestCases)
             .set({ expectedOutcome: actualOutcome, updatedAt: new Date() })
-            .where(eq(scoringTestCases.id, BigInt(testCaseId))),
+            .where(eq(scoringTestCases.id, Number(testCaseId))),
         ),
       )
 

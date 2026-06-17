@@ -4,19 +4,21 @@ import { eq } from 'drizzle-orm';
 import { roles, rolePermissions } from '../modules/id/db/schema';
 
 export interface ResolvedRole {
-  isSuperadmin: boolean;
+  isSuperAdmin: boolean;
   features: Set<string>;
 }
 
 declare module 'fastify' {
   interface FastifyInstance {
     // Resolves a role id to its Feature set, cached in memory.
-    resolveRole: (roleId: bigint) => Promise<ResolvedRole | undefined>;
+    resolveRole: (roleId: number) => Promise<ResolvedRole | undefined>;
     // Drops a single role (or the whole cache) after a permission edit.
-    invalidateRole: (roleId?: bigint) => void;
+    invalidateRole: (roleId?: number) => void;
     // preHandler factory — rejects with 403 unless the actor's role holds `feature`
     // (Superadmin bypasses). Must run after a verify*Jwt preHandler.
-    requirePermission: (feature: string) => (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    requirePermission: (
+      feature: string,
+    ) => (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
     // Method-aware variant: picks the read Feature for GET/HEAD and the write
     // Feature otherwise. A missing entry leaves that method unguarded.
     requirePermissionByMethod: (map: {
@@ -26,11 +28,11 @@ declare module 'fastify' {
   }
 }
 
-function roleIdFromRequest(request: FastifyRequest): bigint | undefined {
+function roleIdFromRequest(request: FastifyRequest): number | undefined {
   const user = request.user as { roleId?: string } | undefined;
   if (!user?.roleId) return undefined;
   try {
-    return BigInt(user.roleId);
+    return +user.roleId;
   } catch {
     return undefined;
   }
@@ -40,13 +42,13 @@ export default fp(async function permissionsPlugin(app: FastifyInstance) {
   // role id (string) -> resolved features. Invalidated on any grant/role edit.
   const cache = new Map<string, ResolvedRole>();
 
-  async function resolveRole(roleId: bigint): Promise<ResolvedRole | undefined> {
+  async function resolveRole(roleId: number): Promise<ResolvedRole | undefined> {
     const key = roleId.toString();
     const cached = cache.get(key);
     if (cached) return cached;
 
     const [role] = await app.db
-      .select({ id: roles.id, isSuperadmin: roles.isSuperadmin })
+      .select({ id: roles.id, isSuperAdmin: roles.isSuperAdmin })
       .from(roles)
       .where(eq(roles.id, roleId))
       .limit(1);
@@ -58,7 +60,7 @@ export default fp(async function permissionsPlugin(app: FastifyInstance) {
       .where(eq(rolePermissions.roleId, roleId));
 
     const resolved: ResolvedRole = {
-      isSuperadmin: role.isSuperadmin,
+      isSuperAdmin: role.isSuperAdmin,
       features: new Set(grants.map((g) => g.feature)),
     };
     cache.set(key, resolved);
@@ -67,7 +69,7 @@ export default fp(async function permissionsPlugin(app: FastifyInstance) {
 
   app.decorate('resolveRole', resolveRole);
 
-  app.decorate('invalidateRole', function invalidateRole(roleId?: bigint) {
+  app.decorate('invalidateRole', function invalidateRole(roleId?: number) {
     if (roleId === undefined) cache.clear();
     else cache.delete(roleId.toString());
   });
@@ -82,20 +84,20 @@ export default fp(async function permissionsPlugin(app: FastifyInstance) {
       if (!resolved) {
         return reply.code(403).send({ code: 'forbidden' });
       }
-      if (resolved.isSuperadmin || resolved.features.has(feature)) return;
+      if (resolved.isSuperAdmin || resolved.features.has(feature)) return;
       return reply.code(403).send({ code: 'forbidden' });
     };
   });
 
-  app.decorate('requirePermissionByMethod', function requirePermissionByMethod(map: {
-    read?: string;
-    write?: string;
-  }) {
-    return async function (request: FastifyRequest, reply: FastifyReply) {
-      const isRead = request.method === 'GET' || request.method === 'HEAD';
-      const feature = isRead ? map.read : map.write;
-      if (!feature) return;
-      return app.requirePermission(feature)(request, reply);
-    };
-  });
+  app.decorate(
+    'requirePermissionByMethod',
+    function requirePermissionByMethod(map: { read?: string; write?: string }) {
+      return async function (request: FastifyRequest, reply: FastifyReply) {
+        const isRead = request.method === 'GET' || request.method === 'HEAD';
+        const feature = isRead ? map.read : map.write;
+        if (!feature) return;
+        return app.requirePermission(feature)(request, reply);
+      };
+    },
+  );
 });

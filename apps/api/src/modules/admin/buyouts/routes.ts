@@ -18,14 +18,14 @@ export default async function adminBuyoutRoutes(app: FastifyInstance) {
   fastify.get("/", { schema: { querystring: ListQuery } }, async (request) => {
     const { merchantId, status } = request.query
     const buyouts = await listBuyouts(db, {
-      merchantId: merchantId ? BigInt(merchantId) : undefined,
+      merchantId: merchantId ? Number(merchantId) : undefined,
       status: status || undefined,
     })
     return { buyouts }
   })
 
   fastify.patch("/:id/pay", { schema: { params: IdParams } }, async (request, reply) => {
-    const buyout = await markBuyoutPaid(db, BigInt(request.params.id))
+    const buyout = await markBuyoutPaid(db, Number(request.params.id))
     if (!buyout) return reply.code(404).sendError("not_found")
     return { buyout }
   })

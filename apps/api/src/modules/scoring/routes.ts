@@ -1,23 +1,23 @@
-import type { FastifyInstance } from 'fastify'
-import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
-import { Type } from '@sinclair/typebox'
+import type { FastifyInstance } from 'fastify';
+import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
+import { Type } from '@sinclair/typebox';
 import {
   getScoringSessionStatus,
   addScoringCard,
   confirmScoringCard,
   completeScoringCard,
-} from './service'
+} from './service';
 
-type ClientJwt = { sub: string; type: 'client' }
+type ClientJwt = { sub: string; type: 'client' };
 
-function userId(request: { user: unknown }): bigint {
-  return BigInt((request.user as ClientJwt).sub)
+function userId(request: { user: unknown }): number {
+  return +(request.user as ClientJwt).sub;
 }
 
 export default async function scoringRoutes(app: FastifyInstance) {
-  const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
+  const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
 
-  const SessionParams = Type.Object({ sessionId: Type.String({ minLength: 1 }) })
+  const SessionParams = Type.Object({ sessionId: Type.String({ minLength: 1 }) });
 
   // ── GET /client/scoring/:sessionId/status ─────────────────────────────────
   // Polled by the portal while the KATM report is pending.
@@ -26,13 +26,13 @@ export default async function scoringRoutes(app: FastifyInstance) {
     { schema: { params: SessionParams }, preHandler: app.verifyClientJwt },
     async (request, reply) => {
       try {
-        return await getScoringSessionStatus(app.db, request.params.sessionId, userId(request))
+        return await getScoringSessionStatus(app.db, request.params.sessionId, userId(request));
       } catch (err: any) {
-        if (err.statusCode === 404) return reply.code(404).sendError('session_not_found')
-        throw err
+        if (err.statusCode === 404) return reply.code(404).sendError('session_not_found');
+        throw err;
       }
     },
-  )
+  );
 
   // ── POST /client/scoring/:sessionId/card/add ──────────────────────────────
   // Registers the card in PlumGate. PlumGate sends an OTP to the client's phone.
@@ -56,16 +56,18 @@ export default async function scoringRoutes(app: FastifyInstance) {
           userId: userId(request),
           cardNumber: request.body.cardNumber,
           expiry: request.body.expiry,
-        })
-        return reply.send(result)
+        });
+        return reply.send(result);
       } catch (err: any) {
-        if (err.statusCode === 404) return reply.code(404).sendError('session_not_found')
-        if (err.message === 'session_not_running') return reply.code(409).sendError('session_not_running')
-        if (err.message === 'katm_not_completed') return reply.code(409).sendError('katm_not_completed')
-        throw err
+        if (err.statusCode === 404) return reply.code(404).sendError('session_not_found');
+        if (err.message === 'session_not_running')
+          return reply.code(409).sendError('session_not_running');
+        if (err.message === 'katm_not_completed')
+          return reply.code(409).sendError('katm_not_completed');
+        throw err;
       }
     },
-  )
+  );
 
   // ── POST /client/scoring/:sessionId/card/confirm ──────────────────────────
   // Confirms the OTP to complete card registration.
@@ -89,15 +91,16 @@ export default async function scoringRoutes(app: FastifyInstance) {
           userId: userId(request),
           plumgateSessionId: request.body.plumgateSessionId,
           otp: request.body.otp,
-        })
-        return reply.send(result)
+        });
+        return reply.send(result);
       } catch (err: any) {
-        if (err.statusCode === 404) return reply.code(404).sendError('session_not_found')
-        if (err.message === 'session_not_running') return reply.code(409).sendError('session_not_running')
-        throw err
+        if (err.statusCode === 404) return reply.code(404).sendError('session_not_found');
+        if (err.message === 'session_not_running')
+          return reply.code(409).sendError('session_not_running');
+        throw err;
       }
     },
-  )
+  );
 
   // ── POST /client/scoring/:sessionId/card/score ────────────────────────────
   // Runs PlumGate scoring for the confirmed card. Finalizes the session:
@@ -122,15 +125,18 @@ export default async function scoringRoutes(app: FastifyInstance) {
           userId: userId(request),
           plumCardId: request.body.plumCardId,
           pcType: request.body.pcType,
-        })
-        return reply.send(result)
+        });
+        return reply.send(result);
       } catch (err: any) {
-        if (err.statusCode === 404) return reply.code(404).sendError('session_not_found')
-        if (err.message === 'session_not_running') return reply.code(409).sendError('session_not_running')
-        if (err.message === 'katm_not_completed') return reply.code(409).sendError('katm_not_completed')
-        if (err.message === 'card_scoring_already_started') return reply.code(409).sendError('card_scoring_already_started')
-        throw err
+        if (err.statusCode === 404) return reply.code(404).sendError('session_not_found');
+        if (err.message === 'session_not_running')
+          return reply.code(409).sendError('session_not_running');
+        if (err.message === 'katm_not_completed')
+          return reply.code(409).sendError('katm_not_completed');
+        if (err.message === 'card_scoring_already_started')
+          return reply.code(409).sendError('card_scoring_already_started');
+        throw err;
       }
     },
-  )
+  );
 }

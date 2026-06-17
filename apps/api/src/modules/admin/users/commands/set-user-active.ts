@@ -4,7 +4,7 @@ import { adminUsers } from "../../../id/db/schema"
 
 export async function updateAdminUser(
   db: Db,
-  id: bigint,
+  id: number,
   input: Partial<{ active: boolean }>,
 ) {
   const [row] = await db

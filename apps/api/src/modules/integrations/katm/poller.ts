@@ -171,7 +171,7 @@ async function failSelfService(db: Db, data: KatmPollJobData, error: string): Pr
 
 export async function saveKatmSir(
   db: Db,
-  subject: { clientId?: bigint; userId?: bigint },
+  subject: { clientId?: number; userId?: number },
   katmSir: string,
 ): Promise<void> {
   if (!katmSir) return

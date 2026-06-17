@@ -5,8 +5,8 @@ import { merchants, tariffs } from '../../id/db/schema'
 
 type ClientJwt = { sub: string; type: 'client' }
 
-function clientId(request: { user: unknown }): bigint {
-  return BigInt((request.user as ClientJwt).sub)
+function clientId(request: { user: unknown }): number {
+  return Number((request.user as ClientJwt).sub)
 }
 
 export default async function clientDealRoutes(app: FastifyInstance) {

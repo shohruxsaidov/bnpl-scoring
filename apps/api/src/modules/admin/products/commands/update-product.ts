@@ -4,9 +4,9 @@ import { products } from "../../../id/db/schema"
 
 export async function updateProduct(
   db: Db,
-  id: bigint,
+  id: number,
   input: Partial<{
-    categoryId: bigint
+    categoryId: number
     name: string
     price: string
     mxikCode: string

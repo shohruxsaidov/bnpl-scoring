@@ -12,12 +12,12 @@ export async function findRoleByKey(db: Db, platform: Platform, key: string) {
   return row;
 }
 
-export async function findRoleById(db: Db, id: bigint) {
+export async function findRoleById(db: Db, id: number) {
   const [row] = await db.select().from(roles).where(eq(roles.id, id)).limit(1);
   return row;
 }
 
-export async function listRoleFeatures(db: Db, roleId: bigint): Promise<string[]> {
+export async function listRoleFeatures(db: Db, roleId: number): Promise<string[]> {
   const rows = await db
     .select({ feature: rolePermissions.feature })
     .from(rolePermissions)
@@ -29,8 +29,8 @@ export async function listRoleFeatures(db: Db, roleId: bigint): Promise<string[]
 // entire catalog; everyone else holds only their explicit grants.
 export function effectiveFeatures(
   platform: Platform,
-  opts: { isSuperadmin: boolean; features: string[] },
+  opts: { isSuperAdmin: boolean; features: string[] },
 ): string[] {
-  if (opts.isSuperadmin) return [...FEATURE_CATALOG[platform]];
+  if (opts.isSuperAdmin) return [...FEATURE_CATALOG[platform]];
   return opts.features;
 }

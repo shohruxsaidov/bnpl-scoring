@@ -1,2 +1,0 @@
-CREATE INDEX "integration_logs_request_timestamp_idx" ON "integration_logs" USING btree ("request_timestamp");--> statement-breakpoint
-CREATE INDEX "integration_logs_integration_idx" ON "integration_logs" USING btree ("integration");

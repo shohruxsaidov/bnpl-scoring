@@ -1,38 +1,29 @@
-import {
-  createHash,
-  randomBytes,
-  randomUUID,
-  scrypt,
-  timingSafeEqual,
-} from "node:crypto";
-import { promisify } from "node:util";
-import { and, eq, gt, isNull } from "drizzle-orm";
-import type { Db } from "../../../db/index.js";
-import { merchantSessions, merchantUsers } from "../../id/db/schema.js";
-import { env } from "../../../env.js";
+import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from 'node:crypto';
+import { promisify } from 'node:util';
+import { and, eq, gt, isNull } from 'drizzle-orm';
+import type { Db } from '../../../db/index.js';
+import { merchantSessions, merchantUsers } from '../../id/db/schema.js';
+import { env } from '../../../env.js';
 
 const scryptAsync = promisify(scrypt);
 
-export type MerchantRole = "agent" | "merchant_admin";
+export type MerchantRole = 'agent' | 'merchant_admin';
 
 function hashToken(token: string): string {
-  return createHash("sha256").update(token).digest("hex");
+  return createHash('sha256').update(token).digest('hex');
 }
 
 export async function hashPassword(password: string): Promise<string> {
-  const salt = randomBytes(16).toString("hex");
+  const salt = randomBytes(16).toString('hex');
   const derived = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${salt}:${derived.toString("hex")}`;
+  return `${salt}:${derived.toString('hex')}`;
 }
 
-export async function verifyPassword(
-  hash: string,
-  password: string,
-): Promise<boolean> {
-  const [salt, stored] = hash.split(":");
+export async function verifyPassword(hash: string, password: string): Promise<boolean> {
+  const [salt, stored] = hash.split(':');
   if (!salt || !stored) return false;
   const derived = (await scryptAsync(password, salt, 64)) as Buffer;
-  const storedBuf = Buffer.from(stored, "hex");
+  const storedBuf = Buffer.from(stored, 'hex');
   if (derived.length !== storedBuf.length) return false;
   return timingSafeEqual(derived, storedBuf);
 }
@@ -46,25 +37,19 @@ export async function findMerchantUserByPhone(db: Db, phone: string) {
   return row;
 }
 
-export async function findMerchantUserById(db: Db, id: bigint) {
-  const [row] = await db
-    .select()
-    .from(merchantUsers)
-    .where(eq(merchantUsers.id, id))
-    .limit(1);
+export async function findMerchantUserById(db: Db, id: number) {
+  const [row] = await db.select().from(merchantUsers).where(eq(merchantUsers.id, id)).limit(1);
   return row;
 }
 
 export async function createMerchantSession(
   db: Db,
-  merchantUserId: bigint,
+  merchantUserId: number,
   selectedRole: string,
 ): Promise<{ sessionId: string; sessionToken: string }> {
-  const sessionToken = randomUUID() + randomBytes(16).toString("hex");
+  const sessionToken = randomUUID() + randomBytes(16).toString('hex');
   const sessionTokenHash = hashToken(sessionToken);
-  const expiresAt = new Date(
-    Date.now() + env.SESSION_EXPIRES_DAYS * 24 * 60 * 60 * 1000,
-  );
+  const expiresAt = new Date(Date.now() + env.SESSION_EXPIRES_DAYS * 24 * 60 * 60 * 1000);
 
   const [row] = await db
     .insert(merchantSessions)
@@ -99,7 +84,7 @@ export async function verifyMerchantSession(db: Db, sessionToken: string) {
 
 export async function changeMerchantPassword(
   db: Db,
-  id: bigint,
+  id: number,
   newPassword: string,
 ): Promise<void> {
   const passwordHash = await hashPassword(newPassword);
@@ -109,10 +94,7 @@ export async function changeMerchantPassword(
     .where(eq(merchantUsers.id, id));
 }
 
-export async function revokeMerchantSession(
-  db: Db,
-  sessionToken: string,
-): Promise<void> {
+export async function revokeMerchantSession(db: Db, sessionToken: string): Promise<void> {
   const sessionTokenHash = hashToken(sessionToken);
   await db
     .update(merchantSessions)

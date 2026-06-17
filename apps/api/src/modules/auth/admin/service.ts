@@ -1,36 +1,27 @@
-import {
-  createHash,
-  randomBytes,
-  randomUUID,
-  scrypt,
-  timingSafeEqual,
-} from "node:crypto";
-import { promisify } from "node:util";
-import { and, count, eq, gt, isNull } from "drizzle-orm";
-import type { Db } from "../../../db/index";
-import { adminSessions, adminUsers, roles } from "../../id/db/schema";
-import { env } from "../../../env";
+import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from 'node:crypto';
+import { promisify } from 'node:util';
+import { and, count, eq, gt, isNull } from 'drizzle-orm';
+import type { Db } from '../../../db/index';
+import { adminSessions, adminUsers, roles } from '../../id/db/schema';
+import { env } from '../../../env';
 
 const scryptAsync = promisify(scrypt);
 
 function hashToken(token: string): string {
-  return createHash("sha256").update(token).digest("hex");
+  return createHash('sha256').update(token).digest('hex');
 }
 
 export async function hashPassword(password: string): Promise<string> {
-  const salt = randomBytes(16).toString("hex");
+  const salt = randomBytes(16).toString('hex');
   const derived = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${salt}:${derived.toString("hex")}`;
+  return `${salt}:${derived.toString('hex')}`;
 }
 
-export async function verifyPassword(
-  hash: string,
-  password: string,
-): Promise<boolean> {
-  const [salt, stored] = hash.split(":");
+export async function verifyPassword(hash: string, password: string): Promise<boolean> {
+  const [salt, stored] = hash.split(':');
   if (!salt || !stored) return false;
   const derived = (await scryptAsync(password, salt, 64)) as Buffer;
-  const storedBuf = Buffer.from(stored, "hex");
+  const storedBuf = Buffer.from(stored, 'hex');
   if (derived.length !== storedBuf.length) return false;
   return timingSafeEqual(derived, storedBuf);
 }
@@ -44,12 +35,8 @@ export async function findAdminByEmail(db: Db, email: string) {
   return row;
 }
 
-export async function findAdminById(db: Db, id: bigint) {
-  const [row] = await db
-    .select()
-    .from(adminUsers)
-    .where(eq(adminUsers.id, id))
-    .limit(1);
+export async function findAdminById(db: Db, id: number) {
+  const [row] = await db.select().from(adminUsers).where(eq(adminUsers.id, id)).limit(1);
   return row;
 }
 
@@ -59,8 +46,8 @@ export async function createAdminUser(
     email: string;
     password: string;
     fullName: string;
-    roleId: bigint;
-    createdById: bigint;
+    roleId: number;
+    createdById: number;
   },
 ) {
   const passwordHash = await hashPassword(input.password);
@@ -91,7 +78,7 @@ export async function listAdminUsers(db: Db) {
     .orderBy(adminUsers.createdAt);
 }
 
-export async function setAdminRole(db: Db, adminId: bigint, roleId: bigint) {
+export async function setAdminRole(db: Db, adminId: number, roleId: number) {
   const [row] = await db
     .update(adminUsers)
     .set({ roleId })
@@ -106,19 +93,17 @@ export async function countActiveSuperadmins(db: Db): Promise<number> {
     .select({ n: count() })
     .from(adminUsers)
     .innerJoin(roles, eq(adminUsers.roleId, roles.id))
-    .where(and(eq(adminUsers.active, true), eq(roles.isSuperadmin, true)));
+    .where(and(eq(adminUsers.active, true), eq(roles.isSuperAdmin, true)));
   return row?.n ?? 0;
 }
 
 export async function createAdminSession(
   db: Db,
-  adminUserId: bigint,
+  adminUserId: number,
 ): Promise<{ sessionId: string; sessionToken: string }> {
-  const sessionToken = randomUUID() + randomBytes(16).toString("hex");
+  const sessionToken = randomUUID() + randomBytes(16).toString('hex');
   const sessionTokenHash = hashToken(sessionToken);
-  const expiresAt = new Date(
-    Date.now() + env.SESSION_EXPIRES_DAYS * 24 * 60 * 60 * 1000,
-  );
+  const expiresAt = new Date(Date.now() + env.SESSION_EXPIRES_DAYS * 24 * 60 * 60 * 1000);
 
   const [row] = await db
     .insert(adminSessions)
@@ -151,11 +136,7 @@ export async function verifyAdminSession(db: Db, sessionToken: string) {
   return { session, admin };
 }
 
-export async function changeAdminPassword(
-  db: Db,
-  id: bigint,
-  newPassword: string,
-): Promise<void> {
+export async function changeAdminPassword(db: Db, id: number, newPassword: string): Promise<void> {
   const passwordHash = await hashPassword(newPassword);
   await db
     .update(adminUsers)
@@ -163,10 +144,7 @@ export async function changeAdminPassword(
     .where(eq(adminUsers.id, id));
 }
 
-export async function revokeAdminSession(
-  db: Db,
-  sessionToken: string,
-): Promise<void> {
+export async function revokeAdminSession(db: Db, sessionToken: string): Promise<void> {
   const sessionTokenHash = hashToken(sessionToken);
   await db
     .update(adminSessions)

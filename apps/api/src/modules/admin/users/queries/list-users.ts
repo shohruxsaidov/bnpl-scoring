@@ -9,7 +9,7 @@ const userSelect = {
   roleId: adminUsers.roleId,
   roleName: roles.name,
   roleKey: roles.key,
-  isSuperadmin: roles.isSuperadmin,
+  isSuperAdmin: roles.isSuperAdmin,
   active: adminUsers.active,
   createdAt: adminUsers.createdAt,
 }

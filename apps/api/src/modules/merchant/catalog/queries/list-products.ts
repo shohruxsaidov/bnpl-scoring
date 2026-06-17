@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm"
 import type { Db } from "../../../../db"
 import { products } from "../../../id/db/schema"
 
-export async function listProducts(db: Db, merchantId: bigint) {
+export async function listProducts(db: Db, merchantId: number) {
   return db
     .select()
     .from(products)

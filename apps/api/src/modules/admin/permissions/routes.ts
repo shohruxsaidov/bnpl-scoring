@@ -24,14 +24,14 @@ export default async function adminPermissionsRoutes(app: FastifyInstance) {
   async function requesterIsSuperadmin(request: { user: unknown }): Promise<boolean> {
     const roleId = (request.user as { roleId: string | null }).roleId
     if (!roleId) return false
-    const resolved = await app.resolveRole(BigInt(roleId))
-    return resolved?.isSuperadmin ?? false
+    const resolved = await app.resolveRole(Number(roleId))
+    return resolved?.isSuperAdmin ?? false
   }
 
   async function requesterFeatures(request: { user: unknown }): Promise<Set<string>> {
     const roleId = (request.user as { roleId: string | null }).roleId
     if (!roleId) return new Set()
-    const resolved = await app.resolveRole(BigInt(roleId))
+    const resolved = await app.resolveRole(Number(roleId))
     return resolved?.features ?? new Set()
   }
 
@@ -69,7 +69,7 @@ export default async function adminPermissionsRoutes(app: FastifyInstance) {
         key: role.key,
         name: role.name,
         platform: role.platform,
-        isSuperadmin: role.isSuperadmin,
+        isSuperAdmin: role.isSuperAdmin,
         isSystem: role.isSystem,
         features: [],
       },
@@ -83,18 +83,18 @@ export default async function adminPermissionsRoutes(app: FastifyInstance) {
     "/roles/:id",
     { schema: { params: IdParams, body: RenameBody }, preHandler },
     async (request, reply) => {
-      const role = await findRoleRow(db, BigInt(request.params.id))
+      const role = await findRoleRow(db, Number(request.params.id))
       if (!role) return reply.code(404).sendError("not_found")
-      if (role.isSuperadmin) return reply.code(403).sendError("immutable_role")
+      if (role.isSuperAdmin) return reply.code(403).sendError("immutable_role")
       const updated = await renameRole(db, role.id, request.body.name)
       return { role: { id: updated!.id.toString(), name: updated!.name } }
     },
   )
 
   fastify.delete("/roles/:id", { schema: { params: IdParams }, preHandler }, async (request, reply) => {
-    const role = await findRoleRow(db, BigInt(request.params.id))
+    const role = await findRoleRow(db, Number(request.params.id))
     if (!role) return reply.code(404).sendError("not_found")
-    if (role.isSuperadmin || role.isSystem) {
+    if (role.isSuperAdmin || role.isSystem) {
       return reply.code(403).sendError("protected_role")
     }
     if (await isRoleAssigned(db, role)) {
@@ -111,9 +111,9 @@ export default async function adminPermissionsRoutes(app: FastifyInstance) {
     "/roles/:id/permissions",
     { schema: { params: IdParams, body: SetPermsBody }, preHandler },
     async (request, reply) => {
-      const role = await findRoleRow(db, BigInt(request.params.id))
+      const role = await findRoleRow(db, Number(request.params.id))
       if (!role) return reply.code(404).sendError("not_found")
-      if (role.isSuperadmin) return reply.code(403).sendError("immutable_role")
+      if (role.isSuperAdmin) return reply.code(403).sendError("immutable_role")
 
       const platform = role.platform as Platform
       if (!PLATFORMS.includes(platform)) {

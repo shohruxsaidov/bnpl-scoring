@@ -125,7 +125,7 @@ async function logEvent(db: Db, sessionId: string, step: string, payload: unknow
 }
 
 /** The agent's single active session, or null. */
-export async function getActiveSession(db: Db, agentId: bigint): Promise<DealSessionRow | null> {
+export async function getActiveSession(db: Db, agentId: number): Promise<DealSessionRow | null> {
   const [row] = await db
     .select()
     .from(dealSessions)
@@ -140,7 +140,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 export async function loadOwnedActiveSession(
   db: Db,
   id: string,
-  agentId: bigint,
+  agentId: number,
 ): Promise<DealSessionRow> {
   if (!UUID_RE.test(id)) throw err('session_not_found');
   const [row] = await db.select().from(dealSessions).where(eq(dealSessions.id, id)).limit(1);
@@ -155,7 +155,7 @@ export async function loadOwnedActiveSession(
  */
 export async function createSession(
   db: Db,
-  input: { merchantId: bigint; branchId: bigint; agentId: bigint; clientId: number },
+  input: { merchantId: number; branchId: number; agentId: number; clientId?: number },
 ): Promise<DealSessionRow> {
   return db.transaction(async (tx) => {
     const [existing] = await tx
@@ -179,7 +179,7 @@ export async function createSession(
         merchantId: input.merchantId,
         branchId: input.branchId,
         agentId: input.agentId,
-        clientId: input.clientId ? BigInt(input.clientId) : undefined,
+        clientId: input.clientId ? Number(input.clientId) : undefined,
       })
       .returning();
     if (!session) throw new Error('session_insert_failed');
@@ -267,7 +267,7 @@ export async function saveStep(
       currentStep: after,
       clientId:
         step === 'client'
-          ? BigInt((saved as NonNullable<SessionStepData['client']>).clientId)
+          ? Number((saved as NonNullable<SessionStepData['client']>).clientId)
           : session.clientId,
       updatedAt: new Date(),
     })
@@ -310,7 +310,7 @@ export async function stampKatmPending(
 export async function setSessionClientId(
   db: Db,
   session: DealSessionRow,
-  clientId: bigint,
+  clientId: number,
 ): Promise<void> {
   if (session.clientId === clientId) return;
   await db
@@ -382,7 +382,7 @@ async function buildStepPayload(
       const [client] = await db
         .select({ id: clients.id })
         .from(clients)
-        .where(eq(clients.id, BigInt(clientId)))
+        .where(eq(clients.id, Number(clientId)))
         .limit(1);
       console.log('[buildStepPayload:client] db lookup result', client ?? 'NOT FOUND');
       if (!client) throw err('client_not_found');
@@ -417,11 +417,7 @@ async function buildStepPayload(
       const tariffId = str(body['tariffId']);
       console.log('[buildStepPayload:tariff] tariffId', tariffId);
       if (!tariffId || !/^\d+$/.test(tariffId)) throw err('invalid_step_payload');
-      const [tariff] = await db
-        .select()
-        .from(tariffs)
-        .where(eq(tariffs.id, BigInt(tariffId)))
-        .limit(1);
+      const [tariff] = await db.select().from(tariffs).where(eq(tariffs.id, parseInt(tariffId))).limit(1);
       console.log(
         '[buildStepPayload:tariff] db lookup result',
         tariff ?? 'NOT FOUND',
@@ -460,7 +456,7 @@ async function buildStepPayload(
         const [p] = await db
           .select()
           .from(products)
-          .where(eq(products.id, BigInt(line.productId)))
+          .where(eq(products.id, Number(line.productId)))
           .limit(1);
         console.log('[buildStepPayload:products] product lookup', {
           productId: line.productId,

@@ -4,11 +4,11 @@ import { buyouts, deals, dealItems } from "../../../deals/db/schema"
 import { merchants, branches, merchantUsers, clients } from "../../../id/db/schema"
 import type { BuyoutDto } from "../queries/list-buyouts"
 
-function formatDealNumber(n: bigint | null | undefined): string {
+function formatDealNumber(n: number | null | undefined): string {
   return n != null ? `CN-${String(n).padStart(7, "0")}` : "—"
 }
 
-export async function markBuyoutPaid(db: Db, id: bigint): Promise<BuyoutDto | null> {
+export async function markBuyoutPaid(db: Db, id: number): Promise<BuyoutDto | null> {
   const [updated] = await db
     .update(buyouts)
     .set({ status: "paid" })

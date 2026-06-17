@@ -33,7 +33,7 @@ const baseCookie = {
 const ACCESS_COOKIE = "admin_access_token";
 const SESSION_COOKIE = "admin_session_id";
 
-function buildAccessToken(app: FastifyInstance, adminId: bigint, roleId: bigint | null): string {
+function buildAccessToken(app: FastifyInstance, adminId: number, roleId: number | null): string {
   return app.jwt.sign(
     { sub: adminId.toString(), type: "admin", roleId: roleId ? roleId.toString() : null },
     { expiresIn: ACCESS_MAX_AGE },
@@ -43,8 +43,8 @@ function buildAccessToken(app: FastifyInstance, adminId: bigint, roleId: bigint 
 function setAuthCookies(
   app: FastifyInstance,
   reply: FastifyReply,
-  adminId: bigint,
-  roleId: bigint | null,
+  adminId: number,
+  roleId: number | null,
   sessionToken: string,
 ): void {
   reply.setCookie(ACCESS_COOKIE, buildAccessToken(app, adminId, roleId), {
@@ -62,12 +62,12 @@ function clearAuthCookies(reply: FastifyReply): void {
   reply.clearCookie(SESSION_COOKIE, { ...baseCookie });
 }
 
-type AdminRow = { id: bigint; email: string; fullName: string; roleId: bigint | null; mustChangePassword: boolean };
+type AdminRow = { id: number; email: string; fullName: string; roleId: number | null; mustChangePassword: boolean };
 
 // Serializes an admin together with the Feature set its Role grants, so the
 // frontend can drive UI from `permissions`.
 async function serializeAdmin(db: Db, admin: AdminRow) {
-  let isSuperadmin = false;
+  let isSuperAdmin = false;
   let roleKey: string | null = null;
   let roleName: string | null = null;
   let features: string[] = [];
@@ -75,7 +75,7 @@ async function serializeAdmin(db: Db, admin: AdminRow) {
   if (admin.roleId) {
     const role = await findRoleById(db, admin.roleId);
     if (role) {
-      isSuperadmin = role.isSuperadmin;
+      isSuperAdmin = role.isSuperAdmin;
       roleKey = role.key;
       roleName = role.name;
       features = await listRoleFeatures(db, admin.roleId);
@@ -89,9 +89,9 @@ async function serializeAdmin(db: Db, admin: AdminRow) {
     roleId: admin.roleId ? admin.roleId.toString() : null,
     roleKey,
     roleName,
-    isSuperadmin,
+    isSuperAdmin,
     mustChangePassword: admin.mustChangePassword,
-    permissions: effectiveFeatures("admin", { isSuperadmin, features }),
+    permissions: effectiveFeatures("admin", { isSuperAdmin, features }),
   };
 }
 
@@ -117,8 +117,8 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
   // True when the requesting admin holds a Superadmin role.
   async function requesterIsSuperadmin(roleId: string | null): Promise<boolean> {
     if (!roleId) return false;
-    const resolved = await app.resolveRole(BigInt(roleId));
-    return resolved?.isSuperadmin ?? false;
+    const resolved = await app.resolveRole(Number(roleId));
+    return resolved?.isSuperAdmin ?? false;
   }
 
   /* ── Login ──────────────────────────────────────────────────────────────── */
@@ -145,7 +145,7 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
 
   fastify.get("/me", { preHandler: app.verifyAdminJwt }, async (request, reply) => {
     const payload = request.user as { sub: string; type: "admin" };
-    const admin = await findAdminById(db, BigInt(payload.sub));
+    const admin = await findAdminById(db, Number(payload.sub));
     if (!admin || !admin.active) {
       return reply.code(401).sendError("unauthorized");
     }
@@ -182,7 +182,7 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
     { schema: { body: ChangePasswordBody }, preHandler: app.verifyAdminJwt },
     async (request, reply) => {
       const payload = request.user as { sub: string };
-      const admin = await findAdminById(db, BigInt(payload.sub));
+      const admin = await findAdminById(db, Number(payload.sub));
       if (!admin || !admin.active) {
         return reply.code(401).sendError("unauthorized");
       }
@@ -232,14 +232,14 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
       const existing = await findAdminByEmail(db, request.body.email);
       if (existing) return reply.code(409).sendError("email_taken");
 
-      const role = await findRoleById(db, BigInt(request.body.roleId));
+      const role = await findRoleById(db, Number(request.body.roleId));
       if (!role || role.platform !== "admin") {
         return reply.code(400).sendError("invalid_role");
       }
 
       // Only a Superadmin may mint another Superadmin.
       const requester = request.user as { sub: string; roleId: string | null };
-      if (role.isSuperadmin && !(await requesterIsSuperadmin(requester.roleId))) {
+      if (role.isSuperAdmin && !(await requesterIsSuperadmin(requester.roleId))) {
         return reply.code(403).sendError("forbidden");
       }
 
@@ -248,7 +248,7 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
         password: request.body.password,
         fullName: request.body.fullName,
         roleId: role.id,
-        createdById: BigInt(requester.sub),
+        createdById: Number(requester.sub),
       });
 
       return { user: await serializeAdmin(db, admin) };
@@ -262,11 +262,11 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
       preHandler: [app.verifyAdminJwt, app.requirePermission("manage_admins")],
     },
     async (request, reply) => {
-      const targetId = BigInt(request.params.id);
+      const targetId = Number(request.params.id);
       const target = await findAdminById(db, targetId);
       if (!target) return reply.code(404).sendError("not_found");
 
-      const newRole = await findRoleById(db, BigInt(request.body.roleId));
+      const newRole = await findRoleById(db, Number(request.body.roleId));
       if (!newRole || newRole.platform !== "admin") {
         return reply.code(400).sendError("invalid_role");
       }
@@ -275,14 +275,14 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
       const requesterSuper = await requesterIsSuperadmin(requester.roleId);
 
       // Only a Superadmin may grant the Superadmin role.
-      if (newRole.isSuperadmin && !requesterSuper) {
+      if (newRole.isSuperAdmin && !requesterSuper) {
         return reply.code(403).sendError("forbidden");
       }
 
       // Never demote the last remaining Superadmin.
-      if (target.roleId && !newRole.isSuperadmin) {
+      if (target.roleId && !newRole.isSuperAdmin) {
         const currentRole = await findRoleById(db, target.roleId);
-        if (currentRole?.isSuperadmin && (await countActiveSuperadmins(db)) <= 1) {
+        if (currentRole?.isSuperAdmin && (await countActiveSuperadmins(db)) <= 1) {
           return reply.code(409).sendError("last_superadmin");
         }
       }

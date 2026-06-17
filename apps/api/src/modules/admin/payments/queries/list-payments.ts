@@ -21,7 +21,7 @@ export interface Payment {
 
 export async function listPayments(
   db: Db,
-  filters: { merchantId?: bigint } = {},
+  filters: { merchantId?: number } = {},
 ): Promise<Payment[]> {
   let query = db
     .select({
@@ -47,7 +47,7 @@ export async function listPayments(
     .orderBy(desc(dealPaymentSchedules.dueDate))
     .$dynamic()
 
-  const notPending = or(eq(dealPaymentSchedules.paid, true), gt(dealPaymentSchedules.paidAmount, 0n))!
+  const notPending = or(eq(dealPaymentSchedules.paid, true), gt(dealPaymentSchedules.paidAmount, 0))!
 
   if (filters.merchantId) {
     query = query.where(and(notPending, eq(deals.merchantId, filters.merchantId)))
@@ -66,11 +66,11 @@ export async function listPayments(
     contractId: r.contractId,
     dealNumber: `CN-${String(r.dealNumber ?? 0).padStart(7, "0")}`,
     amount: Number(r.amount),
-    paidAmount: Number(r.paidAmount ?? 0n),
+    paidAmount: Number(r.paidAmount ?? 0),
     type: "transfer" as const,
     status: r.paid
       ? ("confirmed" as const)
-      : Number(r.paidAmount ?? 0n) > 0
+      : Number(r.paidAmount ?? 0) > 0
         ? ("partial" as const)
         : ("pending" as const),
     date: r.paidAt ? r.paidAt.toISOString() : new Date(`${r.dueDate}T00:00:00.000Z`).toISOString(),

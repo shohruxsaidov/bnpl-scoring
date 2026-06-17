@@ -13,14 +13,14 @@ export async function createManualPayment(
   db: Db,
   input: {
     dealId: string;
-    adminUserId: bigint;
+    adminUserId: number;
     amount: number;
     paymentType: string;
     note?: string;
   },
 ): Promise<ManualPayment> {
   return db.transaction(async (tx) => {
-    const amountTiyin = BigInt(input.amount);
+    const amountTiyin = Number(input.amount);
 
     const unpaid = await tx
       .select()
@@ -30,7 +30,7 @@ export async function createManualPayment(
       )
       .orderBy(asc(dealPaymentSchedules.dueDate));
 
-    const totalRemaining = unpaid.reduce((sum, r) => sum + (r.amount - (r.paidAmount ?? 0n)), 0n);
+    const totalRemaining = unpaid.reduce((sum, r) => sum + (r.amount - (r.paidAmount ?? 0)), 0);
 
     if (amountTiyin > totalRemaining) {
       throw Object.assign(new Error('overpayment'), { statusCode: 400, code: 'OVERPAYMENT' });
@@ -52,10 +52,10 @@ export async function createManualPayment(
     const now = new Date();
 
     for (const row of unpaid) {
-      if (bucket <= 0n) break;
-      const rowRemaining = row.amount - (row.paidAmount ?? 0n);
+      if (bucket <= 0) break;
+      const rowRemaining = row.amount - (row.paidAmount ?? 0);
       const apply = bucket < rowRemaining ? bucket : rowRemaining;
-      const newPaid = (row.paidAmount ?? 0n) + apply;
+      const newPaid = (row.paidAmount ?? 0) + apply;
       const fullyPaid = newPaid >= row.amount;
 
       await tx

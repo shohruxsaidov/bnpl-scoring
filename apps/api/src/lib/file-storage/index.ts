@@ -11,9 +11,10 @@ const PRESIGNED_GET_EXPIRY = 86400;
 
 export type { FileRecord } from './schema';
 
-export async function createUploadUrl(
-  params: { prefix: string; expirySeconds?: number },
-): Promise<{ uploadUrl: string; objectKey: string }> {
+export async function createUploadUrl(params: {
+  prefix: string;
+  expirySeconds?: number;
+}): Promise<{ uploadUrl: string; objectKey: string }> {
   const objectKey = `${params.prefix}/${randomUUID()}`;
   const uploadUrl = await minioPresign.presignedPutObject(
     env.MINIO_BUCKET,
@@ -30,7 +31,7 @@ export async function recordFile(
     mimeType?: string;
     originalName?: string;
     uploadedByType: 'admin' | 'merchant_user' | 'system';
-    uploadedById?: bigint;
+    uploadedById?: number;
   },
 ) {
   const [row] = await db
@@ -49,7 +50,7 @@ export async function recordFile(
 
 export async function getDownloadUrl(
   db: Db,
-  fileId: bigint,
+  fileId: number,
   expirySeconds = PRESIGNED_GET_EXPIRY,
 ): Promise<string> {
   const [row] = await db.select().from(files).where(eq(files.id, fileId)).limit(1);
@@ -57,7 +58,7 @@ export async function getDownloadUrl(
   return minioPresign.presignedGetObject(row.bucket, row.objectKey, expirySeconds);
 }
 
-export async function deleteFile(db: Db, minio: MinioClient, fileId: bigint): Promise<void> {
+export async function deleteFile(db: Db, minio: MinioClient, fileId: number): Promise<void> {
   const [row] = await db.select().from(files).where(eq(files.id, fileId)).limit(1);
   if (!row) return;
   await minio.removeObject(row.bucket, row.objectKey);

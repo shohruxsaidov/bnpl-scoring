@@ -4,7 +4,7 @@ import { dealComments } from "../../../deals/db/schema"
 export async function createDealComment(
   db: Db,
   dealId: string,
-  adminUserId: bigint,
+  adminUserId: number,
   text: string,
 ) {
   const [row] = await db

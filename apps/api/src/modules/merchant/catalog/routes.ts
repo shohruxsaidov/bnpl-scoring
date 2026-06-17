@@ -13,7 +13,7 @@ import { getCategory } from "../../admin/categories/queries/get-category"
 type MerchantPayload = { sub: string; merchantId: string; role: string }
 
 function merchantId(request: { user: unknown }) {
-  return BigInt((request.user as MerchantPayload).merchantId)
+  return Number((request.user as MerchantPayload).merchantId)
 }
 
 function serializeCategory(c: NonNullable<Awaited<ReturnType<typeof listCategories>>>[number]) {
@@ -59,14 +59,14 @@ export default async function merchantCatalogRoutes(app: FastifyInstance) {
   })
 
   fastify.post("/categories/:id", { schema: { params: IdParams }, preHandler: manageCategories }, async (request, reply) => {
-    const category = await getCategory(db, BigInt(request.params.id))
+    const category = await getCategory(db, Number(request.params.id))
     if (!category) return reply.code(404).sendError("not_found")
     await enableMerchantCategory(db, category.id, merchantId(request))
     return reply.code(204).send()
   })
 
   fastify.delete("/categories/:id", { schema: { params: IdParams }, preHandler: manageCategories }, async (request, reply) => {
-    await disableMerchantCategory(db, BigInt(request.params.id), merchantId(request))
+    await disableMerchantCategory(db, Number(request.params.id), merchantId(request))
     return reply.code(204).send()
   })
 
@@ -79,7 +79,7 @@ export default async function merchantCatalogRoutes(app: FastifyInstance) {
 
   fastify.post("/products", { schema: { body: CreateProductBody }, preHandler: manageProducts }, async (request, reply) => {
     const mId = merchantId(request)
-    const categoryId = BigInt(request.body.categoryId)
+    const categoryId = Number(request.body.categoryId)
     const enabled = await isCategoryEnabledForMerchant(db, categoryId, mId)
     if (!enabled) return reply.code(400).sendError("category_not_enabled")
     const product = await createProduct(db, {
@@ -96,13 +96,13 @@ export default async function merchantCatalogRoutes(app: FastifyInstance) {
 
   fastify.patch("/products/:id", { schema: { params: IdParams, body: UpdateProductBody }, preHandler: manageProducts }, async (request, reply) => {
     const mId = merchantId(request)
-    const categoryId = request.body.categoryId ? BigInt(request.body.categoryId) : undefined
+    const categoryId = request.body.categoryId ? Number(request.body.categoryId) : undefined
     if (categoryId !== undefined) {
       const enabled = await isCategoryEnabledForMerchant(db, categoryId, mId)
       if (!enabled) return reply.code(400).sendError("category_not_enabled")
     }
     const input = { ...request.body, categoryId }
-    const product = await updateProduct(db, BigInt(request.params.id), mId, input)
+    const product = await updateProduct(db, Number(request.params.id), mId, input)
     if (!product) return reply.code(404).sendError("not_found")
     return { product: serializeProduct(product) }
   })

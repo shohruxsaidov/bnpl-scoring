@@ -4,10 +4,10 @@ import { merchantDocuments } from "../../../id/db/schema"
 export async function recordDocument(
   db: Db,
   input: {
-    merchantId: bigint
+    merchantId: number
     fileUrl: string
     documentType: string
-    uploadedByAdminId: bigint
+    uploadedByAdminId: number
   },
 ) {
   const [row] = await db.insert(merchantDocuments).values(input).returning()

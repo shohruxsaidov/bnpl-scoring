@@ -8,7 +8,7 @@ import { updateBranch } from "./commands/update-branch"
 type MerchantPayload = { merchantId: string; role: string }
 
 function merchantId(request: { user: unknown }) {
-  return BigInt((request.user as MerchantPayload).merchantId)
+  return Number((request.user as MerchantPayload).merchantId)
 }
 
 function serialize(b: NonNullable<Awaited<ReturnType<typeof createBranch>>>) {
@@ -45,7 +45,7 @@ export default async function merchantBranchRoutes(app: FastifyInstance) {
   })
 
   fastify.patch("/:id", { schema: { params: IdParams, body: UpdateBody }, preHandler: manage }, async (request, reply) => {
-    const branch = await updateBranch(db, BigInt(request.params.id), merchantId(request), request.body)
+    const branch = await updateBranch(db, Number(request.params.id), merchantId(request), request.body)
     if (!branch) return reply.code(404).sendError("not_found")
     return { branch: serialize(branch) }
   })

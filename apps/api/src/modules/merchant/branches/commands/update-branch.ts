@@ -4,8 +4,8 @@ import { branches } from "../../../id/db/schema"
 
 export async function updateBranch(
   db: Db,
-  id: bigint,
-  merchantId: bigint,
+  id: number,
+  merchantId: number,
   input: Partial<{ name: string; address: string; phone: string; active: boolean }>,
 ) {
   const [row] = await db

@@ -50,9 +50,9 @@ const schema = z.object({
   // amount and term are fixed (ADR-0025): 300 000 so'm, 12 months.
   KATM_CLAIM_TERM_MONTHS: z.coerce.number().default(12),
   // Report polling (result 05050): KATM mandates ≥60 s between checks.
-  KATM_POLL_INTERVAL_MS: z.coerce.number().default(5_000),
+  KATM_POLL_INTERVAL_MS: z.coerce.number().default(1_000),
   KATM_POLL_MAX_ATTEMPTS: z.coerce.number().default(15),
-  KATM_TIMEOUT: z.coerce.number().default(20_000),
+  KATM_TIMEOUT: z.coerce.number().default(10_000),
   // Web Push (VAPID) — merchant employee portals
   VAPID_PUBLIC_KEY: z.string().min(1),
   VAPID_PRIVATE_KEY: z.string().min(1),

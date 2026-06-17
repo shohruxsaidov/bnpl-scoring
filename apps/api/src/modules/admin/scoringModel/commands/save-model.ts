@@ -6,7 +6,7 @@ import type { ScoringModelData } from "../../../scoring/engine"
 export async function saveModel(
   db: Db,
   input: { scoringModelId: number; name: string; version: string; params: ScoringModelData },
-  createdBy: bigint | null,
+  createdBy: number | null,
 ) {
   const existing = await db
     .select({ id: scoringModelRevisions.id })

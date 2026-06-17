@@ -4,8 +4,8 @@ import { products } from "../../../id/db/schema"
 export async function createProduct(
   db: Db,
   input: {
-    merchantId: bigint
-    categoryId: bigint
+    merchantId: number
+    categoryId: number
     name: string
     price: string
     mxikCode?: string

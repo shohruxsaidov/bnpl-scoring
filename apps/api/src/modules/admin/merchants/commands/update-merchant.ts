@@ -4,7 +4,7 @@ import { merchants } from "../../../id/db/schema"
 
 export async function updateMerchant(
   db: Db,
-  id: bigint,
+  id: number,
   input: Partial<{
     name: string
     legalName: string

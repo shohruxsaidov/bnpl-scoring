@@ -91,7 +91,7 @@ export async function findUserByPhone(db: Db, phone: string) {
   return row;
 }
 
-export async function findUserById(db: Db, id: bigint) {
+export async function findUserById(db: Db, id: number) {
   const [row] = await db
     .select()
     .from(users)
@@ -165,7 +165,7 @@ export async function createUser(
  */
 export async function createSession(
   db: Db,
-  userId: bigint,
+  userId: number,
 ): Promise<{ sessionId: string; sessionToken: string }> {
   const sessionToken = randomUUID() + randomBytes(16).toString("hex");
   const sessionTokenHash = hashToken(sessionToken);
@@ -210,7 +210,7 @@ export async function verifySession(db: Db, sessionToken: string) {
 
 export async function upsertDevice(
   db: Db,
-  input: { userId: bigint; deviceId: string; fcmToken: string; platform: 'ios' | 'android'; appVersion: string },
+  input: { userId: number; deviceId: string; fcmToken: string; platform: 'ios' | 'android'; appVersion: string },
 ): Promise<void> {
   await db
     .insert(clientDevices)

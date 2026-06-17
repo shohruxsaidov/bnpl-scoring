@@ -1,16 +1,16 @@
-import { and, eq } from "drizzle-orm"
-import type { Db } from "../../../../db"
-import { scoringHistories } from "../../../deals/db/schema"
-import { clients } from "../../../id/db/schema"
+import { and, eq } from 'drizzle-orm';
+import type { Db } from '../../../../db';
+import { scoringHistories } from '../../../deals/db/schema';
+import { clients } from '../../../id/db/schema';
 
 export interface CreateScoringInput {
-  merchantId: bigint
-  clientId: bigint
-  scoreSum: number | null
-  coefficient: number | null
-  decision: string
-  platformCreditLimit: bigint
-  criteriaScores: Record<string, unknown> | null
+  merchantId: number;
+  clientId: number;
+  scoreSum: number | null;
+  coefficient: number | null;
+  decision: string;
+  platformCreditLimit: number;
+  criteriaScores: Record<string, unknown> | null;
 }
 
 export async function createScoring(db: Db, input: CreateScoringInput): Promise<{ id: string }> {
@@ -27,9 +27,9 @@ export async function createScoring(db: Db, input: CreateScoringInput): Promise<
     })
     .from(clients)
     .where(and(eq(clients.id, input.clientId), eq(clients.merchantId, input.merchantId)))
-    .limit(1)
+    .limit(1);
 
-  if (!client) throw Object.assign(new Error("client_not_found"), { code: "client_not_found" })
+  if (!client) throw Object.assign(new Error('client_not_found'), { code: 'client_not_found' });
 
   const [row] = await db
     .insert(scoringHistories)
@@ -47,7 +47,7 @@ export async function createScoring(db: Db, input: CreateScoringInput): Promise<
       decision: input.decision,
       platformCreditLimit: input.platformCreditLimit,
     })
-    .returning({ id: scoringHistories.id })
+    .returning({ id: scoringHistories.id });
 
-  return { id: row!.id.toString() }
+  return { id: row!.id.toString() };
 }

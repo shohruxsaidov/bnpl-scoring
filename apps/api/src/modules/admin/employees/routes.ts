@@ -24,7 +24,7 @@ export default async function adminEmployeeRoutes(app: FastifyInstance) {
     "/",
     { schema: { querystring: MerchantQuery }, preHandler },
     async (request) => {
-      const rows = await listEmployeesByMerchant(db, BigInt(request.query.merchantId))
+      const rows = await listEmployeesByMerchant(db, Number(request.query.merchantId))
       return { employees: rows.map((e) => ({ ...e, id: e.id.toString() })) }
     },
   )
@@ -47,7 +47,7 @@ export default async function adminEmployeeRoutes(app: FastifyInstance) {
     "/:id",
     { schema: { params: IdParams }, preHandler },
     async (request, reply) => {
-      const employee = await getEmployee(db, BigInt(request.params.id))
+      const employee = await getEmployee(db, Number(request.params.id))
       if (!employee) return reply.code(404).sendError("not_found")
       return { employee: serializeEmployee(employee) }
     },
@@ -57,7 +57,7 @@ export default async function adminEmployeeRoutes(app: FastifyInstance) {
     "/:id",
     { schema: { params: IdParams, body: UpdateEmployeeBody }, preHandler },
     async (request, reply) => {
-      const employee = await updateEmployee(db, BigInt(request.params.id), request.body)
+      const employee = await updateEmployee(db, Number(request.params.id), request.body)
       if (!employee) return reply.code(404).sendError("not_found")
       return { employee: serializeEmployee(employee) }
     },
@@ -71,7 +71,7 @@ export default async function adminEmployeeRoutes(app: FastifyInstance) {
     "/:id/change-password",
     { schema: { params: IdParams, body: ChangePasswordBody }, preHandler },
     async (request, reply) => {
-      const row = await changeEmployeePassword(db, BigInt(request.params.id), request.body.password)
+      const row = await changeEmployeePassword(db, Number(request.params.id), request.body.password)
       if (!row) return reply.code(404).sendError("not_found")
       return { ok: true }
     },

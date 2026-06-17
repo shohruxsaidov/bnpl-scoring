@@ -1,26 +1,27 @@
-import { and, eq } from 'drizzle-orm'
-import type { Db } from '../../db'
-import { users, clients } from '../id/db/schema'
-import { scoringHistories } from '../deals/db/schema'
-import { katmSummary } from '../integrations/katm/poller'
-import { addCard, confirmCard, scoreCard } from '../integrations/plumgate/service'
-import type { KatmResult } from '../integrations/katm/service'
-import { scoringSessions, scoringPipelines } from './db/schema'
+import { and, eq } from 'drizzle-orm';
+import type { Db } from '../../db';
+import { users, clients } from '../id/db/schema';
+import { scoringHistories } from '../deals/db/schema';
+import { katmSummary } from '../integrations/katm/poller';
+import { addCard, confirmCard, scoreCard } from '../integrations/plumgate/service';
+import type { KatmResult } from '../integrations/katm/service';
+import { scoringSessions, scoringPipelines } from './db/schema';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-async function requireSession(db: Db, sessionId: string, userId: bigint) {
+async function requireSession(db: Db, sessionId: string, userId: number) {
   const [session] = await db
     .select()
     .from(scoringSessions)
     .where(and(eq(scoringSessions.id, sessionId), eq(scoringSessions.userId, userId)))
-    .limit(1)
+    .limit(1);
 
-  if (!session) throw Object.assign(new Error('session_not_found'), { statusCode: 404 })
-  if (session.status !== 'running') throw Object.assign(new Error('session_not_running'), { statusCode: 409 })
-  return session
+  if (!session) throw Object.assign(new Error('session_not_found'), { statusCode: 404 });
+  if (session.status !== 'running')
+    throw Object.assign(new Error('session_not_running'), { statusCode: 409 });
+  return session;
 }
 
 async function getPipeline(db: Db, sessionId: string, type: 'katm' | 'card_scoring') {
@@ -28,52 +29,52 @@ async function getPipeline(db: Db, sessionId: string, type: 'katm' | 'card_scori
     .select()
     .from(scoringPipelines)
     .where(and(eq(scoringPipelines.sessionId, sessionId), eq(scoringPipelines.type, type)))
-    .limit(1)
-  return pipeline ?? null
+    .limit(1);
+  return pipeline ?? null;
 }
 
 function computeCoefficient(score: number): number {
-  if (score >= 700) return 1.0
-  if (score >= 600) return 0.8
-  return 0
+  if (score >= 700) return 1.0;
+  if (score >= 600) return 0.8;
+  return 0;
 }
 
 export interface KatmCriteriaDetail {
-  katmScore: number
-  katmClass: string
-  scoringLevel: string
-  openCredits: number
-  totalDebt: number
-  overdueInOpenCredits: number
-  totalContracts: number
-  totalClaims: number
-  overdueCount: number
-  maxOverdueDays: number
-  maxOverdueSum: number
-  avgMonthlyPayment: number
-  hasCreditBan: boolean
+  katmScore: number;
+  katmClass: string;
+  scoringLevel: string;
+  openCredits: number;
+  totalDebt: number;
+  overdueInOpenCredits: number;
+  totalContracts: number;
+  totalClaims: number;
+  overdueCount: number;
+  maxOverdueDays: number;
+  maxOverdueSum: number;
+  avgMonthlyPayment: number;
+  hasCreditBan: boolean;
 }
 
 export interface CardCriteriaDetail {
-  score: number
-  limit: number
-  decision: string
-  pcType: 'uzcard' | 'humo'
-  bank?: string
-  maskedPan?: string
-  holderName?: string
+  score: number;
+  limit: number;
+  decision: string;
+  pcType: 'uzcard' | 'humo';
+  bank?: string;
+  maskedPan?: string;
+  holderName?: string;
 }
 
 export interface ClientCriteriaDetail {
-  birthDate: string
-  gender: string
-  nationality: string
+  birthDate: string;
+  gender: string;
+  nationality: string;
 }
 
 export interface CriteriaScores {
-  katm?: { katmScore: number; detail: KatmCriteriaDetail }
-  card?: { score: number; detail: CardCriteriaDetail }
-  client?: { detail: ClientCriteriaDetail }
+  katm?: { katmScore: number; detail: KatmCriteriaDetail };
+  card?: { score: number; detail: CardCriteriaDetail };
+  client?: { detail: ClientCriteriaDetail };
 }
 
 function buildCriteriaScores(
@@ -113,33 +114,33 @@ function buildCriteriaScores(
       },
     },
     ...(clientData && { client: { detail: clientData } }),
-  }
+  };
 }
 
 // ---------------------------------------------------------------------------
 // Session status — polled by the portal while the KATM report is pending
 // ---------------------------------------------------------------------------
 
-export async function getScoringSessionStatus(db: Db, sessionId: string, userId: bigint) {
+export async function getScoringSessionStatus(db: Db, sessionId: string, userId: number) {
   const [session] = await db
     .select()
     .from(scoringSessions)
     .where(and(eq(scoringSessions.id, sessionId), eq(scoringSessions.userId, userId)))
-    .limit(1)
-  if (!session) throw Object.assign(new Error('session_not_found'), { statusCode: 404 })
+    .limit(1);
+  if (!session) throw Object.assign(new Error('session_not_found'), { statusCode: 404 });
 
-  const katmPipeline = await getPipeline(db, sessionId, 'katm')
+  const katmPipeline = await getPipeline(db, sessionId, 'katm');
   const katm =
     katmPipeline?.status === 'completed' && katmPipeline.result
       ? katmSummary(katmPipeline.result as KatmResult)
-      : null
+      : null;
 
   return {
     sessionId,
     status: session.status,
     katmStatus: katmPipeline?.status ?? 'pending',
     katm,
-  }
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -148,31 +149,31 @@ export async function getScoringSessionStatus(db: Db, sessionId: string, userId:
 
 export async function addScoringCard(
   db: Db,
-  input: { sessionId: string; userId: bigint; cardNumber: string; expiry: string },
+  input: { sessionId: string; userId: number; cardNumber: string; expiry: string },
 ) {
-  await requireSession(db, input.sessionId, input.userId)
+  await requireSession(db, input.sessionId, input.userId);
 
-  const katmPipeline = await getPipeline(db, input.sessionId, 'katm')
+  const katmPipeline = await getPipeline(db, input.sessionId, 'katm');
   if (katmPipeline?.status !== 'completed') {
-    throw Object.assign(new Error('katm_not_completed'), { statusCode: 409 })
+    throw Object.assign(new Error('katm_not_completed'), { statusCode: 409 });
   }
 
   const [user] = await db
     .select({ id: users.id, phone: users.phone })
     .from(users)
     .where(eq(users.id, input.userId))
-    .limit(1)
+    .limit(1);
 
-  if (!user) throw Object.assign(new Error('user_not_found'), { statusCode: 404 })
+  if (!user) throw Object.assign(new Error('user_not_found'), { statusCode: 404 });
 
   const result = await addCard(db, {
     clientId: input.userId.toString(),
     phone: user.phone,
     cardNumber: input.cardNumber,
     expiry: input.expiry,
-  })
+  });
 
-  return result // { sessionId: plumgateSessionId, maskedPhone }
+  return result; // { sessionId: plumgateSessionId, maskedPhone }
 }
 
 // ---------------------------------------------------------------------------
@@ -181,12 +182,12 @@ export async function addScoringCard(
 
 export async function confirmScoringCard(
   db: Db,
-  input: { sessionId: string; userId: bigint; plumgateSessionId: string; otp: string },
+  input: { sessionId: string; userId: number; plumgateSessionId: string; otp: string },
 ) {
-  await requireSession(db, input.sessionId, input.userId)
+  await requireSession(db, input.sessionId, input.userId);
 
-  const card = await confirmCard(db, { sessionId: input.plumgateSessionId, otp: input.otp })
-  return { card } // { plumCardId, maskedPan, holderName, expiry, bank, pcType }
+  const card = await confirmCard(db, { sessionId: input.plumgateSessionId, otp: input.otp });
+  return { card }; // { plumCardId, maskedPan, holderName, expiry, bank, pcType }
 }
 
 // ---------------------------------------------------------------------------
@@ -194,52 +195,52 @@ export async function confirmScoringCard(
 // ---------------------------------------------------------------------------
 
 export interface CompleteScoringResult {
-  scoreSum: number
-  coefficient: number
-  decision: string
-  platformCreditLimit: number
-  criteriaScores: CriteriaScores
+  scoreSum: number;
+  coefficient: number;
+  decision: string;
+  platformCreditLimit: number;
+  criteriaScores: CriteriaScores;
 }
 
 export async function completeScoringCard(
   db: Db,
   input: {
-    sessionId: string
-    userId: bigint
-    plumCardId: string
-    pcType: 'uzcard' | 'humo'
+    sessionId: string;
+    userId: number;
+    plumCardId: string;
+    pcType: 'uzcard' | 'humo';
   },
 ): Promise<CompleteScoringResult> {
-  await requireSession(db, input.sessionId, input.userId)
+  await requireSession(db, input.sessionId, input.userId);
 
   const [katmPipeline, cardPipeline] = await Promise.all([
     getPipeline(db, input.sessionId, 'katm'),
     getPipeline(db, input.sessionId, 'card_scoring'),
-  ])
+  ]);
 
   if (katmPipeline?.status !== 'completed') {
-    throw Object.assign(new Error('katm_not_completed'), { statusCode: 409 })
+    throw Object.assign(new Error('katm_not_completed'), { statusCode: 409 });
   }
   if (cardPipeline?.status !== 'pending') {
-    throw Object.assign(new Error('card_scoring_already_started'), { statusCode: 409 })
+    throw Object.assign(new Error('card_scoring_already_started'), { statusCode: 409 });
   }
 
   await db
     .update(scoringPipelines)
     .set({ status: 'running', startedAt: new Date() })
-    .where(eq(scoringPipelines.id, cardPipeline.id))
+    .where(eq(scoringPipelines.id, cardPipeline.id));
 
-  const katmResult = katmPipeline.result as KatmResult
+  const katmResult = katmPipeline.result as KatmResult;
 
   try {
     const plumResult = await scoreCard(db, {
       plumCardId: input.plumCardId,
       pcType: input.pcType,
-    })
+    });
 
-    const coefficient = computeCoefficient(plumResult.score)
-    const platformCreditLimit = BigInt(plumResult.limit)
-    const now = new Date()
+    const coefficient = computeCoefficient(plumResult.score);
+    const platformCreditLimit = Number(plumResult.limit);
+    const now = new Date();
 
     await db
       .update(scoringPipelines)
@@ -248,12 +249,12 @@ export async function completeScoringCard(
         result: plumResult as unknown as Record<string, unknown>,
         completedAt: now,
       })
-      .where(eq(scoringPipelines.id, cardPipeline.id))
+      .where(eq(scoringPipelines.id, cardPipeline.id));
 
     await db
       .update(scoringSessions)
       .set({ status: 'completed', scoredAt: now })
-      .where(eq(scoringSessions.id, input.sessionId))
+      .where(eq(scoringSessions.id, input.sessionId));
 
     const [user] = await db
       .select({
@@ -270,14 +271,16 @@ export async function completeScoringCard(
       })
       .from(users)
       .where(eq(users.id, input.userId))
-      .limit(1)
+      .limit(1);
 
     const criteriaScores = buildCriteriaScores(
       plumResult,
       input.pcType,
       katmResult,
-      user ? { birthDate: user.birthDate, gender: user.gender, nationality: user.nationality } : undefined,
-    )
+      user
+        ? { birthDate: user.birthDate, gender: user.gender, nationality: user.nationality }
+        : undefined,
+    );
 
     // Look up any existing clients row for this PINFL (may span multiple merchants)
     const [existingClient] = user?.pinfl
@@ -286,7 +289,7 @@ export async function completeScoringCard(
           .from(clients)
           .where(eq(clients.pinfl, user.pinfl))
           .limit(1)
-      : []
+      : [];
 
     await db.insert(scoringHistories).values({
       clientId: existingClient?.id ?? null,
@@ -302,7 +305,7 @@ export async function completeScoringCard(
       coefficient: coefficient.toString(),
       decision: plumResult.decision,
       platformCreditLimit,
-    })
+    });
 
     return {
       scoreSum: plumResult.score,
@@ -310,9 +313,9 @@ export async function completeScoringCard(
       decision: plumResult.decision,
       platformCreditLimit: plumResult.limit,
       criteriaScores,
-    }
+    };
   } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : String(err)
+    const errorMessage = err instanceof Error ? err.message : String(err);
     await Promise.all([
       db
         .update(scoringPipelines)
@@ -322,7 +325,7 @@ export async function completeScoringCard(
         .update(scoringSessions)
         .set({ status: 'failed' })
         .where(eq(scoringSessions.id, input.sessionId)),
-    ])
-    throw err
+    ]);
+    throw err;
   }
 }

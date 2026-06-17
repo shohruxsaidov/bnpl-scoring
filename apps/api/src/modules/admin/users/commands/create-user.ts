@@ -4,7 +4,7 @@ import { hashPassword } from "../../../auth/admin/service"
 
 export async function createAdminUser(
   db: Db,
-  input: { email: string; fullName: string; password: string; roleId: bigint; createdById: bigint },
+  input: { email: string; fullName: string; password: string; roleId: number; createdById: number },
 ) {
   const passwordHash = await hashPassword(input.password)
   const [row] = await db

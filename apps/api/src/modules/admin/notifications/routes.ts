@@ -85,25 +85,25 @@ export default async function adminNotificationRoutes(app: FastifyInstance) {
 
   fastify.post('/broadcast', { schema: { body: BroadcastBody }, preHandler }, async (request, reply) => {
     const adminPayload = request.user as { sub: string }
-    const adminId = BigInt(adminPayload.sub)
+    const adminId = Number(adminPayload.sub)
     const { targetType, targetId, title, body } = request.body
 
-    type Recipient = { actorType: 'employee' | 'client'; actorId: bigint }
+    type Recipient = { actorType: 'employee' | 'client'; actorId: number }
     let recipients: Recipient[] = []
 
     if (targetType === 'employee') {
       if (!targetId) return reply.code(400).sendError('target_id_required')
-      recipients = [{ actorType: 'employee', actorId: BigInt(targetId) }]
+      recipients = [{ actorType: 'employee', actorId: Number(targetId) }]
     } else if (targetType === 'merchant_employees') {
       if (!targetId) return reply.code(400).sendError('target_id_required')
       const rows = await db
         .select({ id: merchantUsers.id })
         .from(merchantUsers)
-        .where(eq(merchantUsers.merchantId, BigInt(targetId)))
+        .where(eq(merchantUsers.merchantId, Number(targetId)))
       recipients = rows.map((r) => ({ actorType: 'employee' as const, actorId: r.id }))
     } else if (targetType === 'client') {
       if (!targetId) return reply.code(400).sendError('target_id_required')
-      recipients = [{ actorType: 'client', actorId: BigInt(targetId) }]
+      recipients = [{ actorType: 'client', actorId: Number(targetId) }]
     } else {
       // all_clients
       const rows = await db.select({ id: users.id }).from(users)

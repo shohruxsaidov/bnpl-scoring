@@ -35,12 +35,12 @@ export default async function merchantScoringHistoryRoutes(app: FastifyInstance)
       const p = payload(request)
       try {
         const res = await createScoring(db, {
-          merchantId: BigInt(p.merchantId),
-          clientId: BigInt(request.body.clientId),
+          merchantId: Number(p.merchantId),
+          clientId: Number(request.body.clientId),
           scoreSum: request.body.scoreSum ?? null,
           coefficient: request.body.coefficient ?? null,
           decision: request.body.decision,
-          platformCreditLimit: BigInt(Math.round(request.body.platformCreditLimit)),
+          platformCreditLimit: Number(Math.round(request.body.platformCreditLimit)),
           criteriaScores: (request.body.criteriaScores as Record<string, unknown>) ?? null,
         })
         return reply.code(201).send(res)

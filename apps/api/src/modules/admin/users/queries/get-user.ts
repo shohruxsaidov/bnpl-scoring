@@ -9,12 +9,12 @@ const userSelect = {
   roleId: adminUsers.roleId,
   roleName: roles.name,
   roleKey: roles.key,
-  isSuperadmin: roles.isSuperadmin,
+  isSuperAdmin: roles.isSuperAdmin,
   active: adminUsers.active,
   createdAt: adminUsers.createdAt,
 }
 
-export async function getAdminUser(db: Db, id: bigint) {
+export async function getAdminUser(db: Db, id: number) {
   const [row] = await db
     .select(userSelect)
     .from(adminUsers)

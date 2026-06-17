@@ -41,9 +41,9 @@ interface PickerToken {
 
 function buildAccessToken(
   app: FastifyInstance,
-  employee: { id: bigint; merchantId: bigint; branchId: bigint },
+  employee: { id: number; merchantId: number; branchId: number },
   role: string,
-  roleId: bigint,
+  roleId: number,
 ): string {
   return app.jwt.sign(
     {
@@ -61,9 +61,9 @@ function buildAccessToken(
 function setAuthCookies(
   app: FastifyInstance,
   reply: FastifyReply,
-  employee: { id: bigint; merchantId: bigint; branchId: bigint },
+  employee: { id: number; merchantId: number; branchId: number },
   role: string,
-  roleId: bigint,
+  roleId: number,
   sessionToken: string,
 ): void {
   reply.setCookie(ACCESS_COOKIE, buildAccessToken(app, employee, role, roleId), {
@@ -83,15 +83,15 @@ function clearAuthCookies(reply: FastifyReply): void {
 
 function serializeEmployee(
   employee: {
-    id: bigint;
+    id: number;
     fullName: string;
     phone: string;
-    merchantId: bigint;
-    branchId: bigint;
+    merchantId: number;
+    branchId: number;
     mustChangePassword: boolean;
   },
   role: string,
-  roleId: bigint,
+  roleId: number,
   permissions: string[],
 ) {
   return {
@@ -198,7 +198,7 @@ export default async function merchantAuthRoutes(app: FastifyInstance) {
       return reply.code(400).sendError('role_not_allowed');
     }
 
-    const employee = await findMerchantUserById(db, BigInt(payload.employeeId));
+    const employee = await findMerchantUserById(db, +payload.employeeId);
     if (!employee || !employee.active) {
       return reply.code(401).sendError('invalid_credentials');
     }
@@ -247,13 +247,15 @@ export default async function merchantAuthRoutes(app: FastifyInstance) {
       role: string;
       roleId: string;
     };
-    const employee = await findMerchantUserById(db, BigInt(payload.sub));
+    const employee = await findMerchantUserById(db, +payload.sub);
     if (!employee || !employee.active) {
       return reply.code(401).sendError('unauthorized');
     }
     const resolved = await resolveRoleByKey(db, payload.role);
     if (!resolved) return reply.code(500).sendError('role_not_configured');
-    return { user: serializeEmployee(employee, payload.role, resolved.role.id, resolved.permissions) };
+    return {
+      user: serializeEmployee(employee, payload.role, resolved.role.id, resolved.permissions),
+    };
   });
 
   /* ── Change password ────────────────────────────────────────────────────── */
@@ -268,7 +270,7 @@ export default async function merchantAuthRoutes(app: FastifyInstance) {
     { schema: { body: ChangePasswordBody }, preHandler: app.verifyMerchantJwt },
     async (request, reply) => {
       const payload = request.user as { sub: string };
-      const employee = await findMerchantUserById(db, BigInt(payload.sub));
+      const employee = await findMerchantUserById(db, +payload.sub);
       if (!employee || !employee.active) {
         return reply.code(401).sendError('unauthorized');
       }

@@ -3,7 +3,7 @@ import type { Db } from "../../../../db"
 import { clients } from "../../../id/db/schema"
 import { scoringHistories } from "../../../deals/db/schema"
 
-export async function listClientScoring(db: Db, id: bigint) {
+export async function listClientScoring(db: Db, id: number) {
   const clientRows = await db.select({ pinfl: clients.pinfl }).from(clients).where(eq(clients.id, id)).limit(1)
   if (!clientRows[0]) return []
   const pinfl = clientRows[0].pinfl

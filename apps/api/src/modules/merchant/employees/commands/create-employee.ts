@@ -1,6 +1,6 @@
-import type { Db } from "../../../../db"
-import { merchantUsers } from "../../../id/db/schema"
-import { hashPassword } from "../../../auth/admin/service"
+import type { Db } from '../../../../db';
+import { merchantUsers } from '../../../id/db/schema';
+import { hashPassword } from '../../../auth/admin/service';
 
 const safeSelect = {
   id: merchantUsers.id,
@@ -12,16 +12,23 @@ const safeSelect = {
   mustChangePassword: merchantUsers.mustChangePassword,
   active: merchantUsers.active,
   createdAt: merchantUsers.createdAt,
-}
+};
 
 export async function createEmployee(
   db: Db,
-  input: { phone: string; password: string; fullName: string; merchantId: bigint; branchId: bigint; roles: string[] },
+  input: {
+    phone: string;
+    password: string;
+    fullName: string;
+    merchantId: number;
+    branchId: number;
+    roles: string[];
+  },
 ) {
-  const passwordHash = await hashPassword(input.password)
+  const passwordHash = await hashPassword(input.password);
   const [row] = await db
     .insert(merchantUsers)
     .values({ ...input, passwordHash, mustChangePassword: true })
-    .returning(safeSelect)
-  return row!
+    .returning(safeSelect);
+  return row!;
 }

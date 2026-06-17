@@ -26,7 +26,7 @@ export default async function adminDealRoutes(app: FastifyInstance) {
     const { status, merchantId } = request.query
     const deals = await listAdminDeals(db, {
       status: status || undefined,
-      merchantId: merchantId ? BigInt(merchantId) : undefined,
+      merchantId: merchantId ? Number(merchantId) : undefined,
     })
     return { deals }
   })
@@ -46,7 +46,7 @@ export default async function adminDealRoutes(app: FastifyInstance) {
     "/:id/comments",
     { schema: { params: IdParams, body: CreateCommentBody }, preHandler },
     async (request, reply) => {
-      const adminUserId = BigInt((request.user as { sub: string }).sub)
+      const adminUserId = Number((request.user as { sub: string }).sub)
       const comment = await createDealComment(db, request.params.id, adminUserId, request.body.text)
       return reply.code(201).send({ comment })
     },

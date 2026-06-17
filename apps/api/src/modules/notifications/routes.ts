@@ -16,10 +16,10 @@ type AnyPayload =
   | { sub: string; type: 'admin'; roleId: string | null }
   | { sub: string; type: 'merchant'; merchantId: string; branchId: string; role: string; roleId: string }
 
-function actorFrom(user: AnyPayload): { actorType: ActorType; actorId: bigint } {
-  if (user.type === 'merchant') return { actorType: 'employee', actorId: BigInt(user.sub) }
-  if (user.type === 'admin') return { actorType: 'admin', actorId: BigInt(user.sub) }
-  return { actorType: 'client', actorId: BigInt(user.sub) }
+function actorFrom(user: AnyPayload): { actorType: ActorType; actorId: number } {
+  if (user.type === 'merchant') return { actorType: 'employee', actorId: Number(user.sub) }
+  if (user.type === 'admin') return { actorType: 'admin', actorId: Number(user.sub) }
+  return { actorType: 'client', actorId: Number(user.sub) }
 }
 
 export default async function notificationRoutes(app: FastifyInstance) {

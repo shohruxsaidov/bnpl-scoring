@@ -38,8 +38,8 @@ export function missingKatmFields(row: {
   passportSerial: string | null;
   passportNumber: string | null;
   docType: number | null;
-  katmRegionCode: string | null;
-  katmDistrictCode: string | null;
+  regionCode: string | null;
+  districtCode: string | null;
   address: string | null;
   phone: string | null;
 }): string[] {
@@ -48,8 +48,8 @@ export function missingKatmFields(row: {
   if (!row.passportSerial) missing.push('passportSerial');
   if (!row.passportNumber) missing.push('passportNumber');
   if (row.docType == null) missing.push('docType');
-  if (!row.katmRegionCode) missing.push('regionCode');
-  if (!row.katmDistrictCode) missing.push('districtCode');
+  if (!row.regionCode) missing.push('regionCode');
+  if (!row.districtCode) missing.push('districtCode');
   if (!row.address) missing.push('address');
   if (!row.phone) missing.push('phone');
   return missing;
@@ -81,8 +81,8 @@ export async function createKatmConsent(
   db: Db,
   input: {
     channel: 'wizard' | 'self_service';
-    clientId?: bigint;
-    userId?: bigint;
+    clientId?: number;
+    userId?: number;
     sessionId?: string;
   },
 ): Promise<KatmConsentRecord> {

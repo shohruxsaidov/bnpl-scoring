@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm"
 import type { Db } from "../../../../db"
 import { merchantTariffs, merchants } from "../../../id/db/schema"
 
-export async function getTariffMerchants(db: Db, tariffId: bigint) {
+export async function getTariffMerchants(db: Db, tariffId: number) {
   return db
     .select({
       id: merchants.id,

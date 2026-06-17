@@ -108,7 +108,7 @@ function detailStatus(decision: string): "review" | "approved" | "declined" {
   return "review"
 }
 
-export async function getScoring(db: Db, id: bigint): Promise<ScoringDetail | null> {
+export async function getScoring(db: Db, id: number): Promise<ScoringDetail | null> {
   const rows = await db.select().from(scoringHistories).where(eq(scoringHistories.id, id)).limit(1)
   const scoring = rows[0]
   if (!scoring) return null

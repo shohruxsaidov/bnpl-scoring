@@ -121,7 +121,7 @@ export default async function adminScoringModelRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const model = await getScoringModel(db, parseInt(request.params.modelId, 10))
       if (!model) return reply.code(404).sendError("not_found")
-      const adminId = BigInt((request.user as { sub: string }).sub)
+      const adminId = Number((request.user as { sub: string }).sub)
       const { name, version, params } = request.body
       const row = await saveModel(
         db,

@@ -1,20 +1,28 @@
 import {
-  bigint,
-  bigserial,
   boolean,
   date,
   integer,
   jsonb,
   numeric,
   pgTable,
+  serial,
   text,
   timestamp,
   unique,
   uuid,
   varchar,
-} from 'drizzle-orm/pg-core'
-import { clients, merchantUsers, merchants, branches, tariffs, products, adminUsers, scoringModelRevisions } from '../../id/db/schema'
-import { files } from '../../../lib/file-storage/schema'
+} from 'drizzle-orm/pg-core';
+import {
+  clients,
+  merchantUsers,
+  merchants,
+  branches,
+  tariffs,
+  products,
+  adminUsers,
+  scoringModelRevisions,
+} from '../../id/db/schema';
+import { files } from '../../../lib/file-storage/schema';
 
 // ---------------------------------------------------------------------------
 // deal_sessions
@@ -28,11 +36,17 @@ import { files } from '../../../lib/file-storage/schema'
 // ---------------------------------------------------------------------------
 export const dealSessions = pgTable('deal_sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
-  merchantId: bigint('merchant_id', { mode: 'bigint' }).notNull().references(() => merchants.id),
-  branchId: bigint('branch_id', { mode: 'bigint' }).notNull().references(() => branches.id),
-  agentId: bigint('agent_id', { mode: 'bigint' }).notNull().references(() => merchantUsers.id),
+  merchantId: integer('merchant_id')
+    .notNull()
+    .references(() => merchants.id),
+  branchId: integer('branch_id')
+    .notNull()
+    .references(() => branches.id),
+  agentId: integer('agent_id')
+    .notNull()
+    .references(() => merchantUsers.id),
   // Set once the Клиент step is saved
-  clientId: bigint('client_id', { mode: 'bigint' }).references(() => clients.id),
+  clientId: integer('client_id').references(() => clients.id),
   // The step the Agent is currently on: 'client' | 'card' | 'tariff' | 'products' | 'payment' | 'verification'
   currentStep: varchar('current_step', { length: 20 }).notNull().default('client'),
   // 'active' | 'completed' | 'abandoned'
@@ -46,7 +60,7 @@ export const dealSessions = pgTable('deal_sessions', {
   stepData: jsonb('step_data').notNull().default({}),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-})
+});
 
 // ---------------------------------------------------------------------------
 // deal_session_events
@@ -55,12 +69,14 @@ export const dealSessions = pgTable('deal_sessions', {
 // audit trail; never updated or deleted. Retention deliberately deferred (ADR-0024).
 // ---------------------------------------------------------------------------
 export const dealSessionEvents = pgTable('deal_session_events', {
-  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
-  sessionId: uuid('session_id').notNull().references(() => dealSessions.id, { onDelete: 'cascade' }),
+  id: serial('id').primaryKey(),
+  sessionId: uuid('session_id')
+    .notNull()
+    .references(() => dealSessions.id, { onDelete: 'cascade' }),
   step: varchar('step', { length: 20 }).notNull(),
   payload: jsonb('payload'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-})
+});
 
 // ---------------------------------------------------------------------------
 // deals
@@ -71,11 +87,17 @@ export const dealSessionEvents = pgTable('deal_session_events', {
 // ---------------------------------------------------------------------------
 export const deals = pgTable('deals', {
   id: uuid('id').primaryKey().defaultRandom(),
-  merchantId: bigint('merchant_id', { mode: 'bigint' }).notNull().references(() => merchants.id),
-  branchId: bigint('branch_id', { mode: 'bigint' }).notNull().references(() => branches.id),
-  agentId: bigint('agent_id', { mode: 'bigint' }).notNull().references(() => merchantUsers.id),
-  clientId: bigint('client_id', { mode: 'bigint' }).references(() => clients.id),
-  tariffId: bigint('tariff_id', { mode: 'bigint' }).references(() => tariffs.id),
+  merchantId: integer('merchant_id')
+    .notNull()
+    .references(() => merchants.id),
+  branchId: integer('branch_id')
+    .notNull()
+    .references(() => branches.id),
+  agentId: integer('agent_id')
+    .notNull()
+    .references(() => merchantUsers.id),
+  clientId: integer('client_id').references(() => clients.id),
+  tariffId: integer('tariff_id').references(() => tariffs.id),
   // The Wizard run that produced this Deal (null for deals predating ADR-0024)
   dealSessionId: uuid('deal_session_id').references(() => dealSessions.id),
   // KATM consent — collected at start of Wizard
@@ -89,9 +111,9 @@ export const deals = pgTable('deals', {
   status: varchar('status', { length: 20 }).notNull().default('draft'),
   // Denormalized financials — stored at creation so list queries need no heavy joins
   /** Sum of dealItems.price × quantity in tiyin */
-  amount: bigint('amount', { mode: 'bigint' }),
+  amount: integer('amount'),
   /** amount × (1 + markupPercent / 100), tiyin */
-  totalPayable: bigint('total_payable', { mode: 'bigint' }),
+  totalPayable: integer('total_payable'),
   /** Copied from tariffs.term_months at creation time */
   termMonths: integer('term_months'),
   // Scoring result — copied from scoring_histories at deal activation
@@ -100,13 +122,13 @@ export const deals = pgTable('deals', {
   // Avansoviy to'lov — recorded at deal creation when the client paid a gap amount
   // upfront so the installment schedule covers only (totalPayable - prepaymentAmount).
   // Null means no prepayment was made. ADR-0026.
-  prepaymentAmount: bigint('prepayment_amount', { mode: 'bigint' }),
+  prepaymentAmount: integer('prepayment_amount'),
   // Kontrakt language selected at Wizard verification step
   lang: varchar('lang', { length: 5 }).notNull().default('ru'),
   // Human-readable sequential identifier, formatted as CN-0000001 at the app layer
-  dealNumber: bigserial('deal_number', { mode: 'bigint' }).notNull().unique(),
+  dealNumber: serial('deal_number').notNull().unique(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-})
+});
 
 // ---------------------------------------------------------------------------
 // scoring_histories
@@ -114,9 +136,9 @@ export const deals = pgTable('deals', {
 // at scoring time so records remain accurate even if linked rows change.
 // ---------------------------------------------------------------------------
 export const scoringHistories = pgTable('scoring_histories', {
-  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+  id: serial('id').primaryKey(),
   // Link to clients row (nullable — self-service scoring has no merchant-scoped client)
-  clientId: bigint('client_id', { mode: 'bigint' }).references(() => clients.id),
+  clientId: integer('client_id').references(() => clients.id),
   // Client snapshot at scoring time
   firstName: varchar('first_name', { length: 100 }),
   lastName: varchar('last_name', { length: 100 }),
@@ -135,9 +157,9 @@ export const scoringHistories = pgTable('scoring_histories', {
   // Scoring Model Revision that produced this decision; null for runs predating
   // the global-model audit trail (ADR 0021) or scored outside the model engine
   modelRevisionId: integer('model_revision_id').references(() => scoringModelRevisions.id),
-  platformCreditLimit: bigint('platform_credit_limit', { mode: 'bigint' }).notNull(),
+  platformCreditLimit: integer('platform_credit_limit').notNull(),
   scoredAt: timestamp('scored_at', { withTimezone: true }).defaultNow().notNull(),
-})
+});
 
 // ---------------------------------------------------------------------------
 // deal_items
@@ -146,10 +168,12 @@ export const scoringHistories = pgTable('scoring_histories', {
 // denormalized at Deal creation time so Product edits don't alter past Deals.
 // ---------------------------------------------------------------------------
 export const dealItems = pgTable('deal_items', {
-  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
-  dealId: uuid('deal_id').notNull().references(() => deals.id, { onDelete: 'cascade' }),
+  id: serial('id').primaryKey(),
+  dealId: uuid('deal_id')
+    .notNull()
+    .references(() => deals.id, { onDelete: 'cascade' }),
   // nullable — product may be deleted after Deal creation; snapshot fields remain
-  productId: bigint('product_id', { mode: 'bigint' }).references(() => products.id),
+  productId: integer('product_id').references(() => products.id),
   // snapshot at time of Deal creation
   productName: varchar('product_name', { length: 200 }).notNull(),
   price: numeric('price', { precision: 15, scale: 2 }).notNull(),
@@ -157,7 +181,7 @@ export const dealItems = pgTable('deal_items', {
   packageCode: integer('package_code'),
   packageName: varchar('package_name', { length: 200 }),
   quantity: integer('quantity').notNull().default(1),
-})
+});
 
 // ---------------------------------------------------------------------------
 // manual_payments
@@ -165,14 +189,16 @@ export const dealItems = pgTable('deal_items', {
 // FIFO by dueDate. Amount stored in tiyin.
 // ---------------------------------------------------------------------------
 export const manualPayments = pgTable('manual_payments', {
-  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
-  dealId: uuid('deal_id').notNull().references(() => deals.id, { onDelete: 'cascade' }),
-  adminUserId: bigint('admin_user_id', { mode: 'bigint' }).references(() => adminUsers.id),
-  amount: bigint('amount', { mode: 'bigint' }).notNull(),
+  id: serial('id').primaryKey(),
+  dealId: uuid('deal_id')
+    .notNull()
+    .references(() => deals.id, { onDelete: 'cascade' }),
+  adminUserId: integer('admin_user_id').references(() => adminUsers.id),
+  amount: integer('amount').notNull(),
   paymentType: text('payment_type').notNull().default('mib'),
   note: text('note'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-})
+});
 
 // ---------------------------------------------------------------------------
 // deal_payment_schedules
@@ -181,30 +207,40 @@ export const manualPayments = pgTable('manual_payments', {
 // manualPaymentId is set when the row was settled by a Manual Payment event.
 // ---------------------------------------------------------------------------
 export const dealPaymentSchedules = pgTable('deal_payment_schedules', {
-  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
-  dealId: uuid('deal_id').notNull().references(() => deals.id, { onDelete: 'cascade' }),
+  id: serial('id').primaryKey(),
+  dealId: uuid('deal_id')
+    .notNull()
+    .references(() => deals.id, { onDelete: 'cascade' }),
   index: integer('index').notNull(),
   dueDate: date('due_date').notNull(),
-  amount: bigint('amount', { mode: 'bigint' }).notNull(),
+  amount: integer('amount').notNull(),
   /** Cumulative amount paid so far (tiyin). Fully paid when paidAmount >= amount. */
-  paidAmount: bigint('paid_amount', { mode: 'bigint' }).notNull().$defaultFn(() => 0n),
+  paidAmount: integer('paid_amount')
+    .notNull()
+    .$defaultFn(() => 0),
   paid: boolean('paid').notNull().default(false),
   paidAt: timestamp('paid_at', { withTimezone: true }),
-  manualPaymentId: bigint('manual_payment_id', { mode: 'bigint' }).references(() => manualPayments.id),
+  manualPaymentId: integer('manual_payment_id').references(
+    () => manualPayments.id,
+  ),
   paymentProvider: text('payment_provider').array(),
-})
+});
 
 // ---------------------------------------------------------------------------
 // deal_comments
 // Admin-authored notes on a deal. Append-only, not editable or deletable.
 // ---------------------------------------------------------------------------
 export const dealComments = pgTable('deal_comments', {
-  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
-  dealId: uuid('deal_id').notNull().references(() => deals.id, { onDelete: 'cascade' }),
-  adminUserId: bigint('admin_user_id', { mode: 'bigint' }).notNull().references(() => adminUsers.id),
+  id: serial('id').primaryKey(),
+  dealId: uuid('deal_id')
+    .notNull()
+    .references(() => deals.id, { onDelete: 'cascade' }),
+  adminUserId: integer('admin_user_id')
+    .notNull()
+    .references(() => adminUsers.id),
   text: text('text').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-})
+});
 
 // ---------------------------------------------------------------------------
 // buyouts
@@ -213,15 +249,21 @@ export const dealComments = pgTable('deal_comments', {
 // Processed manually by the Platform Admin — status flips pending → paid.
 // ---------------------------------------------------------------------------
 export const buyouts = pgTable('buyouts', {
-  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
-  dealId: uuid('deal_id').notNull().references(() => deals.id),
-  merchantId: bigint('merchant_id', { mode: 'bigint' }).notNull().references(() => merchants.id),
-  branchId: bigint('branch_id', { mode: 'bigint' }).notNull().references(() => branches.id),
-  amount: bigint('amount', { mode: 'bigint' }).notNull(),
+  id: serial('id').primaryKey(),
+  dealId: uuid('deal_id')
+    .notNull()
+    .references(() => deals.id),
+  merchantId: integer('merchant_id')
+    .notNull()
+    .references(() => merchants.id),
+  branchId: integer('branch_id')
+    .notNull()
+    .references(() => branches.id),
+  amount: integer('amount').notNull(),
   // 'pending' | 'paid'
   status: varchar('status', { length: 10 }).notNull().default('pending'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-})
+});
 
 // ---------------------------------------------------------------------------
 // deal_documents
@@ -231,11 +273,15 @@ export const buyouts = pgTable('buyouts', {
 export const dealDocuments = pgTable(
   'deal_documents',
   {
-    id: bigserial('id', { mode: 'bigint' }).primaryKey(),
-    dealId: uuid('deal_id').notNull().references(() => deals.id, { onDelete: 'cascade' }),
-    fileId: bigint('file_id', { mode: 'bigint' }).notNull().references(() => files.id),
+    id: serial('id').primaryKey(),
+    dealId: uuid('deal_id')
+      .notNull()
+      .references(() => deals.id, { onDelete: 'cascade' }),
+    fileId: integer('file_id')
+      .notNull()
+      .references(() => files.id),
     documentType: varchar('document_type', { length: 50 }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => [unique().on(t.dealId, t.documentType)],
-)
+);

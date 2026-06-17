@@ -26,13 +26,13 @@ export interface BuyoutDto {
   items: BuyoutItemDto[]
 }
 
-function formatDealNumber(n: bigint | null | undefined): string {
+function formatDealNumber(n: number | null | undefined): string {
   return n != null ? `CN-${String(n).padStart(7, "0")}` : "—"
 }
 
 export async function listBuyouts(
   db: Db,
-  filters: { merchantId?: bigint; status?: string } = {},
+  filters: { merchantId?: number; status?: string } = {},
 ): Promise<BuyoutDto[]> {
   let query = db
     .select({

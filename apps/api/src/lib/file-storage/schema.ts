@@ -1,7 +1,7 @@
-import { bigint, bigserial, timestamp, text, varchar, pgTable } from 'drizzle-orm/pg-core';
+import { integer, serial, timestamp, text, varchar, pgTable } from 'drizzle-orm/pg-core';
 
 export const files = pgTable('files', {
-  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+  id: serial('id').primaryKey(),
   objectKey: text('object_key').notNull(),
   bucket: varchar('bucket', { length: 100 }).notNull(),
   mimeType: varchar('mime_type', { length: 100 }),
@@ -9,7 +9,7 @@ export const files = pgTable('files', {
   uploadedByType: varchar('uploaded_by_type', { length: 20 })
     .notNull()
     .$type<'admin' | 'merchant_user' | 'system'>(),
-  uploadedById: bigint('uploaded_by_id', { mode: 'bigint' }),
+  uploadedById: integer('uploaded_by_id'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 

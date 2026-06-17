@@ -33,7 +33,7 @@ export default async function adminProductRoutes(app: FastifyInstance) {
     "/:id",
     { schema: { params: IdParams }, preHandler },
     async (request, reply) => {
-      const product = await getProduct(db, BigInt(request.params.id))
+      const product = await getProduct(db, Number(request.params.id))
       if (!product) return reply.code(404).sendError("not_found")
       return { product: serializeProduct(product) }
     },
@@ -43,9 +43,9 @@ export default async function adminProductRoutes(app: FastifyInstance) {
     "/:id",
     { schema: { params: IdParams, body: UpdateProductBody }, preHandler },
     async (request, reply) => {
-      const product = await getProduct(db, BigInt(request.params.id))
+      const product = await getProduct(db, Number(request.params.id))
       if (!product) return reply.code(404).sendError("not_found")
-      const categoryId = request.body.categoryId ? BigInt(request.body.categoryId) : undefined
+      const categoryId = request.body.categoryId ? Number(request.body.categoryId) : undefined
       if (categoryId !== undefined) {
         const enabled = await isCategoryEnabledForMerchant(db, categoryId, product.merchantId)
         if (!enabled) return reply.code(400).sendError("category_not_enabled")

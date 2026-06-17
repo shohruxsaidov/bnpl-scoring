@@ -52,7 +52,7 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
     const [client] = await db
       .select({ id: clients.id, phone: clients.phone, pinfl: clients.pinfl })
       .from(clients)
-      .where(eq(clients.id, BigInt(clientId)))
+      .where(eq(clients.id, Number(clientId)))
       .limit(1)
 
     if (!client) {
@@ -128,7 +128,7 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
       let session
       try {
         console.log('[score] loading session:', dealSessionId, 'for sub:', p.sub)
-        session = await loadOwnedActiveSession(db, dealSessionId, BigInt(p.sub))
+        session = await loadOwnedActiveSession(db, dealSessionId, Number(p.sub))
         console.log('[score] session loaded:', JSON.stringify({ id: session.id, status: session.status, stepData: session.stepData }, (_, v) => typeof v === 'bigint' ? v.toString() : v))
       } catch (err: any) {
         console.log('[score] session load failed, code:', err.code, 'message:', err.message)
@@ -151,7 +151,7 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
       const [clientRow] = await db
         .select({ birthDate: clients.birthDate, gender: clients.gender, nationality: clients.nationality })
         .from(clients)
-        .where(eq(clients.id, BigInt(clientId)))
+        .where(eq(clients.id, Number(clientId)))
         .limit(1)
 
       const criteriaScores: CriteriaScores = {
@@ -205,12 +205,12 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
       try {
         console.log('[score] createScoring, merchantId:', p.merchantId, 'clientId:', clientId, 'limit:', Math.round(result.limit))
         const res = await createScoring(db, {
-          merchantId: BigInt(p.merchantId),
-          clientId: BigInt(clientId),
+          merchantId: Number(p.merchantId),
+          clientId: Number(clientId),
           scoreSum: result.score,
           coefficient,
           decision: result.decision,
-          platformCreditLimit: BigInt(Math.round(result.limit)),
+          platformCreditLimit: Number(Math.round(result.limit)),
           criteriaScores: criteriaScores as Record<string, unknown>,
         })
         scoringId = res.id

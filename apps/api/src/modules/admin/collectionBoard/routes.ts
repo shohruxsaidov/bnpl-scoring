@@ -15,7 +15,7 @@ export default async function adminCollectionBoardRoutes(app: FastifyInstance) {
   fastify.get("/", { schema: { querystring: ListQuery }, preHandler }, async (request) => {
     const { merchantId } = request.query
     const buckets = await getCollectionBoard(db, {
-      merchantId: merchantId ? BigInt(merchantId) : undefined,
+      merchantId: merchantId ? Number(merchantId) : undefined,
     })
     return { buckets }
   })

@@ -3,11 +3,11 @@ import type { Db } from "../../../../db"
 import { deals } from "../../../deals/db/schema"
 import { clients, tariffs, merchantUsers } from "../../../id/db/schema"
 
-function serializeBigInt(v: bigint | null | undefined): string | null {
+function serializeNumber(v: number | null | undefined): string | null {
   return v == null ? null : v.toString()
 }
 
-function formatDealNumber(n: bigint | null | undefined): string {
+function formatDealNumber(n: number | null | undefined): string {
   return n != null ? `CN-${String(n).padStart(7, "0")}` : "—"
 }
 
@@ -27,15 +27,15 @@ function toDealDto(
     totalPayable: d.totalPayable != null ? Number(d.totalPayable) : 0,
     termMonths: d.termMonths ?? t?.termMonths ?? 0,
     lang: (d.lang ?? "ru") as "ru" | "uz",
-    agentId: serializeBigInt(d.agentId),
+    agentId: serializeNumber(d.agentId),
     agentName,
-    clientId: serializeBigInt(d.clientId),
+    clientId: serializeNumber(d.clientId),
     clientName: c ? `${c.firstName} ${c.lastName}` : null,
     clientPinfl: c?.pinfl ?? null,
     clientPhone: c?.phone ?? null,
     clientPassportSerial: c?.passportSerial ?? null,
     clientPassportNumber: c?.passportNumber ?? null,
-    tariffId: serializeBigInt(d.tariffId),
+    tariffId: serializeNumber(d.tariffId),
     tariffName: t?.name ?? null,
     scoreSum: d.scoreSum != null ? Number(d.scoreSum) : null,
     scoringDecision: d.scoringDecision ?? null,
@@ -44,8 +44,8 @@ function toDealDto(
 
 export async function listDeals(
   db: Db,
-  merchantId: bigint,
-  agentId?: bigint,
+  merchantId: number,
+  agentId?: number,
   sort?: { sortBy?: string; sortOrder?: string },
 ) {
   const filter = agentId

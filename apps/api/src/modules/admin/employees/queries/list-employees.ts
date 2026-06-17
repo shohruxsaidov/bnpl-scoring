@@ -14,7 +14,7 @@ const safeSelect = {
   createdAt: merchantUsers.createdAt,
 }
 
-export async function listEmployees(db: Db, branchId: bigint) {
+export async function listEmployees(db: Db, branchId: number) {
   return db
     .select(safeSelect)
     .from(merchantUsers)
@@ -22,7 +22,7 @@ export async function listEmployees(db: Db, branchId: bigint) {
     .orderBy(merchantUsers.createdAt)
 }
 
-export async function listEmployeesByMerchant(db: Db, merchantId: bigint) {
+export async function listEmployeesByMerchant(db: Db, merchantId: number) {
   return db
     .select({
       id: merchantUsers.id,

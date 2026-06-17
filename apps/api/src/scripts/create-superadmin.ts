@@ -28,7 +28,7 @@ async function main() {
   await db
     .insert(roles)
     .values([
-      { key: "superadmin", name: "Superadmin", platform: "admin", isSuperadmin: true, isSystem: true },
+      { key: "superadmin", name: "Superadmin", platform: "admin", isSuperAdmin: true, isSystem: true },
       { key: "sales_manager", name: "Sales Manager", platform: "admin", isSystem: true },
       { key: "agent", name: "Agent", platform: "merchant", isSystem: true },
       { key: "merchant_admin", name: "Merchant Admin", platform: "merchant", isSystem: true },

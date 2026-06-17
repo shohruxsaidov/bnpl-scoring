@@ -7,8 +7,8 @@ export async function createTariff(
     name: string
     termMonths: number
     markupPercent: string
-    minAmount?: bigint | null
-    maxAmount?: bigint | null
+    minAmount?: number | null
+    maxAmount?: number | null
   },
 ) {
   const [row] = await db.insert(tariffs).values(input).returning()

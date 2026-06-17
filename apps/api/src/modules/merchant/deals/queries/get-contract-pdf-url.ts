@@ -14,7 +14,7 @@ export async function getContractPdfUrl(
   db: Db,
   minio: MinioClient,
   dealId: string,
-  merchantId: bigint,
+  merchantId: number,
 ): Promise<string> {
   const deal = await getDealById(db, dealId, merchantId)
   if (!deal) throw Object.assign(new Error("deal_not_found"), { statusCode: 404 })

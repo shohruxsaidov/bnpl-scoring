@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm"
-import type { Db } from "../../../../db"
-import { merchantUsers } from "../../../id/db/schema"
+import { eq } from 'drizzle-orm';
+import type { Db } from '../../../../db';
+import { merchantUsers } from '../../../id/db/schema';
 
 const safeSelect = {
   id: merchantUsers.id,
@@ -12,8 +12,12 @@ const safeSelect = {
   mustChangePassword: merchantUsers.mustChangePassword,
   active: merchantUsers.active,
   createdAt: merchantUsers.createdAt,
-}
+};
 
-export async function listEmployees(db: Db, merchantId: bigint) {
-  return db.select(safeSelect).from(merchantUsers).where(eq(merchantUsers.merchantId, merchantId)).orderBy(merchantUsers.createdAt)
+export async function listEmployees(db: Db, merchantId: number) {
+  return db
+    .select(safeSelect)
+    .from(merchantUsers)
+    .where(eq(merchantUsers.merchantId, merchantId))
+    .orderBy(merchantUsers.createdAt);
 }

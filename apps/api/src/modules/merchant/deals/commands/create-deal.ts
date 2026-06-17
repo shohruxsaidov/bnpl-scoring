@@ -6,14 +6,14 @@ import { clients, products } from "../../../id/db/schema"
 import type { DealSessionRow, SessionStepData } from "../../deal-sessions/service"
 
 export interface CreateDealInput {
-  merchantId: bigint
-  branchId: bigint
-  agentId: bigint
-  clientId: bigint
-  tariffId: bigint
+  merchantId: number
+  branchId: number
+  agentId: number
+  clientId: number
+  tariffId: number
   dealSessionId: string | null
   basket: Array<{
-    productId: bigint
+    productId: number
     productName: string
     price: string
     mxikCode: string | null
@@ -22,16 +22,16 @@ export interface CreateDealInput {
     quantity: number
   }>
   paymentDay: number
-  amount: bigint
-  totalPayable: bigint
+  amount: number
+  totalPayable: number
   termMonths: number
   markupPercent: number
   scoreSum: number | null
   scoringDecision: string | null
   coefficient?: number | null
-  platformCreditLimit?: bigint | null
+  platformCreditLimit?: number | null
   criteriaScores?: Record<string, unknown> | null
-  scoringId?: bigint | null
+  scoringId?: number | null
   lang: "ru" | "uz"
   // KATM audit trail copied from the Deal Session (ADR-0024)
   consentId?: string | null
@@ -39,7 +39,7 @@ export interface CreateDealInput {
   demandId?: string | null
   infoscoreRaw?: unknown
   // Avansoviy to'lov — null means no prepayment (ADR-0026)
-  prepaymentAmount?: bigint | null
+  prepaymentAmount?: number | null
 }
 
 function coded(code: string): Error & { code: string } {
@@ -66,7 +66,7 @@ export async function createDealFromSession(db: Db, session: DealSessionRow) {
 
   // Products must still exist and be active — stale session fails hard and the
   // Agent redoes the Products step (ADR-0024)
-  const productIds = productsStep.lines.map((l) => BigInt(l.productId))
+  const productIds = productsStep.lines.map((l) => Number(l.productId))
   const productRows = await db
     .select({ id: products.id, active: products.active })
     .from(products)
@@ -78,11 +78,11 @@ export async function createDealFromSession(db: Db, session: DealSessionRow) {
 
   // Amounts from the session's price snapshots — the signed contract equals
   // what the Client OTP-consented to, even if prices changed since
-  let amount = BigInt(0)
+  let amount = Number(0)
   const basket = productsStep.lines.map((line) => {
-    amount += BigInt(Math.round(parseFloat(line.price) * 100)) * BigInt(line.quantity)
+    amount += Number(Math.round(parseFloat(line.price) * 100)) * Number(line.quantity)
     return {
-      productId: BigInt(line.productId),
+      productId: Number(line.productId),
       productName: line.productName,
       price: line.price,
       mxikCode: line.mxikCode,
@@ -92,8 +92,8 @@ export async function createDealFromSession(db: Db, session: DealSessionRow) {
     }
   })
 
-  const minAmount = tariff.minAmount != null ? BigInt(tariff.minAmount) : null
-  const maxAmount = tariff.maxAmount != null ? BigInt(tariff.maxAmount) : null
+  const minAmount = tariff.minAmount != null ? Number(tariff.minAmount) : null
+  const maxAmount = tariff.maxAmount != null ? Number(tariff.maxAmount) : null
   if (minAmount != null && amount < minAmount) throw coded("amount_below_tariff_min")
   if (maxAmount != null && amount > maxAmount) throw coded("amount_above_tariff_max")
 
@@ -101,15 +101,15 @@ export async function createDealFromSession(db: Db, session: DealSessionRow) {
 
   // Prepayment amount stamped by POST /prepayment (ADR-0026). Null means no prepayment.
   const prepaymentAmount = data.prepayment
-    ? BigInt(Math.round(data.prepayment.amount))
+    ? Number(Math.round(data.prepayment.amount))
     : null
 
   return createDeal(db, {
     merchantId: session.merchantId,
     branchId: session.branchId,
     agentId: session.agentId,
-    clientId: BigInt(client.clientId),
-    tariffId: BigInt(tariff.tariffId),
+    clientId: Number(client.clientId),
+    tariffId: Number(tariff.tariffId),
     dealSessionId: session.id,
     basket,
     paymentDay: payment.paymentDay,
@@ -120,9 +120,9 @@ export async function createDealFromSession(db: Db, session: DealSessionRow) {
     scoreSum: scoring.scoreSum,
     scoringDecision: scoring.decision,
     coefficient: scoring.coefficient,
-    platformCreditLimit: BigInt(Math.round(scoring.platformCreditLimit)),
+    platformCreditLimit: Number(Math.round(scoring.platformCreditLimit)),
     criteriaScores: scoring.criteriaScores,
-    scoringId: scoring.scoringId && /^\d+$/.test(scoring.scoringId) ? BigInt(scoring.scoringId) : null,
+    scoringId: scoring.scoringId && /^\d+$/.test(scoring.scoringId) ? Number(scoring.scoringId) : null,
     lang: verification.lang,
     consentId: katm?.consentId ?? null,
     consentDate: katm?.consentDate ?? null,
@@ -189,7 +189,7 @@ export async function createDeal(db: Db, input: CreateDealInput) {
         dealId: deal.id,
         index: i + 1,
         dueDate: due.toISOString().slice(0, 10),
-        amount: BigInt(amount),
+        amount: Number(amount),
         paid: false,
       }
     })

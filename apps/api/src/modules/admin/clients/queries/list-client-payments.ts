@@ -3,11 +3,11 @@ import type { Db } from "../../../../db"
 import { clients, merchants } from "../../../id/db/schema"
 import { deals, dealPaymentSchedules } from "../../../deals/db/schema"
 
-function formatDealNumber(n: bigint | null | undefined): string {
+function formatDealNumber(n: number | null | undefined): string {
   return n != null ? `CN-${String(n).padStart(7, "0")}` : "—"
 }
 
-export async function listClientPayments(db: Db, id: bigint) {
+export async function listClientPayments(db: Db, id: number) {
   const clientRows = await db.select({ pinfl: clients.pinfl }).from(clients).where(eq(clients.id, id)).limit(1)
   if (!clientRows[0]) return []
   const pinfl = clientRows[0].pinfl

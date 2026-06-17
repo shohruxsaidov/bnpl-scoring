@@ -34,7 +34,7 @@ interface RegTokenPhase2 {
   step: 'pinfl_verified';
 }
 
-function makeTokens(app: FastifyInstance, userId: bigint, sessionToken: string) {
+function makeTokens(app: FastifyInstance, userId: number, sessionToken: string) {
   const accessToken = app.jwt.sign(
     { sub: userId.toString(), type: 'client' },
     { expiresIn: ACCESS_MAX_AGE },
@@ -245,7 +245,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
 
   fastify.get('/me', { preHandler: app.verifyClientJwt }, async (request, reply) => {
     const payload = request.user as { sub: string; type: 'client' };
-    const user = await findUserById(db, BigInt(payload.sub));
+    const user = await findUserById(db, Number(payload.sub));
     if (!user) return reply.code(401).sendError('unauthorized');
     return { user: toUserDto(user) };
   });

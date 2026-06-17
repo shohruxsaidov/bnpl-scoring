@@ -7,7 +7,7 @@ import { listTariffsForMerchant } from './queries/list-tariffs';
 type MerchantPayload = { sub: string; merchantId: string; role: string };
 
 function merchantId(request: { user: unknown }) {
-  return BigInt((request.user as MerchantPayload).merchantId);
+  return +(request.user as MerchantPayload).merchantId;
 }
 
 export default async function merchantTariffRoutes(app: FastifyInstance) {
@@ -43,7 +43,7 @@ export default async function merchantTariffRoutes(app: FastifyInstance) {
       preHandler: [app.verifyMerchantJwt, app.requirePermission('create_deal')],
     },
     async (request) => {
-      const amount = BigInt(request.query.amount);
+      const amount = Number(request.query.amount);
       const rows = await listTariffsForMerchant(db, merchantId(request));
 
       return {

@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm"
 import type { Db } from "../../../../db"
 import { tariffs, merchantTariffs } from "../../../id/db/schema"
 
-export async function getMerchantTariffs(db: Db, merchantId: bigint) {
+export async function getMerchantTariffs(db: Db, merchantId: number) {
   const [all, selected] = await Promise.all([
     db.select().from(tariffs).where(eq(tariffs.active, true)).orderBy(tariffs.name),
     db.select().from(merchantTariffs).where(eq(merchantTariffs.merchantId, merchantId)),

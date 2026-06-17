@@ -3,7 +3,7 @@ import type { Db } from "../../../../db"
 import { deals, dealItems, dealPaymentSchedules } from "../../../deals/db/schema"
 import { clients, tariffs, merchantUsers, merchants } from "../../../id/db/schema"
 
-function formatDealNumber(n: bigint | null | undefined): string {
+function formatDealNumber(n: number | null | undefined): string {
   return n != null ? `CN-${String(n).padStart(7, "0")}` : "—"
 }
 

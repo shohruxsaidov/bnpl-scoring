@@ -1,19 +1,21 @@
 import {
-  bigint,
-  bigserial,
   date,
+  integer,
   jsonb,
   pgTable,
+  serial,
   text,
   timestamp,
   uuid,
   varchar,
-} from 'drizzle-orm/pg-core'
-import { users } from '../../id/db/schema'
+} from 'drizzle-orm/pg-core';
+import { users } from '../../id/db/schema';
 
 export const scoringSessions = pgTable('scoring_sessions', {
   id: uuid('id').primaryKey().defaultRandom(),
-  userId: bigint('user_id', { mode: 'bigint' }).notNull().references(() => users.id),
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id),
   consentId: varchar('consent_id', { length: 100 }).notNull(),
   consentDate: date('consent_date').notNull(),
   // 'pending' | 'running' | 'completed' | 'failed'
@@ -23,11 +25,13 @@ export const scoringSessions = pgTable('scoring_sessions', {
   katmClaimId: varchar('katm_claim_id', { length: 20 }),
   scoredAt: timestamp('scored_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-})
+});
 
 export const scoringPipelines = pgTable('scoring_pipelines', {
-  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
-  sessionId: uuid('session_id').notNull().references(() => scoringSessions.id),
+  id: serial('id').primaryKey(),
+  sessionId: uuid('session_id')
+    .notNull()
+    .references(() => scoringSessions.id),
   // 'katm' | 'card_scoring'
   type: varchar('type', { length: 20 }).notNull(),
   // 'pending' | 'running' | 'completed' | 'failed'
@@ -36,5 +40,4 @@ export const scoringPipelines = pgTable('scoring_pipelines', {
   error: text('error'),
   startedAt: timestamp('started_at', { withTimezone: true }),
   completedAt: timestamp('completed_at', { withTimezone: true }),
-})
-
+});

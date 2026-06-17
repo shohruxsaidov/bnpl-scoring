@@ -4,7 +4,7 @@ import { merchantUsers } from "../../../id/db/schema"
 
 export async function updateEmployee(
   db: Db,
-  id: bigint,
+  id: number,
   input: Partial<{ fullName: string; roles: string[]; active: boolean }>,
 ) {
   const [row] = await db

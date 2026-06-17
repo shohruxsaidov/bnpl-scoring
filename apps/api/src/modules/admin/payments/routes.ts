@@ -18,7 +18,7 @@ export default async function adminPaymentRoutes(app: FastifyInstance) {
   fastify.get('/', { schema: { querystring: ListQuery }, preHandler }, async (request) => {
     const { merchantId } = request.query;
     const payments = await listPayments(db, {
-      merchantId: merchantId ? BigInt(merchantId) : undefined,
+      merchantId: merchantId ? Number(merchantId) : undefined,
     });
     return { payments };
   });
@@ -45,7 +45,7 @@ export default async function adminPaymentRoutes(app: FastifyInstance) {
   });
 
   fastify.post('/manual', { schema: { body: CreateBody }, preHandler }, async (request, reply) => {
-    const adminUserId = BigInt((request.user as { sub: string }).sub);
+    const adminUserId = Number((request.user as { sub: string }).sub);
     try {
       const payment = await createManualPayment(db, { ...request.body, adminUserId });
       return reply.status(201).send({ payment });

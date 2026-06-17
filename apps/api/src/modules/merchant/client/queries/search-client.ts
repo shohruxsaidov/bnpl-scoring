@@ -2,7 +2,7 @@ import { and, eq, ilike, or } from "drizzle-orm"
 import type { Db } from "../../../../db"
 import { clients } from "../../../id/db/schema"
 
-export async function searchClients(db: Db, q: string, merchantId: bigint, limit = 20) {
+export async function searchClients(db: Db, q: string, merchantId: number, limit = 20) {
   const term = `%${q}%`
   return db
     .select()
@@ -14,13 +14,14 @@ export async function searchClients(db: Db, q: string, merchantId: bigint, limit
           ilike(clients.firstName, term),
           ilike(clients.lastName, term),
           ilike(clients.pinfl, term),
+          ilike(clients.phone, term)
         ),
       ),
     )
     .limit(limit)
 }
 
-export async function findClientByPinflAndMerchant(db: Db, pinfl: string, merchantId: bigint) {
+export async function findClientByPinflAndMerchant(db: Db, pinfl: string, merchantId: number) {
   const [row] = await db
     .select()
     .from(clients)

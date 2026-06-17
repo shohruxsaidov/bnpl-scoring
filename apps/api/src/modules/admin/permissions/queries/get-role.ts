@@ -3,7 +3,7 @@ import type { Db } from "../../../../db"
 import { adminUsers, merchantUsers, roles } from "../../../id/db/schema"
 import type { Platform } from "../../../../rbac/features"
 
-export async function findRoleRow(db: Db, id: bigint) {
+export async function findRoleRow(db: Db, id: number) {
   const [row] = await db.select().from(roles).where(eq(roles.id, id)).limit(1)
   return row
 }
@@ -19,7 +19,7 @@ export async function keyExists(db: Db, platform: Platform, key: string): Promis
 
 export async function isRoleAssigned(
   db: Db,
-  role: { id: bigint; key: string; platform: string },
+  role: { id: number; key: string; platform: string },
 ): Promise<boolean> {
   if (role.platform === "admin") {
     const [row] = await db

@@ -73,7 +73,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
   fastify.get('/active', { preHandler: guards }, async (request) => {
     const p = payload(request)
-    const session = await getActiveSession(db, BigInt(p.sub))
+    const session = await getActiveSession(db, Number(p.sub))
     return { session: session ? await toSessionDto(session) : null }
   })
 
@@ -82,9 +82,9 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
   fastify.post('/', { preHandler: guards }, async (request, reply) => {
     const p = payload(request)
     const session = await createSession(db, {
-      merchantId: BigInt(p.merchantId),
-      branchId: BigInt(p.branchId),
-      agentId: BigInt(p.sub),
+      merchantId: Number(p.merchantId),
+      branchId: Number(p.branchId),
+      agentId: Number(p.sub),
     })
     return reply.code(201).send({ session: await toSessionDto(session) })
   })
@@ -104,7 +104,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       if (!isWizardStep(step)) return reply.code(400).sendError('invalid_step')
 
       try {
-        const session = await loadOwnedActiveSession(db, id, BigInt(p.sub))
+        const session = await loadOwnedActiveSession(db, id, Number(p.sub))
         const updated = await saveStep(db, session, step, request.body as Record<string, unknown>)
         return { session: await toSessionDto(updated) }
       } catch (err: any) {
@@ -150,7 +150,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       const p = payload(request)
       let session: DealSessionRow
       try {
-        session = await loadOwnedActiveSession(db, request.params.id, BigInt(p.sub))
+        session = await loadOwnedActiveSession(db, request.params.id, Number(p.sub))
       } catch (err: any) {
         if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found')
         if (err.code === 'session_not_active') return reply.code(409).sendError('session_not_active')
@@ -193,7 +193,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
       let session: DealSessionRow
       try {
-        session = await loadOwnedActiveSession(db, request.params.id, BigInt(payload(request).sub))
+        session = await loadOwnedActiveSession(db, request.params.id, Number(payload(request).sub))
       } catch (err: any) {
         if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found')
         if (err.code === 'session_not_active') return reply.code(409).sendError('session_not_active')
@@ -221,7 +221,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const p = payload(request)
       try {
-        const session = await loadOwnedActiveSession(db, request.params.id, BigInt(p.sub))
+        const session = await loadOwnedActiveSession(db, request.params.id, Number(p.sub))
         await abandonSession(db, session)
         return { ok: true }
       } catch (err: any) {

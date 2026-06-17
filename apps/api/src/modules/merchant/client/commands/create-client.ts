@@ -18,8 +18,8 @@ export async function createClient(
     katmRegionCode: string | null
     katmDistrictCode: string | null
     docType: number | null
-    merchantId: bigint
-    branchId: bigint
+    merchantId: number
+    branchId: number
   },
 ) {
   const [row] = await db

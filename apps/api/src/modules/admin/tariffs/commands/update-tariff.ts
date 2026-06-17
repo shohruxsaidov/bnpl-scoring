@@ -4,13 +4,13 @@ import { tariffs } from "../../../id/db/schema"
 
 export async function updateTariff(
   db: Db,
-  id: bigint,
+  id: number,
   input: Partial<{
     name: string
     termMonths: number
     markupPercent: string
-    minAmount: bigint | null
-    maxAmount: bigint | null
+    minAmount: number | null
+    maxAmount: number | null
     active: boolean
   }>,
 ) {

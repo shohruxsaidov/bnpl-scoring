@@ -11,7 +11,7 @@ import { createDealFromSession } from '../deals/commands/create-deal';
 import { loadOwnedActiveSession } from '../deal-sessions/service';
 import { env } from '../../../env';
 
-function formatDealNumber(n: bigint | null | undefined): string {
+function formatDealNumber(n: number | null | undefined): string {
   return n != null ? `CN-${String(n).padStart(7, '0')}` : '—';
 }
 
@@ -31,8 +31,8 @@ function toClientDto(c: typeof clients.$inferSelect) {
     passportNumber: c.passportNumber,
     photoUrl: c.photoUrl,
     address: c.address,
-    katmRegionCode: c.katmRegionCode,
-    katmDistrictCode: c.katmDistrictCode,
+    regionCode: c.regionCode,
+    districtCode: c.districtCode,
     docType: c.docType,
   };
 }
@@ -84,7 +84,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
     async (request) => {
       const payload = request.user as { sub: string; merchantId: string };
       const { q } = request.query;
-      const results = await searchClients(db, q, BigInt(payload.merchantId));
+      const results = await searchClients(db, q, Number(payload.merchantId));
       return { clients: results.map(toClientDto) };
     },
   );
@@ -144,7 +144,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
       };
       const { pinfl } = request.body;
 
-      const existing = await findClientByPinflAndMerchant(db, pinfl, BigInt(payload.merchantId));
+      const existing = await findClientByPinflAndMerchant(db, pinfl, Number(payload.merchantId));
       if (existing) return reply.code(409).sendError('client_already_registered');
       const redirectUrl = encodeURIComponent(
         env.MERCHANT_PORTAL_URL + '/myid/callback/registration',
@@ -189,8 +189,8 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
         return reply.code(400).sendError('pinfl_mismatch');
       }
 
-      const merchantId = BigInt(phase2.merchantId);
-      const branchId = BigInt(phase2.branchId);
+      const merchantId = Number(phase2.merchantId);
+      const branchId = Number(phase2.branchId);
 
       const existing = await findClientByPinflAndMerchant(db, phase2.pinfl, merchantId);
       if (existing) return { client: toClientDto(existing), isNew: false };
@@ -243,13 +243,13 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
       preHandler: app.verifyMerchantJwt,
     },
     async (request, reply) => {
-      const id = BigInt(request.params.id);
+      const id = Number(request.params.id);
       const [updated] = await db
         .update(clients)
         .set({
           address: request.body.address,
-          katmRegionCode: request.body.katmRegionCode.padStart(2, '0'),
-          katmDistrictCode: request.body.katmDistrictCode.padStart(3, '0'),
+          regionCode: request.body.katmRegionCode.padStart(2, '0'),
+          districtCode: request.body.katmDistrictCode.padStart(3, '0'),
           docType: request.body.docType,
         })
         .where(eq(clients.id, id))
@@ -413,7 +413,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
         const dealSession = await loadOwnedActiveSession(
           db,
           request.body.dealSessionId,
-          BigInt(jwtPayload.sub),
+          Number(jwtPayload.sub),
         );
         deal = await createDealFromSession(db, dealSession);
       } catch (err: any) {

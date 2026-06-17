@@ -22,9 +22,9 @@ export default async function adminScoringHistoryRoutes(app: FastifyInstance) {
   })
 
   fastify.get("/:id", { schema: { params: IdParams }, preHandler }, async (request, reply) => {
-    let scoringId: bigint
+    let scoringId: number
     try {
-      scoringId = BigInt(request.params.id)
+      scoringId = Number(request.params.id)
     } catch {
       return reply.code(400).sendError("invalid_id")
     }
