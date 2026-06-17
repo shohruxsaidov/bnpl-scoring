@@ -304,22 +304,3 @@ export async function exchangeMyidCode(db: Db, redis: Redis, code: string): Prom
     return handleHttpError(err, 'myid.me');
   }
 }
-
-export function buildMockUser(pinfl: string): MyidUserData {
-  return {
-    pinfl,
-    firstName: 'Test',
-    lastName: 'User',
-    middleName: null,
-    birthDate: parsePinflBirthDate(pinfl),
-    gender: parsePinflGender(pinfl),
-    nationality: 'UZB',
-    passportSerial: 'AA',
-    passportNumber: '1234567',
-    photoUrl: null,
-    address: 'г. Ташкент, ул. Тестовая, 1',
-    regionCode: '26',
-    districtCode: '001',
-    docType: 6,
-  };
-}
