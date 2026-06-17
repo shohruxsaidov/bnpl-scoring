@@ -7,7 +7,12 @@
     "target": "ES2022",
     "module": "es2022",
     "moduleResolution": "bundler",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@db": ["src/db/index"],
+      "@db/*": ["src/db/*"]
+    }
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]

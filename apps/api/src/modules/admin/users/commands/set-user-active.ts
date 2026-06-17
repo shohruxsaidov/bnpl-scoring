@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm"
 import type { Db } from "../../../../db"
-import { adminUsers } from "../../../id/db/schema"
+import { adminUsers } from '@db/schema'
 
 export async function updateAdminUser(
   db: Db,

@@ -2,7 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import { Type } from '@sinclair/typebox';
 import { eq } from 'drizzle-orm';
-import { clients } from '../../id/db/schema';
+import { clients } from '@db/schema';
 import {
   allocateKatmClaimId,
   createKatmConsent,

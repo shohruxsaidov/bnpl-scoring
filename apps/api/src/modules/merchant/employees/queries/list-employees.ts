@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import type { Db } from '../../../../db';
-import { merchantUsers } from '../../../id/db/schema';
+import { merchantUsers } from '@db/schema';
 
 const safeSelect = {
   id: merchantUsers.id,

@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import type { Db } from '../../../../db';
-import { clients, users, merchants, branches, tariffs } from '../../../id/db/schema';
+import { clients, users, merchants, branches, tariffs } from '@db/schema';
 import { deals, scoringHistories } from '../../../deals/db/schema';
 
 export async function getClientOverview(db: Db, id: number) {

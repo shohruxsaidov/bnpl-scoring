@@ -1,7 +1,7 @@
 import { and, desc, eq, gt, or } from "drizzle-orm"
 import type { Db } from "../../../../db"
 import { deals, dealPaymentSchedules } from "../../../deals/db/schema"
-import { clients, merchants } from "../../../id/db/schema"
+import { clients, merchants } from '@db/schema'
 
 export interface Payment {
   id: string

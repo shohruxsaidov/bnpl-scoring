@@ -1,7 +1,7 @@
 import { and, count, eq, lte, not, inArray, sql } from "drizzle-orm"
 import type { Db } from "../../../../db"
 import { deals, dealPaymentSchedules } from "../../../deals/db/schema"
-import { clients, merchants } from "../../../id/db/schema"
+import { clients, merchants } from '@db/schema'
 
 export interface OverdueCard {
   dealId: string

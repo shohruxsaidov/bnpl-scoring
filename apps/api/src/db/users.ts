@@ -8,12 +8,12 @@ export const users = pgTable('users', {
   lastName: varchar('last_name', { length: 100 }).notNull(),
   middleName: varchar('middle_name', { length: 100 }),
   birthDate: date('birth_date').notNull(),
-  gender: varchar('gender', { length: 10 }).notNull(),
+  gender: integer('gender').notNull(), // for male = 1; for female = 2;
   nationality: varchar('nationality', { length: 100 }).notNull(),
   passportSerial: varchar('passport_serial', { length: 2 }),
   passportNumber: varchar('passport_number', { length: 7 }),
   photoUrl: text('photo_url'),
-  verifiedAt: timestamp('verified_at', { withTimezone: true }).notNull(),
+  verifiedAt: timestamp('verified_at', { withTimezone: true }),
   address: varchar('address', { length: 100 }),
   regionCode: varchar('region_code', { length: 3 }), // dict 016
   districtCode: varchar('district_code', { length: 3 }), // dict 052

@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm"
 import type { Db } from "../../../../db"
-import { bankMfoCache } from "../../../id/db/schema"
+import { bankMfoCache } from '@db/schema'
 
 export interface BankEntry {
   mfo: string

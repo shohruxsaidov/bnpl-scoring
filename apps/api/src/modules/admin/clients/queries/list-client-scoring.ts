@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm"
 import type { Db } from "../../../../db"
-import { clients } from "../../../id/db/schema"
+import { clients } from '@db/schema'
 import { scoringHistories } from "../../../deals/db/schema"
 
 export async function listClientScoring(db: Db, id: number) {

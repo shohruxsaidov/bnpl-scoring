@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import type { Db } from '../../../../db';
-import { categories, merchantCategories } from '../../../id/db/schema';
+import { categories, merchantCategories } from '@db/schema';
 
 export async function isCategoryEnabledForMerchant(
   db: Db,

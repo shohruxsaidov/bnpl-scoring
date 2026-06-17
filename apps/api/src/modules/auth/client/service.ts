@@ -6,7 +6,7 @@ import {
   clientSessions,
   otpVerifications,
   users,
-} from "../../id/db/schema.js";
+} from '@db/schema';
 import { env } from "../../../env.js";
 
 export type OtpPurpose = "login" | "register" | "client_registration" | "deal_signing";
@@ -133,7 +133,7 @@ export async function createUser(
     lastName: string;
     middleName: string | null;
     birthDate: string;
-    gender: string;
+    gender: number;
     nationality: string;
     passportSerial: string | null;
     passportNumber: string | null;
@@ -153,7 +153,7 @@ export async function createUser(
       passportSerial: input.passportSerial,
       passportNumber: input.passportNumber,
       photoUrl: input.photoUrl,
-      myidVerifiedAt: new Date(),
+      verifiedAt: new Date(),
     })
     .returning();
   return row!;

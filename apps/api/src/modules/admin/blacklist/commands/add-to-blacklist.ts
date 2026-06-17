@@ -1,5 +1,5 @@
 import type { Db } from '../../../../db';
-import { blacklist } from '../../../id/db/schema';
+import { blacklist } from '@db/schema';
 
 export async function addBlacklistEntry(
   db: Db,

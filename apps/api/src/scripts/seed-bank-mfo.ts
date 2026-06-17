@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
-import { bankMfoCache } from '../modules/id/db/schema';
+import { bankMfoCache } from '@db/schema';
 
 const CBU_URL = 'https://cbu.uz/upload/open_data/0010/4-009-0010_uz.json';
 

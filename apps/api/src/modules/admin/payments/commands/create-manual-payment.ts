@@ -6,7 +6,7 @@ import {
   manualPayments,
   dealComments,
 } from '../../../deals/db/schema';
-import { clients, adminUsers } from '../../../id/db/schema';
+import { clients, adminUsers } from '@db/schema';
 import type { ManualPayment } from '../queries/list-manual-payments';
 
 export async function createManualPayment(

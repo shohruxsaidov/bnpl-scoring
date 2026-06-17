@@ -2,7 +2,7 @@ import "dotenv/config";
 import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { adminUsers, rolePermissions, roles } from "../modules/id/db/schema";
+import { adminUsers, rolePermissions, roles } from '@db/schema';
 import { hashPassword } from "../modules/auth/admin/service";
 import { MERCHANT_FEATURES } from "../rbac/features";
 

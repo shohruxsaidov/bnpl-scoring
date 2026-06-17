@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm"
 import type { Db } from "../../../../db"
-import { rolePermissions } from "../../../id/db/schema"
+import { rolePermissions } from '@db/schema'
 
 export async function setRolePermissions(db: Db, roleId: number, features: string[]) {
   await db.transaction(async (tx) => {

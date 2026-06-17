@@ -1,7 +1,7 @@
 import { count, eq, ne } from "drizzle-orm"
 import type { Db } from "../../../../db"
 import { deals } from "../../../deals/db/schema"
-import { merchants } from "../../../id/db/schema"
+import { merchants } from '@db/schema'
 
 export async function getKybStats(db: Db) {
   const rows = await db

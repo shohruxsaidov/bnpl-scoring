@@ -1,5 +1,5 @@
 import type { Db } from "../../../../db"
-import { roles } from "../../../id/db/schema"
+import { roles } from '@db/schema'
 import type { Platform } from "../../../../rbac/features"
 
 export async function createRole(

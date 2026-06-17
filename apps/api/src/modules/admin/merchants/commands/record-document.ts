@@ -1,5 +1,5 @@
 import type { Db } from "../../../../db"
-import { merchantDocuments } from "../../../id/db/schema"
+import { merchantDocuments } from '@db/schema'
 
 export async function recordDocument(
   db: Db,

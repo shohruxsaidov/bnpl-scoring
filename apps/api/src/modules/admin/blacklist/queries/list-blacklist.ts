@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm"
 import type { Db } from "../../../../db"
-import { blacklist, adminUsers } from "../../../id/db/schema"
+import { blacklist, adminUsers } from '@db/schema'
 
 export async function listBlacklist(db: Db) {
   return db

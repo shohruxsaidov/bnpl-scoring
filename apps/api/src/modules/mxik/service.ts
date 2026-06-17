@@ -1,6 +1,6 @@
 import { eq, or, ilike, sql } from "drizzle-orm"
 import type { Db } from "../../db"
-import { mxikCache } from "../id/db/schema"
+import { mxikCache } from '@db/schema'
 import { env } from "../../env"
 import { createIntegrationClient, handleHttpError, IntegrationError } from "../../lib/integrations"
 import { logIntegration } from "../integrations/log"

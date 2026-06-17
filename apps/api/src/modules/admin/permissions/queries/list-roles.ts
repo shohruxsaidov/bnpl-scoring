@@ -1,6 +1,6 @@
 import { eq, inArray } from 'drizzle-orm';
 import type { Db } from '../../../../db';
-import { rolePermissions, roles } from '../../../id/db/schema';
+import { rolePermissions, roles } from '@db/schema';
 import type { Platform } from '../../../../rbac/features';
 
 export interface RoleWithFeatures {

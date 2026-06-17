@@ -1,5 +1,5 @@
 import type { Db } from "../../../../db"
-import { clients } from "../../../id/db/schema"
+import { clients } from '@db/schema'
 
 export async function createClient(
   db: Db,

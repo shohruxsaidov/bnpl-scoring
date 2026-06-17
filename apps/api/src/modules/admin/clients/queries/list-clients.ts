@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm"
 import type { Db } from "../../../../db"
-import { clients } from "../../../id/db/schema"
+import { clients } from '@db/schema'
 
 export async function listUniqueClients(db: Db) {
   return db.execute<{

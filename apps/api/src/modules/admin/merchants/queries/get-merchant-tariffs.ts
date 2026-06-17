@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm"
 import type { Db } from "../../../../db"
-import { tariffs, merchantTariffs } from "../../../id/db/schema"
+import { tariffs, merchantTariffs } from '@db/schema'
 
 export async function getMerchantTariffs(db: Db, merchantId: number) {
   const [all, selected] = await Promise.all([

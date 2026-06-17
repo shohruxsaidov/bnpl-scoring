@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from 'no
 import { promisify } from 'node:util';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import type { Db } from '../../../db/index.js';
-import { merchantUserSessions, merchantUsers } from '../../id/db/schema.js';
+import { merchantUserSessions, merchantUsers } from '@db/schema';
 import { env } from '../../../env.js';
 
 const scryptAsync = promisify(scrypt);

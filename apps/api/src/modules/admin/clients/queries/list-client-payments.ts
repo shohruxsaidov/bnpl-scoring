@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm"
 import type { Db } from "../../../../db"
-import { clients, merchants } from "../../../id/db/schema"
+import { clients, merchants } from '@db/schema'
 import { deals, dealPaymentSchedules } from "../../../deals/db/schema"
 
 function formatDealNumber(n: number | null | undefined): string {

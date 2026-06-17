@@ -1,7 +1,7 @@
 import { desc, eq, inArray } from "drizzle-orm"
 import type { Db } from "../../../../db"
 import { buyouts, deals, dealItems } from "../../../deals/db/schema"
-import { merchants, branches, merchantUsers, clients } from "../../../id/db/schema"
+import { merchants, branches, merchantUsers, clients } from '@db/schema'
 
 export interface BuyoutItemDto {
   productName: string

@@ -2,7 +2,7 @@ import 'dotenv/config'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import { desc, eq, isNull } from 'drizzle-orm'
-import { scoringModels, scoringModelRevisions } from '../modules/id/db/schema'
+import { scoringModels, scoringModelRevisions } from '@db/schema'
 
 // ADR-0023 backfill: ensure exactly one Global Model exists and attach every
 // orphan revision (pre-ADR rows with scoring_model_id = null) to it.

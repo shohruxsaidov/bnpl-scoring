@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from 'no
 import { promisify } from 'node:util';
 import { and, count, eq, gt, isNull } from 'drizzle-orm';
 import type { Db } from '../../../db/index';
-import { adminSessions, adminUsers, roles } from '../../id/db/schema';
+import { adminSessions, adminUsers, roles } from '@db/schema';
 import { env } from '../../../env';
 
 const scryptAsync = promisify(scrypt);

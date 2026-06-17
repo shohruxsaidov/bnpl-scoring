@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm"
 import type { Db } from "../../../../db"
-import { branches } from "../../../id/db/schema"
+import { branches } from '@db/schema'
 
 export async function updateBranch(
   db: Db,

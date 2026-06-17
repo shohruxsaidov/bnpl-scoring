@@ -1,7 +1,7 @@
 import { and, desc, eq, lt, ne } from 'drizzle-orm';
 import type { Db } from '../../db';
 import { notifications } from './db/schema';
-import { clients, merchantUsers, users } from '../id/db/schema';
+import { clients, merchantUsers, users } from '@db/schema';
 import { ssePush } from '../../lib/sse';
 import { sendPushToEmployee } from '../push/service';
 import { sendFcmToUser, type FcmNotificationType } from '../push/fcm';

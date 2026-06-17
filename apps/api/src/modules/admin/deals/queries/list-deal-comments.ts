@@ -1,7 +1,7 @@
 import { asc, eq } from "drizzle-orm"
 import type { Db } from "../../../../db"
 import { dealComments } from "../../../deals/db/schema"
-import { adminUsers } from "../../../id/db/schema"
+import { adminUsers } from '@db/schema'
 
 export async function listDealComments(db: Db, dealId: string) {
   const rows = await db

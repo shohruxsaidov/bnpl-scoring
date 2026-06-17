@@ -14,7 +14,7 @@ import type { Db } from '../../../db'
 import { env } from '../../../env'
 import { ssePush } from '../../../lib/sse'
 import { dealSessions } from '../../deals/db/schema'
-import { clients, users } from '../../id/db/schema'
+import { clients, users } from '@db/schema'
 import { scoringPipelines, scoringSessions } from '../../scoring/db/schema'
 import {
   stampKatm,
@@ -177,8 +177,5 @@ export async function saveKatmSir(
   if (!katmSir) return
   if (subject.clientId) {
     await db.update(clients).set({ katmSir }).where(eq(clients.id, subject.clientId))
-  }
-  if (subject.userId) {
-    await db.update(users).set({ katmSir }).where(eq(users.id, subject.userId))
   }
 }

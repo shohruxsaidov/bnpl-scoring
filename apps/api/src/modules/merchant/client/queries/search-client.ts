@@ -1,6 +1,6 @@
 import { and, eq, ilike, or } from "drizzle-orm"
 import type { Db } from "../../../../db"
-import { clients } from "../../../id/db/schema"
+import { clients } from '@db/schema'
 
 export async function searchClients(db: Db, q: string, merchantId: number, limit = 20) {
   const term = `%${q}%`

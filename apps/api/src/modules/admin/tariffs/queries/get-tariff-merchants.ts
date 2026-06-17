@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm"
 import type { Db } from "../../../../db"
-import { merchantTariffs, merchants } from "../../../id/db/schema"
+import { merchantTariffs, merchants } from '@db/schema'
 
 export async function getTariffMerchants(db: Db, tariffId: number) {
   return db

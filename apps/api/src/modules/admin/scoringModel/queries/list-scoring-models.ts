@@ -1,6 +1,6 @@
 import { countDistinct, desc, eq } from "drizzle-orm"
 import type { Db } from "../../../../db"
-import { merchants, scoringModels, scoringModelRevisions } from "../../../id/db/schema"
+import { merchants, scoringModels, scoringModelRevisions } from '@db/schema'
 
 export async function listScoringModels(db: Db) {
   return db

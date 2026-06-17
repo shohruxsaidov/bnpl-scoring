@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import type { Db } from '../../../../db';
-import { merchantTariffs, tariffs } from '../../../id/db/schema';
+import { merchantTariffs, tariffs } from '@db/schema';
 
 export async function listTariffsForMerchant(db: Db, merchantId: number) {
   const rows = await db

@@ -1,7 +1,7 @@
 import fp from 'fastify-plugin';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { eq } from 'drizzle-orm';
-import { roles, rolePermissions } from '../modules/id/db/schema';
+import { roles, rolePermissions } from '@db/schema';
 
 export interface ResolvedRole {
   isSuperAdmin: boolean;

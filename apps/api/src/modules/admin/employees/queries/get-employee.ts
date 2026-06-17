@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm"
 import type { Db } from "../../../../db"
-import { merchantUsers } from "../../../id/db/schema"
+import { merchantUsers } from '@db/schema'
 
 export async function getEmployee(db: Db, id: number) {
   const [row] = await db

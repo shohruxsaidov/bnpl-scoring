@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm"
 import type { Db } from "../../../../db"
-import { products } from "../../../id/db/schema"
+import { products } from '@db/schema'
 
 export async function updateProduct(
   db: Db,

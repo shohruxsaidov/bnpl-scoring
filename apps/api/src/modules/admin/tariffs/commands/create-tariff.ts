@@ -1,5 +1,5 @@
 import type { Db } from "../../../../db"
-import { tariffs } from "../../../id/db/schema"
+import { tariffs } from '@db/schema'
 
 export async function createTariff(
   db: Db,

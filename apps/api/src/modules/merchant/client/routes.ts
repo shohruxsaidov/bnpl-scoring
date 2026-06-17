@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { eq } from 'drizzle-orm';
-import { clients } from '../../id/db/schema';
+import { clients } from '@db/schema';
 import { searchClients, findClientByPinflAndMerchant } from './queries/search-client';
 import { createClient } from './commands/create-client';
 import { createOtp, verifyOtp } from '../../auth/client/service';
@@ -14,8 +14,6 @@ import { env } from '../../../env';
 function formatDealNumber(n: number | null | undefined): string {
   return n != null ? `CN-${String(n).padStart(7, '0')}` : '—';
 }
-
-
 
 function toClientDto(c: typeof clients.$inferSelect) {
   return {
@@ -95,7 +93,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
     '/otp',
     { schema: { body: OtpBody }, preHandler: app.verifyMerchantJwt },
     async (req) => {
-      const {phone} = req.body
+      const { phone } = req.body;
       const isProd = app.hasDecorator('isProd')
         ? (app as any).isProd
         : process.env['NODE_ENV'] === 'production';
@@ -418,13 +416,17 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
         deal = await createDealFromSession(db, dealSession);
       } catch (err: any) {
         if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found');
-        if (err.code === 'session_not_active') return reply.code(409).sendError('session_not_active');
-        if (err.code === 'session_incomplete') return reply.code(409).sendError('session_incomplete');
+        if (err.code === 'session_not_active')
+          return reply.code(409).sendError('session_not_active');
+        if (err.code === 'session_incomplete')
+          return reply.code(409).sendError('session_incomplete');
         if (err.code === 'scoring_missing') return reply.code(409).sendError('scoring_missing');
         if (err.code === 'scoring_declined') return reply.code(409).sendError('scoring_declined');
         if (err.code === 'product_not_found') return reply.code(400).sendError('product_not_found');
-        if (err.code === 'amount_below_tariff_min') return reply.code(400).sendError('amount_below_tariff_min');
-        if (err.code === 'amount_above_tariff_max') return reply.code(400).sendError('amount_above_tariff_max');
+        if (err.code === 'amount_below_tariff_min')
+          return reply.code(400).sendError('amount_below_tariff_min');
+        if (err.code === 'amount_above_tariff_max')
+          return reply.code(400).sendError('amount_above_tariff_max');
         throw err;
       }
 

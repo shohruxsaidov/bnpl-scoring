@@ -1,6 +1,6 @@
 import { desc, eq } from 'drizzle-orm';
 import type { Db } from '../../db';
-import { merchants, scoringModels, scoringModelRevisions } from '../id/db/schema';
+import { merchants, scoringModels, scoringModelRevisions } from '@db/schema';
 import type { ScoringModelData } from './engine';
 
 export interface ResolvedScoringModel {

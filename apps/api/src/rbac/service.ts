@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import type { Db } from '../db/index';
-import { roles, rolePermissions } from '../modules/id/db/schema';
+import { roles, rolePermissions } from '@db/schema';
 import { FEATURE_CATALOG, type Platform } from './features';
 
 export async function findRoleByKey(db: Db, platform: Platform, key: string) {

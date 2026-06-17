@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import type { Db } from '../../../db';
 import { dealSessions, dealSessionEvents } from '../../deals/db/schema';
-import { clients, products, tariffs } from '../../id/db/schema';
+import { clients, products, tariffs } from '@db/schema';
 
 // Wizard steps in order. 'done' is a frontend-only pseudo-step; the session's
 // currentStep never goes past 'verification' — completion is a status change.

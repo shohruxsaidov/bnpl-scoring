@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm"
 import type { Db } from "../../../../db"
-import { adminUsers, roles } from "../../../id/db/schema"
+import { adminUsers, roles } from '@db/schema'
 
 const userSelect = {
   id: adminUsers.id,

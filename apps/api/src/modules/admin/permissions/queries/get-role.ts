@@ -1,6 +1,6 @@
 import { and, eq, sql } from "drizzle-orm"
 import type { Db } from "../../../../db"
-import { adminUsers, merchantUsers, roles } from "../../../id/db/schema"
+import { adminUsers, merchantUsers, roles } from '@db/schema'
 import type { Platform } from "../../../../rbac/features"
 
 export async function findRoleRow(db: Db, id: number) {

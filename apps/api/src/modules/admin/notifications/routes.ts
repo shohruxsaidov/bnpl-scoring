@@ -4,7 +4,7 @@ import type { FastifyInstance } from 'fastify'
 import { desc, eq, ilike, or } from 'drizzle-orm'
 import { notificationBroadcasts } from '../../notifications/db/schema'
 import { createNotification } from '../../notifications/service'
-import { merchantUsers, users } from '../../id/db/schema'
+import { merchantUsers, users } from '@db/schema'
 
 export default async function adminNotificationRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()

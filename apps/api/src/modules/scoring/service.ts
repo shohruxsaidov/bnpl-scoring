@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import type { Db } from '../../db';
-import { users, clients } from '../id/db/schema';
+import { users, clients } from '@db/schema';
 import { scoringHistories } from '../deals/db/schema';
 import { katmSummary } from '../integrations/katm/poller';
 import { addCard, confirmCard, scoreCard } from '../integrations/plumgate/service';
@@ -278,7 +278,7 @@ export async function completeScoringCard(
       input.pcType,
       katmResult,
       user
-        ? { birthDate: user.birthDate, gender: user.gender, nationality: user.nationality }
+        ? { birthDate: user.birthDate, gender: String(user.gender), nationality: user.nationality }
         : undefined,
     );
 

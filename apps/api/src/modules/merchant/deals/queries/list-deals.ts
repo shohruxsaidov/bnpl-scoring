@@ -1,7 +1,7 @@
 import { and, asc, desc, eq } from "drizzle-orm"
 import type { Db } from "../../../../db"
 import { deals } from "../../../deals/db/schema"
-import { clients, tariffs, merchantUsers } from "../../../id/db/schema"
+import { clients, tariffs, merchantUsers } from '@db/schema'
 
 function serializeNumber(v: number | null | undefined): string | null {
   return v == null ? null : v.toString()

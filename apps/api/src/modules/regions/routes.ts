@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { eq, isNull } from 'drizzle-orm';
-import { regions } from '../id/db/schema';
+import { regions } from '@db/schema';
 
 export default async function regionRoutes(app: FastifyInstance) {
   const db = app.db;

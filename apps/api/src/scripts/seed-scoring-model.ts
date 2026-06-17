@@ -3,7 +3,7 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import { eq } from 'drizzle-orm'
 import { scoringModels, scoringModelRevisions } from '../modules/admin/scoringModel/db/schema'
-import { tariffs } from '../modules/id/db/schema'
+import { tariffs } from '@db/schema'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 
