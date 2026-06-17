@@ -1,38 +1,35 @@
 import type { FastifyInstance, FastifyPluginAsync } from "fastify"
-import adminOverviewRoutes from "./overview/routes"
-import adminMerchantRoutes from "./merchants/routes"
-import adminBranchRoutes from "./branches/routes"
-import adminEmployeeRoutes from "./employees/routes"
-import adminCategoryRoutes from "./categories/routes"
-import adminProductRoutes from "./products/routes"
-import adminTariffRoutes from "./tariffs/routes"
-import adminBlacklistRoutes from "./blacklist/routes"
-import adminNotificationRoutes from "./notifications/routes"
-import adminDealRoutes from "./deals/routes"
-import adminUsersRoutes from "./users/routes"
-import adminPermissionsRoutes from "./permissions/routes"
-import adminScoringHistoryRoutes from "./scoringHistory/routes"
-import adminPaymentRoutes from "./payments/routes"
-import adminCollectionBoardRoutes from "./collectionBoard/routes"
-import adminBuyoutRoutes from "./buyouts/routes"
-import adminClientsRoutes from "./clients/routes"
-import mxikRoutes from "../mxik/routes"
-import adminBankRoutes from "./banks/routes"
-import adminOrganizationRoutes from "./organization/routes"
-import adminScoringSessionsRoutes from "./scoringSessions/routes"
-import adminScoringModelRoutes from "./scoringModel/routes"
-import adminScoringTestCasesRoutes from "./scoringTestCases/routes"
-import adminIntegrationLogRoutes from "./integrationLogs/routes"
-import regionRoutes from "../regions/routes"
+import adminOverviewRoutes from "./overview/index"
+import adminMerchantRoutes from "./merchants/index"
+import adminBranchRoutes from "./branches/index"
+import adminEmployeeRoutes from "./employees/index"
+import adminCategoryRoutes from "./categories/index"
+import adminProductRoutes from "./products/index"
+import adminTariffRoutes from "./tariffs/index"
+import adminBlacklistRoutes from "./blacklist/index"
+import adminNotificationRoutes from "./notifications/index"
+import adminDealRoutes from "./deals/index"
+import adminUsersRoutes from "./users/index"
+import adminPermissionsRoutes from "./permissions/index"
+import adminScoringHistoryRoutes from "./scoringHistory/index"
+import adminPaymentRoutes from "./payments/index"
+import adminCollectionBoardRoutes from "./collectionBoard/index"
+import adminBuyoutRoutes from "./buyouts/index"
+import adminClientsRoutes from "./clients/index"
+import mxikRoutes from "../mxik/index"
+import adminBankRoutes from "./banks/index"
+import adminOrganizationRoutes from "./organization/index"
+import adminScoringSessionsRoutes from "./scoringSessions/index"
+import adminScoringModelRoutes from "./scoringModel/index"
+import adminScoringTestCasesRoutes from "./scoringTestCases/index"
+import adminIntegrationLogRoutes from "./integrationLogs/index"
+import regionRoutes from "../regions/index"
 
 interface FeatureMap {
   read?: string
   write?: string
 }
 
-// Wraps a route module so every request is authenticated and then checked
-// against the module's Feature(s) — read Feature for GET/HEAD, write for the rest.
-// This centralizes admin-platform enforcement without touching each route file.
 function guarded(routes: FastifyPluginAsync, map: FeatureMap): FastifyPluginAsync {
   return async (scope) => {
     scope.addHook("onRequest", scope.verifyAdminJwt)
@@ -59,16 +56,12 @@ export default async function adminModule(app: FastifyInstance) {
   await app.register(guarded(adminBuyoutRoutes, { read: "manage_buyout", write: "manage_buyout" }), { prefix: "/admin/buyouts" })
   await app.register(guarded(adminClientsRoutes, { read: "view_clients" }), { prefix: "/admin/clients" })
   await app.register(guarded(adminUsersRoutes, { read: "manage_admins", write: "manage_admins" }), { prefix: "/admin/users" })
-  // Permissions module guards itself with manage_roles per-route.
   await app.register(adminPermissionsRoutes, { prefix: "/admin/permissions" })
-  // MXIK reference lookups: any authenticated admin.
   await app.register(mxikRoutes, { prefix: "/admin/mxik", preHandler: app.verifyAdminJwt })
-  // CBU bank registry: any authenticated admin.
   await app.register(adminBankRoutes, { prefix: "/admin/banks" })
   await app.register(guarded(adminOrganizationRoutes, { read: "manage_settings", write: "manage_settings" }), { prefix: "/admin/organization" })
   await app.register(guarded(adminScoringModelRoutes, { read: "manage_scoring_model", write: "manage_scoring_model" }), { prefix: "/admin/scoring-model" })
   await app.register(guarded(adminScoringTestCasesRoutes, { read: "manage_scoring_model", write: "manage_scoring_model" }), { prefix: "/admin/scoring-test-cases" })
   await app.register(guarded(adminIntegrationLogRoutes, { read: "view_integration_logs" }), { prefix: "/admin/integration-logs" })
-  // Region reference: any authenticated admin.
   await app.register(regionRoutes, { prefix: "/admin/regions", preHandler: app.verifyAdminJwt })
 }

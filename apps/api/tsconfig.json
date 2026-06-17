@@ -12,7 +12,8 @@
     "paths": {
       "@db": ["src/db/index"],
       "@db/*": ["src/db/*"],
-      "@redis": ["src/redis"]
+      "@redis": ["src/redis"],
+      "@minio": ["src/minio"]
     }
   },
   "include": ["src"],
