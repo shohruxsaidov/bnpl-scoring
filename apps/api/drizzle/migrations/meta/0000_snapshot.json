@@ -1,5 +1,5 @@
 {
-  "id": "461f1c2f-7024-4158-b6f6-c69cffc2cc09",
+  "id": "f78dbf2b-9b00-48c0-85c2-c41af6ba37e8",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -171,12 +171,6 @@
           "primaryKey": true,
           "notNull": true
         },
-        "client_id": {
-          "name": "client_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
         "user_id": {
           "name": "user_id",
           "type": "integer",
@@ -205,19 +199,6 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "agreements_client_id_clients_id_fk": {
-          "name": "agreements_client_id_clients_id_fk",
-          "tableFrom": "agreements",
-          "tableTo": "clients",
-          "columnsFrom": [
-            "client_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
         "agreements_user_id_users_id_fk": {
           "name": "agreements_user_id_users_id_fk",
           "tableFrom": "agreements",
@@ -569,8 +550,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.client_devices": {
-      "name": "client_devices",
+    "public.user_devices": {
+      "name": "user_devices",
       "schema": "",
       "columns": {
         "id": {
@@ -627,9 +608,9 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "client_devices_user_id_users_id_fk": {
-          "name": "client_devices_user_id_users_id_fk",
-          "tableFrom": "client_devices",
+        "user_devices_user_id_users_id_fk": {
+          "name": "user_devices_user_id_users_id_fk",
+          "tableFrom": "user_devices",
           "tableTo": "users",
           "columnsFrom": [
             "user_id"
@@ -643,8 +624,8 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "client_devices_device_id_unique": {
-          "name": "client_devices_device_id_unique",
+        "user_devices_device_id_unique": {
+          "name": "user_devices_device_id_unique",
           "nullsNotDistinct": false,
           "columns": [
             "device_id"
@@ -655,8 +636,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.client_sessions": {
-      "name": "client_sessions",
+    "public.user_sessions": {
+      "name": "user_sessions",
       "schema": "",
       "columns": {
         "id": {
@@ -700,9 +681,9 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "client_sessions_user_id_users_id_fk": {
-          "name": "client_sessions_user_id_users_id_fk",
-          "tableFrom": "client_sessions",
+        "user_sessions_user_id_users_id_fk": {
+          "name": "user_sessions_user_id_users_id_fk",
+          "tableFrom": "user_sessions",
           "tableTo": "users",
           "columnsFrom": [
             "user_id"
@@ -716,155 +697,6 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.clients": {
-      "name": "clients",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "phone": {
-          "name": "phone",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "pinfl": {
-          "name": "pinfl",
-          "type": "varchar(14)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "first_name": {
-          "name": "first_name",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "last_name": {
-          "name": "last_name",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "middle_name": {
-          "name": "middle_name",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "birth_date": {
-          "name": "birth_date",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "gender": {
-          "name": "gender",
-          "type": "varchar(10)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "nationality": {
-          "name": "nationality",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "passport_serial": {
-          "name": "passport_serial",
-          "type": "varchar(5)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "passport_number": {
-          "name": "passport_number",
-          "type": "varchar(10)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "photo_url": {
-          "name": "photo_url",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "myid_verified_at": {
-          "name": "myid_verified_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "address": {
-          "name": "address",
-          "type": "varchar(100)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "district_code": {
-          "name": "district_code",
-          "type": "varchar(3)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "region_code": {
-          "name": "region_code",
-          "type": "varchar(3)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "doc_type": {
-          "name": "doc_type",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "katm_sir": {
-          "name": "katm_sir",
-          "type": "varchar(20)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "merchant_id": {
-          "name": "merchant_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "branch_id": {
-          "name": "branch_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "clients_pinfl_merchant_id_unique": {
-          "name": "clients_pinfl_merchant_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "pinfl",
-            "merchant_id"
-          ]
-        }
-      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -1303,8 +1135,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "client_id": {
-          "name": "client_id",
+        "user_id": {
+          "name": "user_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -1392,12 +1224,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "deal_sessions_client_id_clients_id_fk": {
-          "name": "deal_sessions_client_id_clients_id_fk",
+        "deal_sessions_user_id_users_id_fk": {
+          "name": "deal_sessions_user_id_users_id_fk",
           "tableFrom": "deal_sessions",
-          "tableTo": "clients",
+          "tableTo": "users",
           "columnsFrom": [
-            "client_id"
+            "user_id"
           ],
           "columnsTo": [
             "id"
@@ -1441,8 +1273,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "client_id": {
-          "name": "client_id",
+        "user_id": {
+          "name": "user_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false
@@ -1594,12 +1426,12 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "deals_client_id_clients_id_fk": {
-          "name": "deals_client_id_clients_id_fk",
+        "deals_user_id_users_id_fk": {
+          "name": "deals_user_id_users_id_fk",
           "tableFrom": "deals",
-          "tableTo": "clients",
+          "tableTo": "users",
           "columnsFrom": [
-            "client_id"
+            "user_id"
           ],
           "columnsTo": [
             "id"
@@ -3292,10 +3124,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "scoring_histories_client_id_clients_id_fk": {
-          "name": "scoring_histories_client_id_clients_id_fk",
+        "scoring_histories_client_id_users_id_fk": {
+          "name": "scoring_histories_client_id_users_id_fk",
           "tableFrom": "scoring_histories",
-          "tableTo": "clients",
+          "tableTo": "users",
           "columnsFrom": [
             "client_id"
           ],

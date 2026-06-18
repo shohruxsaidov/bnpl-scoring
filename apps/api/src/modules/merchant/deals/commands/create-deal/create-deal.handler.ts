@@ -12,7 +12,7 @@ import {
 import { calcTotalPayable, splitInstallments } from '../../../../deals/installments';
 import { users, products } from '@db/schema';
 import type { CreateDealInput } from './create-deal.command';
-import type { DealSessionRow, SessionStepData } from '../../../deal-sessions/service/service.handler';
+import type { DealSessionRow, SessionStepData } from '../../../deal-sessions/types';
 
 function coded(code: string): Error & { code: string } {
   return Object.assign(new Error(code), { code });

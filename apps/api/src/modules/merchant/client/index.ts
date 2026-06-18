@@ -7,7 +7,7 @@ import { findClientByPinflAndMerchant } from './queries/search-client/search-cli
 import { createOtp, verifyOtp } from '../../auth/client/service/service.handler';
 import { createMyidSession, exchangeMyidCode } from '../../auth/client/myid/myid.handler';
 import { createDealFromSession } from '../deals/commands/create-deal/create-deal.handler';
-import { loadOwnedActiveSession } from '../deal-sessions/service/service.handler';
+import { loadOwnedActiveSession } from '../deal-sessions/queries/load-owned-active-session/load-owned-active-session.handler';
 import { env } from '../../../env';
 import { createUserHandler } from '../../id/users';
 import { findUsersHandler } from '../../id/users/queries/find-user/find-user.handler';

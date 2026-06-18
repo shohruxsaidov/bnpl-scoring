@@ -1,0 +1,118 @@
+import { db } from '@db';
+import { dealSessionEvents } from '../../deals/schema';
+import type { dealSessions } from '../../deals/schema';
+
+export const WIZARD_STEPS = [
+  'client',
+  'card',
+  'tariff',
+  'products',
+  'payment',
+  'verification',
+] as const;
+export type WizardStep = (typeof WIZARD_STEPS)[number];
+
+export function isWizardStep(s: string): s is WizardStep {
+  return (WIZARD_STEPS as readonly string[]).includes(s);
+}
+
+/** KATM result stamped by the server at /merchant/katm/query. */
+export interface KatmStamp {
+  userId: string;
+  claimId: string;
+  demandId: string;
+  consentId: string;
+  consentDate: string;
+  score: number;
+  scoringClass: string;
+  scoringLevel: string;
+  activeLoans: number;
+  allDebtSum: number;
+  overdueCount: number;
+  overdueAmount: number;
+  maxOverdueDays: number;
+  totalContracts: number;
+  totalClaims: number;
+  avgMonthlyPayment: number;
+  hasDefaults: boolean;
+  hasCreditBan: boolean;
+  raw: unknown;
+}
+
+/** Scoring result stamped by the server at /merchant/cards/score. */
+export interface ScoringStamp {
+  cardId: string;
+  /** scoring_histories.id as string */
+  scoringId: string | null;
+  scoreSum: number;
+  coefficient: number;
+  decision: string;
+  /** tiyin */
+  platformCreditLimit: number;
+  criteriaScores: Record<string, unknown>;
+}
+
+/** Async-report state while a BullMQ job polls KATM (ADR-0025). */
+export interface KatmPendingState {
+  status: 'pending' | 'failed';
+  startedAt: string;
+  error?: string;
+}
+
+/** Prepayment confirmed server-side at POST /prepayment (ADR-0026). */
+export interface PrepaymentStamp {
+  /** Gap in tiyin: totalWithMarkup - effectiveLimit. Installments run on this less. */
+  amount: number;
+  confirmedAt: string;
+}
+
+export interface SessionStepData {
+  client?: { userId: string; isNewClient: boolean; myidVerified: boolean; katmConsent: boolean };
+  card?: {
+    cardId: string;
+    maskedPan: string;
+    pcType: string;
+    bank: string;
+    holderName: string;
+    expiry: string;
+  };
+  tariff?: {
+    tariffId: string;
+    name: string;
+    termMonths: number;
+    markupPercent: number;
+    minAmount: string | null;
+    maxAmount: string | null;
+  };
+  products?: {
+    lines: Array<{
+      productId: string;
+      productName: string;
+      price: string;
+      mxikCode: string | null;
+      packageCode: number | null;
+      packageName: string | null;
+      quantity: number;
+    }>;
+  };
+  payment?: { paymentDay: number };
+  verification?: { lang: 'ru' | 'uz'; otpVerifiedAt: string | null };
+  katm?: KatmStamp;
+  katmPending?: KatmPendingState;
+  scoring?: ScoringStamp;
+  prepayment?: PrepaymentStamp;
+}
+
+export type DealSessionRow = typeof dealSessions.$inferSelect;
+
+export function err(code: string): Error & { code: string } {
+  return Object.assign(new Error(code), { code });
+}
+
+export function stepDataOf(session: DealSessionRow): SessionStepData {
+  return (session.stepData ?? {}) as SessionStepData;
+}
+
+export async function logEvent(sessionId: string, step: string, payload: unknown) {
+  await db.insert(dealSessionEvents).values({ sessionId, step, payload });
+}

@@ -5,17 +5,13 @@ import type { FastifyInstance } from 'fastify'
 import { eq } from 'drizzle-orm'
 import { users } from '@db/schema'
 import { dealSessions } from '../../deals/schema'
-import {
-  abandonSession,
-  createSession,
-  getActiveSession,
-  isWizardStep,
-  loadOwnedActiveSession,
-  saveStep,
-  stampPrepayment,
-  type DealSessionRow,
-  type SessionStepData,
-} from './service/service.handler'
+import { isWizardStep, type DealSessionRow, type SessionStepData } from './types'
+import { getActiveSession } from './queries/get-active-session/get-active-session.handler'
+import { loadOwnedActiveSession } from './queries/load-owned-active-session/load-owned-active-session.handler'
+import { createSession } from './commands/create-session/create-session.handler'
+import { abandonSession } from './commands/abandon-session/abandon-session.handler'
+import { saveStep } from './commands/save-step/save-step.handler'
+import { stampPrepayment } from './commands/stamp-prepayment/stamp-prepayment.handler'
 
 type JwtPayload = {
   sub: string

@@ -287,8 +287,7 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
     </Dialog>
 
     <!-- ── Close deal confirmation ───────────────────────────────────────── -->
-    <Dialog v-model:visible="showCloseDialog" :header="t('deal.closeConfirmTitle')" modal
-      :style="{ width: '26rem' }">
+    <Dialog v-model:visible="showCloseDialog" :header="t('deal.closeConfirmTitle')" modal :style="{ width: '26rem' }">
       <p class="close-confirm-body">{{ t('deal.closeConfirmBody', { name: resumeClientName }) }}</p>
       <template #footer>
         <button class="p-button p-button-outlined p-button-sm" @click="showCloseDialog = false">
@@ -529,14 +528,30 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
   .stepper {
     padding: 0.85rem 1rem 0.7rem;
   }
+
   .steps-row {
     flex-wrap: wrap;
     gap: 0;
   }
-  .step { gap: 0.3rem; }
-  .step-label { display: none; }
-  .step-icon { width: 36px; height: 36px; font-size: 0.85rem; }
-  .connector { top: 18px; }
+
+  .step {
+    gap: 0.3rem;
+  }
+
+  .step-label {
+    display: none;
+  }
+
+  .step-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 0.85rem;
+  }
+
+  .connector {
+    top: 18px;
+  }
+
   .step-mobile-label {
     display: block;
     width: 100%;

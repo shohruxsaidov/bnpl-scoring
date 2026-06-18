@@ -9,7 +9,10 @@ import { addCard } from '../../integrations/plumgate/commands/add-card/add-card.
 import { confirmCard } from '../../integrations/plumgate/commands/confirm-card/confirm-card.handler'
 import { scoreCard } from '../../integrations/plumgate/queries/score-card/score-card.handler'
 import { createScoring } from '../scoringHistory/commands/create-scoring/create-scoring.handler'
-import { loadOwnedActiveSession, saveStep, stampScoring, type SessionStepData } from '../deal-sessions/service/service.handler'
+import { loadOwnedActiveSession } from '../deal-sessions/queries/load-owned-active-session/load-owned-active-session.handler'
+import { saveStep } from '../deal-sessions/commands/save-step/save-step.handler'
+import { stampScoring } from '../deal-sessions/commands/stamp-scoring/stamp-scoring.handler'
+import type { SessionStepData } from '../deal-sessions/types'
 import type { CriteriaScores } from '../../scoring/service/service.handler'
 
 export default async function merchantCardRoutes(app: FastifyInstance) {

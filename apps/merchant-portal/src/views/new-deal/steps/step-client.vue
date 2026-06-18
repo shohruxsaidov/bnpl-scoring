@@ -296,11 +296,11 @@ async function queryKatm(): Promise<boolean> {
   katmDetailsError.value = ''
   try {
     const result = await apiFetch<{ status: 'completed' | 'pending' } & KatmSummary>(
-      '/merchant/katm/query',
+      '/merchant/scoring/start',
       {
         method: 'POST',
         body: JSON.stringify({
-          clientId: confirmedClient.value.id,
+          userId: confirmedClient.value.id,
           dealSessionId: deal.dealSessionId,
         }),
       },

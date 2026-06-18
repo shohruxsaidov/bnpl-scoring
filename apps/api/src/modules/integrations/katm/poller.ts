@@ -15,12 +15,9 @@ import { env } from '../../../env'
 import { ssePush } from '../../../lib/sse'
 import { dealSessions } from '../../deals/schema'
 import { scoringPipelines, scoringSessions } from '../../scoring/schema'
-import {
-  stampKatm,
-  stampKatmPending,
-  type DealSessionRow,
-  type KatmStamp,
-} from '../../merchant/deal-sessions/service/service.handler'
+import { stampKatm } from '../../merchant/deal-sessions/commands/stamp-katm/stamp-katm.handler'
+import { stampKatmPending } from '../../merchant/deal-sessions/commands/stamp-katm-pending/stamp-katm-pending.handler'
+import type { DealSessionRow, KatmStamp } from '../../merchant/deal-sessions/types'
 import { checkReportStatus } from './queries/check-report-status/check-report-status.handler'
 import type { KatmResult } from './service/shared'
 

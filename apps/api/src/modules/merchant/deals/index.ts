@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { createDealFromSession } from './commands/create-deal/create-deal.handler';
-import { loadOwnedActiveSession } from '../deal-sessions/service/service.handler';
+import { loadOwnedActiveSession } from '../deal-sessions/queries/load-owned-active-session/load-owned-active-session.handler';
 import { listDeals } from './queries/list-deals/list-deals.handler';
 import { getDealById } from './queries/get-deal/get-deal.handler';
 import { getContractPdfUrl } from './queries/get-contract-pdf-url/get-contract-pdf-url.handler';

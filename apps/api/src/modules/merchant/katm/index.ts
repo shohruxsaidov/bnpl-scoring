@@ -11,14 +11,12 @@ import {
   startKatmFlow,
 } from '../../integrations/katm/flow';
 import { enqueueKatmPoll, katmSummary, saveKatmSir } from '../../integrations/katm/poller';
-import {
-  loadOwnedActiveSession,
-  setKatmClaimId,
-  setSessionUserId,
-  stampKatm,
-  stampKatmPending,
-  type SessionStepData,
-} from '../deal-sessions/service/service.handler';
+import { loadOwnedActiveSession } from '../deal-sessions/queries/load-owned-active-session/load-owned-active-session.handler';
+import { setKatmClaimId } from '../deal-sessions/commands/set-katm-claim-id/set-katm-claim-id.handler';
+import { setSessionUserId } from '../deal-sessions/commands/set-session-user-id/set-session-user-id.handler';
+import { stampKatm } from '../deal-sessions/commands/stamp-katm/stamp-katm.handler';
+import { stampKatmPending } from '../deal-sessions/commands/stamp-katm-pending/stamp-katm-pending.handler';
+import type { SessionStepData } from '../deal-sessions/types';
 
 type JwtPayload = { sub: string; merchantId: string; branchId: string; role: string };
 
