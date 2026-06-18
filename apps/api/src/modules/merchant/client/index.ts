@@ -9,8 +9,8 @@ import { createMyidSession, exchangeMyidCode } from '../../auth/client/myid/myid
 import { createDealFromSession } from '../deals/commands/create-deal/create-deal.handler';
 import { loadOwnedActiveSession } from '../deal-sessions/service/service.handler';
 import { env } from '../../../env';
-import { createUserHandler } from 'src/modules/id/users';
-import { findUsersHandler } from 'src/modules/id/users/queries/find-user/find-user.handler';
+import { createUserHandler } from '../../id/users';
+import { findUsersHandler } from '../../id/users/queries/find-user/find-user.handler';
 
 function formatDealNumber(n: number | null | undefined): string {
   return n != null ? `CN-${String(n).padStart(7, '0')}` : '—';

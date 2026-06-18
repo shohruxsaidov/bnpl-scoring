@@ -3,7 +3,7 @@ import type {
   RegisterClaimParams,
   RegisterClaimResult,
   ReportOutcome,
-} from './service';
+} from './service/service.handler';
 
 function delay(ms: number) {
   return new Promise<void>((r) => setTimeout(r, ms));

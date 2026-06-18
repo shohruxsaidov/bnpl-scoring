@@ -9,9 +9,9 @@
  */
 
 import { sql } from 'drizzle-orm';
-import type { Db } from '../../../db';
+import { db } from '@db';
 import { agreements } from '../schema';
-import { checkCreditBan, registerClaim, request077Report, type KatmResult } from './service';
+import { registerClaim, request077Report, type KatmResult } from './service/service.handler';
 
 // ---------------------------------------------------------------------------
 // Subject — the client/user fields claim registration requires
@@ -59,7 +59,7 @@ export function missingKatmFields(row: {
 // KATM Claim ID — one shared sequence across both session tables (ADR-0025)
 // ---------------------------------------------------------------------------
 
-export async function allocateKatmClaimId(db: Db): Promise<string> {
+export async function allocateKatmClaimId(): Promise<string> {
   const rows = await db.execute(sql`select nextval('katm_claim_seq') as id`);
   const row = (rows as unknown as Array<{ id: string | number | bigint }>)[0];
   if (!row) throw new Error('katm_claim_seq nextval returned no row');
@@ -77,15 +77,12 @@ export interface AgreementRecord {
   agreementDate: Date;
 }
 
-export async function createKatmConsent(
-  db: Db,
-  input: {
-    channel: 'wizard' | 'self_service';
-    clientId?: number;
-    userId?: number;
-    sessionId?: string;
-  },
-): Promise<AgreementRecord> {
+export async function createKatmConsent(input: {
+  channel: 'wizard' | 'self_service';
+  clientId?: number;
+  userId?: number;
+  sessionId?: string;
+}): Promise<AgreementRecord> {
   const [row] = await db
     .insert(agreements)
     .values({
@@ -108,20 +105,17 @@ export type KatmFlowOutcome =
   | { status: 'ready'; katmSir: string; result: KatmResult }
   | { status: 'pending'; katmSir: string; token: string };
 
-export async function startKatmFlow(
-  db: Db,
-  input: {
-    claimId: string;
-    consent: AgreementRecord;
-    subject: KatmSubject;
-  },
-): Promise<KatmFlowOutcome> {
+export async function startKatmFlow(input: {
+  claimId: string;
+  consent: AgreementRecord;
+  subject: KatmSubject;
+}): Promise<KatmFlowOutcome> {
   // Ban pre-check — an actively banned client must not even have a claim
   // registered with the bureau (ADR-0025)
-  // const ban = await checkCreditBan(db, { pinfl: input.subject.pinfl })
+  // const ban = await checkCreditBan({ pinfl: input.subject.pinfl })
   // if (ban.banned) return { status: 'banned' }
 
-  const claim = await registerClaim(db, {
+  const claim = await registerClaim({
     claimId: input.claimId,
     agreementId: input.consent.agreementId,
     agreementDate: input.consent.agreementDate,
@@ -136,7 +130,7 @@ export async function startKatmFlow(
     amount: 35000000, // in tiyin 350 000 dom
   });
 
-  const report = await request077Report(db, { claimId: input.claimId });
+  const report = await request077Report({ claimId: input.claimId });
   if (report.status === 'pending') {
     return { status: 'pending', katmSir: claim.katmSir, token: report.token };
   }

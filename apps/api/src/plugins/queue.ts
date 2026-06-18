@@ -33,7 +33,7 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
 
   const worker = new Worker<KatmPollJobData>(
     KATM_POLL_QUEUE,
-    async (job) => processKatmPollJob(app.db, job.data),
+    async (job) => processKatmPollJob(job.data),
     { connection, concurrency: 5 },
   )
 
@@ -44,7 +44,7 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
       app.log.warn({ jobId: job.id, data: job.data, err, exhausted }, 'katm poll attempt failed')
     }
     if (exhausted) {
-      handleKatmPollFailure(app.db, job.data, err).catch((e) =>
+      handleKatmPollFailure(job.data, err).catch((e) =>
         app.log.error({ err: e }, 'katm poll failure finalizer crashed'),
       )
     }

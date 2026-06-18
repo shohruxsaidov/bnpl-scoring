@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import { Type } from '@sinclair/typebox';
 import { eq } from 'drizzle-orm';
+import { db } from '@db';
 import { clients } from '@db/schema';
 import {
   allocateKatmClaimId,
@@ -23,7 +24,6 @@ type JwtPayload = { sub: string; merchantId: string; branchId: string; role: str
 
 export default async function merchantKatmRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
-  const db = app.db;
 
   const QueryBody = Type.Object({
     clientId: Type.String({ minLength: 1 }),
@@ -77,20 +77,20 @@ export default async function merchantKatmRoutes(app: FastifyInstance) {
 
       // Sequence-numbered consent record — the auditable artifact behind
       // pAgreementId/pAgreementDate (ADR-0025)
-      const consent = await createKatmConsent(db, {
+      const consent = await createKatmConsent({
         channel: 'wizard',
         clientId: client.id,
         sessionId: session.id,
       });
 
       // One claim per Wizard run — reuse the id if the Agent redoes the step
-      const claimId = session.katmClaimId ?? (await allocateKatmClaimId(db));
+      const claimId = session.katmClaimId ?? (await allocateKatmClaimId());
       if (!session.katmClaimId) {
         await setKatmClaimId(session, claimId);
         session = { ...session, katmClaimId: claimId };
       }
 
-      const outcome = await startKatmFlow(db, {
+      const outcome = await startKatmFlow({
         claimId,
         consent,
         subject: {
@@ -114,7 +114,7 @@ export default async function merchantKatmRoutes(app: FastifyInstance) {
         return reply.code(409).sendError('client_credit_banned');
       }
 
-      await saveKatmSir(db, { clientId: client.id }, outcome.katmSir);
+      await saveKatmSir({ clientId: client.id }, outcome.katmSir);
 
       const consentDate = consent.agreementDate.toISOString();
 

@@ -10,11 +10,11 @@
 
 import { and, eq } from 'drizzle-orm'
 import type { Queue } from 'bullmq'
-import type { Db } from '../../../db'
+import { db } from '@db'
 import { env } from '../../../env'
 import { ssePush } from '../../../lib/sse'
 import { dealSessions } from '../../deals/schema'
-import { clients, users } from '@db/schema'
+import { clients } from '@db/schema'
 import { scoringPipelines, scoringSessions } from '../../scoring/schema'
 import {
   stampKatm,
@@ -22,7 +22,7 @@ import {
   type DealSessionRow,
   type KatmStamp,
 } from '../../merchant/deal-sessions/service/service.handler'
-import { checkReportStatus, type KatmResult } from './service'
+import { checkReportStatus, type KatmResult } from './service/service.handler'
 
 export const KATM_POLL_QUEUE = 'katm-report-poll'
 
@@ -59,19 +59,19 @@ export async function enqueueKatmPoll(queue: Queue<KatmPollJobData>, data: KatmP
 // Worker body
 // ---------------------------------------------------------------------------
 
-export async function processKatmPollJob(db: Db, data: KatmPollJobData): Promise<void> {
-  const outcome = await checkReportStatus(db, { claimId: data.claimId, token: data.token })
+export async function processKatmPollJob(data: KatmPollJobData): Promise<void> {
+  const outcome = await checkReportStatus({ claimId: data.claimId, token: data.token })
   if (outcome.status === 'pending') throw new KatmReportPendingError()
 
-  if (data.flow === 'wizard') await finalizeWizard(db, data, outcome.result)
-  else await finalizeSelfService(db, data, outcome.result)
+  if (data.flow === 'wizard') await finalizeWizard(data, outcome.result)
+  else await finalizeSelfService(data, outcome.result)
 }
 
 /** Called by the worker's failed handler once all attempts are exhausted. */
-export async function handleKatmPollFailure(db: Db, data: KatmPollJobData, err: Error): Promise<void> {
+export async function handleKatmPollFailure(data: KatmPollJobData, err: Error): Promise<void> {
   const error = err instanceof KatmReportPendingError ? 'katm_report_timeout' : err.message
-  if (data.flow === 'wizard') await failWizard(db, data, error)
-  else await failSelfService(db, data, error)
+  if (data.flow === 'wizard') await failWizard(data, error)
+  else await failSelfService(data, error)
 }
 
 // ---------------------------------------------------------------------------
@@ -97,15 +97,15 @@ export function katmSummary(result: KatmResult) {
   }
 }
 
-async function loadWizardSession(db: Db, data: KatmPollJobData): Promise<DealSessionRow | null> {
+async function loadWizardSession(data: KatmPollJobData): Promise<DealSessionRow | null> {
   const [row] = await db.select().from(dealSessions).where(eq(dealSessions.id, data.sessionId)).limit(1)
   // The run may have been abandoned/superseded while we polled — drop silently
   if (!row || row.status !== 'active' || row.katmClaimId !== data.claimId) return null
   return row
 }
 
-async function finalizeWizard(db: Db, data: KatmPollJobData, result: KatmResult): Promise<void> {
-  const session = await loadWizardSession(db, data)
+async function finalizeWizard(data: KatmPollJobData, result: KatmResult): Promise<void> {
+  const session = await loadWizardSession(data)
   if (!session || !session.clientId) return
 
   const stamp: KatmStamp = {
@@ -123,8 +123,8 @@ async function finalizeWizard(db: Db, data: KatmPollJobData, result: KatmResult)
   })
 }
 
-async function failWizard(db: Db, data: KatmPollJobData, error: string): Promise<void> {
-  const session = await loadWizardSession(db, data)
+async function failWizard(data: KatmPollJobData, error: string): Promise<void> {
+  const session = await loadWizardSession(data)
   if (!session) return
   await stampKatmPending(session, {
     status: 'failed',
@@ -141,7 +141,7 @@ async function failWizard(db: Db, data: KatmPollJobData, error: string): Promise
 // Self-service (Scoring Session) finalizers
 // ---------------------------------------------------------------------------
 
-async function finalizeSelfService(db: Db, data: KatmPollJobData, result: KatmResult): Promise<void> {
+async function finalizeSelfService(data: KatmPollJobData, result: KatmResult): Promise<void> {
   await db
     .update(scoringPipelines)
     .set({
@@ -152,7 +152,7 @@ async function finalizeSelfService(db: Db, data: KatmPollJobData, result: KatmRe
     .where(and(eq(scoringPipelines.sessionId, data.sessionId), eq(scoringPipelines.type, 'katm')))
 }
 
-async function failSelfService(db: Db, data: KatmPollJobData, error: string): Promise<void> {
+async function failSelfService(data: KatmPollJobData, error: string): Promise<void> {
   await Promise.all([
     db
       .update(scoringPipelines)
@@ -170,7 +170,6 @@ async function failSelfService(db: Db, data: KatmPollJobData, error: string): Pr
 // ---------------------------------------------------------------------------
 
 export async function saveKatmSir(
-  db: Db,
   subject: { clientId?: number; userId?: number },
   katmSir: string,
 ): Promise<void> {
