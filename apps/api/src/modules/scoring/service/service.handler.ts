@@ -4,7 +4,7 @@ import { users, clients } from '@db/schema';
 import { scoringHistories } from '../../deals/schema';
 import { katmSummary } from '../../integrations/katm/poller';
 import { addCard, confirmCard, scoreCard } from '../../integrations/plumgate/service/service.handler';
-import type { KatmResult } from '../../integrations/katm/service/service.handler';
+import type { KatmResult } from '../../integrations/katm/service/shared';
 import { scoringSessions, scoringPipelines } from '../schema';
 
 // ---------------------------------------------------------------------------

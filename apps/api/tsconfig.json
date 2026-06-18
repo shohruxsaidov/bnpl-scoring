@@ -12,7 +12,8 @@
       "@db": ["./src/db/index"],
       "@db/*": ["./src/db/*"],
       "@redis": ["./src/redis"],
-      "@minio": ["./src/minio"]
+      "@minio": ["./src/minio"],
+      "@env": ["./src/env"]
     }
   },
   "include": ["src"],

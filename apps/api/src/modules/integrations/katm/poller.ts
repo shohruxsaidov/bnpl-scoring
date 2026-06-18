@@ -22,7 +22,8 @@ import {
   type DealSessionRow,
   type KatmStamp,
 } from '../../merchant/deal-sessions/service/service.handler'
-import { checkReportStatus, type KatmResult } from './service/service.handler'
+import { checkReportStatus } from './queries/check-report-status/check-report-status.handler'
+import type { KatmResult } from './service/shared'
 
 export const KATM_POLL_QUEUE = 'katm-report-poll'
 

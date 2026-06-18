@@ -11,7 +11,9 @@
 import { sql } from 'drizzle-orm';
 import { db } from '@db';
 import { agreements } from '../schema';
-import { registerClaim, request077Report, type KatmResult } from './service/service.handler';
+import { registerClaim } from './commands/register-claim/register-claim.handler';
+import { request077Report } from './queries/request-077-report/request-077-report.handler';
+import type { KatmResult } from './service/shared';
 
 // ---------------------------------------------------------------------------
 // Subject — the client/user fields claim registration requires
