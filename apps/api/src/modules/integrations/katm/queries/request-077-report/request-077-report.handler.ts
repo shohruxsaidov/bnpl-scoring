@@ -1,5 +1,12 @@
 import { env } from '@env';
-import { callKatm, assertOk, security, KATM_REPORT_PENDING, KatmVendorError, decodeReport } from '../../service/shared';
+import {
+  callKatm,
+  assertOk,
+  security,
+  KATM_REPORT_PENDING,
+  KatmVendorError,
+  decodeReport,
+} from '../../service/shared';
 import type { ReportOutcome, ReportData } from '../../service/shared';
 
 export type { ReportOutcome } from '../../service/shared';
@@ -14,7 +21,7 @@ export async function request077Report(params: { claimId: string }): Promise<Rep
       pClaimId: params.claimId,
       pReportId: '077',
       pLang: 'ru',
-      pReportFormat: 1,
+      pReportFormat: 1, // For json format 1; for xml format 0
     },
   });
   assertOk('credit/report', data, [KATM_REPORT_PENDING]);

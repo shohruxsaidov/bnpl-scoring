@@ -3,12 +3,12 @@ export interface RegisterClaimCommand {
   agreementId: string;
   agreementDate: Date;
   pinfl: string;
-  docSeries: string;
-  docNumber: string;
-  docType: number;
+  passportSeries: string;
+  passportNumber: string;
+  passportType: number;
   regionCode: string;
   districtCode: string;
   address: string;
   phone: string;
-  amount: number;
+  amount: number; // in format 300_000_00
 }

@@ -25,15 +25,13 @@ export async function registerClaim(params: RegisterClaimCommand): Promise<Regis
         pAgreementId: params.agreementId,
         pAgreementDate: katmDate(params.agreementDate),
         pPinfl: params.pinfl,
-        pDocSeries: params.docSeries,
-        pDocNumber: params.docNumber,
-        pDocType: params.docType,
+        pDocSeries: params.passportSeries,
+        pDocNumber: params.passportNumber,
+        pDocType: params.passportType,
         pRegion: params.regionCode,
         pLocalRegion: params.districtCode,
         pAddress: params.address,
         pPhone: params.phone,
-        // Fixed applied amount/term (ADR-0025) — the Tariff and Basket do not
-        // exist yet when the claim is registered at the Клиент step
         pCreditAmount: params.amount,
         pCurrency: 860,
         pCreditEndDate: katmDate(creditEndDate),
