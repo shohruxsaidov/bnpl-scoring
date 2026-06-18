@@ -119,11 +119,11 @@ export async function getScoring(id: number): Promise<ScoringDetail | null> {
       : "—"
 
   let platformStats: ScoringDetail["platformStats"] = null
-  if (scoring.clientId) {
+  if (scoring.userId) {
     const dealRows = await db
       .select({ id: deals.id, status: deals.status })
       .from(deals)
-      .where(eq(deals.clientId, scoring.clientId))
+      .where(eq(deals.userId, scoring.userId))
 
     const realDeals = dealRows.filter((d) => ["active", "closed", "overdue"].includes(d.status))
     const dealIds = realDeals.map((d) => d.id)

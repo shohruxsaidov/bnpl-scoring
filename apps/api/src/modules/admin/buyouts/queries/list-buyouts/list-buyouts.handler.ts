@@ -1,7 +1,7 @@
 import { desc, eq, inArray } from "drizzle-orm"
 import { db } from "@db"
 import { buyouts, deals, dealItems } from "../../../../deals/schema"
-import { merchants, branches, merchantUsers, clients } from '@db/schema'
+import { merchants, branches, merchantUsers, users } from '@db/schema'
 import type { ListBuyoutsInput } from "./list-buyouts.query"
 
 export interface BuyoutItemDto {
@@ -41,14 +41,14 @@ export async function listBuyouts(
       merchant: { id: merchants.id, name: merchants.name },
       branch: { name: branches.name },
       agent: { fullName: merchantUsers.fullName },
-      client: { firstName: clients.firstName, lastName: clients.lastName, phone: clients.phone },
+      client: { firstName: users.firstName, lastName: users.lastName, phone: users.phone },
     })
     .from(buyouts)
     .leftJoin(deals, eq(buyouts.dealId, deals.id))
     .leftJoin(merchants, eq(buyouts.merchantId, merchants.id))
     .leftJoin(branches, eq(buyouts.branchId, branches.id))
     .leftJoin(merchantUsers, eq(deals.agentId, merchantUsers.id))
-    .leftJoin(clients, eq(deals.clientId, clients.id))
+    .leftJoin(users, eq(deals.userId, users.id))
     .orderBy(desc(buyouts.createdAt))
     .$dynamic()
 

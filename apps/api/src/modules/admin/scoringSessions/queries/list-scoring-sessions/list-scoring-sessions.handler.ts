@@ -1,7 +1,7 @@
 import { desc, eq } from 'drizzle-orm'
 import { db } from '@db'
 import { dealSessions } from '../../../../deals/schema'
-import { clients, merchants, merchantUsers } from '@db/schema'
+import { users, merchants, merchantUsers } from '@db/schema'
 
 export interface DealSessionListItem {
   id: string
@@ -28,15 +28,15 @@ export async function listScoringSessions(): Promise<DealSessionListItem[]> {
       updatedAt: dealSessions.updatedAt,
       merchantName: merchants.name,
       agentName: merchantUsers.fullName,
-      clientFirstName: clients.firstName,
-      clientLastName: clients.lastName,
-      clientPhone: clients.phone,
-      clientPinfl: clients.pinfl,
+      clientFirstName: users.firstName,
+      clientLastName: users.lastName,
+      clientPhone: users.phone,
+      clientPinfl: users.pinfl,
     })
     .from(dealSessions)
     .innerJoin(merchants, eq(merchants.id, dealSessions.merchantId))
     .innerJoin(merchantUsers, eq(merchantUsers.id, dealSessions.agentId))
-    .leftJoin(clients, eq(clients.id, dealSessions.clientId))
+    .leftJoin(users, eq(users.id, dealSessions.userId))
     .orderBy(desc(dealSessions.createdAt))
 
   return rows.map((r) => ({

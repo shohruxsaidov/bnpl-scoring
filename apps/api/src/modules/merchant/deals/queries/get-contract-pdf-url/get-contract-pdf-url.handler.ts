@@ -63,8 +63,8 @@ export async function getContractPdfUrl({
     clientFullName: deal.clientName ?? '—',
     clientPinfl: deal.clientPinfl ?? '—',
     clientPassport:
-      deal.clientPassportSerial && deal.clientPassportNumber
-        ? `${deal.clientPassportSerial} ${deal.clientPassportNumber}`
+      deal.clientPassportSeries && deal.clientPassportNumber
+        ? `${deal.clientPassportSeries} ${deal.clientPassportNumber}`
         : '—',
     agentName: deal.agentName,
     branchName: deal.branchName ?? '—',

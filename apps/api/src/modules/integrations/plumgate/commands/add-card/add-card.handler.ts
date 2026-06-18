@@ -9,7 +9,7 @@ export async function addCard(params: AddCardCommand): Promise<PlumAddCardResult
   if (env.PLUM_MOCK) return mockAddCard(params);
   const client = makePlumClient();
   const reqBody = {
-    userId: params.clientId,
+    userId: params.userId,
     userPhone: params.phone,
     cardNumber: params.cardNumber.replace(/\s/g, ''),
     expireDate: normaliseExpiry(params.expiry),

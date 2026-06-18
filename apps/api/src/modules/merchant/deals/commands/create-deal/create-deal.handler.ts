@@ -10,7 +10,7 @@ import {
   buyouts,
 } from '../../../../deals/schema';
 import { calcTotalPayable, splitInstallments } from '../../../../deals/installments';
-import { clients, products } from '@db/schema';
+import { users, products } from '@db/schema';
 import type { CreateDealInput } from './create-deal.command';
 import type { DealSessionRow, SessionStepData } from '../../../deal-sessions/service/service.handler';
 
@@ -80,7 +80,7 @@ export async function createDealFromSession(session: DealSessionRow) {
     merchantId: session.merchantId,
     branchId: session.branchId,
     agentId: session.agentId,
-    clientId: Number(client.clientId),
+    userId: Number(client.userId),
     tariffId: Number(tariff.tariffId),
     dealSessionId: session.id,
     basket,
@@ -112,7 +112,7 @@ export async function createDeal(input: CreateDealInput) {
         merchantId: input.merchantId,
         branchId: input.branchId,
         agentId: input.agentId,
-        clientId: input.clientId,
+        userId: input.userId,
         tariffId: input.tariffId,
         dealSessionId: input.dealSessionId,
         consentId: input.consentId ?? null,
@@ -169,27 +169,27 @@ export async function createDeal(input: CreateDealInput) {
     await tx.insert(dealPaymentSchedules).values(scheduleRows);
 
     if (input.scoringDecision != null && input.platformCreditLimit != null && input.scoringId == null) {
-      const [clientSnap] = await tx
+      const [userSnap] = await tx
         .select({
-          firstName: clients.firstName,
-          lastName: clients.lastName,
-          middleName: clients.middleName,
-          passportNumber: clients.passportNumber,
-          passportSerial: clients.passportSerial,
-          pinfl: clients.pinfl,
-          phone: clients.phone,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          middleName: users.middleName,
+          passportNumber: users.passportNumber,
+          passportSeries: users.passportSeries,
+          pinfl: users.pinfl,
+          phone: users.phone,
         })
-        .from(clients)
-        .where(eq(clients.id, input.clientId))
+        .from(users)
+        .where(eq(users.id, input.userId))
         .limit(1);
       await tx.insert(scoringHistories).values({
-        firstName: clientSnap?.firstName ?? null,
-        lastName: clientSnap?.lastName ?? null,
-        middleName: clientSnap?.middleName ?? null,
-        passportNumber: clientSnap?.passportNumber ?? null,
-        passportSeries: clientSnap?.passportSerial ?? null,
-        pinfl: clientSnap?.pinfl ?? null,
-        phoneNumber: clientSnap?.phone ?? null,
+        firstName: userSnap?.firstName ?? null,
+        lastName: userSnap?.lastName ?? null,
+        middleName: userSnap?.middleName ?? null,
+        passportNumber: userSnap?.passportNumber ?? null,
+        passportSeries: userSnap?.passportSeries ?? null,
+        pinfl: userSnap?.pinfl ?? null,
+        phoneNumber: userSnap?.phone ?? null,
         criteriaScores: input.criteriaScores ?? null,
         scoreSum: input.scoreSum?.toString() ?? null,
         coefficient: input.coefficient != null ? input.coefficient.toString() : null,

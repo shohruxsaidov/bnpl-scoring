@@ -18,7 +18,7 @@ export default async function merchantScoringHistoryRoutes(app: FastifyInstance)
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
 
   const CreateBody = Type.Object({
-    clientId: Type.String({ minLength: 1 }),
+    userId: Type.String({ minLength: 1 }),
     scoreSum: Type.Optional(Type.Number()),
     coefficient: Type.Optional(Type.Number()),
     decision: Type.String({ minLength: 1 }),
@@ -35,7 +35,7 @@ export default async function merchantScoringHistoryRoutes(app: FastifyInstance)
       try {
         const res = await createScoring({
           merchantId: Number(p.merchantId),
-          clientId: Number(request.body.clientId),
+          userId: Number(request.body.userId),
           scoreSum: request.body.scoreSum ?? null,
           coefficient: request.body.coefficient ?? null,
           decision: request.body.decision,
@@ -44,7 +44,7 @@ export default async function merchantScoringHistoryRoutes(app: FastifyInstance)
         })
         return reply.code(201).send(res)
       } catch (err: any) {
-        if (err.code === 'client_not_found') return reply.code(404).sendError('client_not_found')
+        if (err.code === 'user_not_found') return reply.code(404).sendError('user_not_found')
         throw err
       }
     },

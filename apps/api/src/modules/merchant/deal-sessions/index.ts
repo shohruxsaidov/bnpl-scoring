@@ -3,7 +3,7 @@ import { Type } from '@sinclair/typebox'
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import type { FastifyInstance } from 'fastify'
 import { eq } from 'drizzle-orm'
-import { clients } from '@db/schema'
+import { users } from '@db/schema'
 import { dealSessions } from '../../deals/schema'
 import {
   abandonSession,
@@ -34,12 +34,12 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
   /* ── DTO ───────────────────────────────────────────────────────────────── */
 
-  // The resume payload: session head + the client row joined in (the head holds
-  // only clientId — the clients row is the PII home, never duplicated in jsonb)
+  // The resume payload: session head + the user row joined in (the head holds
+  // only userId — the users row is the PII home, never duplicated in jsonb)
   async function toSessionDto(session: DealSessionRow) {
     let client = null
-    if (session.clientId != null) {
-      const [c] = await db.select().from(clients).where(eq(clients.id, session.clientId)).limit(1)
+    if (session.userId != null) {
+      const [c] = await db.select().from(users).where(eq(users.id, session.userId)).limit(1)
       if (c) {
         client = {
           id: c.id.toString(),
@@ -50,7 +50,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           birthDate: c.birthDate,
           gender: c.gender,
           nationality: c.nationality,
-          passportSerial: c.passportSerial,
+          passportSeries: c.passportSeries,
           passportNumber: c.passportNumber,
           photoUrl: c.photoUrl,
         }

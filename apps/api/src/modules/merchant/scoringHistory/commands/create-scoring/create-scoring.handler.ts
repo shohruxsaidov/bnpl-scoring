@@ -1,37 +1,37 @@
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db } from '@db';
 import { scoringHistories } from '../../../../deals/schema';
-import { clients } from '@db/schema';
+import { users } from '@db/schema';
 import type { CreateScoringInput } from './create-scoring.command';
 
 export async function createScoring(input: CreateScoringInput): Promise<{ id: string }> {
-  const [client] = await db
+  const [user] = await db
     .select({
-      id: clients.id,
-      firstName: clients.firstName,
-      lastName: clients.lastName,
-      middleName: clients.middleName,
-      passportNumber: clients.passportNumber,
-      passportSerial: clients.passportSerial,
-      pinfl: clients.pinfl,
-      phone: clients.phone,
+      id: users.id,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      middleName: users.middleName,
+      passportNumber: users.passportNumber,
+      passportSeries: users.passportSeries,
+      pinfl: users.pinfl,
+      phone: users.phone,
     })
-    .from(clients)
-    .where(and(eq(clients.id, input.clientId), eq(clients.merchantId, input.merchantId)))
+    .from(users)
+    .where(eq(users.id, input.userId))
     .limit(1);
 
-  if (!client) throw Object.assign(new Error('client_not_found'), { code: 'client_not_found' });
+  if (!user) throw Object.assign(new Error('user_not_found'), { code: 'user_not_found' });
 
   const [row] = await db
     .insert(scoringHistories)
     .values({
-      firstName: client.firstName,
-      lastName: client.lastName,
-      middleName: client.middleName ?? null,
-      passportNumber: client.passportNumber ?? null,
-      passportSeries: client.passportSerial ?? null,
-      pinfl: client.pinfl,
-      phoneNumber: client.phone,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      middleName: user.middleName ?? null,
+      passportNumber: user.passportNumber ?? null,
+      passportSeries: user.passportSeries ?? null,
+      pinfl: user.pinfl,
+      phoneNumber: user.phone,
       criteriaScores: input.criteriaScores ?? null,
       scoreSum: input.scoreSum?.toString() ?? null,
       coefficient: input.coefficient != null ? input.coefficient.toString() : null,

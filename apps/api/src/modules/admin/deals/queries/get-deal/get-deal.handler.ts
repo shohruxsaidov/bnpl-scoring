@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm"
 import { db } from "@db"
 import { deals, dealItems, dealPaymentSchedules } from "../../../../deals/schema"
-import { clients, tariffs, merchantUsers, merchants } from '@db/schema'
+import { users, tariffs, merchantUsers, merchants } from '@db/schema'
 
 function formatDealNumber(n: number | null | undefined): string {
   return n != null ? `CN-${String(n).padStart(7, "0")}` : "—"
@@ -11,13 +11,13 @@ export async function getAdminDeal(id: string) {
   const rows = await db
     .select({
       deal: deals,
-      client: clients,
+      client: users,
       tariff: tariffs,
       agent: merchantUsers,
       merchant: merchants,
     })
     .from(deals)
-    .leftJoin(clients, eq(deals.clientId, clients.id))
+    .leftJoin(users, eq(deals.userId, users.id))
     .leftJoin(tariffs, eq(deals.tariffId, tariffs.id))
     .leftJoin(merchantUsers, eq(deals.agentId, merchantUsers.id))
     .leftJoin(merchants, eq(deals.merchantId, merchants.id))

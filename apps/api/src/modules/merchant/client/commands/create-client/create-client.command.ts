@@ -4,9 +4,9 @@ export interface CreateClientCommand {
   firstName: string;
   lastName: string;
   birthDate: string;
-  gender: string;
+  gender: number;
   nationality: string;
-  passportSerial: string | null;
+  passportSeries: string | null;
   passportNumber: string | null;
   photoUrl: string | null;
   address: string | null;

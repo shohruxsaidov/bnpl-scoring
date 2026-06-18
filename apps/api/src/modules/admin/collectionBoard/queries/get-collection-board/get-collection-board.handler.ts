@@ -1,7 +1,7 @@
 import { and, count, eq, lte, not, inArray, sql } from "drizzle-orm"
 import { db } from "@db"
 import { deals, dealPaymentSchedules } from "../../../../deals/schema"
-import { clients, merchants } from '@db/schema'
+import { users, merchants } from '@db/schema'
 import type { GetCollectionBoardInput } from "./get-collection-board.query"
 
 export interface OverdueCard {
@@ -43,15 +43,15 @@ export async function getCollectionBoard(
       dealNumber: deals.dealNumber,
       merchantId: deals.merchantId,
       merchantName: merchants.name,
-      firstName: clients.firstName,
-      lastName: clients.lastName,
-      clientPhone: clients.phone,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      clientPhone: users.phone,
       principal: deals.amount,
       missedCount: count(dealPaymentSchedules.id),
       daysOverdue: sql<number>`max(${today}::date - ${dealPaymentSchedules.dueDate}::date)`,
     })
     .from(deals)
-    .innerJoin(clients, eq(clients.id, deals.clientId))
+    .innerJoin(users, eq(users.id, deals.userId))
     .leftJoin(merchants, eq(deals.merchantId, merchants.id))
     .innerJoin(dealPaymentSchedules, eq(dealPaymentSchedules.dealId, deals.id))
     .where(and(...where))
@@ -60,9 +60,9 @@ export async function getCollectionBoard(
       deals.dealNumber,
       deals.merchantId,
       merchants.name,
-      clients.firstName,
-      clients.lastName,
-      clients.phone,
+      users.firstName,
+      users.lastName,
+      users.phone,
       deals.amount,
     )
 

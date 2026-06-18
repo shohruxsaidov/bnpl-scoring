@@ -1,7 +1,7 @@
 import { and, desc, eq, gt, or } from "drizzle-orm"
 import { db } from "@db"
 import { deals, dealPaymentSchedules } from "../../../../deals/schema"
-import { clients, merchants } from '@db/schema'
+import { users, merchants } from '@db/schema'
 import type { ListPaymentsFilters } from './list-payments.query'
 
 export interface Payment {
@@ -28,9 +28,9 @@ export async function listPayments(filters: ListPaymentsFilters = {}): Promise<P
       dealNumber: deals.dealNumber,
       merchantId: deals.merchantId,
       merchantName: merchants.name,
-      firstName: clients.firstName,
-      lastName: clients.lastName,
-      clientPhone: clients.phone,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      clientPhone: users.phone,
       amount: dealPaymentSchedules.amount,
       paidAmount: dealPaymentSchedules.paidAmount,
       paid: dealPaymentSchedules.paid,
@@ -40,7 +40,7 @@ export async function listPayments(filters: ListPaymentsFilters = {}): Promise<P
     })
     .from(dealPaymentSchedules)
     .innerJoin(deals, eq(dealPaymentSchedules.dealId, deals.id))
-    .innerJoin(clients, eq(clients.id, deals.clientId))
+    .innerJoin(users, eq(users.id, deals.userId))
     .leftJoin(merchants, eq(deals.merchantId, merchants.id))
     .orderBy(desc(dealPaymentSchedules.dueDate))
     .$dynamic()

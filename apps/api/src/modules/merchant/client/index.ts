@@ -2,7 +2,7 @@ import { Type } from '@sinclair/typebox';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { eq } from 'drizzle-orm';
-import { clients, users } from '@db/schema';
+import { users } from '@db/schema';
 import { findClientByPinflAndMerchant } from './queries/search-client/search-client.handler';
 import { createOtp, verifyOtp } from '../../auth/client/service/service.handler';
 import { createMyidSession, exchangeMyidCode } from '../../auth/client/myid/myid.handler';

@@ -49,7 +49,7 @@ export async function listAllScorings(): Promise<ScoringListItem[]> {
   }))
 }
 
-export async function listUniqueClients(): Promise<ClientListItem[]> {
+export async function listUniqueUsers(): Promise<ClientListItem[]> {
   const rows = await db.select().from(scoringHistories).orderBy(desc(scoringHistories.scoredAt))
 
   const seen = new Map<string, ClientListItem>()

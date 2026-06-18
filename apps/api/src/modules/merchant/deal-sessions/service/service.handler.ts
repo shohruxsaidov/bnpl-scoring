@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '@db';
 import { dealSessions, dealSessionEvents } from '../../../deals/schema';
-import { clients, products, tariffs } from '@db/schema';
+import { users, products, tariffs } from '@db/schema';
 
 // Wizard steps in order. 'done' is a frontend-only pseudo-step; the session's
 // currentStep never goes past 'verification' — completion is a status change.
@@ -21,7 +21,7 @@ export function isWizardStep(s: string): s is WizardStep {
 
 /** KATM result stamped by the server at /merchant/katm/query. */
 export interface KatmStamp {
-  clientId: string;
+  userId: string;
   claimId: string;
   demandId: string;
   consentId: string;
@@ -70,7 +70,7 @@ export interface PrepaymentStamp {
 }
 
 export interface SessionStepData {
-  client?: { clientId: string; isNewClient: boolean; myidVerified: boolean; katmConsent: boolean };
+  client?: { userId: string; isNewClient: boolean; myidVerified: boolean; katmConsent: boolean };
   card?: {
     cardId: string;
     maskedPan: string;
@@ -153,7 +153,7 @@ export async function loadOwnedActiveSession(
  * agent is marked abandoned first (ADR-0024 — one active session per Agent).
  */
 export async function createSession(
-  input: { merchantId: number; branchId: number; agentId: number; clientId?: number },
+  input: { merchantId: number; branchId: number; agentId: number; userId?: number },
 ): Promise<DealSessionRow> {
   return db.transaction(async (tx) => {
     const [existing] = await tx
@@ -177,7 +177,7 @@ export async function createSession(
         merchantId: input.merchantId,
         branchId: input.branchId,
         agentId: input.agentId,
-        clientId: input.clientId ? Number(input.clientId) : undefined,
+        userId: input.userId ? Number(input.userId) : undefined,
       })
       .returning();
     if (!session) throw new Error('session_insert_failed');
@@ -224,15 +224,15 @@ export async function saveStep(
 
   // Server stamps are tied to the inputs they were computed from
   if (step === 'client') {
-    const clientId = (saved as NonNullable<SessionStepData['client']>).clientId;
+    const userId = (saved as NonNullable<SessionStepData['client']>).userId;
     console.log(
-      '[saveStep] client step — clientId',
-      clientId,
-      'katm.clientId',
-      next.katm?.clientId,
+      '[saveStep] client step — userId',
+      userId,
+      'katm.userId',
+      next.katm?.userId,
     );
-    if (next.katm && next.katm.clientId !== clientId) {
-      console.log('[saveStep] dropping katm (clientId mismatch)');
+    if (next.katm && next.katm.userId !== userId) {
+      console.log('[saveStep] dropping katm (userId mismatch)');
       delete next.katm;
     }
     if (next.scoring) {
@@ -262,10 +262,10 @@ export async function saveStep(
     .set({
       stepData: next,
       currentStep: after,
-      clientId:
+      userId:
         step === 'client'
-          ? Number((saved as NonNullable<SessionStepData['client']>).clientId)
-          : session.clientId,
+          ? Number((saved as NonNullable<SessionStepData['client']>).userId)
+          : session.userId,
       updatedAt: new Date(),
     })
     .where(eq(dealSessions.id, session.id))
@@ -302,15 +302,15 @@ export async function stampKatmPending(
   await logEvent(session.id, 'katm_pending', state);
 }
 
-/** Anchor the chosen client to the session as early as possible (e.g. at KATM query time). */
-export async function setSessionClientId(
+/** Anchor the chosen user to the session as early as possible (e.g. at KATM query time). */
+export async function setSessionUserId(
   session: DealSessionRow,
-  clientId: number,
+  userId: number,
 ): Promise<void> {
-  if (session.clientId === clientId) return;
+  if (session.userId === userId) return;
   await db
     .update(dealSessions)
-    .set({ clientId, updatedAt: new Date() })
+    .set({ userId, updatedAt: new Date() })
     .where(eq(dealSessions.id, session.id));
 }
 
@@ -367,18 +367,18 @@ async function buildStepPayload(
 
   switch (step) {
     case 'client': {
-      const clientId = str(body['clientId']);
-      console.log('[buildStepPayload:client] clientId', clientId);
-      if (!clientId || !/^\d+$/.test(clientId)) throw err('invalid_step_payload');
-      const [client] = await db
-        .select({ id: clients.id })
-        .from(clients)
-        .where(eq(clients.id, Number(clientId)))
+      const userId = str(body['userId']);
+      console.log('[buildStepPayload:client] userId', userId);
+      if (!userId || !/^\d+$/.test(userId)) throw err('invalid_step_payload');
+      const [user] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, Number(userId)))
         .limit(1);
-      console.log('[buildStepPayload:client] db lookup result', client ?? 'NOT FOUND');
-      if (!client) throw err('client_not_found');
+      console.log('[buildStepPayload:client] db lookup result', user ?? 'NOT FOUND');
+      if (!user) throw err('user_not_found');
       const result = {
-        clientId,
+        userId,
         isNewClient: body['isNewClient'] === true,
         myidVerified: body['myidVerified'] === true,
         katmConsent: body['katmConsent'] === true,

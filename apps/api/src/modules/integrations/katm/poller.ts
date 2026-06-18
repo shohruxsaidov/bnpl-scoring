@@ -14,7 +14,6 @@ import { db } from '@db'
 import { env } from '../../../env'
 import { ssePush } from '../../../lib/sse'
 import { dealSessions } from '../../deals/schema'
-import { clients } from '@db/schema'
 import { scoringPipelines, scoringSessions } from '../../scoring/schema'
 import {
   stampKatm,
@@ -107,10 +106,10 @@ async function loadWizardSession(data: KatmPollJobData): Promise<DealSessionRow 
 
 async function finalizeWizard(data: KatmPollJobData, result: KatmResult): Promise<void> {
   const session = await loadWizardSession(data)
-  if (!session || !session.clientId) return
+  if (!session || !session.userId) return
 
   const stamp: KatmStamp = {
-    clientId: session.clientId.toString(),
+    userId: session.userId.toString(),
     claimId: data.claimId,
     consentId: data.consentId,
     consentDate: data.consentDate.slice(0, 10),
@@ -171,11 +170,8 @@ async function failSelfService(data: KatmPollJobData, error: string): Promise<vo
 // ---------------------------------------------------------------------------
 
 export async function saveKatmSir(
-  subject: { clientId?: number; userId?: number },
-  katmSir: string,
+  subject: { userId?: number },
+  _katmSir: string,
 ): Promise<void> {
-  if (!katmSir) return
-  if (subject.clientId) {
-    await db.update(clients).set({ katmSir }).where(eq(clients.id, subject.clientId))
-  }
+  // users table has no katmSir column — no-op until schema adds it
 }

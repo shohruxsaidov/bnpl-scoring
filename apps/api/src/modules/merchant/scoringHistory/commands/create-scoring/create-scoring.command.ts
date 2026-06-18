@@ -1,6 +1,6 @@
 export interface CreateScoringInput {
   merchantId: number;
-  clientId: number;
+  userId: number;
   scoreSum: number | null;
   coefficient: number | null;
   decision: string;

@@ -96,13 +96,13 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
         agentId: +p.sub,
         merchantId: +p.merchantId,
         branchId: +p.branchId,
-        clientId: deal.clientId,
+        userId: deal.userId,
         amountTiyin: deal.amount,
       }).catch((err) => app.log.warn({ err }, 'notifyDealCreated failed'));
 
       notifyDealDecision({
         dealId: deal.id,
-        clientId: deal.clientId ?? Number(0),
+        userId: deal.userId ?? Number(0),
         scoringDecision: scoringDecision ?? null,
         lang: deal.lang as 'ru' | 'uz',
       }).catch((err) => app.log.warn({ err }, 'notifyDealDecision failed'));

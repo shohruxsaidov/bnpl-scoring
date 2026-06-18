@@ -1,6 +1,6 @@
 import { integer, jsonb, numeric, pgTable, serial, timestamp, varchar } from 'drizzle-orm/pg-core';
-import { clients } from './clients';
 import { scoringModelRevisions } from './scoring-model-revisions';
+import { users } from './users';
 
 // ---------------------------------------------------------------------------
 // scoring_histories
@@ -9,8 +9,8 @@ import { scoringModelRevisions } from './scoring-model-revisions';
 // ---------------------------------------------------------------------------
 export const scoringHistories = pgTable('scoring_histories', {
   id: serial('id').primaryKey(),
-  // Link to clients row (nullable — self-service scoring has no merchant-scoped client)
-  clientId: integer('client_id').references(() => clients.id),
+  // Link to users row (nullable — self-service scoring has no merchant-scoped user)
+  userId: integer('client_id').references(() => users.id),
   // Client snapshot at scoring time
   firstName: varchar('first_name', { length: 100 }),
   lastName: varchar('last_name', { length: 100 }),

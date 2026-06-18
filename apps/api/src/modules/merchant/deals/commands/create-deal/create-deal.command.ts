@@ -2,7 +2,7 @@ export interface CreateDealInput {
   merchantId: number;
   branchId: number;
   agentId: number;
-  clientId: number;
+  userId: number;
   tariffId: number;
   dealSessionId: string | null;
   basket: Array<{

@@ -1,31 +1,37 @@
 import { and, eq, ilike, or } from 'drizzle-orm';
 import { db } from '@db';
-import { clients } from '@db/schema';
+import { users } from '@db/schema';
 
-export async function searchClients(q: string, merchantId: number, limit = 20) {
+export async function searchUsers(q: string, limit = 20) {
   const term = `%${q}%`;
   return db
     .select()
-    .from(clients)
+    .from(users)
     .where(
-      and(
-        eq(clients.merchantId, merchantId),
-        or(
-          ilike(clients.firstName, term),
-          ilike(clients.lastName, term),
-          ilike(clients.pinfl, term),
-          ilike(clients.phone, term),
-        ),
+      or(
+        ilike(users.firstName, term),
+        ilike(users.lastName, term),
+        ilike(users.pinfl, term),
+        ilike(users.phone, term),
       ),
     )
     .limit(limit);
 }
 
-export async function findClientByPinflAndMerchant(pinfl: string, merchantId: number) {
+export async function findUserByPinfl(pinfl: string) {
   const [row] = await db
     .select()
-    .from(clients)
-    .where(and(eq(clients.pinfl, pinfl), eq(clients.merchantId, merchantId)))
+    .from(users)
+    .where(eq(users.pinfl, pinfl))
+    .limit(1);
+  return row;
+}
+
+export async function findClientByPinflAndMerchant(pinfl: string, _merchantId: number) {
+  const [row] = await db
+    .select()
+    .from(users)
+    .where(eq(users.pinfl, pinfl))
     .limit(1);
   return row;
 }

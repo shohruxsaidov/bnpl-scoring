@@ -37,7 +37,7 @@ export interface KatmSubject {
  */
 export function missingKatmFields(row: {
   pinfl: string | null;
-  passportSerial: string | null;
+  passportSeries: string | null;
   passportNumber: string | null;
   docType: number | null;
   regionCode: string | null;
@@ -47,7 +47,7 @@ export function missingKatmFields(row: {
 }): string[] {
   const missing: string[] = [];
   if (!row.pinfl) missing.push('pinfl');
-  if (!row.passportSerial) missing.push('passportSerial');
+  if (!row.passportSeries) missing.push('passportSeries');
   if (!row.passportNumber) missing.push('passportNumber');
   if (row.docType == null) missing.push('docType');
   if (!row.regionCode) missing.push('regionCode');
@@ -81,7 +81,6 @@ export interface AgreementRecord {
 
 export async function createKatmConsent(input: {
   channel: 'wizard' | 'self_service';
-  clientId?: number;
   userId?: number;
   sessionId?: string;
 }): Promise<AgreementRecord> {
@@ -89,7 +88,6 @@ export async function createKatmConsent(input: {
     .insert(agreements)
     .values({
       channel: input.channel,
-      clientId: input.clientId ?? null,
       userId: input.userId ?? null,
       sessionId: input.sessionId ?? null,
     })

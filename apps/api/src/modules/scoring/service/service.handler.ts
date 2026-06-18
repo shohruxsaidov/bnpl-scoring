@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '@db';
-import { users, clients } from '@db/schema';
+import { users } from '@db/schema';
 import { scoringHistories } from '../../deals/schema';
 import { katmSummary } from '../../integrations/katm/poller';
 import { addCard } from '../../integrations/plumgate/commands/add-card/add-card.handler';
@@ -149,9 +149,12 @@ export async function getScoringSessionStatus(sessionId: string, userId: number)
 // Card add: register card in PlumGate, triggers OTP to client's phone
 // ---------------------------------------------------------------------------
 
-export async function addScoringCard(
-  input: { sessionId: string; userId: number; cardNumber: string; expiry: string },
-) {
+export async function addScoringCard(input: {
+  sessionId: string;
+  userId: number;
+  cardNumber: string;
+  expiry: string;
+}) {
   await requireSession(input.sessionId, input.userId);
 
   const katmPipeline = await getPipeline(input.sessionId, 'katm');
@@ -168,7 +171,7 @@ export async function addScoringCard(
   if (!user) throw Object.assign(new Error('user_not_found'), { statusCode: 404 });
 
   const result = await addCard({
-    clientId: input.userId.toString(),
+    userId: input.userId.toString(),
     phone: user.phone,
     cardNumber: input.cardNumber,
     expiry: input.expiry,
@@ -181,9 +184,12 @@ export async function addScoringCard(
 // Card confirm: submit OTP to complete card registration
 // ---------------------------------------------------------------------------
 
-export async function confirmScoringCard(
-  input: { sessionId: string; userId: number; plumgateSessionId: string; otp: string },
-) {
+export async function confirmScoringCard(input: {
+  sessionId: string;
+  userId: number;
+  plumgateSessionId: string;
+  otp: string;
+}) {
   await requireSession(input.sessionId, input.userId);
 
   const card = await confirmCard({ sessionId: input.plumgateSessionId, otp: input.otp });
@@ -202,14 +208,12 @@ export interface CompleteScoringResult {
   criteriaScores: CriteriaScores;
 }
 
-export async function completeScoringCard(
-  input: {
-    sessionId: string;
-    userId: number;
-    plumCardId: string;
-    pcType: 'uzcard' | 'humo';
-  },
-): Promise<CompleteScoringResult> {
+export async function completeScoringCard(input: {
+  sessionId: string;
+  userId: number;
+  plumCardId: string;
+  pcType: 'uzcard' | 'humo';
+}): Promise<CompleteScoringResult> {
   await requireSession(input.sessionId, input.userId);
 
   const [katmPipeline, cardPipeline] = await Promise.all([
@@ -257,6 +261,7 @@ export async function completeScoringCard(
 
     const [user] = await db
       .select({
+        id: users.id,
         firstName: users.firstName,
         lastName: users.lastName,
         middleName: users.middleName,
@@ -281,17 +286,8 @@ export async function completeScoringCard(
         : undefined,
     );
 
-    // Look up any existing clients row for this PINFL (may span multiple merchants)
-    const [existingClient] = user?.pinfl
-      ? await db
-          .select({ id: clients.id })
-          .from(clients)
-          .where(eq(clients.pinfl, user.pinfl))
-          .limit(1)
-      : [];
-
     await db.insert(scoringHistories).values({
-      clientId: existingClient?.id ?? null,
+      userId: user!.id,
       firstName: user?.firstName ?? null,
       lastName: user?.lastName ?? null,
       middleName: user?.middleName ?? null,

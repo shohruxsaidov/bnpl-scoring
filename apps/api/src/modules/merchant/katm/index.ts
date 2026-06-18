@@ -3,7 +3,7 @@ import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import { Type } from '@sinclair/typebox';
 import { eq } from 'drizzle-orm';
 import { db } from '@db';
-import { clients } from '@db/schema';
+import { users } from '@db/schema';
 import {
   allocateKatmClaimId,
   createKatmConsent,
@@ -14,7 +14,7 @@ import { enqueueKatmPoll, katmSummary, saveKatmSir } from '../../integrations/ka
 import {
   loadOwnedActiveSession,
   setKatmClaimId,
-  setSessionClientId,
+  setSessionUserId,
   stampKatm,
   stampKatmPending,
   type SessionStepData,
@@ -26,7 +26,7 @@ export default async function merchantKatmRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
 
   const QueryBody = Type.Object({
-    clientId: Type.String({ minLength: 1 }),
+    userId: Type.String({ minLength: 1 }),
     dealSessionId: Type.String({ minLength: 1 }),
   });
 
@@ -46,7 +46,7 @@ export default async function merchantKatmRoutes(app: FastifyInstance) {
     { schema: { body: QueryBody }, preHandler: app.verifyMerchantJwt },
     async (request, reply) => {
       const p = request.user as JwtPayload;
-      const { clientId, dealSessionId } = request.body;
+      const { userId, dealSessionId } = request.body;
 
       let session;
       try {
@@ -60,13 +60,13 @@ export default async function merchantKatmRoutes(app: FastifyInstance) {
 
       const [client] = await db
         .select()
-        .from(clients)
-        .where(eq(clients.id, Number(clientId)))
+        .from(users)
+        .where(eq(users.id, Number(userId)))
         .limit(1);
 
-      if (!client) return reply.code(404).sendError('client_not_found');
+      if (!client) return reply.code(404).sendError('user_not_found');
 
-      await setSessionClientId(session, client.id);
+      await setSessionUserId(session, client.id);
 
       // Claim registration needs the full subject — surface what's missing so
       // the Agent can fill the gaps manually (pre-ADR-0025 rows lack them)
@@ -79,7 +79,7 @@ export default async function merchantKatmRoutes(app: FastifyInstance) {
       // pAgreementId/pAgreementDate (ADR-0025)
       const consent = await createKatmConsent({
         channel: 'wizard',
-        clientId: client.id,
+        userId: client.id,
         sessionId: session.id,
       });
 
@@ -95,7 +95,7 @@ export default async function merchantKatmRoutes(app: FastifyInstance) {
         consent,
         subject: {
           pinfl: client.pinfl,
-          passportSerial: client.passportSerial!,
+          passportSerial: client.passportSeries!,
           passportNumber: client.passportNumber!,
           docType: client.docType!,
           regionCode: client.regionCode!,
@@ -114,7 +114,7 @@ export default async function merchantKatmRoutes(app: FastifyInstance) {
         return reply.code(409).sendError('client_credit_banned');
       }
 
-      await saveKatmSir({ clientId: client.id }, outcome.katmSir);
+      await saveKatmSir({ userId: client.id }, outcome.katmSir);
 
       const consentDate = consent.agreementDate.toISOString();
 
@@ -136,7 +136,7 @@ export default async function merchantKatmRoutes(app: FastifyInstance) {
 
       const summary = katmSummary(outcome.result);
       await stampKatm(session, {
-        clientId,
+        userId,
         claimId,
         consentId: consent.agreementId,
         consentDate: consentDate.slice(0, 10),
@@ -177,7 +177,7 @@ export default async function merchantKatmRoutes(app: FastifyInstance) {
       if (data.katm) {
         const {
           raw: _raw,
-          clientId: _c,
+          userId: _c,
           claimId: _cl,
           consentId: _ci,
           consentDate: _cd,

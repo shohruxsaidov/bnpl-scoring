@@ -1,7 +1,7 @@
 import { and, eq, sql } from "drizzle-orm"
 import { db } from "@db"
 import { deals, dealPaymentSchedules } from "../../../../deals/schema"
-import { clients } from '@db/schema'
+import { users } from '@db/schema'
 
 export interface DealSearchResult {
   id: string
@@ -19,12 +19,12 @@ export async function searchDealsForManualPayment(q: string): Promise<DealSearch
     .select({
       id: deals.id,
       dealNumber: deals.dealNumber,
-      firstName: clients.firstName,
-      lastName: clients.lastName,
-      phone: clients.phone,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      phone: users.phone,
     })
     .from(deals)
-    .innerJoin(clients, eq(clients.id, deals.clientId))
+    .innerJoin(users, eq(users.id, deals.userId))
     .where(
       and(
         sql`deals.status NOT IN ('draft', 'declined')`,

@@ -6,7 +6,7 @@ import {
   manualPayments,
   dealComments,
 } from '../../../../deals/schema';
-import { clients, adminUsers } from '@db/schema';
+import { users, adminUsers } from '@db/schema';
 import type { ManualPayment } from '../../queries/list-manual-payments/list-manual-payments.handler';
 import type { CreateManualPaymentInput } from './create-manual-payment.command';
 
@@ -85,15 +85,15 @@ export async function createManualPayment(input: CreateManualPaymentInput): Prom
     }
 
     const dealRows = await tx
-      .select({ dealNumber: deals.dealNumber, clientId: deals.clientId })
+      .select({ dealNumber: deals.dealNumber, userId: deals.userId })
       .from(deals)
       .where(eq(deals.id, input.dealId));
     const deal = dealRows[0]!;
 
     const clientRows = await tx
-      .select({ firstName: clients.firstName, lastName: clients.lastName, phone: clients.phone })
-      .from(clients)
-      .where(eq(clients.id, deal.clientId!));
+      .select({ firstName: users.firstName, lastName: users.lastName, phone: users.phone })
+      .from(users)
+      .where(eq(users.id, deal.userId!));
     const client = clientRows[0]!;
 
     const adminRows = await tx

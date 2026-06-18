@@ -1,5 +1,4 @@
 import { integer, pgTable, serial, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
-import { clients } from './clients';
 import { users } from './users';
 
 // ---------------------------------------------------------------------------
@@ -11,7 +10,6 @@ import { users } from './users';
 export const agreements = pgTable('agreements', {
   id: serial('id').primaryKey(),
   // Exactly one of the two subjects is set, matching the channel
-  clientId: integer('client_id').references(() => clients.id),
   userId: integer('user_id').references(() => users.id),
   // 'wizard' | 'self_service'
   channel: varchar('channel', { length: 20 }).notNull(),

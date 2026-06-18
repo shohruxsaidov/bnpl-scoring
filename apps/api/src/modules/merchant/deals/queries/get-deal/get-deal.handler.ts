@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '@db';
 import { deals, dealItems, dealPaymentSchedules } from '../../../../deals/schema';
-import { clients, tariffs, merchantUsers, merchants, branches } from '@db/schema';
+import { users, tariffs, merchantUsers, merchants, branches } from '@db/schema';
 
 function serializeNumber(v: number | null | undefined): string | null {
   return v == null ? null : v.toString();
@@ -15,14 +15,14 @@ export async function getDealById(id: string, merchantId: number) {
   const rows = await db
     .select({
       deal: deals,
-      client: clients,
+      client: users,
       tariff: tariffs,
       agent: merchantUsers,
       branch: branches,
       merchant: merchants,
     })
     .from(deals)
-    .leftJoin(clients, eq(deals.clientId, clients.id))
+    .leftJoin(users, eq(deals.userId, users.id))
     .leftJoin(tariffs, eq(deals.tariffId, tariffs.id))
     .leftJoin(merchantUsers, eq(deals.agentId, merchantUsers.id))
     .leftJoin(branches, eq(deals.branchId, branches.id))
@@ -58,11 +58,11 @@ export async function getDealById(id: string, merchantId: number) {
     lang: (d.lang ?? 'ru') as 'ru' | 'uz',
     agentId: serializeNumber(d.agentId),
     agentName: agent?.fullName ?? '',
-    clientId: serializeNumber(d.clientId),
+    userId: serializeNumber(d.userId),
     clientName: c ? `${c.firstName} ${c.lastName}` : null,
     clientPinfl: c?.pinfl ?? null,
     clientPhone: c?.phone ?? null,
-    clientPassportSerial: c?.passportSerial ?? null,
+    clientPassportSeries: c?.passportSeries ?? null,
     clientPassportNumber: c?.passportNumber ?? null,
     tariffId: serializeNumber(d.tariffId),
     tariffName: t?.name ?? null,

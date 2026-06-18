@@ -1,12 +1,12 @@
 import { desc, eq } from "drizzle-orm"
 import { db } from '@db'
-import { clients } from '@db/schema'
+import { users } from '@db/schema'
 import { scoringHistories } from "../../../../deals/schema"
 
-export async function listClientScoring(id: number) {
-  const clientRows = await db.select({ pinfl: clients.pinfl }).from(clients).where(eq(clients.id, id)).limit(1)
-  if (!clientRows[0]) return []
-  const pinfl = clientRows[0].pinfl
+export async function listUserScoring(id: number) {
+  const userRows = await db.select({ pinfl: users.pinfl }).from(users).where(eq(users.id, id)).limit(1)
+  if (!userRows[0]) return []
+  const pinfl = userRows[0].pinfl
 
   const rows = await db
     .select()
@@ -16,7 +16,7 @@ export async function listClientScoring(id: number) {
 
   return rows.map((r) => ({
     id: r.id.toString(),
-    source: r.clientId != null ? ("wizard" as const) : ("self-service" as const),
+    source: r.userId != null ? ("wizard" as const) : ("self-service" as const),
     decision: r.decision,
     score: r.scoreSum != null ? Number(r.scoreSum) : 0,
     limit: Number(r.platformCreditLimit),

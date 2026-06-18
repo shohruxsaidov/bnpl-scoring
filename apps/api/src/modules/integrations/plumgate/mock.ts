@@ -34,7 +34,7 @@ export async function mockListCards(): Promise<PlumCard[]> {
 }
 
 export async function mockAddCard(params: {
-  clientId: string;
+  userId: string;
   cardNumber: string;
   expiry: string;
 }): Promise<PlumAddCardResult> {

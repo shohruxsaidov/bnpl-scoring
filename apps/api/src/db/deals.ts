@@ -1,10 +1,20 @@
-import { date, integer, jsonb, numeric, pgTable, serial, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import {
+  date,
+  integer,
+  jsonb,
+  numeric,
+  pgTable,
+  serial,
+  timestamp,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 import { merchants } from './merchants';
 import { branches } from './branches';
 import { merchantUsers } from './merchant-users';
-import { clients } from './clients';
 import { tariffs } from './tariffs';
 import { dealSessions } from './deal-sessions';
+import { users } from './users';
 
 // ---------------------------------------------------------------------------
 // deals
@@ -24,7 +34,7 @@ export const deals = pgTable('deals', {
   agentId: integer('agent_id')
     .notNull()
     .references(() => merchantUsers.id),
-  clientId: integer('client_id').references(() => clients.id),
+  userId: integer('user_id').references(() => users.id),
   tariffId: integer('tariff_id').references(() => tariffs.id),
   // The Wizard run that produced this Deal (null for deals predating ADR-0024)
   dealSessionId: uuid('deal_session_id').references(() => dealSessions.id),

@@ -3,7 +3,7 @@ import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox'
 import { Type } from '@sinclair/typebox'
 import { eq } from 'drizzle-orm'
 import { db } from '@db'
-import { clients } from '@db/schema'
+import { users } from '@db/schema'
 import { listCards } from '../../integrations/plumgate/queries/list-cards/list-cards.handler'
 import { addCard } from '../../integrations/plumgate/commands/add-card/add-card.handler'
 import { confirmCard } from '../../integrations/plumgate/commands/confirm-card/confirm-card.handler'
@@ -18,11 +18,11 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
   // ── Schemas ──────────────────────────────────────────────────────────────
 
   const ListQuery = Type.Object({
-    clientId: Type.String({ minLength: 1 }),
+    userId: Type.String({ minLength: 1 }),
   })
 
   const AddBody = Type.Object({
-    clientId: Type.String({ minLength: 1 }),
+    userId: Type.String({ minLength: 1 }),
     cardNumber: Type.String({ minLength: 16, maxLength: 19 }),
     expiry: Type.String({ minLength: 4, maxLength: 5 }),   // "MMYY" or "MM/YY"
   })
@@ -35,7 +35,7 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
   const ScoreBody = Type.Object({
     plumCardId: Type.String({ minLength: 1 }),
     pcType: Type.Union([Type.Literal('uzcard'), Type.Literal('humo')]),
-    clientId: Type.String({ minLength: 1 }),
+    userId: Type.String({ minLength: 1 }),
     dealSessionId: Type.String({ minLength: 1 }),
     // Card display fields — written to the session's card step server-side
     maskedPan: Type.String({ minLength: 1 }),
@@ -46,29 +46,29 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
 
   // ── Helper ───────────────────────────────────────────────────────────────
 
-  async function requireClient(clientId: string) {
-    const [client] = await db
-      .select({ id: clients.id, phone: clients.phone, pinfl: clients.pinfl })
-      .from(clients)
-      .where(eq(clients.id, Number(clientId)))
+  async function requireUser(userId: string) {
+    const [user] = await db
+      .select({ id: users.id, phone: users.phone, pinfl: users.pinfl })
+      .from(users)
+      .where(eq(users.id, Number(userId)))
       .limit(1)
 
-    if (!client) {
-      throw Object.assign(new Error('Client not found'), { statusCode: 404 })
+    if (!user) {
+      throw Object.assign(new Error('User not found'), { statusCode: 404 })
     }
-    return client
+    return user
   }
 
-  // ── GET /merchant/cards?clientId=... ─────────────────────────────────────
+  // ── GET /merchant/cards?userId=... ───────────────────────────────────────
 
   fastify.get(
     '/',
     { schema: { querystring: ListQuery }, preHandler: app.verifyMerchantJwt },
     async (request) => {
-      const { clientId } = request.query
-      await requireClient(clientId)
+      const { userId } = request.query
+      await requireUser(userId)
 
-      const cards = await listCards(clientId)
+      const cards = await listCards(userId)
       return { cards }
     },
   )
@@ -79,12 +79,12 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
     '/add',
     { schema: { body: AddBody }, preHandler: app.verifyMerchantJwt },
     async (request) => {
-      const { clientId, cardNumber, expiry } = request.body
-      const client = await requireClient(clientId)
+      const { userId, cardNumber, expiry } = request.body
+      const user = await requireUser(userId)
 
       const result = await addCard({
-        clientId,
-        phone: client.phone,
+        userId,
+        phone: user.phone,
         cardNumber,
         expiry,
       })
@@ -118,9 +118,9 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
       console.log('[score] body:', JSON.stringify(request.body))
       const p = request.user as { sub: string; merchantId: string }
       console.log('[score] user:', JSON.stringify(p))
-      const { plumCardId, pcType, clientId, dealSessionId, maskedPan, bank, holderName, expiry } = request.body
-      console.log('[score] requireClient, clientId:', clientId)
-      await requireClient(clientId)
+      const { plumCardId, pcType, userId, dealSessionId, maskedPan, bank, holderName, expiry } = request.body
+      console.log('[score] requireUser, userId:', userId)
+      await requireUser(userId)
       console.log('[score] requireClient OK')
 
       let session
@@ -146,10 +146,10 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
       const katm = (session.stepData as SessionStepData).katm
       console.log('[score] katm from session:', JSON.stringify(katm))
 
-      const [clientRow] = await db
-        .select({ birthDate: clients.birthDate, gender: clients.gender, nationality: clients.nationality })
-        .from(clients)
-        .where(eq(clients.id, Number(clientId)))
+      const [userRow] = await db
+        .select({ birthDate: users.birthDate, gender: users.gender, nationality: users.nationality })
+        .from(users)
+        .where(eq(users.id, Number(userId)))
         .limit(1)
 
       const criteriaScores: CriteriaScores = {
@@ -185,12 +185,12 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
             holderName,
           },
         },
-        ...(clientRow && {
+        ...(userRow && {
           client: {
             detail: {
-              birthDate: clientRow.birthDate,
-              gender: clientRow.gender,
-              nationality: clientRow.nationality,
+              birthDate: userRow.birthDate,
+              gender: String(userRow.gender),
+              nationality: userRow.nationality,
             },
           },
         }),
@@ -201,10 +201,10 @@ export default async function merchantCardRoutes(app: FastifyInstance) {
       // ever created; non-blocking — the wizard may continue if recording fails
       let scoringId: string | null = null
       try {
-        console.log('[score] createScoring, merchantId:', p.merchantId, 'clientId:', clientId, 'limit:', Math.round(result.limit))
+        console.log('[score] createScoring, merchantId:', p.merchantId, 'userId:', userId, 'limit:', Math.round(result.limit))
         const res = await createScoring({
           merchantId: Number(p.merchantId),
-          clientId: Number(clientId),
+          userId: Number(userId),
           scoreSum: result.score,
           coefficient,
           decision: result.decision,

@@ -1,7 +1,7 @@
 import { and, desc, eq, lt, ne } from 'drizzle-orm';
 import { db } from '@db';
 import { notifications } from '../schema';
-import { clients, merchantUsers, users } from '@db/schema';
+import { merchantUsers, users } from '@db/schema';
 import { ssePush } from '../../../lib/sse';
 import { sendPushToEmployee } from '../../push/service/service.handler';
 import { sendFcmToUser, type FcmNotificationType } from '../../push/fcm';
@@ -52,15 +52,15 @@ export async function notifyDealCreated(
     agentId: number;
     merchantId: number;
     branchId: number;
-    clientId: number;
+    userId: number;
     amountTiyin: number;
   },
 ) {
   const [[clientRow], [agentRow], employees] = await Promise.all([
     db
-      .select({ firstName: clients.firstName, lastName: clients.lastName })
-      .from(clients)
-      .where(eq(clients.id, opts.clientId))
+      .select({ firstName: users.firstName, lastName: users.lastName })
+      .from(users)
+      .where(eq(users.id, opts.userId))
       .limit(1),
     db
       .select({ fullName: merchantUsers.fullName })
@@ -102,7 +102,7 @@ export async function notifyPaymentReceived(
     dealId: string;
     merchantId: number;
     branchId: number;
-    clientId: number;
+    userId: number;
     paidTiyin: number;
     scheduleIndex: number;
     fullyPaid: boolean;
@@ -110,9 +110,9 @@ export async function notifyPaymentReceived(
 ) {
   const [[clientRow], employees] = await Promise.all([
     db
-      .select({ firstName: clients.firstName, lastName: clients.lastName })
-      .from(clients)
-      .where(eq(clients.id, opts.clientId))
+      .select({ firstName: users.firstName, lastName: users.lastName })
+      .from(users)
+      .where(eq(users.id, opts.userId))
       .limit(1),
     db
       .select({ id: merchantUsers.id, roles: merchantUsers.roles })
@@ -193,7 +193,7 @@ export async function deleteRead(actorType: ActorType, actorId: number) {
 export async function notifyDealDecision(
   opts: {
     dealId: string;
-    clientId: number;
+    userId: number;
     scoringDecision: string | null;
     lang: 'ru' | 'uz';
   },
@@ -203,28 +203,14 @@ export async function notifyDealDecision(
   const type: FcmNotificationType =
     opts.scoringDecision === 'approved' ? 'deal_approved' : 'deal_declined';
 
-  const [clientRow] = await db
-    .select({ pinfl: clients.pinfl })
-    .from(clients)
-    .where(eq(clients.id, opts.clientId))
-    .limit(1);
-  if (!clientRow) return;
-
-  const [userRow] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.pinfl, clientRow.pinfl))
-    .limit(1);
-  if (!userRow) return; // client hasn't registered on the portal yet
-
   await createNotification({
     actorType: 'client',
-    actorId: userRow.id,
+    actorId: opts.userId,
     type,
     params: { dealId: opts.dealId },
   });
 
-  sendFcmToUser(db, userRow.id, type, opts.lang, { dealId: opts.dealId }).catch(() => {});
+  sendFcmToUser(db, opts.userId, type, opts.lang, { dealId: opts.dealId }).catch(() => {});
 }
 
 export async function deleteOlderThan(days: number) {

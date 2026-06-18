@@ -4,10 +4,10 @@ import { mockListCards } from '../../mock';
 
 export type { PlumCard };
 
-export async function listCards(clientId: string): Promise<PlumCard[]> {
+export async function listCards(userId: string): Promise<PlumCard[]> {
   if (env.PLUM_MOCK) return mockListCards();
   const client = makePlumClient();
-  const reqParams = { userId: clientId };
+  const reqParams = { userId };
 
   const requestTimestamp = new Date();
   try {

@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { and, eq, gt, ilike, isNull, or } from 'drizzle-orm';
 import { db } from '@db';
-import { clientDevices, clientSessions, otpVerifications, users } from '@db/schema';
+import { userDevices, userSessions, otpVerifications, users } from '@db/schema';
 import { env } from '../../../../env';
 
 export type OtpPurpose = 'login' | 'register' | 'client_registration' | 'deal_signing';
@@ -108,9 +108,9 @@ export async function createSession(
   const expiresAt = new Date(Date.now() + env.SESSION_EXPIRES_DAYS * 24 * 60 * 60 * 1000);
 
   const [row] = await db
-    .insert(clientSessions)
+    .insert(userSessions)
     .values({ userId, sessionTokenHash, expiresAt })
-    .returning({ id: clientSessions.id });
+    .returning({ id: userSessions.id });
 
   return { sessionId: row!.id, sessionToken };
 }
@@ -124,12 +124,12 @@ export async function verifySession(sessionToken: string) {
 
   const [session] = await db
     .select()
-    .from(clientSessions)
+    .from(userSessions)
     .where(
       and(
-        eq(clientSessions.sessionTokenHash, sessionTokenHash),
-        isNull(clientSessions.revokedAt),
-        gt(clientSessions.expiresAt, new Date()),
+        eq(userSessions.sessionTokenHash, sessionTokenHash),
+        isNull(userSessions.revokedAt),
+        gt(userSessions.expiresAt, new Date()),
       ),
     )
     .limit(1);
@@ -150,10 +150,10 @@ export async function upsertDevice(input: {
   appVersion: string;
 }): Promise<void> {
   await db
-    .insert(clientDevices)
+    .insert(userDevices)
     .values(input)
     .onConflictDoUpdate({
-      target: clientDevices.deviceId,
+      target: userDevices.deviceId,
       set: {
         userId: input.userId,
         fcmToken: input.fcmToken,
@@ -166,16 +166,16 @@ export async function upsertDevice(input: {
 
 export async function clearDeviceFcmToken(deviceId: string): Promise<void> {
   await db
-    .update(clientDevices)
+    .update(userDevices)
     .set({ fcmToken: null, updatedAt: new Date() })
-    .where(eq(clientDevices.deviceId, deviceId));
+    .where(eq(userDevices.deviceId, deviceId));
 }
 
 /** Revoke the session matching the given raw token, if any. */
 export async function revokeSession(sessionToken: string): Promise<void> {
   const sessionTokenHash = hashToken(sessionToken);
   await db
-    .update(clientSessions)
+    .update(userSessions)
     .set({ revokedAt: new Date() })
-    .where(eq(clientSessions.sessionTokenHash, sessionTokenHash));
+    .where(eq(userSessions.sessionTokenHash, sessionTokenHash));
 }

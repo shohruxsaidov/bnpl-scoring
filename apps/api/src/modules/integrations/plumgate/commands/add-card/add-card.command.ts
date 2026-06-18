@@ -1,5 +1,5 @@
 export interface AddCardCommand {
-  clientId: string;
+  userId: string;
   phone: string;
   cardNumber: string;
   expiry: string;

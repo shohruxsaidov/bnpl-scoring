@@ -1,20 +1,20 @@
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '@db';
-import { clients, users, merchants, branches, tariffs } from '@db/schema';
+import { users, merchants, branches, tariffs } from '@db/schema';
 import { deals, scoringHistories } from '../../../../deals/schema';
 
-export async function getClientOverview(id: number) {
-  const clientRows = await db.select().from(clients).where(eq(clients.id, id)).limit(1);
-  const client = clientRows[0];
-  if (!client) return null;
+export async function getUserOverview(id: number) {
+  const userRows = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  const user = userRows[0];
+  if (!user) return null;
 
-  const pinfl = client.pinfl;
+  const pinfl = user.pinfl;
 
-  const allClientRows = await db
-    .select({ id: clients.id })
-    .from(clients)
-    .where(eq(clients.pinfl, pinfl));
-  const allClientIds = allClientRows.map((r) => r.id);
+  const allUserRows = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.pinfl, pinfl));
+  const allUserIds = allUserRows.map((r) => r.id);
 
   let creditLimit: number | null = null;
   let creditLimitScoredAt: string | null = null;
@@ -35,13 +35,13 @@ export async function getClientOverview(id: number) {
   }
 
   let committedAmount = 0;
-  if (allClientIds.length > 0) {
+  if (allUserIds.length > 0) {
     const activeDeals = await db
       .select({ amount: deals.amount })
       .from(deals)
       .where(
         and(
-          inArray(deals.clientId, allClientIds),
+          inArray(deals.userId, allUserIds),
           inArray(deals.status, ['active', 'overdue', 'scoring', 'approved']),
         ),
       );
@@ -51,13 +51,13 @@ export async function getClientOverview(id: number) {
   const availableBalance = creditLimit != null ? Math.max(0, creditLimit - committedAmount) : null;
 
   return {
-    id: client.id.toString(),
-    pinfl: client.pinfl,
-    phone: client.phone,
-    fullName: `${client.firstName} ${client.lastName}`,
-    middleName: client.middleName ?? null,
-    birthDate: client.birthDate,
-    createdAt: client.createdAt.toISOString(),
+    id: user.id.toString(),
+    pinfl: user.pinfl,
+    phone: user.phone,
+    fullName: `${user.firstName} ${user.lastName}`,
+    middleName: user.middleName ?? null,
+    birthDate: user.birthDate,
+    createdAt: user.createdAt.toISOString(),
     creditLimit,
     availableBalance,
     creditLimitScoredAt,

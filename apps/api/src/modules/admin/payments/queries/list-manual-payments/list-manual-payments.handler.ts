@@ -1,7 +1,7 @@
 import { desc, eq } from "drizzle-orm"
 import { db } from "@db"
 import { deals, dealPaymentSchedules, manualPayments } from "../../../../deals/schema"
-import { clients, adminUsers } from '@db/schema'
+import { users, adminUsers } from '@db/schema'
 
 export interface ManualPayment {
   id: string
@@ -26,14 +26,14 @@ export async function listManualPayments(): Promise<ManualPayment[]> {
       paymentType: manualPayments.paymentType,
       note: manualPayments.note,
       createdAt: manualPayments.createdAt,
-      firstName: clients.firstName,
-      lastName: clients.lastName,
-      clientPhone: clients.phone,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      clientPhone: users.phone,
       adminName: adminUsers.fullName,
     })
     .from(manualPayments)
     .innerJoin(deals, eq(manualPayments.dealId, deals.id))
-    .innerJoin(clients, eq(clients.id, deals.clientId))
+    .innerJoin(users, eq(users.id, deals.userId))
     .leftJoin(adminUsers, eq(manualPayments.adminUserId, adminUsers.id))
     .orderBy(desc(manualPayments.createdAt))
 

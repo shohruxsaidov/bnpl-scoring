@@ -1,7 +1,7 @@
 import { and, asc, desc, eq } from 'drizzle-orm';
 import { db } from '@db';
 import { deals } from '../../../../deals/schema';
-import { clients, tariffs, merchantUsers } from '@db/schema';
+import { users, tariffs, merchantUsers } from '@db/schema';
 
 function serializeNumber(v: number | null | undefined): string | null {
   return v == null ? null : v.toString();
@@ -13,7 +13,7 @@ function formatDealNumber(n: number | null | undefined): string {
 
 function toDealDto(
   d: typeof deals.$inferSelect,
-  c: typeof clients.$inferSelect | null,
+  c: typeof users.$inferSelect | null,
   t: typeof tariffs.$inferSelect | null,
   agentName: string,
 ) {
@@ -29,11 +29,11 @@ function toDealDto(
     lang: (d.lang ?? 'ru') as 'ru' | 'uz',
     agentId: serializeNumber(d.agentId),
     agentName,
-    clientId: serializeNumber(d.clientId),
+    userId: serializeNumber(d.userId),
     clientName: c ? `${c.firstName} ${c.lastName}` : null,
     clientPinfl: c?.pinfl ?? null,
     clientPhone: c?.phone ?? null,
-    clientPassportSerial: c?.passportSerial ?? null,
+    clientPassportSeries: c?.passportSeries ?? null,
     clientPassportNumber: c?.passportNumber ?? null,
     tariffId: serializeNumber(d.tariffId),
     tariffName: t?.name ?? null,
@@ -60,9 +60,9 @@ export async function listDeals(
         : deals.createdAt;
 
   const rows = await db
-    .select({ deal: deals, client: clients, tariff: tariffs, agent: merchantUsers })
+    .select({ deal: deals, client: users, tariff: tariffs, agent: merchantUsers })
     .from(deals)
-    .leftJoin(clients, eq(deals.clientId, clients.id))
+    .leftJoin(users, eq(deals.userId, users.id))
     .leftJoin(tariffs, eq(deals.tariffId, tariffs.id))
     .leftJoin(merchantUsers, eq(deals.agentId, merchantUsers.id))
     .where(filter)
