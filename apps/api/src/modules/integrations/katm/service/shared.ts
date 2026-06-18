@@ -44,11 +44,6 @@ export function security() {
   return { pLogin: env.KATM_LOGIN, pPassword: env.KATM_PASSWORD };
 }
 
-/** KATM date format: yyyy-MM-dd'T'HH:mm:ss.SSSZ */
-export function katmDate(d: Date): string {
-  return d.toISOString().replace(/Z$/, '+0000');
-}
-
 // ---------------------------------------------------------------------------
 // Vendor envelope + low-level call helper
 // ---------------------------------------------------------------------------

@@ -1,6 +1,7 @@
 import { env } from '@env';
-import { callKatm, assertOk, security, katmDate } from '../../service/shared';
+import { callKatm, assertOk, security } from '../../service/shared';
 import type { RegisterClaimCommand } from './register-claim.command';
+const TERM_MONTH = 3;
 
 export interface RegisterClaimResult {
   /** KATM-SIR — the bureau's subject identifier */
@@ -12,7 +13,7 @@ export interface RegisterClaimResult {
 export async function registerClaim(params: RegisterClaimCommand): Promise<RegisterClaimResult> {
   const now = new Date();
   const creditEndDate = new Date(now);
-  creditEndDate.setMonth(creditEndDate.getMonth() + env.KATM_CLAIM_TERM_MONTHS);
+  creditEndDate.setMonth(creditEndDate.getMonth() + TERM_MONTH);
 
   const data = await callKatm<Record<string, unknown> & { clientId?: string }>(
     'v1/claim/registration',
@@ -21,9 +22,9 @@ export async function registerClaim(params: RegisterClaimCommand): Promise<Regis
       data: {
         pCode: env.KATM_CODE,
         pClaimId: params.claimId,
-        pClaimDate: katmDate(now),
+        pClaimDate: now.toISOString(),
         pAgreementId: params.agreementId,
-        pAgreementDate: katmDate(params.agreementDate),
+        pAgreementDate: new Date(params.agreementDate).toISOString(),
         pPinfl: params.pinfl,
         pDocSeries: params.passportSeries,
         pDocNumber: params.passportNumber,
@@ -33,8 +34,8 @@ export async function registerClaim(params: RegisterClaimCommand): Promise<Regis
         pAddress: params.address,
         pPhone: params.phone,
         pCreditAmount: params.amount,
-        pCurrency: 860,
-        pCreditEndDate: katmDate(creditEndDate),
+        pCurrency: 860, // 860 uz currency
+        pCreditEndDate: creditEndDate.toISOString(),
       },
     },
   );
