@@ -21,7 +21,7 @@ import {
   stampKatmPending,
   type DealSessionRow,
   type KatmStamp,
-} from '../../merchant/deal-sessions/service'
+} from '../../merchant/deal-sessions/service/service.handler'
 import { checkReportStatus, type KatmResult } from './service'
 
 export const KATM_POLL_QUEUE = 'katm-report-poll'
@@ -116,7 +116,7 @@ async function finalizeWizard(db: Db, data: KatmPollJobData, result: KatmResult)
     raw: result.raw ?? null,
     ...katmSummary(result),
   }
-  await stampKatm(db, session, stamp)
+  await stampKatm(session, stamp)
   ssePush('employee', session.agentId.toString(), 'katm.completed', {
     dealSessionId: session.id,
     ...katmSummary(result),
@@ -126,7 +126,7 @@ async function finalizeWizard(db: Db, data: KatmPollJobData, result: KatmResult)
 async function failWizard(db: Db, data: KatmPollJobData, error: string): Promise<void> {
   const session = await loadWizardSession(db, data)
   if (!session) return
-  await stampKatmPending(db, session, {
+  await stampKatmPending(session, {
     status: 'failed',
     startedAt: new Date().toISOString(),
     error,

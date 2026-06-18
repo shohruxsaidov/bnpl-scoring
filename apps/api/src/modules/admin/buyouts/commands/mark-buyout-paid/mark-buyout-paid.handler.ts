@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm"
 import { db } from "@db"
-import { buyouts, deals, dealItems } from "../../../deals/schema"
+import { buyouts, deals, dealItems } from "../../../../deals/schema"
 import { merchants, branches, merchantUsers, clients } from '@db/schema'
 import type { BuyoutDto } from "../../queries/list-buyouts/list-buyouts.handler"
 

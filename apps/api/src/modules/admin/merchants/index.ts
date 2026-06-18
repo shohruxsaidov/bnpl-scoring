@@ -3,7 +3,7 @@ import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
 import type { FastifyInstance } from "fastify"
 import { randomUUID } from "node:crypto"
 import { listMerchants } from "./queries/list-merchants/list-merchants.handler"
-import { getScoringModel } from "../scoringModel/queries/get-scoring-model"
+import { getScoringModel } from "../scoringModel/queries/get-scoring-model/get-scoring-model.handler"
 import { getMerchant } from "./queries/get-merchant/get-merchant.handler"
 import { listDocuments } from "./queries/list-documents/list-documents.handler"
 import { getMerchantTariffs } from "./queries/get-merchant-tariffs/get-merchant-tariffs.handler"
@@ -14,13 +14,13 @@ import { assignTariff } from "./commands/assign-tariff/assign-tariff.handler"
 import { removeTariff } from "./commands/remove-tariff/remove-tariff.handler"
 import { listBranches } from "../branches/queries/list-branches/list-branches.handler"
 import { createBranch } from "../branches/commands/create-branch/create-branch.handler"
-import { listEnabledCategories } from "../categories/queries/list-enabled-categories"
-import { getCategory } from "../categories/queries/get-category"
-import { enableMerchantCategory } from "../categories/commands/enable-merchant-category"
-import { disableMerchantCategory } from "../categories/commands/disable-merchant-category"
-import { isCategoryEnabledForMerchant } from "../categories/queries/is-category-enabled"
-import { listProducts } from "../products/queries/list-products"
-import { createProduct } from "../products/commands/create-product"
+import { listEnabledCategories } from "../categories/queries/list-enabled-categories/list-enabled-categories.handler"
+import { getCategory } from "../categories/queries/get-category/get-category.handler"
+import { enableMerchantCategory } from "../categories/commands/enable-merchant-category/enable-merchant-category.handler"
+import { disableMerchantCategory } from "../categories/commands/disable-merchant-category/disable-merchant-category.handler"
+import { isCategoryEnabledForMerchant } from "../categories/queries/is-category-enabled/is-category-enabled.handler"
+import { listProducts } from "../products/queries/list-products/list-products.handler"
+import { createProduct } from "../products/commands/create-product/create-product.handler"
 import {
   serializeMerchant,
   serializeBranch,
@@ -31,7 +31,6 @@ import {
 
 export default async function adminMerchantRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
-  const db = app.db
 
   const CreateMerchantBody = Type.Object({
     name: Type.String({ minLength: 1 }),
@@ -98,7 +97,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     { schema: { body: CreateMerchantBody }, preHandler },
     async (request, reply) => {
       if (request.body.scoringModelId !== undefined) {
-        const model = await getScoringModel(db, request.body.scoringModelId)
+        const model = await getScoringModel(request.body.scoringModelId)
         if (!model) return reply.code(404).sendError("scoring_model_not_found")
       }
       const merchant = await createMerchant(request.body)
@@ -121,7 +120,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     { schema: { params: IdParams, body: UpdateMerchantBody }, preHandler },
     async (request, reply) => {
       if (request.body.scoringModelId != null) {
-        const model = await getScoringModel(db, request.body.scoringModelId)
+        const model = await getScoringModel(request.body.scoringModelId)
         if (!model) return reply.code(404).sendError("scoring_model_not_found")
       }
       const merchant = await updateMerchant({ id: Number(request.params.id), patch: request.body })
@@ -160,7 +159,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     "/:id/categories",
     { schema: { params: IdParams }, preHandler },
     async (request) => {
-      const rows = await listEnabledCategories(db, Number(request.params.id))
+      const rows = await listEnabledCategories(Number(request.params.id))
       return { categories: rows.map(serializeCategory) }
     },
   )
@@ -169,9 +168,9 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     "/:id/categories/:categoryId",
     { schema: { params: CategoryIdParams }, preHandler },
     async (request, reply) => {
-      const category = await getCategory(db, Number(request.params.categoryId))
+      const category = await getCategory(Number(request.params.categoryId))
       if (!category) return reply.code(404).sendError("not_found")
-      await enableMerchantCategory(db, category.id, Number(request.params.id))
+      await enableMerchantCategory(category.id, Number(request.params.id))
       return reply.code(204).send()
     },
   )
@@ -180,7 +179,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     "/:id/categories/:categoryId",
     { schema: { params: CategoryIdParams }, preHandler },
     async (request, reply) => {
-      await disableMerchantCategory(db, Number(request.params.categoryId), Number(request.params.id))
+      await disableMerchantCategory(Number(request.params.categoryId), Number(request.params.id))
       return reply.code(204).send()
     },
   )
@@ -191,7 +190,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     "/:id/products",
     { schema: { params: IdParams }, preHandler },
     async (request) => {
-      const rows = await listProducts(db, Number(request.params.id))
+      const rows = await listProducts(Number(request.params.id))
       return { products: rows.map(serializeProduct) }
     },
   )
@@ -203,9 +202,9 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
       const merchant = await getMerchant(Number(request.params.id))
       if (!merchant) return reply.code(404).sendError("not_found")
       const categoryId = Number(request.body.categoryId)
-      const enabled = await isCategoryEnabledForMerchant(db, categoryId, merchant.id)
+      const enabled = await isCategoryEnabledForMerchant(categoryId, merchant.id)
       if (!enabled) return reply.code(400).sendError("category_not_enabled")
-      const product = await createProduct(db, {
+      const product = await createProduct({
         merchantId: merchant.id,
         categoryId,
         name: request.body.name,

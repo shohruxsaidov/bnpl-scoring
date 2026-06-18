@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { adminUsers, rolePermissions, roles } from '@db/schema';
-import { hashPassword } from "../modules/auth/admin/service";
+import { hashPassword } from "../modules/auth/admin/service/service.handler";
 import { MERCHANT_FEATURES } from "../rbac/features";
 
 // Usage: tsx src/scripts/create-superadmin.ts [email] [password] [fullName]

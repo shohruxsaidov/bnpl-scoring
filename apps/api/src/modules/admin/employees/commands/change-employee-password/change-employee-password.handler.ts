@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm"
 import { db } from "@db"
 import { merchantUsers } from '@db/schema'
-import { hashPassword } from "../../../../auth/admin/service"
+import { hashPassword } from "../../../../auth/admin/service/service.handler"
 
 export async function changeEmployeePassword(id: number, password: string) {
   const passwordHash = await hashPassword(password)

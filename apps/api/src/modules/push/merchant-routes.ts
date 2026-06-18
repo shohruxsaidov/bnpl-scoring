@@ -1,12 +1,11 @@
 import { Type } from '@sinclair/typebox';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
-import { upsertSubscription, deleteSubscription } from './service';
+import { upsertSubscription, deleteSubscription } from './service/service.handler';
 import { env } from '../../env';
 
 export default async function merchantPushRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
-  const db = app.db;
   const preHandler = app.verifyMerchantJwt;
 
   /* ── GET /vapid-key ─────────────────────────────────────────────────────── */
@@ -26,7 +25,7 @@ export default async function merchantPushRoutes(app: FastifyInstance) {
     { schema: { body: SubscribeBody }, preHandler },
     async (request, reply) => {
       const employeeId = +(request.user as { sub: string }).sub;
-      await upsertSubscription(db, 'employee', employeeId, request.body);
+      await upsertSubscription('employee', employeeId, request.body);
       return reply.code(201).send({ ok: true });
     },
   );
@@ -41,7 +40,7 @@ export default async function merchantPushRoutes(app: FastifyInstance) {
     '/subscribe',
     { schema: { body: UnsubscribeBody }, preHandler },
     async (request) => {
-      await deleteSubscription(db, request.body.endpoint);
+      await deleteSubscription(request.body.endpoint);
       return { ok: true };
     },
   );

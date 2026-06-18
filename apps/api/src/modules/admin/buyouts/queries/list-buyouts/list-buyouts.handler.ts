@@ -1,6 +1,6 @@
 import { desc, eq, inArray } from "drizzle-orm"
 import { db } from "@db"
-import { buyouts, deals, dealItems } from "../../../deals/schema"
+import { buyouts, deals, dealItems } from "../../../../deals/schema"
 import { merchants, branches, merchantUsers, clients } from '@db/schema'
 import type { ListBuyoutsInput } from "./list-buyouts.query"
 

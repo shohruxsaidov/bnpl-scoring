@@ -3,8 +3,8 @@ import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { getBranch } from './queries/get-branch/get-branch.handler';
 import { updateBranch } from './commands/update-branch/update-branch.handler';
-import { listEmployees } from '../employees/queries/list-employees';
-import { createEmployee } from '../employees/commands/create-employee';
+import { listEmployees } from '../employees/queries/list-employees/list-employees.handler';
+import { createEmployee } from '../employees/commands/create-employee/create-employee.handler';
 
 function serializeBranch(b: NonNullable<Awaited<ReturnType<typeof getBranch>>>) {
   return { ...b, id: b.id.toString(), merchantId: b.merchantId.toString() };
@@ -21,7 +21,6 @@ function serializeEmployee(e: NonNullable<Awaited<ReturnType<typeof createEmploy
 
 export default async function adminBranchRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
-  const db = app.db;
 
   const IdParams = Type.Object({ id: Type.String() });
 
@@ -62,7 +61,7 @@ export default async function adminBranchRoutes(app: FastifyInstance) {
   );
 
   fastify.get('/:id/employees', { schema: { params: IdParams }, preHandler }, async (request) => {
-    const rows = await listEmployees(db, Number(request.params.id));
+    const rows = await listEmployees(Number(request.params.id));
     return { employees: rows.map(serializeEmployee) };
   });
 
@@ -72,7 +71,7 @@ export default async function adminBranchRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const branch = await getBranch(+request.params.id);
       if (!branch) return reply.code(404).sendError('not_found');
-      const employee = await createEmployee(db, {
+      const employee = await createEmployee({
         phone: request.body.phone,
         password: request.body.password,
         fullName: request.body.fullName,

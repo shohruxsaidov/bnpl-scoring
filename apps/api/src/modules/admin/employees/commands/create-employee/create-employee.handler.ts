@@ -1,6 +1,6 @@
 import { db } from '@db';
 import { merchantUsers } from '@db/schema';
-import { hashPassword } from '../../../../auth/admin/service';
+import { hashPassword } from '../../../../auth/admin/service/service.handler';
 import { CreateEmployeeCommand } from './create-employee.command';
 
 export async function createEmployee(input: CreateEmployeeCommand) {

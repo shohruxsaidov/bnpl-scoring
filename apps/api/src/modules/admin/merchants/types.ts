@@ -1,7 +1,7 @@
 import type { getMerchant } from "./queries/get-merchant/get-merchant.handler"
 import type { createBranch } from "../branches/commands/create-branch/create-branch.handler"
-import type { listEnabledCategories } from "../categories/queries/list-enabled-categories"
-import type { createProduct } from "../products/commands/create-product"
+import type { listEnabledCategories } from "../categories/queries/list-enabled-categories/list-enabled-categories.handler"
+import type { createProduct } from "../products/commands/create-product/create-product.handler"
 import type { recordDocument } from "./commands/record-document/record-document.handler"
 
 export function serializeMerchant(m: NonNullable<Awaited<ReturnType<typeof getMerchant>>>) {

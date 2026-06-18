@@ -1,6 +1,6 @@
 import { db } from '@db'
 import { adminUsers } from '@db/schema'
-import { hashPassword } from "../../../../auth/admin/service"
+import { hashPassword } from "../../../../auth/admin/service/service.handler"
 import type { CreateAdminUserCommand } from "./create-user.command"
 
 export async function createAdminUser(input: CreateAdminUserCommand) {
