@@ -8,12 +8,11 @@
     "module": "es2022",
     "moduleResolution": "bundler",
     "skipLibCheck": true,
-    "baseUrl": ".",
     "paths": {
-      "@db": ["src/db/index"],
-      "@db/*": ["src/db/*"],
-      "@redis": ["src/redis"],
-      "@minio": ["src/minio"]
+      "@db": ["./src/db/index"],
+      "@db/*": ["./src/db/*"],
+      "@redis": ["./src/redis"],
+      "@minio": ["./src/minio"]
     }
   },
   "include": ["src"],
