@@ -4,12 +4,10 @@ import { Type } from '@sinclair/typebox'
 import { eq } from 'drizzle-orm'
 import { db } from '@db'
 import { clients } from '@db/schema'
-import {
-  listCards,
-  addCard,
-  confirmCard,
-  scoreCard,
-} from '../../integrations/plumgate/service/service.handler'
+import { listCards } from '../../integrations/plumgate/queries/list-cards/list-cards.handler'
+import { addCard } from '../../integrations/plumgate/commands/add-card/add-card.handler'
+import { confirmCard } from '../../integrations/plumgate/commands/confirm-card/confirm-card.handler'
+import { scoreCard } from '../../integrations/plumgate/queries/score-card/score-card.handler'
 import { createScoring } from '../scoringHistory/commands/create-scoring/create-scoring.handler'
 import { loadOwnedActiveSession, saveStep, stampScoring, type SessionStepData } from '../deal-sessions/service/service.handler'
 import type { CriteriaScores } from '../../scoring/service/service.handler'

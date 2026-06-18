@@ -3,7 +3,9 @@ import { db } from '@db';
 import { users, clients } from '@db/schema';
 import { scoringHistories } from '../../deals/schema';
 import { katmSummary } from '../../integrations/katm/poller';
-import { addCard, confirmCard, scoreCard } from '../../integrations/plumgate/service/service.handler';
+import { addCard } from '../../integrations/plumgate/commands/add-card/add-card.handler';
+import { confirmCard } from '../../integrations/plumgate/commands/confirm-card/confirm-card.handler';
+import { scoreCard } from '../../integrations/plumgate/queries/score-card/score-card.handler';
 import type { KatmResult } from '../../integrations/katm/service/shared';
 import { scoringSessions, scoringPipelines } from '../schema';
 

@@ -10,7 +10,7 @@
 
 import { sql } from 'drizzle-orm';
 import { db } from '@db';
-import { agreements } from '../schema';
+import { agreements } from '@db/agreements';
 import { registerClaim } from './commands/register-claim/register-claim.handler';
 import { request077Report } from './queries/request-077-report/request-077-report.handler';
 import type { KatmResult } from './service/shared';

@@ -1,5 +1,5 @@
 import type { Db } from "../../db";
-import { integrationLogs } from "./schema";
+import { integrationLogs } from "@db/integration-logs";
 
 const REDACTED = "[REDACTED]";
 const SENSITIVE_KEYS = new Set([

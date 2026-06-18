@@ -1,4 +1,4 @@
-import type { PlumCard, PlumAddCardResult, PlumScoreResult } from './service/service.handler';
+import type { PlumCard, PlumAddCardResult, PlumScoreResult } from './service/shared';
 
 function delay(ms: number) {
   return new Promise<void>((r) => setTimeout(r, ms));
