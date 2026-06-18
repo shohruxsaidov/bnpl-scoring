@@ -28,7 +28,7 @@ export default async function merchantScoringRoutes(app: FastifyInstance) {
   });
 
   fastify.post(
-    'start',
+    '/start',
     { schema: { body: QueryBody }, preHandler: app.verifyMerchantJwt },
     async (request, reply) => {
       const p = request.user as JwtPayload;

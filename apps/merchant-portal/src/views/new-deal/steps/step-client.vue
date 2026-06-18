@@ -403,7 +403,7 @@ async function onNext() {
   saveError.value = ''
   try {
     await saveSessionStep(deal.dealSessionId!, 'client', {
-      clientId: confirmedClient.value.id,
+      userId: confirmedClient.value.id,
       isNewClient: isNewClient.value,
       myidVerified: isNewClient.value,
       katmConsent: true,

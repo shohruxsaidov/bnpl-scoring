@@ -25,7 +25,7 @@ async function fetchCards() {
   loadCardsError.value = null
   try {
     const data = await apiFetch<{ cards: Card[] }>(
-      `/merchant/cards?clientId=${clientId}`,
+      `/merchant/cards?userId=${clientId}`,
     )
     cards.value = data.cards
     // Restore previously selected card if it still exists in the list
@@ -236,7 +236,7 @@ async function runScoring(): Promise<CardScoreResult | null> {
         body: JSON.stringify({
           plumCardId: selectedCard.value.plumCardId,
           pcType: selectedCard.value.pcType,
-          clientId: deal.sessionData.client.id,
+          userId: deal.sessionData.client.id,
           dealSessionId: deal.dealSessionId,
           maskedPan: selectedCard.value.maskedPan,
           bank: selectedCard.value.bank,
@@ -348,11 +348,13 @@ async function next() {
       <template v-if="!addSessionId">
         <div class="field">
           <label class="field-label">{{ $t('stepCard.cardNumber') }}</label>
-          <InputText :value="newPan" placeholder="8600 1234 5678 9012" class="font-mono" maxlength="19" inputmode="numeric" @input="handlePanInput" />
+          <InputText :value="newPan" placeholder="8600 1234 5678 9012" class="font-mono" maxlength="19"
+            inputmode="numeric" @input="handlePanInput" />
         </div>
         <div class="field" style="max-width: 140px">
           <label class="field-label">{{ $t('stepCard.expiry') }}</label>
-          <InputText :value="newExpiry" placeholder="08/27" class="font-mono" maxlength="5" inputmode="numeric" @input="handleExpiryInput" />
+          <InputText :value="newExpiry" placeholder="08/27" class="font-mono" maxlength="5" inputmode="numeric"
+            @input="handleExpiryInput" />
         </div>
         <div class="add-actions">
           <button class="btn-ghost" :disabled="addLoading" @click="cancelAdd">

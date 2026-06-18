@@ -24,7 +24,7 @@ export default async function merchantModule(app: FastifyInstance) {
   await app.register(merchantDealSessionRoutes, { prefix: '/merchant/deal-sessions' });
   await app.register(merchantScoringHistoryRoutes, { prefix: '/merchant/scoring-history' });
   await app.register(merchantKatmRoutes, { prefix: '/merchant/katm' });
-  await app.register(merchantScoringRoutes, { prefix: 'merchant/scoring' });
+  await app.register(merchantScoringRoutes, { prefix: '/merchant/scoring' });
   await app.register(mxikRoutes, { prefix: '/merchant/mxik', preHandler: app.verifyMerchantJwt });
   // Region reference: any authenticated merchant user.
   await app.register(regionRoutes, {
