@@ -1,5 +1,5 @@
 {
-  "id": "f78dbf2b-9b00-48c0-85c2-c41af6ba37e8",
+  "id": "0e7a9086-70bc-4f30-b28e-fc1279df4711",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1660,6 +1660,96 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.katm_claims": {
+      "name": "katm_claims",
+      "schema": "",
+      "columns": {
+        "claim_id": {
+          "name": "claim_id",
+          "type": "varchar(20)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'created'"
+        },
+        "channel": {
+          "name": "channel",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "session_id": {
+          "name": "session_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "katm_sir": {
+          "name": "katm_sir",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "verified": {
+          "name": "verified",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "katm_claims_user_id_users_id_fk": {
+          "name": "katm_claims_user_id_users_id_fk",
+          "tableFrom": "katm_claims",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.manual_payments": {
       "name": "manual_payments",
       "schema": "",
@@ -1978,13 +2068,13 @@
         },
         "min_amount": {
           "name": "min_amount",
-          "type": "integer",
+          "type": "numeric(2)",
           "primaryKey": false,
           "notNull": false
         },
         "max_amount": {
           "name": "max_amount",
-          "type": "integer",
+          "type": "numeric(2)",
           "primaryKey": false,
           "notNull": false
         },

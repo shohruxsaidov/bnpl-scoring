@@ -318,6 +318,9 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           address: client.address!,
           phone: client.phone,
         },
+        userId: client.id,
+        sessionId: session.id,
+        channel: 'wizard',
       });
 
       if (outcome.status === 'banned') {

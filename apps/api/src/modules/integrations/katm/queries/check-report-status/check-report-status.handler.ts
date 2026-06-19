@@ -1,13 +1,24 @@
 import { env } from '@env';
-import { callKatm, assertOk, security, KATM_REPORT_PENDING, decodeReport } from '../../service/shared';
-import type { ReportOutcome, ReportData } from '../../service/shared';
+import {
+  callKatm,
+  assertOk,
+  security,
+  KATM_REPORT_PENDING,
+  decodeReport,
+  parseKatm077ReportResponse,
+} from '../../service/shared';
+import type { ReportOutcome, ReportData, KatmResponse } from '../../service/shared';
 
 export type { ReportOutcome } from '../../service/shared';
 
-export async function checkReportStatus(params: {
+export async function checkReportStatus<T = unknown>(params: {
   claimId: string;
   token: string;
-}): Promise<ReportOutcome> {
+}): Promise<{
+  status: 'ready' | 'pending';
+  token?: string;
+  result?: T;
+}> {
   const data = await callKatm<ReportData>('v1/credit/report/status', {
     security: security(),
     data: {
@@ -23,5 +34,6 @@ export async function checkReportStatus(params: {
   if (data.result === KATM_REPORT_PENDING || !data.reportBase64) {
     return { status: 'pending', token: params.token };
   }
-  return { status: 'ready', result: decodeReport('credit/report/status', data.reportBase64) };
+  const decode = decodeReport<T>('credit/report/status', data.reportBase64);
+  return { status: 'ready', result: decode };
 }

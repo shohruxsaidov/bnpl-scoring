@@ -18,6 +18,7 @@ export * from './deals';
 export * from './files';
 export * from './integration-logs';
 export * from './katm-claim-seq';
+export * from './katm-claims';
 export * from './manual-payments';
 export * from './merchant-categories';
 export * from './merchant-documents';

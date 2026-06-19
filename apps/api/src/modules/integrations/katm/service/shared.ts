@@ -201,7 +201,7 @@ function countOpenContracts(oc: KatmOpenContracts): number {
   return Array.isArray(oc.open_contract) ? oc.open_contract.length : 1;
 }
 
-export function parseKatmResponse(data: KatmResponse): KatmResult {
+export function parseKatm077ReportResponse(data: KatmResponse): KatmResult {
   const { sysinfo, overview, scorring, open_contracts, credit_ban } = data;
   const score = toInt(scorring?.scoring_grade);
   const overdueMaxDays = toInt(overview?.max_overdue_principal_days);
@@ -226,14 +226,12 @@ export function parseKatmResponse(data: KatmResponse): KatmResult {
   };
 }
 
-export function decodeReport(methodName: string, base64: string): KatmResult {
-  let outer: { report: KatmResponse };
+export function decodeReport<T>(methodName: string, base64: string): T {
+  let outer: T;
   try {
-    outer = JSON.parse(Buffer.from(base64, 'base64').toString('utf8')) as { report: KatmResponse };
+    outer = JSON.parse(Buffer.from(base64, 'base64').toString('utf8')) as T;
   } catch {
     throw new KatmVendorError(methodName, KATM_OK, 'reportBase64 is not valid JSON');
   }
-  const result = parseKatmResponse(outer.report);
-  result.raw = outer;
-  return result;
+  return outer;
 }

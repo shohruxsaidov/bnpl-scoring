@@ -210,6 +210,19 @@ CREATE TABLE "integration_logs" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "katm_claims" (
+	"claim_id" varchar(20) PRIMARY KEY NOT NULL,
+	"status" varchar(20) DEFAULT 'created' NOT NULL,
+	"channel" varchar(20) NOT NULL,
+	"user_id" integer NOT NULL,
+	"session_id" uuid NOT NULL,
+	"katm_sir" varchar NOT NULL,
+	"verified" jsonb NOT NULL,
+	"token" varchar,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "manual_payments" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"deal_id" uuid NOT NULL,
@@ -247,8 +260,8 @@ CREATE TABLE "tariffs" (
 	"name" varchar(200) NOT NULL,
 	"term_months" integer NOT NULL,
 	"markup_percent" numeric(5, 2) NOT NULL,
-	"min_amount" integer,
-	"max_amount" integer,
+	"min_amount" numeric(2),
+	"max_amount" numeric(2),
 	"active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -536,6 +549,7 @@ ALTER TABLE "deals" ADD CONSTRAINT "deals_agent_id_merchant_users_id_fk" FOREIGN
 ALTER TABLE "deals" ADD CONSTRAINT "deals_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "deals" ADD CONSTRAINT "deals_tariff_id_tariffs_id_fk" FOREIGN KEY ("tariff_id") REFERENCES "public"."tariffs"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "deals" ADD CONSTRAINT "deals_deal_session_id_deal_sessions_id_fk" FOREIGN KEY ("deal_session_id") REFERENCES "public"."deal_sessions"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "katm_claims" ADD CONSTRAINT "katm_claims_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "manual_payments" ADD CONSTRAINT "manual_payments_deal_id_deals_id_fk" FOREIGN KEY ("deal_id") REFERENCES "public"."deals"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "manual_payments" ADD CONSTRAINT "manual_payments_admin_user_id_admin_users_id_fk" FOREIGN KEY ("admin_user_id") REFERENCES "public"."admin_users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "merchant_categories" ADD CONSTRAINT "merchant_categories_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

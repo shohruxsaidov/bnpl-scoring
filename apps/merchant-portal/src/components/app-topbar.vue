@@ -6,7 +6,7 @@ import NotificationsPopup from './notifications-popup.vue'
 import { useNotificationsStore } from '@/stores/notifications'
 
 defineProps<{ showMenuBtn?: boolean }>()
-const emit = defineEmits<{ (e: 'menu'): void; (e: 'search'): void }>()
+const emit = defineEmits<{ (e: 'menu'): void }>()
 
 const route = useRoute()
 const { t } = useI18n()
@@ -42,12 +42,6 @@ const breadcrumb = computed(() => {
         </nav>
       </div>
     </div>
-
-    <button class="search-trigger" @click="emit('search')">
-      <i class="pi pi-search" />
-      <span class="search-placeholder">{{ $t('search.placeholder') }}</span>
-      <kbd class="search-kbd">⌘K</kbd>
-    </button>
 
     <div class="right">
       <div class="bell-wrap">
@@ -140,51 +134,6 @@ const breadcrumb = computed(() => {
   border-color: var(--accent-2);
 }
 
-.search-trigger {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  height: 38px;
-  padding: 0 0.85rem;
-  border-radius: 10px;
-  border: 1px solid var(--border-default);
-  background: var(--bg-input);
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: 0.85rem;
-  font-weight: 500;
-  transition: all 0.15s ease;
-  min-width: 180px;
-}
-
-.search-trigger:hover {
-  border-color: var(--accent-1);
-  color: var(--text-secondary);
-}
-
-.search-trigger .pi-search {
-  font-size: 0.85rem;
-  color: var(--accent-1);
-}
-
-.search-placeholder {
-  flex: 1;
-  text-align: left;
-}
-
-.search-kbd {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.1rem 0.35rem;
-  border-radius: 4px;
-  border: 1px solid var(--border-default);
-  background: var(--bg-hover);
-  color: var(--text-muted);
-  font-size: 0.68rem;
-  font-family: inherit;
-  line-height: 1.4;
-  flex-shrink: 0;
-}
 
 .bell-wrap {
   position: relative;
@@ -215,10 +164,6 @@ const breadcrumb = computed(() => {
 
   .right {
     gap: 0.5rem;
-  }
-
-  .search-trigger {
-    display: none;
   }
 
   .bell-wrap {

@@ -8,9 +8,10 @@
  * polling job — see poller.ts.
  */
 
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { db } from '@db';
 import { agreements } from '@db/agreements';
+import { katmClaims } from '@db/katm-claims';
 import { registerClaim } from './commands/register-claim/register-claim.handler';
 import { request077Report } from './queries/request-077-report/request-077-report.handler';
 import type { KatmResult } from './service/shared';
@@ -109,6 +110,9 @@ export async function startKatmFlow(input: {
   claimId: string;
   consent: AgreementRecord;
   subject: KatmSubject;
+  userId: number;
+  sessionId: string;
+  channel: 'wizard' | 'self_service';
 }): Promise<KatmFlowOutcome> {
   // Ban pre-check — an actively banned client must not even have a claim
   // registered with the bureau (ADR-0025)
@@ -130,9 +134,24 @@ export async function startKatmFlow(input: {
     amount: 35000000, // in tiyin 350 000 dom
   });
 
+  await db.insert(katmClaims).values({
+    claimId: input.claimId,
+    channel: input.channel,
+    userId: input.userId,
+    sessionId: input.sessionId,
+    katmSir: claim.katmSir,
+    verified: claim.verified,
+  });
+
   const report = await request077Report({ claimId: input.claimId });
+
   if (report.status === 'pending') {
+    await db
+      .update(katmClaims)
+      .set({ token: report.token, updatedAt: new Date() })
+      .where(eq(katmClaims.claimId, input.claimId));
     return { status: 'pending', katmSir: claim.katmSir, token: report.token };
   }
+
   return { status: 'ready', katmSir: claim.katmSir, result: report.result };
 }
