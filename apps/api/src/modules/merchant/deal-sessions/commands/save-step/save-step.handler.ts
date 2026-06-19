@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from '@db';
 import { dealSessions } from '../../../../deals/schema';
-import { users, products, tariffs } from '@db/schema';
+import { products, tariffs } from '@db/schema';
 import {
   err,
   stepDataOf,
@@ -94,16 +94,9 @@ async function buildStepPayload(
 
   switch (step) {
     case 'client': {
-      const userId = str(body['userId']);
-      console.log('[buildStepPayload:client] userId', userId);
-      if (!userId || !/^\d+$/.test(userId)) throw err('invalid_step_payload');
-      const [user] = await db
-        .select({ id: users.id })
-        .from(users)
-        .where(eq(users.id, Number(userId)))
-        .limit(1);
-      console.log('[buildStepPayload:client] db lookup result', user ?? 'NOT FOUND');
-      if (!user) throw err('user_not_found');
+      const userId = session.userId?.toString() ?? null;
+      console.log('[buildStepPayload:client] userId from session', userId);
+      if (!userId) throw err('invalid_step_payload');
       const result = {
         userId,
         isNewClient: body['isNewClient'] === true,

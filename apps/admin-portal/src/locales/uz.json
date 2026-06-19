@@ -45,7 +45,8 @@
     "scoringTestCases": "Test-keyslar",
     "scoringTestRun": "Test-syuit",
     "integrationLogs": "Integratsiya loglari",
-    "scoringSessions": "Skoring sessiyalari"
+    "scoringSessions": "Skoring sessiyalari",
+    "categories": "Kategoriyalar"
   },
   "breadcrumb": {
     "overview": "Umumiy ko'rinish",
@@ -73,7 +74,8 @@
     "payments": "To'lovlar",
     "clients": "Mijozlar",
     "integrationLogs": "Integratsiya loglari",
-    "scoringSessions": "Skoring sessiyalari"
+    "scoringSessions": "Skoring sessiyalari",
+    "categories": "Kategoriyalar"
   },
   "topbar": {
     "scoring": "Skoring",
@@ -103,7 +105,26 @@
     "toggleSidebar": "Yon panelni almashtirish",
     "clients": "Mijozlar",
     "integrationLogs": "Integratsiya loglari",
-    "scoringSessions": "Skoring sessiyalari"
+    "scoringSessions": "Skoring sessiyalari",
+    "categories": "Kategoriyalar"
+  },
+  "categories": {
+    "searchPlaceholder": "Nom bo'yicha qidirish…",
+    "addCategory": "Kategoriya qo'shish",
+    "editCategory": "Kategoriyani tahrirlash",
+    "listTitle": "Barcha kategoriyalar",
+    "name": "Nomi",
+    "namePlaceholder": "Masalan, Elektronika",
+    "nameRequired": "Nomini kiriting",
+    "duplicate": "Bu nomli kategoriya allaqachon mavjud",
+    "empty": "Kategoriyalar yo'q",
+    "noResults": "Hech narsa topilmadi",
+    "created": "Kategoriya yaratildi",
+    "updated": "Kategoriya yangilandi",
+    "saveFailed": "Saqlashda xatolik",
+    "loadFailed": "Kategoriyalarni yuklashda xatolik",
+    "activate": "Faollashtirish",
+    "deactivate": "O'chirish"
   },
   "clients": {
     "searchPlaceholder": "Ism, telefon yoki PINFL bo'yicha qidirish…",

@@ -1,4 +1,12 @@
-import { boolean, integer, numeric, pgTable, serial, timestamp, varchar } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  integer,
+  numeric,
+  pgTable,
+  serial,
+  timestamp,
+  varchar,
+} from 'drizzle-orm/pg-core';
 
 export const tariffs = pgTable('tariffs', {
   id: serial('id').primaryKey(),
@@ -6,8 +14,12 @@ export const tariffs = pgTable('tariffs', {
   termMonths: integer('term_months').notNull(),
   markupPercent: numeric('markup_percent', { precision: 5, scale: 2 }).notNull(),
   // Credit Range (tiyin); null bound = unbounded on that side
-  minAmount: integer('min_amount'),
-  maxAmount: integer('max_amount'),
+  minAmount: numeric('min_amount', {
+    precision: 2,
+  }),
+  maxAmount: numeric('max_amount', {
+    precision: 2,
+  }),
   active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });

@@ -25,7 +25,7 @@ async function fetchCards() {
   loadCardsError.value = null
   try {
     const data = await apiFetch<{ cards: Card[] }>(
-      `/merchant/cards?userId=${clientId}`,
+      `/merchant/cards`,
     )
     cards.value = data.cards
     // Restore previously selected card if it still exists in the list

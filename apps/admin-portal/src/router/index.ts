@@ -315,6 +315,16 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'categories',
+        name: 'categories',
+        component: () => import('@/views/categories-view.vue'),
+        meta: {
+          titleKey: 'routeTitle.categories',
+          breadcrumbKeys: ['breadcrumb.categories'],
+          feature: 'manage_global_categories',
+        },
+      },
+      {
         path: 'scoring-test-cases/run',
         name: 'scoring-test-run',
         component: () => import('@/views/scoring-test-run-view.vue'),

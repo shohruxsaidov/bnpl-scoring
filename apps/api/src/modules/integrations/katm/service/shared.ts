@@ -227,11 +227,13 @@ export function parseKatmResponse(data: KatmResponse): KatmResult {
 }
 
 export function decodeReport(methodName: string, base64: string): KatmResult {
-  let parsed: KatmResponse;
+  let outer: { report: KatmResponse };
   try {
-    parsed = JSON.parse(Buffer.from(base64, 'base64').toString('utf8')) as KatmResponse;
+    outer = JSON.parse(Buffer.from(base64, 'base64').toString('utf8')) as { report: KatmResponse };
   } catch {
     throw new KatmVendorError(methodName, KATM_OK, 'reportBase64 is not valid JSON');
   }
-  return parseKatmResponse(parsed);
+  const result = parseKatmResponse(outer.report);
+  result.raw = outer;
+  return result;
 }

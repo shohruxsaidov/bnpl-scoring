@@ -28,6 +28,7 @@ const allNav = computed<NavItem[]>(() => [
   { label: t('nav.tariffs'), icon: 'pi pi-percentage', to: '/tariffs', feature: 'view_tariffs' },
   { label: t('nav.employees'), icon: 'pi pi-users', to: '/employees', feature: 'manage_employees' },
   { label: t('nav.settings'), icon: 'pi pi-cog', to: '/settings', feature: 'manage_settings' },
+  { label: t('nav.categories'), icon: 'pi pi-tag', to: '/categories', feature: 'manage_global_categories' },
   { label: t('nav.blacklist'), icon: 'pi pi-ban', to: '/blacklist', feature: 'manage_blacklist' },
   { label: t('nav.buyout'), icon: 'pi pi-shopping-bag', to: '/buyout', feature: 'manage_buyout' },
   { label: t('nav.collectionBoard'), icon: 'pi pi-table', to: '/collection-board', feature: 'view_collection_board' },
@@ -36,9 +37,9 @@ const allNav = computed<NavItem[]>(() => [
   { label: t('nav.scoringModel'), icon: 'pi pi-sliders-h', to: '/scoring-model', feature: 'manage_scoring_model' },
   { label: t('nav.scoringTestCases'), icon: 'pi pi-check-square', to: '/scoring-test-cases', feature: 'manage_scoring_model' },
   { label: t('nav.payments'), icon: 'pi pi-credit-card', to: '/payments', feature: 'view_payments' },
-  { label: t('nav.notifications'), icon: 'pi pi-send', to: '/notifications', feature: 'send_notifications' },
+  // { label: t('nav.notifications'), icon: 'pi pi-send', to: '/notifications', feature: 'send_notifications' },
   { label: t('nav.integrationLogs'), icon: 'pi pi-history', to: '/integration-logs', feature: 'view_integration_logs' },
-{ label: t('nav.permissions'), icon: 'pi pi-shield', to: '/permissions', feature: 'manage_roles' },
+  { label: t('nav.permissions'), icon: 'pi pi-shield', to: '/permissions', feature: 'manage_roles' },
 ])
 
 const nav = computed<NavItem[]>(() =>
@@ -56,7 +57,8 @@ async function logout() {
 </script>
 
 <template>
-  <aside class="sidebar" :class="{ collapsed: props.collapsed, 'mobile-open': props.mobileOpen, 'is-mobile': props.isMobile }">
+  <aside class="sidebar"
+    :class="{ collapsed: props.collapsed, 'mobile-open': props.mobileOpen, 'is-mobile': props.isMobile }">
     <div class="brand">
       <div class="logo-mark">S</div>
       <div v-if="!props.collapsed" class="brand-text">
@@ -69,15 +71,8 @@ async function logout() {
     </div>
 
     <nav class="nav">
-      <RouterLink
-        v-for="item in nav"
-        :key="item.to"
-        :to="item.to"
-        class="nav-link"
-        active-class="active"
-        :exact-active-class="item.to === '/' ? 'active' : ''"
-        :title="item.label"
-      >
+      <RouterLink v-for="item in nav" :key="item.to" :to="item.to" class="nav-link" active-class="active"
+        :exact-active-class="item.to === '/' ? 'active' : ''" :title="item.label">
         <i :class="item.icon" />
         <span v-if="!props.collapsed">{{ item.label }}</span>
       </RouterLink>
@@ -116,6 +111,7 @@ async function logout() {
   position: sticky;
   top: 0;
 }
+
 .sidebar.collapsed {
   width: 64px;
 }
@@ -144,6 +140,7 @@ async function logout() {
   padding: 1rem 0.85rem;
   position: relative;
 }
+
 .logo-mark {
   width: 32px;
   height: 32px;
@@ -155,16 +152,19 @@ async function logout() {
   place-items: center;
   flex-shrink: 0;
 }
+
 .brand-text {
   display: flex;
   flex-direction: column;
   line-height: 1.15;
   gap: 0.2rem;
 }
+
 .brand-name {
   font-weight: 800;
   font-size: 1.05rem;
 }
+
 .badge-label {
   font-size: 0.62rem;
   font-weight: 800;
@@ -176,6 +176,7 @@ async function logout() {
   border-radius: 6px;
   width: fit-content;
 }
+
 .collapse-btn {
   margin-left: auto;
   width: 24px;
@@ -188,6 +189,7 @@ async function logout() {
   display: grid;
   place-items: center;
 }
+
 .collapsed .collapse-btn {
   position: absolute;
   right: -12px;
@@ -204,6 +206,7 @@ async function logout() {
   gap: 0.2rem;
   overflow-y: auto;
 }
+
 .nav-link {
   display: flex;
   align-items: center;
@@ -216,17 +219,21 @@ async function logout() {
   transition: all 0.15s ease;
   white-space: nowrap;
 }
+
 .collapsed .nav-link {
   justify-content: center;
   padding: 0.6rem;
 }
+
 .nav-link i {
   font-size: 1rem;
 }
+
 .nav-link:hover {
   background: var(--bg-base);
   color: var(--text-primary);
 }
+
 .nav-link.active {
   background: var(--gradient-accent);
   color: #fff;
@@ -240,11 +247,13 @@ async function logout() {
   flex-direction: column;
   gap: 0.65rem;
 }
+
 .user-block {
   display: flex;
   align-items: center;
   gap: 0.55rem;
 }
+
 .avatar {
   width: 32px;
   height: 32px;
@@ -257,15 +266,18 @@ async function logout() {
   place-items: center;
   flex-shrink: 0;
 }
+
 .avatar.solo {
   margin: 0 auto;
 }
+
 .user-meta {
   display: flex;
   flex-direction: column;
   line-height: 1.2;
   overflow: hidden;
 }
+
 .user-name {
   font-size: 0.82rem;
   font-weight: 700;
@@ -273,19 +285,23 @@ async function logout() {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .role-chip {
   font-size: 0.66rem;
   font-weight: 700;
   color: var(--accent-2);
 }
+
 .footer-actions {
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
+
 .footer-actions.stacked {
   flex-direction: column;
 }
+
 .logout-btn {
   flex: 1;
   display: flex;
@@ -302,6 +318,7 @@ async function logout() {
   cursor: pointer;
   transition: all 0.15s ease;
 }
+
 .logout-btn:hover {
   color: var(--danger);
   border-color: var(--danger);

@@ -35,7 +35,7 @@ export interface SessionScoring {
 }
 
 export interface SessionStepData {
-  client?: { clientId: string; isNewClient: boolean; myidVerified: boolean; katmConsent: boolean }
+  client?: { isNewClient: boolean; myidVerified: boolean; katmConsent: boolean }
   card?: { cardId: string; maskedPan: string; pcType: 'uzcard' | 'humo'; bank: string; holderName: string; expiry: string }
   tariff?: {
     tariffId: string

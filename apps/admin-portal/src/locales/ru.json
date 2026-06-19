@@ -45,7 +45,8 @@
     "scoringTestCases": "Тест-кейсы",
     "scoringTestRun": "Запуск тест-сюита",
     "integrationLogs": "Логи интеграций",
-    "scoringSessions": "Скоринг-сессии"
+    "scoringSessions": "Скоринг-сессии",
+    "categories": "Категории"
   },
   "breadcrumb": {
     "overview": "Обзор",
@@ -73,7 +74,8 @@
     "payments": "Платежи",
     "clients": "Клиенты",
     "integrationLogs": "Логи интеграций",
-    "scoringSessions": "Скоринг-сессии"
+    "scoringSessions": "Скоринг-сессии",
+    "categories": "Категории"
   },
   "topbar": {
     "scoring": "Скоринг",
@@ -103,7 +105,26 @@
     "toggleSidebar": "Переключить панель",
     "clients": "Клиенты",
     "integrationLogs": "Логи интеграций",
-    "scoringSessions": "Скоринг-сессии"
+    "scoringSessions": "Скоринг-сессии",
+    "categories": "Категории"
+  },
+  "categories": {
+    "searchPlaceholder": "Поиск по названию…",
+    "addCategory": "Добавить категорию",
+    "editCategory": "Редактировать категорию",
+    "listTitle": "Все категории",
+    "name": "Название",
+    "namePlaceholder": "Например, Электроника",
+    "nameRequired": "Введите название",
+    "duplicate": "Категория с таким названием уже существует",
+    "empty": "Нет категорий",
+    "noResults": "Ничего не найдено",
+    "created": "Категория создана",
+    "updated": "Категория обновлена",
+    "saveFailed": "Не удалось сохранить",
+    "loadFailed": "Не удалось загрузить категории",
+    "activate": "Активировать",
+    "deactivate": "Деактивировать"
   },
   "clients": {
     "searchPlaceholder": "Поиск по имени, телефону или ПИНФЛ…",

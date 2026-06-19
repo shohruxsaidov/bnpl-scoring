@@ -9,28 +9,24 @@ import Select from 'primevue/select'
 import { useToast } from 'primevue/usetoast'
 import { useMerchantsStore } from '@/stores/merchants'
 import { useRegions } from '@/composables/use-regions'
-import type { Category } from '@/types'
 
 const router = useRouter()
 const { t } = useI18n()
 const toast = useToast()
 const store = useMerchantsStore()
 
-const TOTAL_STEPS = 6
+const TOTAL_STEPS = 4
 const step = ref(1)
 const saving = ref(false)
 
 const merchantId = ref<string | null>(null)
 const branchId = ref<string | null>(null)
-const createdCategories = ref<Category[]>([])
 
 const STEPS = computed(() => [
   t('onboarding.stepMerchant'),
   t('onboarding.stepBankAccount'),
   t('onboarding.stepBranch'),
   t('onboarding.stepEmployees'),
-  t('onboarding.stepCategories'),
-  t('onboarding.stepProducts'),
 ])
 
 onMounted(() => { store.fetchBankList() })
@@ -144,78 +140,15 @@ const emps = ref([emptyEmp()])
 
 async function submitStep4() {
   const valid = emps.value.filter(e => e.fullName.trim() && e.phone.trim() && !e.phone.includes('_') && e.password.length >= 8)
-  if (!valid.length) { step.value = 5; return }
+  if (!valid.length) { finish(); return }
   saving.value = true
   try {
     for (const emp of valid) {
       await store.createEmployee(branchId.value!, { ...emp, phone: '998' + emp.phone.replace(/\D/g, '') })
     }
-    step.value = 5
-  } catch {
-    toast.add({ severity: 'error', summary: t('onboarding.errorEmployee'), life: 3000 })
-  } finally {
-    saving.value = false
-  }
-}
-
-// Step 5 – Categories
-const cats = ref([{ name: '' }])
-
-async function submitStep5() {
-  const valid = cats.value.filter(c => c.name.trim())
-  if (!valid.length) { step.value = 6; return }
-  saving.value = true
-  try {
-    await store.fetchGlobalCategories()
-    for (const cat of valid) {
-      const trimmed = cat.name.trim()
-      let existing = store.globalCategories.find(
-        (c) => c.name.toLowerCase() === trimmed.toLowerCase(),
-      )
-      if (!existing) {
-        const body = await import('@/utils/apiFetch').then(({ apiFetch }) =>
-          apiFetch<{ category: Category }>('/admin/categories', {
-            method: 'POST',
-            body: JSON.stringify({ name: trimmed }),
-          }),
-        )
-        existing = body.category
-        store.globalCategories.push(existing)
-      }
-      await store.enableCategory(merchantId.value!, existing.id)
-      createdCategories.value.push(existing)
-    }
-    step.value = 6
-  } catch {
-    toast.add({ severity: 'error', summary: t('onboarding.errorCategory'), life: 3000 })
-  } finally {
-    saving.value = false
-  }
-}
-
-// Step 6 – Products
-function emptyProd() { return { name: '', categoryId: '', price: '' } }
-const prods = ref([emptyProd()])
-
-const categoryOptions = computed(() =>
-  createdCategories.value.map(c => ({ label: c.name, value: c.id }))
-)
-
-async function submitStep6() {
-  const valid = prods.value.filter(p => p.name.trim() && p.categoryId && p.price.trim())
-  if (!valid.length) { finish(); return }
-  saving.value = true
-  try {
-    for (const p of valid) {
-      await store.createProduct(merchantId.value!, {
-        categoryId: p.categoryId,
-        name: p.name.trim(),
-        price: p.price.trim(),
-      })
-    }
     finish()
   } catch {
-    toast.add({ severity: 'error', summary: t('onboarding.errorProduct'), life: 3000 })
+    toast.add({ severity: 'error', summary: t('onboarding.errorEmployee'), life: 3000 })
   } finally {
     saving.value = false
   }
@@ -414,78 +347,15 @@ function finish() {
           <i class="pi pi-plus" /> {{ t('onboarding.addAnother') }}
         </button>
         <div class="actions">
-          <button class="btn-secondary" @click="skip">{{ t('onboarding.skip') }}</button>
-          <button class="btn-primary" :disabled="saving" @click="submitStep4">
-            <i v-if="saving" class="pi pi-spin pi-spinner" />
-            {{ saving ? t('onboarding.saving') : t('onboarding.next') }}
-            <i v-if="!saving" class="pi pi-arrow-right" />
-          </button>
-        </div>
-      </template>
-
-      <!-- Step 5: Categories -->
-      <template v-if="step === 5">
-        <h2 class="section-title">{{ t('onboarding.categoriesSection') }}</h2>
-        <div v-for="(cat, i) in cats" :key="i" class="repeatable-row">
-          <div class="field flex-1">
-            <label>{{ t('onboarding.categoryName') }}</label>
-            <InputText v-model="cat.name" class="w-full" />
-          </div>
-          <button v-if="cats.length > 1" class="remove-btn" @click="cats.splice(i, 1)">
-            <i class="pi pi-times" />
-          </button>
-        </div>
-        <button class="add-another-btn" @click="cats.push({ name: '' })">
-          <i class="pi pi-plus" /> {{ t('onboarding.addAnother') }}
-        </button>
-        <div class="actions">
-          <button class="btn-secondary" @click="skip">{{ t('onboarding.skip') }}</button>
-          <button class="btn-primary" :disabled="saving" @click="submitStep5">
-            <i v-if="saving" class="pi pi-spin pi-spinner" />
-            {{ saving ? t('onboarding.saving') : t('onboarding.next') }}
-            <i v-if="!saving" class="pi pi-arrow-right" />
-          </button>
-        </div>
-      </template>
-
-      <!-- Step 6: Products -->
-      <template v-if="step === 6">
-        <h2 class="section-title">{{ t('onboarding.productsSection') }}</h2>
-        <p v-if="!categoryOptions.length" class="info-msg">{{ t('onboarding.noCategories') }}</p>
-        <template v-else>
-          <div v-for="(prod, i) in prods" :key="i" class="repeatable-row">
-            <div class="form-grid">
-              <div class="field">
-                <label>{{ t('onboarding.productName') }}</label>
-                <InputText v-model="prod.name" class="w-full" />
-              </div>
-              <div class="field">
-                <label>{{ t('onboarding.category') }}</label>
-                <Select v-model="prod.categoryId" :options="categoryOptions" option-label="label" option-value="value"
-                  :placeholder="t('onboarding.selectCategory')" class="w-full" />
-              </div>
-              <div class="field">
-                <label>{{ t('onboarding.price') }}</label>
-                <InputText v-model="prod.price" class="w-full" />
-              </div>
-            </div>
-            <button v-if="prods.length > 1" class="remove-btn" @click="prods.splice(i, 1)">
-              <i class="pi pi-times" />
-            </button>
-          </div>
-          <button class="add-another-btn" @click="prods.push(emptyProd())">
-            <i class="pi pi-plus" /> {{ t('onboarding.addAnother') }}
-          </button>
-        </template>
-        <div class="actions">
           <button class="btn-secondary" @click="finish">{{ t('onboarding.skip') }}</button>
-          <button class="btn-primary" :disabled="saving || !categoryOptions.length" @click="submitStep6">
+          <button class="btn-primary" :disabled="saving" @click="submitStep4">
             <i v-if="saving" class="pi pi-spin pi-spinner" />
             {{ saving ? t('onboarding.saving') : t('onboarding.finish') }}
             <i v-if="!saving" class="pi pi-check" />
           </button>
         </div>
       </template>
+
     </div>
   </div>
 </template>
