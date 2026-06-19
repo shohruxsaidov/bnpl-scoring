@@ -105,22 +105,20 @@ onMounted(() => {
 })
 
 async function sendSigningOtp() {
-  const phone = sd.value.client?.phone
-  if (!phone) return
+  if (!deal.dealSessionId) return
   otpError.value = ''
   devOtp.value = null
-  const res = await sendSigningOtpMutation.mutateAsync(phone)
+  const res = await sendSigningOtpMutation.mutateAsync(deal.dealSessionId)
   if (res.devOtp) devOtp.value = res.devOtp
   signPhase.value = 'otp_sent'
   startResendCooldown()
 }
 
 async function verifySigningOtp() {
-  const phone = sd.value.client?.phone
-  if (!phone || !otpCode.value) return
+  if (!deal.dealSessionId || !otpCode.value) return
   otpError.value = ''
   try {
-    const res = await verifySigningOtpMutation.mutateAsync({ phone, code: otpCode.value })
+    const res = await verifySigningOtpMutation.mutateAsync({ dealSessionId: deal.dealSessionId, code: otpCode.value })
     signingToken.value = res.signingToken
     otpVerifiedAt.value = new Date().toISOString()
     // Persist across the MyID redirect — restored in onMounted

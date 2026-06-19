@@ -52,8 +52,8 @@ export default async function merchantTariffRoutes(app: FastifyInstance) {
           const totalPayable = calcTotalPayable(amount, markupPercent);
           const installments = splitInstallments(totalPayable, t.termMonths);
           const inRange =
-            (t.minAmount == null || amount >= t.minAmount) &&
-            (t.maxAmount == null || amount <= t.maxAmount);
+            (t.minAmount == null || amount >= Number(t.minAmount)) &&
+            (t.maxAmount == null || amount <= Number(t.maxAmount));
           return {
             tariffId: t.id.toString(),
             name: t.name,

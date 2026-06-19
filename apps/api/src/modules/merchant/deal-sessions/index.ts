@@ -12,6 +12,25 @@ import { createSession } from './commands/create-session/create-session.handler'
 import { abandonSession } from './commands/abandon-session/abandon-session.handler';
 import { saveStep } from './commands/save-step/save-step.handler';
 import { stampPrepayment } from './commands/stamp-prepayment/stamp-prepayment.handler';
+import { setSessionUserId } from './commands/set-session-user-id/set-session-user-id.handler';
+import { setKatmClaimId } from './commands/set-katm-claim-id/set-katm-claim-id.handler';
+import { stampKatmPending } from './commands/stamp-katm-pending/stamp-katm-pending.handler';
+import { stampKatm } from './commands/stamp-katm/stamp-katm.handler';
+import {
+  allocateKatmClaimId,
+  createKatmConsent,
+  missingKatmFields,
+  startKatmFlow,
+} from '../../integrations/katm/flow';
+import { enqueueKatmPoll, katmSummary, saveKatmSir } from '../../integrations/katm/poller';
+import { listCards } from '../../integrations/plumgate/queries/list-cards/list-cards.handler';
+import { addCard } from '../../integrations/plumgate/commands/add-card/add-card.handler';
+import { confirmCard } from '../../integrations/plumgate/commands/confirm-card/confirm-card.handler';
+import { scoreCard } from '../../integrations/plumgate/queries/score-card/score-card.handler';
+import { createScoring } from '../scoringHistory/commands/create-scoring/create-scoring.handler';
+import { stampScoring } from './commands/stamp-scoring/stamp-scoring.handler';
+import type { CriteriaScores } from '../../scoring/service/service.handler';
+import { createOtp, verifyOtp } from '../../auth/client/service/service.handler';
 
 type JwtPayload = {
   sub: string;
@@ -235,6 +254,444 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         if (err.code === 'session_not_active') return { ok: true };
         throw err;
       }
+    },
+  );
+
+  /* ── POST /:id/start — kick off KATM scoring for the session ───────────── */
+
+  const StartBody = Type.Object({ userId: Type.String({ minLength: 1 }) });
+
+  fastify.post(
+    '/:id/start',
+    { schema: { params: IdParams, body: StartBody }, preHandler: guards },
+    async (request, reply) => {
+      const p = payload(request);
+      const { userId } = request.body;
+
+      let session;
+      try {
+        session = await loadOwnedActiveSession(request.params.id, Number(p.sub));
+      } catch (err: any) {
+        if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found');
+        if (err.code === 'session_not_active')
+          return reply.code(409).sendError('session_not_active');
+        throw err;
+      }
+
+      const [client] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, Number(userId)))
+        .limit(1);
+
+      if (!client) return reply.code(404).sendError('user_not_found');
+
+      await setSessionUserId(session, client.id);
+
+      const missing = missingKatmFields(client);
+      if (missing.length > 0) {
+        return reply.code(422).sendError('client_katm_fields_missing', { missing });
+      }
+
+      const consent = await createKatmConsent({
+        channel: 'wizard',
+        userId: client.id,
+        sessionId: session.id,
+      });
+
+      const claimId = session.katmClaimId ?? (await allocateKatmClaimId());
+      if (!session.katmClaimId) {
+        await setKatmClaimId(session, claimId);
+        session = { ...session, katmClaimId: claimId };
+      }
+
+      const outcome = await startKatmFlow({
+        claimId,
+        consent,
+        subject: {
+          pinfl: client.pinfl,
+          passportSerial: client.passportSeries!,
+          passportNumber: client.passportNumber!,
+          docType: client.docType!,
+          regionCode: client.regionCode!,
+          districtCode: client.districtCode!,
+          address: client.address!,
+          phone: client.phone,
+        },
+      });
+
+      if (outcome.status === 'banned') {
+        await stampKatmPending(session, {
+          status: 'failed',
+          startedAt: new Date().toISOString(),
+          error: 'credit_ban',
+        });
+        return reply.code(409).sendError('client_credit_banned');
+      }
+
+      await saveKatmSir({ userId: client.id }, outcome.katmSir);
+
+      const consentDate = consent.agreementDate.toISOString();
+
+      if (outcome.status === 'pending') {
+        await stampKatmPending(session, {
+          status: 'pending',
+          startedAt: new Date().toISOString(),
+        });
+        await enqueueKatmPoll(app.katmPollQueue, {
+          flow: 'wizard',
+          sessionId: session.id,
+          claimId,
+          token: outcome.token,
+          consentId: consent.agreementId,
+          consentDate,
+        });
+        return { status: 'pending' as const };
+      }
+
+      const summary = katmSummary(outcome.result);
+      await stampKatm(session, {
+        userId,
+        claimId,
+        consentId: consent.agreementId,
+        consentDate: consentDate.slice(0, 10),
+        raw: outcome.result.raw ?? null,
+        ...summary,
+      });
+
+      return { status: 'completed' as const, ...summary };
+    },
+  );
+
+  /* ── POST /:id/sign-otp — send signing OTP to the session's client ──────── */
+
+  fastify.post(
+    '/:id/sign-otp',
+    { schema: { params: IdParams }, preHandler: guards },
+    async (request, reply) => {
+      const p = payload(request);
+      let session;
+      try {
+        session = await loadOwnedActiveSession(request.params.id, Number(p.sub));
+      } catch (err: any) {
+        if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found');
+        if (err.code === 'session_not_active')
+          return reply.code(409).sendError('session_not_active');
+        throw err;
+      }
+
+      if (session.userId == null) return reply.code(409).sendError('client_step_missing');
+
+      const [user] = await db
+        .select({ phone: users.phone })
+        .from(users)
+        .where(eq(users.id, session.userId))
+        .limit(1);
+      if (!user) return reply.code(404).sendError('user_not_found');
+
+      const isProd = app.hasDecorator('isProd')
+        ? (app as any).isProd
+        : process.env['NODE_ENV'] === 'production';
+
+      const code = await createOtp(user.phone, 'deal_signing');
+      if (!isProd) request.log.info({ phone: user.phone, code }, 'deal_signing OTP issued');
+
+      return { ok: true, ...(isProd ? {} : { devOtp: code }) };
+    },
+  );
+
+  /* ── POST /:id/sign-otp/verify — verify signing OTP, return signingToken ── */
+
+  const SignOtpVerifyBody = Type.Object({ code: Type.String({ minLength: 1 }) });
+
+  fastify.post(
+    '/:id/sign-otp/verify',
+    { schema: { params: IdParams, body: SignOtpVerifyBody }, preHandler: guards },
+    async (request, reply) => {
+      const p = payload(request);
+      let session;
+      try {
+        session = await loadOwnedActiveSession(request.params.id, Number(p.sub));
+      } catch (err: any) {
+        if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found');
+        if (err.code === 'session_not_active')
+          return reply.code(409).sendError('session_not_active');
+        throw err;
+      }
+
+      if (session.userId == null) return reply.code(409).sendError('client_step_missing');
+
+      const [user] = await db
+        .select({ phone: users.phone })
+        .from(users)
+        .where(eq(users.id, session.userId))
+        .limit(1);
+      if (!user) return reply.code(404).sendError('user_not_found');
+
+      const ok = await verifyOtp(user.phone, request.body.code, 'deal_signing');
+      if (!ok) return reply.code(400).sendError('invalid_otp');
+
+      const signingToken = app.jwt.sign(
+        { phone: user.phone, purpose: 'deal_signing' },
+        { expiresIn: '10m' },
+      );
+      return { signingToken };
+    },
+  );
+
+  /* ── GET /:id/katm-status — poll KATM result stamped on the session ─────── */
+
+  fastify.get(
+    '/:id/katm-status',
+    { schema: { params: IdParams }, preHandler: guards },
+    async (request, reply) => {
+      const p = payload(request);
+      let session;
+      try {
+        session = await loadOwnedActiveSession(request.params.id, Number(p.sub));
+      } catch (err: any) {
+        if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found');
+        if (err.code === 'session_not_active')
+          return reply.code(409).sendError('session_not_active');
+        throw err;
+      }
+
+      const data = (session.stepData ?? {}) as SessionStepData;
+      if (data.katm) {
+        const {
+          raw: _raw,
+          userId: _c,
+          claimId: _cl,
+          consentId: _ci,
+          consentDate: _cd,
+          ...summary
+        } = data.katm;
+        return { status: 'completed' as const, ...summary };
+      }
+      if (data.katmPending) {
+        return { status: data.katmPending.status, error: data.katmPending.error ?? null };
+      }
+      return { status: 'none' as const };
+    },
+  );
+
+  /* ── GET /:id/cards — list cards for the session's user ────────────────── */
+
+  fastify.get(
+    '/:id/cards',
+    { schema: { params: IdParams }, preHandler: guards },
+    async (request, reply) => {
+      const p = payload(request);
+      let session;
+      try {
+        session = await loadOwnedActiveSession(request.params.id, Number(p.sub));
+      } catch (err: any) {
+        if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found');
+        if (err.code === 'session_not_active')
+          return reply.code(409).sendError('session_not_active');
+        throw err;
+      }
+
+      if (session.userId == null) return reply.code(409).sendError('client_step_missing');
+
+      const [user] = await db.select().from(users).where(eq(users.id, session.userId)).limit(1);
+      if (!user) return reply.code(404).sendError('user_not_found');
+
+      const cards = await listCards(String(session.userId));
+      return { cards };
+    },
+  );
+
+  /* ── POST /:id/cards/add — initiate card addition OTP flow ─────────────── */
+
+  const AddCardBody = Type.Object({
+    cardNumber: Type.String({ minLength: 16, maxLength: 19 }),
+    expiry: Type.String({ minLength: 4, maxLength: 5 }),
+  });
+
+  fastify.post(
+    '/:id/cards/add',
+    { schema: { params: IdParams, body: AddCardBody }, preHandler: guards },
+    async (request, reply) => {
+      const p = payload(request);
+      let session;
+      try {
+        session = await loadOwnedActiveSession(request.params.id, Number(p.sub));
+      } catch (err: any) {
+        if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found');
+        if (err.code === 'session_not_active')
+          return reply.code(409).sendError('session_not_active');
+        throw err;
+      }
+
+      if (session.userId == null) return reply.code(409).sendError('client_step_missing');
+
+      const [user] = await db
+        .select({ id: users.id, phone: users.phone })
+        .from(users)
+        .where(eq(users.id, session.userId))
+        .limit(1);
+      if (!user) return reply.code(404).sendError('user_not_found');
+
+      const { cardNumber, expiry } = request.body;
+      const result = await addCard({
+        userId: String(user.id),
+        phone: user.phone,
+        cardNumber,
+        expiry,
+      });
+      return result;
+    },
+  );
+
+  /* ── POST /:id/cards/confirm — confirm OTP and complete card addition ───── */
+
+  const ConfirmCardBody = Type.Object({
+    sessionId: Type.String({ minLength: 1 }),
+    otp: Type.String({ minLength: 4, maxLength: 8 }),
+  });
+
+  fastify.post(
+    '/:id/cards/confirm',
+    { schema: { params: IdParams, body: ConfirmCardBody }, preHandler: guards },
+    async (request, reply) => {
+      const p = payload(request);
+      try {
+        await loadOwnedActiveSession(request.params.id, Number(p.sub));
+      } catch (err: any) {
+        if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found');
+        if (err.code === 'session_not_active')
+          return reply.code(409).sendError('session_not_active');
+        throw err;
+      }
+
+      const { sessionId, otp } = request.body;
+      const card = await confirmCard({ sessionId, otp });
+      return { card };
+    },
+  );
+
+  /* ── POST /:id/cards/score — score a card and stamp result onto session ── */
+
+  const ScoreCardBody = Type.Object({
+    plumCardId: Type.String({ minLength: 1 }),
+    pcType: Type.Union([Type.Literal('uzcard'), Type.Literal('humo')]),
+    maskedPan: Type.String({ minLength: 1 }),
+    bank: Type.String({ minLength: 1 }),
+    holderName: Type.String(),
+    expiry: Type.String({ minLength: 1 }),
+  });
+
+  fastify.post(
+    '/:id/cards/score',
+    { schema: { params: IdParams, body: ScoreCardBody }, preHandler: guards },
+    async (request, reply) => {
+      const p = payload(request);
+      const { plumCardId, pcType, maskedPan, bank, holderName, expiry } = request.body;
+
+      let session;
+      try {
+        session = await loadOwnedActiveSession(request.params.id, Number(p.sub));
+      } catch (err: any) {
+        if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found');
+        if (err.code === 'session_not_active')
+          return reply.code(409).sendError('session_not_active');
+        throw err;
+      }
+
+      if (session.userId == null) return reply.code(409).sendError('client_step_missing');
+
+      const result = await scoreCard({ plumCardId, pcType });
+      const coefficient = result.score >= 700 ? 1.0 : result.score >= 600 ? 0.8 : 0;
+
+      const katm = (session.stepData as SessionStepData).katm;
+
+      const [userRow] = await db
+        .select({ birthDate: users.birthDate, gender: users.gender, nationality: users.nationality })
+        .from(users)
+        .where(eq(users.id, session.userId))
+        .limit(1);
+
+      const criteriaScores: CriteriaScores = {
+        ...(katm && {
+          katm: {
+            katmScore: katm.score,
+            detail: {
+              katmScore: katm.score,
+              katmClass: katm.scoringClass,
+              scoringLevel: katm.scoringLevel,
+              openCredits: katm.activeLoans,
+              totalDebt: katm.allDebtSum,
+              overdueInOpenCredits: katm.overdueAmount,
+              totalContracts: katm.totalContracts,
+              totalClaims: katm.totalClaims,
+              overdueCount: katm.overdueCount,
+              maxOverdueDays: katm.maxOverdueDays,
+              maxOverdueSum: katm.overdueAmount,
+              avgMonthlyPayment: katm.avgMonthlyPayment,
+              hasCreditBan: katm.hasCreditBan,
+            },
+          },
+        }),
+        card: {
+          score: result.score,
+          detail: {
+            score: result.score,
+            limit: result.limit,
+            decision: result.decision,
+            pcType,
+            bank,
+            maskedPan,
+            holderName,
+          },
+        },
+        ...(userRow && {
+          client: {
+            detail: {
+              birthDate: userRow.birthDate,
+              gender: String(userRow.gender),
+              nationality: userRow.nationality,
+            },
+          },
+        }),
+      };
+
+      let scoringId: string | null = null;
+      try {
+        const res = await createScoring({
+          merchantId: Number(p.merchantId),
+          userId: session.userId,
+          scoreSum: result.score,
+          coefficient,
+          decision: result.decision,
+          platformCreditLimit: Number(Math.round(result.limit)),
+          criteriaScores: criteriaScores as Record<string, unknown>,
+        });
+        scoringId = res.id;
+      } catch (err) {
+        request.log.warn({ err }, 'scoring history record failed');
+      }
+
+      const sessionAfterCard = await saveStep(session, 'card', {
+        cardId: plumCardId,
+        maskedPan,
+        pcType,
+        bank,
+        holderName,
+        expiry,
+      });
+
+      await stampScoring(sessionAfterCard, {
+        cardId: plumCardId,
+        scoringId,
+        scoreSum: result.score,
+        coefficient,
+        decision: result.decision,
+        platformCreditLimit: result.limit,
+        criteriaScores: criteriaScores as Record<string, unknown>,
+      });
+
+      return { ...result, scoringId, coefficient, criteriaScores };
     },
   );
 }

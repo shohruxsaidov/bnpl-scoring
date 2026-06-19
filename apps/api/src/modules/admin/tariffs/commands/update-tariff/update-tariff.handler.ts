@@ -4,6 +4,11 @@ import { tariffs } from '@db/schema'
 import type { UpdateTariffInput } from "./update-tariff.command"
 
 export async function updateTariff({ id, data }: UpdateTariffInput) {
-  const [row] = await db.update(tariffs).set(data).where(eq(tariffs.id, id)).returning()
+  const { minAmount, maxAmount, ...rest } = data
+  const [row] = await db.update(tariffs).set({
+    ...rest,
+    ...(minAmount !== undefined ? { minAmount: minAmount != null ? String(minAmount) : null } : {}),
+    ...(maxAmount !== undefined ? { maxAmount: maxAmount != null ? String(maxAmount) : null } : {}),
+  }).where(eq(tariffs.id, id)).returning()
   return row
 }

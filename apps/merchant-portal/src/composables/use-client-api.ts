@@ -78,19 +78,19 @@ export function useClientApi() {
   });
 
   const sendSigningOtpMutation = useMutation({
-    mutationFn: (phone: string) =>
-      apiFetch<{ ok: boolean; devOtp?: string }>('/merchant/client/sign-otp', {
-        method: 'POST',
-        body: JSON.stringify({ phone }),
-      }),
+    mutationFn: (dealSessionId: string) =>
+      apiFetch<{ ok: boolean; devOtp?: string }>(
+        `/merchant/deal-sessions/${dealSessionId}/sign-otp`,
+        { method: 'POST' },
+      ),
   });
 
   const verifySigningOtpMutation = useMutation({
-    mutationFn: ({ phone, code }: { phone: string; code: string }) =>
-      apiFetch<{ signingToken: string }>('/merchant/client/sign-otp/verify', {
-        method: 'POST',
-        body: JSON.stringify({ phone, code }),
-      }),
+    mutationFn: ({ dealSessionId, code }: { dealSessionId: string; code: string }) =>
+      apiFetch<{ signingToken: string }>(
+        `/merchant/deal-sessions/${dealSessionId}/sign-otp/verify`,
+        { method: 'POST', body: JSON.stringify({ code }) },
+      ),
   });
 
   return {

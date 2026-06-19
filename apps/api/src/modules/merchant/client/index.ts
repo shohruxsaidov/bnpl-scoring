@@ -220,59 +220,6 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
     docType: Type.Union([Type.Literal(0), Type.Literal(6)]),
   });
 
-  /* ── Kontrakt signing OTP ───────────────────────────────────────────────── */
-
-  const SignOtpBody = Type.Object({
-    phone: Type.String({ minLength: 1 }),
-  });
-
-  const SignOtpVerifyBody = Type.Object({
-    phone: Type.String({ minLength: 1 }),
-    code: Type.String({ minLength: 1 }),
-  });
-
-  /**
-   * POST /merchant/client/sign-otp
-   * Send a one-time code to the Client's phone as their digital consent to the
-   * Kontrakt terms. Uses purpose "deal_signing" — a separate OTP namespace
-   * from client_registration so codes never collide.
-   */
-  fastify.post(
-    '/sign-otp',
-    { schema: { body: SignOtpBody }, preHandler: app.verifyMerchantJwt },
-    async (request) => {
-      const { phone } = request.body;
-      const isProd = app.hasDecorator('isProd')
-        ? (app as any).isProd
-        : process.env['NODE_ENV'] === 'production';
-
-      const code = await createOtp(phone, 'deal_signing');
-      if (!isProd) request.log.info({ phone, code }, 'deal_signing OTP issued');
-
-      return { ok: true, ...(isProd ? {} : { devOtp: code }) };
-    },
-  );
-
-  /**
-   * POST /merchant/client/sign-otp/verify
-   * Verify the signing OTP the Client read to the Agent. On success returns a
-   * short-lived signingToken the frontend attaches to the deal-creation call as
-   * proof of client consent.
-   */
-  fastify.post(
-    '/sign-otp/verify',
-    { schema: { body: SignOtpVerifyBody }, preHandler: app.verifyMerchantJwt },
-    async (request, reply) => {
-      const { phone } = request.body;
-      const ok = await verifyOtp(phone, request.body.code, 'deal_signing');
-      if (!ok) return reply.code(400).sendError('invalid_otp');
-
-      // Short-lived token carried with the deal-creation call as proof of signing
-      const signingToken = app.jwt.sign({ phone, purpose: 'deal_signing' }, { expiresIn: '10m' });
-      return { signingToken };
-    },
-  );
-
   /* ── MyID signing session ───────────────────────────────────────────────── */
 
   const MyidSignSessionBody = Type.Object({

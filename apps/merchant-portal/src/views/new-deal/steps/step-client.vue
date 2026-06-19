@@ -130,7 +130,7 @@ async function checkKatmStatus() {
   if (!deal.dealSessionId) return
   try {
     const res = await apiFetch<{ status: string; error?: string | null } & KatmSummary>(
-      `/merchant/katm/status?dealSessionId=${deal.dealSessionId}`,
+      `/merchant/deal-sessions/${deal.dealSessionId}/katm-status`,
     )
     if (res.status === 'completed') {
       stopKatmPolling()
@@ -296,12 +296,11 @@ async function queryKatm(): Promise<boolean> {
   katmDetailsError.value = ''
   try {
     const result = await apiFetch<{ status: 'completed' | 'pending' } & KatmSummary>(
-      '/merchant/scoring/start',
+      `/merchant/deal-sessions/${deal.dealSessionId}/start`,
       {
         method: 'POST',
         body: JSON.stringify({
           userId: confirmedClient.value.id,
-          dealSessionId: deal.dealSessionId,
         }),
       },
     )

@@ -25,7 +25,7 @@ async function fetchCards() {
   loadCardsError.value = null
   try {
     const data = await apiFetch<{ cards: Card[] }>(
-      `/merchant/cards`,
+      `/merchant/deal-sessions/${deal.dealSessionId}/cards`,
     )
     cards.value = data.cards
     // Restore previously selected card if it still exists in the list
@@ -139,11 +139,10 @@ async function requestAddCard() {
   addError.value = null
   try {
     const data = await apiFetch<{ sessionId: string; maskedPhone: string }>(
-      '/merchant/cards/add',
+      `/merchant/deal-sessions/${deal.dealSessionId}/cards/add`,
       {
         method: 'POST',
         body: JSON.stringify({
-          clientId: deal.sessionData.client?.id,
           cardNumber: rawPan,
           expiry: newExpiry.value,
         }),
@@ -172,7 +171,7 @@ async function confirmOtp() {
   addError.value = null
   try {
     const data = await apiFetch<{ card: Card }>(
-      '/merchant/cards/confirm',
+      `/merchant/deal-sessions/${deal.dealSessionId}/cards/confirm`,
       {
         method: 'POST',
         body: JSON.stringify({ sessionId: addSessionId.value, otp: otpCode.value }),
@@ -230,14 +229,12 @@ async function runScoring(): Promise<CardScoreResult | null> {
 
   try {
     const data = await apiFetch<ServerScoreResult>(
-      '/merchant/cards/score',
+      `/merchant/deal-sessions/${deal.dealSessionId}/cards/score`,
       {
         method: 'POST',
         body: JSON.stringify({
           plumCardId: selectedCard.value.plumCardId,
           pcType: selectedCard.value.pcType,
-          userId: deal.sessionData.client.id,
-          dealSessionId: deal.dealSessionId,
           maskedPan: selectedCard.value.maskedPan,
           bank: selectedCard.value.bank,
           holderName: selectedCard.value.holderName,

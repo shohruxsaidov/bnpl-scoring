@@ -4,12 +4,9 @@ import merchantCatalogRoutes from './catalog/index';
 import merchantBranchRoutes from './branches/index';
 import merchantEmployeeRoutes from './employees/index';
 import merchantTariffRoutes from './tariffs/index';
-import merchantCardRoutes from './cards/index';
 import merchantDealRoutes from './deals/index';
-import merchantScoringRoutes from './scoring';
 import merchantDealSessionRoutes from './deal-sessions/index';
 import merchantScoringHistoryRoutes from './scoringHistory/index';
-import merchantKatmRoutes from './katm/index';
 import mxikRoutes from '../mxik/index';
 import regionRoutes from '../regions/index';
 
@@ -19,12 +16,9 @@ export default async function merchantModule(app: FastifyInstance) {
   await app.register(merchantBranchRoutes, { prefix: '/merchant/branches' });
   await app.register(merchantEmployeeRoutes, { prefix: '/merchant/employees' });
   await app.register(merchantTariffRoutes, { prefix: '/merchant/tariffs' });
-  await app.register(merchantCardRoutes, { prefix: '/merchant/cards' });
   await app.register(merchantDealRoutes, { prefix: '/merchant/deals' });
   await app.register(merchantDealSessionRoutes, { prefix: '/merchant/deal-sessions' });
   await app.register(merchantScoringHistoryRoutes, { prefix: '/merchant/scoring-history' });
-  await app.register(merchantKatmRoutes, { prefix: '/merchant/katm' });
-  await app.register(merchantScoringRoutes, { prefix: '/merchant/scoring' });
   await app.register(mxikRoutes, { prefix: '/merchant/mxik', preHandler: app.verifyMerchantJwt });
   // Region reference: any authenticated merchant user.
   await app.register(regionRoutes, {
