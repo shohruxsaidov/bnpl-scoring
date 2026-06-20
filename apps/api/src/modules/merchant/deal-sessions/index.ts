@@ -704,7 +704,6 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           coefficient: 0,
           criteriaScores: {},
           sessionClosed: true,
-          rejectionReason: { code: 'credit_ban' as const },
         };
       }
 
@@ -768,7 +767,8 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       }
       const fullDefaultLimit = 5_000_000;
       const platformCreditLimit = Math.round(fullDefaultLimit * coefficient) * 100;
-      const finalDecision = engineResult.rejected || platformCreditLimit === 0 ? 'reject' : 'approve';
+      const finalDecision =
+        engineResult.rejected || platformCreditLimit === 0 ? 'reject' : 'approve';
 
       const criteriaScores: CriteriaScores = {
         ...(katm && {
@@ -849,28 +849,16 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         request.body.bailsmen,
       );
 
-      type RejectionCode = 'credit_ban' | 'model_stop_factor' | 'zero_limit';
-      let rejectionReason: { code: RejectionCode; factorKey?: string } | null = null;
       if (finalDecision === 'reject') {
         await rejectSession(sessionAfterCard);
-        if (engineResult.rejected) {
-          rejectionReason = {
-            code: 'model_stop_factor',
-            factorKey: (engineResult as Extract<ScoringResult, { rejected: true }>).stopFactor,
-          };
-        } else {
-          rejectionReason = { code: 'zero_limit' };
-        }
       }
 
       return {
         scoringId,
         coefficient,
         scoreSum,
-        limit: platformCreditLimit,
         criteriaScores,
         sessionClosed: finalDecision === 'reject',
-        rejectionReason,
       };
     },
   );
