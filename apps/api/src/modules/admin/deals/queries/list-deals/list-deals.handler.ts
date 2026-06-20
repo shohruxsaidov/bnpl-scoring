@@ -5,7 +5,7 @@ import { users, tariffs, merchantUsers } from '@db/schema'
 import type { ListAdminDealsQuery } from "./list-deals.query"
 
 function formatDealNumber(n: number | null | undefined): string {
-  return n != null ? `CN-${String(n).padStart(7, "0")}` : "—"
+  return n != null ? String(n) : "—"
 }
 
 export async function listAdminDeals(filters: ListAdminDealsQuery = {}) {

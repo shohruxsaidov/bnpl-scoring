@@ -62,7 +62,7 @@ export async function listPayments(filters: ListPaymentsFilters = {}): Promise<P
     clientName: `${r.firstName} ${r.lastName}`,
     clientPhone: r.clientPhone,
     contractId: r.contractId,
-    dealNumber: `CN-${String(r.dealNumber ?? 0).padStart(7, "0")}`,
+    dealNumber: String(r.dealNumber ?? 0),
     amount: Number(r.amount),
     paidAmount: Number(r.paidAmount ?? 0),
     type: "transfer" as const,

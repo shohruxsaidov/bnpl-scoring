@@ -40,7 +40,7 @@ export async function listManualPayments(): Promise<ManualPayment[]> {
   return rows.map((r) => ({
     id: r.id.toString(),
     dealId: r.dealId,
-    dealNumber: `CN-${String(r.dealNumber).padStart(7, "0")}`,
+    dealNumber: String(r.dealNumber),
     clientName: `${r.firstName} ${r.lastName}`,
     clientPhone: r.clientPhone,
     amount: Number(r.amount),

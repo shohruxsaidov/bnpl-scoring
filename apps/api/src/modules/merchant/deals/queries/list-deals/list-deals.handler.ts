@@ -8,7 +8,7 @@ function serializeNumber(v: number | null | undefined): string | null {
 }
 
 function formatDealNumber(n: number | null | undefined): string {
-  return n != null ? `CN-${String(n).padStart(7, '0')}` : '—';
+  return n != null ? String(n) : '—';
 }
 
 function toDealDto(

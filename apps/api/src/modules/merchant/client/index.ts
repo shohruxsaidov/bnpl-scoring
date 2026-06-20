@@ -13,7 +13,7 @@ import { createUserHandler } from '../../id/users';
 import { findUsersHandler } from '../../id/users/queries/find-user/find-user.handler';
 
 function formatDealNumber(n: number | null | undefined): string {
-  return n != null ? `CN-${String(n).padStart(7, '0')}` : '—';
+  return n != null ? String(n) : '—';
 }
 
 function toClientDto(c: typeof users.$inferSelect) {

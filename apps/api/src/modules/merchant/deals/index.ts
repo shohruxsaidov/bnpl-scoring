@@ -20,7 +20,7 @@ function payload(request: { user: unknown }) {
 }
 
 function formatDealNumber(n: number | null | undefined): string {
-  return n != null ? `CN-${String(n).padStart(7, '0')}` : '—';
+  return n != null ? String(n) : '—';
 }
 
 export default async function merchantDealRoutes(app: FastifyInstance) {

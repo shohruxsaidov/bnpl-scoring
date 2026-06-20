@@ -5,7 +5,7 @@ import { merchants, branches, merchantUsers, users } from '@db/schema';
 import type { BuyoutDto } from '../../queries/list-buyouts/list-buyouts.handler';
 
 function formatDealNumber(n: number | null | undefined): string {
-  return n != null ? `CN-${String(n).padStart(7, '0')}` : '—';
+  return n != null ? String(n) : '—';
 }
 
 export async function markBuyoutPaid(id: number): Promise<BuyoutDto | null> {

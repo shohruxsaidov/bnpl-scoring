@@ -4,7 +4,6 @@ import {
   jsonb,
   numeric,
   pgTable,
-  serial,
   timestamp,
   uuid,
   varchar,
@@ -63,7 +62,7 @@ export const deals = pgTable('deals', {
   prepaymentAmount: integer('prepayment_amount'),
   // Kontrakt language selected at Wizard verification step
   lang: varchar('lang', { length: 5 }).notNull().default('ru'),
-  // Human-readable sequential identifier, formatted as CN-0000001 at the app layer
-  dealNumber: serial('deal_number').notNull().unique(),
+  // Human-readable sequential identifier — plain integer starting at 1000
+  dealNumber: integer('deal_number').notNull().unique().generatedAlwaysAsIdentity({ startWith: 1000 }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });

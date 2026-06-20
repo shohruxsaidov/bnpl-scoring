@@ -70,7 +70,7 @@ export async function getCollectionBoard(
     .filter((r) => Number(r.daysOverdue) > 0)
     .map((r) => ({
       dealId: r.dealId,
-      dealNumber: r.dealNumber != null ? `CN-${String(r.dealNumber).padStart(7, "0")}` : "—",
+      dealNumber: r.dealNumber != null ? String(r.dealNumber) : "—",
       merchantId: r.merchantId.toString(),
       merchantName: r.merchantName ?? "—",
       clientName: `${r.firstName} ${r.lastName}`,

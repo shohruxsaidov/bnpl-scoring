@@ -12,7 +12,7 @@ export interface DealSearchResult {
 }
 
 export async function searchDealsForManualPayment(q: string): Promise<DealSearchResult[]> {
-  const stripped = q.replace(/^CN-0*/i, "").trim()
+  const stripped = q.trim()
   if (!stripped) return []
 
   const dealRows = await db
@@ -49,7 +49,7 @@ export async function searchDealsForManualPayment(q: string): Promise<DealSearch
 
       return {
         id: d.id,
-        dealNumber: `CN-${String(d.dealNumber).padStart(7, "0")}`,
+        dealNumber: String(d.dealNumber),
         clientName: `${d.firstName} ${d.lastName}`,
         clientPhone: d.phone,
         remainingAmount: remaining,

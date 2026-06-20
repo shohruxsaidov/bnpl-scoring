@@ -4,7 +4,7 @@ import { users, merchants } from '@db/schema'
 import { deals, dealPaymentSchedules } from "../../../../deals/schema"
 
 function formatDealNumber(n: number | null | undefined): string {
-  return n != null ? `CN-${String(n).padStart(7, "0")}` : "—"
+  return n != null ? String(n) : "—"
 }
 
 export async function listUserPayments(id: number) {

@@ -105,7 +105,7 @@ export async function createManualPayment(input: CreateManualPaymentInput): Prom
     return {
       id: mp.id.toString(),
       dealId: mp.dealId,
-      dealNumber: `CN-${String(deal.dealNumber).padStart(7, '0')}`,
+      dealNumber: String(deal.dealNumber),
       clientName: `${client.firstName} ${client.lastName}`,
       clientPhone: client.phone,
       amount: Number(mp.amount),
