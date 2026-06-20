@@ -191,6 +191,12 @@ export const useMerchantsStore = defineStore('merchants', () => {
     })
   }
 
+  async function deleteEmployee(employeeId: string, branchId: string): Promise<void> {
+    await api(`/admin/employees/${employeeId}`, { method: 'DELETE' })
+    const list = employees.value[branchId]
+    if (list) employees.value[branchId] = list.filter((e) => e.id !== employeeId)
+  }
+
   async function fetchGlobalCategories(): Promise<void> {
     const body = await api<{ categories: Category[] }>('/admin/categories')
     globalCategories.value = body.categories
@@ -346,6 +352,7 @@ export const useMerchantsStore = defineStore('merchants', () => {
     createEmployee,
     updateEmployee,
     changeEmployeePassword,
+    deleteEmployee,
     globalCategories,
     fetchGlobalCategories,
     fetchCategories,

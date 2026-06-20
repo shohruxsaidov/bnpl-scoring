@@ -114,34 +114,50 @@ export async function startKatmFlow(input: {
   sessionId: string;
   channel: 'wizard' | 'self_service';
 }): Promise<KatmFlowOutcome> {
-  // Ban pre-check — an actively banned client must not even have a claim
-  // registered with the bureau (ADR-0025)
-  // const ban = await checkCreditBan({ pinfl: input.subject.pinfl })
-  // if (ban.banned) return { status: 'banned' }
+  // Idempotency: if this claimId was already registered (e.g. retry after a
+  // transient failure), skip registration and re-request the report directly.
+  const [existing] = await db
+    .select({ katmSir: katmClaims.katmSir })
+    .from(katmClaims)
+    .where(eq(katmClaims.claimId, input.claimId))
+    .limit(1);
 
-  const claim = await registerClaim({
-    claimId: input.claimId,
-    agreementId: input.consent.agreementId,
-    agreementDate: input.consent.agreementDate,
-    pinfl: input.subject.pinfl,
-    passportSeries: input.subject.passportSerial,
-    passportNumber: input.subject.passportNumber,
-    passportType: input.subject.docType,
-    regionCode: input.subject.regionCode,
-    districtCode: input.subject.districtCode,
-    address: input.subject.address,
-    phone: input.subject.phone,
-    amount: 35000000, // in tiyin 350 000 dom
-  });
+  let katmSir: string;
 
-  await db.insert(katmClaims).values({
-    claimId: input.claimId,
-    channel: input.channel,
-    userId: input.userId,
-    sessionId: input.sessionId,
-    katmSir: claim.katmSir,
-    verified: claim.verified,
-  });
+  if (existing) {
+    katmSir = existing.katmSir;
+  } else {
+    // Ban pre-check — an actively banned client must not even have a claim
+    // registered with the bureau (ADR-0025)
+    // const ban = await checkCreditBan({ pinfl: input.subject.pinfl })
+    // if (ban.banned) return { status: 'banned' }
+
+    const claim = await registerClaim({
+      claimId: input.claimId,
+      agreementId: input.consent.agreementId,
+      agreementDate: input.consent.agreementDate,
+      pinfl: input.subject.pinfl,
+      passportSeries: input.subject.passportSerial,
+      passportNumber: input.subject.passportNumber,
+      passportType: input.subject.docType,
+      regionCode: input.subject.regionCode,
+      districtCode: input.subject.districtCode,
+      address: input.subject.address,
+      phone: input.subject.phone,
+      amount: 35000000, // in tiyin 350 000 dom
+    });
+
+    await db.insert(katmClaims).values({
+      claimId: input.claimId,
+      channel: input.channel,
+      userId: input.userId,
+      sessionId: input.sessionId,
+      katmSir: claim.katmSir,
+      verified: claim.verified,
+    });
+
+    katmSir = claim.katmSir;
+  }
 
   const report = await request077Report({ claimId: input.claimId });
 
@@ -150,8 +166,8 @@ export async function startKatmFlow(input: {
       .update(katmClaims)
       .set({ token: report.token, updatedAt: new Date() })
       .where(eq(katmClaims.claimId, input.claimId));
-    return { status: 'pending', katmSir: claim.katmSir, token: report.token };
+    return { status: 'pending', katmSir, token: report.token };
   }
 
-  return { status: 'ready', katmSir: claim.katmSir, result: report.result };
+  return { status: 'ready', katmSir, result: report.result };
 }

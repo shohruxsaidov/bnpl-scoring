@@ -135,6 +135,7 @@ export interface ContractData {
   dealId: string;
   createdAt: Date;
   clientFullName: string;
+  clientAddress: string;
   clientPinfl: string;
   clientPassport: string;
   merchantName?: string;
@@ -434,7 +435,7 @@ export async function generateContract(data: ContractData, lang: 'ru' | 'uz'): P
   ];
   const clientLines: Array<[string, string]> = [
     [t.buyer, data.clientFullName],
-    [t.address, '—'],
+    [t.address, data.clientAddress],
     [t.passport, data.clientPassport],
     [t.pinfl, data.clientPinfl],
   ];

@@ -77,6 +77,7 @@ export interface CriteriaScores {
   katm?: { katmScore: number; detail: KatmCriteriaDetail };
   card?: { score: number; detail: CardCriteriaDetail };
   client?: { detail: ClientCriteriaDetail };
+  model?: Record<string, unknown>;
 }
 
 function buildCriteriaScores(

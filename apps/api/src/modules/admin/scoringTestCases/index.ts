@@ -16,7 +16,7 @@ const ScoringInputsSchema = Type.Object({
   age:                    Type.Optional(Type.Number()),
   citizenship:            Type.Optional(Type.Union([Type.Literal("Uzbekistan"), Type.Literal("NonResident")])),
   gender:                 Type.Optional(Type.Union([Type.Literal("Male"), Type.Literal("Female")])),
-  monthlyPaymentRatio:    Type.Optional(Type.Number()),
+  monthlyPayment:         Type.Optional(Type.Number()),
   creditHistoryContracts: Type.Optional(Type.Number()),
   contingentLiability:    Type.Optional(Type.Number()),
   overdue30Count:         Type.Optional(Type.Number()),

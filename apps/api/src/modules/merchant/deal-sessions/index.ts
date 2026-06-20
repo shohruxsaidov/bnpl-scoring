@@ -30,6 +30,8 @@ import { scoreCard } from '../../integrations/plumgate/queries/score-card/score-
 import { createScoring } from '../scoringHistory/commands/create-scoring/create-scoring.handler';
 import { stampScoring } from './commands/stamp-scoring/stamp-scoring.handler';
 import type { CriteriaScores } from '../../scoring/service/service.handler';
+import { resolveScoringModel } from '../../scoring/resolve-model';
+import { computeScoringModel, type ScoringInputs, type ScoringResult } from '../../scoring/engine';
 import { createOtp, verifyOtp } from '../../auth/client/service/service.handler';
 
 type JwtPayload = {
@@ -585,6 +587,22 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
     expiry: Type.String({ minLength: 1 }),
   });
 
+  function katmOverdueBucket(overdueCount: number, maxOverdueDays: number): Partial<ScoringInputs> {
+    if (overdueCount === 0 || maxOverdueDays < 30) return {};
+    if (maxOverdueDays >= 90) return { overdue90Count: overdueCount };
+    if (maxOverdueDays >= 60) return { overdue60to90Count: overdueCount };
+    return { overdue30Count: overdueCount };
+  }
+
+  function ageYears(birthDate: string): number {
+    const b = new Date(birthDate);
+    const now = new Date();
+    let age = now.getFullYear() - b.getFullYear();
+    const m = now.getMonth() - b.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age--;
+    return age;
+  }
+
   fastify.post(
     '/:id/cards/score',
     { schema: { params: IdParams, body: ScoreCardBody }, preHandler: guards },
@@ -604,16 +622,73 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
       if (session.userId == null) return reply.code(409).sendError('client_step_missing');
 
-      const result = await scoreCard({ plumCardId, pcType });
-      const coefficient = result.score >= 700 ? 1.0 : result.score >= 600 ? 0.8 : 0;
-
       const katm = (session.stepData as SessionStepData).katm;
+
+      // Pre-engine hard gate: credit ban is a regulatory constraint, not a scoring criterion
+      if (katm?.hasCreditBan === true) {
+        const sessionAfterCard = await saveStep(session, 'card', {
+          cardId: plumCardId, maskedPan, pcType, bank, holderName, expiry,
+        });
+        await stampScoring(sessionAfterCard, {
+          cardId: plumCardId,
+          scoringId: null,
+          scoreSum: 0,
+          coefficient: 0,
+          decision: 'reject',
+          platformCreditLimit: 0,
+          criteriaScores: {},
+        });
+        return { score: 0, limit: 0, decision: 'reject', scoringId: null, coefficient: 0, criteriaScores: {} };
+      }
+
+      const result = await scoreCard({ plumCardId, pcType });
+
+      const resolvedModel = await resolveScoringModel(db, Number(p.merchantId));
+      if (!resolvedModel) throw new Error('no_scoring_model_available');
 
       const [userRow] = await db
         .select({ birthDate: users.birthDate, gender: users.gender, nationality: users.nationality })
         .from(users)
         .where(eq(users.id, session.userId))
         .limit(1);
+
+      const scoringInputs: ScoringInputs = {
+        ...(katm && {
+          contingentLiability: katm.activeLoans,
+          allDebts: katm.allDebtSum,
+          creditHistoryContracts: katm.totalContracts,
+          loanApplicationCount: katm.totalClaims,
+          monthlyPayment: katm.avgMonthlyPayment,
+          ...katmOverdueBucket(katm.overdueCount, katm.maxOverdueDays),
+        }),
+        ...(userRow && {
+          age: ageYears(userRow.birthDate),
+          gender: userRow.gender === 1 ? 'Male' : userRow.gender === 2 ? 'Female' : undefined,
+          citizenship: userRow.nationality === 'Uzbekistan' ? 'Uzbekistan' : 'NonResident',
+        }),
+      };
+
+      const engineResult = computeScoringModel(resolvedModel.params, scoringInputs);
+
+      const plumRejected = result.decision !== 'approved';
+      type RejectedResult = Extract<ScoringResult, { rejected: true }>;
+      type PassedResult = Extract<ScoringResult, { rejected: false }>;
+      let coefficient: number;
+      let scoreSum: number;
+      let modelEntry: Record<string, unknown>;
+      if (engineResult.rejected) {
+        const r = engineResult as RejectedResult;
+        coefficient = 0;
+        scoreSum = 0;
+        modelEntry = { rejected: true, stopFactor: r.stopFactor, name: r.name };
+      } else {
+        const r = engineResult as PassedResult;
+        coefficient = r.coefficient;
+        scoreSum = r.totalScore;
+        modelEntry = { rejected: false, totalScore: r.totalScore, coefficient: r.coefficient, breakdown: r.breakdown };
+      }
+      const finalDecision = plumRejected || engineResult.rejected ? 'reject' : 'approve';
+      const platformCreditLimit = Math.round(result.limit * coefficient);
 
       const criteriaScores: CriteriaScores = {
         ...(katm && {
@@ -657,6 +732,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
             },
           },
         }),
+        model: modelEntry,
       };
 
       let scoringId: string | null = null;
@@ -664,10 +740,10 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         const res = await createScoring({
           merchantId: Number(p.merchantId),
           userId: session.userId,
-          scoreSum: result.score,
+          scoreSum,
           coefficient,
-          decision: result.decision,
-          platformCreditLimit: Number(Math.round(result.limit)),
+          decision: finalDecision,
+          platformCreditLimit,
           criteriaScores: criteriaScores as Record<string, unknown>,
         });
         scoringId = res.id;
@@ -687,14 +763,14 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       await stampScoring(sessionAfterCard, {
         cardId: plumCardId,
         scoringId,
-        scoreSum: result.score,
+        scoreSum,
         coefficient,
-        decision: result.decision,
-        platformCreditLimit: result.limit,
+        decision: finalDecision,
+        platformCreditLimit,
         criteriaScores: criteriaScores as Record<string, unknown>,
       });
 
-      return { ...result, scoringId, coefficient, criteriaScores };
+      return { ...result, scoringId, coefficient, scoreSum, criteriaScores };
     },
   );
 }

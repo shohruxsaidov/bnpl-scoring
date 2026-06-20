@@ -904,7 +904,14 @@
     "noRegion": "Viloyat ko'rsatilmagan",
     "editRegion": "Viloyatni o'zgartirish",
     "regionSaved": "Viloyat saqlandi",
-    "regionSaveFailed": "Viloyatni saqlab bo'lmadi"
+    "regionSaveFailed": "Viloyatni saqlab bo'lmadi",
+    "changeRole": "Rolni o'zgartirish",
+    "changeRoleTitle": "Xodim rolini o'zgartirish",
+    "roleChanged": "Rol yangilandi",
+    "deleteEmployee": "Xodimni o'chirish",
+    "deleteEmployeeTitle": "Xodimni o'chirish",
+    "deleteEmployeeConfirm": "«{name}» ni o'chirishni tasdiqlaysizmi? Bu amalni qaytarib bo'lmaydi.",
+    "employeeDeleted": "Xodim o'chirildi"
   },
   "deals": {
     "status": "Holat",

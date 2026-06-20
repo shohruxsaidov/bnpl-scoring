@@ -234,6 +234,56 @@ async function toggleEmployee(employee: MerchantEmployee) {
   }
 }
 
+// --- Change employee role ----------------------------------------------------
+const showChangeRole = ref(false)
+const changeRoleEmployeeId = ref('')
+const changeRoleValue = ref<string[]>([])
+const changeRoleSaving = ref(false)
+
+function openChangeRole(employee: MerchantEmployee) {
+  changeRoleEmployeeId.value = employee.id
+  changeRoleValue.value = [...employee.roles]
+  showChangeRole.value = true
+}
+
+async function submitChangeRole() {
+  if (changeRoleValue.value.length === 0) return
+  changeRoleSaving.value = true
+  try {
+    await merchants.updateEmployee(changeRoleEmployeeId.value, { roles: changeRoleValue.value })
+    toast.add({ severity: 'success', summary: t('merchantDetail.roleChanged'), life: 2000 })
+    showChangeRole.value = false
+  } catch {
+    notifyError('merchantDetail.updateFailed')
+  } finally {
+    changeRoleSaving.value = false
+  }
+}
+
+// --- Delete employee ---------------------------------------------------------
+const showDeleteEmployee = ref(false)
+const deleteEmployeeTarget = ref<MerchantEmployee | null>(null)
+const deleteEmployeeSaving = ref(false)
+
+function openDeleteEmployee(employee: MerchantEmployee) {
+  deleteEmployeeTarget.value = employee
+  showDeleteEmployee.value = true
+}
+
+async function confirmDeleteEmployee() {
+  if (!deleteEmployeeTarget.value) return
+  deleteEmployeeSaving.value = true
+  try {
+    await merchants.deleteEmployee(deleteEmployeeTarget.value.id, deleteEmployeeTarget.value.branchId)
+    toast.add({ severity: 'success', summary: t('merchantDetail.employeeDeleted'), life: 2000 })
+    showDeleteEmployee.value = false
+  } catch {
+    notifyError('merchantDetail.updateFailed')
+  } finally {
+    deleteEmployeeSaving.value = false
+  }
+}
+
 // --- Change employee password ------------------------------------------------
 const showChangePwd = ref(false)
 const changePwdEmployeeId = ref('')
@@ -775,6 +825,20 @@ async function assignScoringModel(radioValue: number) {
               </button>
             </template>
           </Column>
+          <Column style="width: 48px">
+            <template #body="{ data }">
+              <button class="icon-btn" :title="$t('merchantDetail.changeRole')" @click="openChangeRole(data)">
+                <i class="pi pi-id-card" />
+              </button>
+            </template>
+          </Column>
+          <Column style="width: 48px">
+            <template #body="{ data }">
+              <button class="icon-btn danger" :title="$t('merchantDetail.deleteEmployee')" @click="openDeleteEmployee(data)">
+                <i class="pi pi-trash" />
+              </button>
+            </template>
+          </Column>
         </DataTable>
       </div>
     </section>
@@ -1120,6 +1184,33 @@ async function assignScoringModel(radioValue: number) {
         <button class="btn-ghost" @click="showProduct = false">{{ $t('common.cancel') }}</button>
         <button class="btn-gradient" :disabled="productSaving" @click="submitProduct">
           {{ editingProductId ? $t('common.save') : $t('merchantDetail.create') }}
+        </button>
+      </template>
+    </Dialog>
+
+    <!-- Change employee role dialog -->
+    <Dialog v-model:visible="showChangeRole" modal :header="$t('merchantDetail.changeRoleTitle')" :style="{ width: '400px' }">
+      <div class="field">
+        <label class="field-label">{{ $t('merchantDetail.roles') }}</label>
+        <MultiSelect v-model="changeRoleValue" :options="ROLE_OPTIONS" :placeholder="$t('merchantDetail.selectRoles')" display="chip" />
+      </div>
+      <template #footer>
+        <button class="btn-ghost" @click="showChangeRole = false">{{ $t('common.cancel') }}</button>
+        <button class="btn-gradient" :disabled="changeRoleSaving || changeRoleValue.length === 0" @click="submitChangeRole">
+          {{ $t('common.save') }}
+        </button>
+      </template>
+    </Dialog>
+
+    <!-- Delete employee confirm dialog -->
+    <Dialog v-model:visible="showDeleteEmployee" modal :header="$t('merchantDetail.deleteEmployeeTitle')" :style="{ width: '400px' }">
+      <p class="delete-confirm-text">
+        {{ $t('merchantDetail.deleteEmployeeConfirm', { name: deleteEmployeeTarget?.fullName }) }}
+      </p>
+      <template #footer>
+        <button class="btn-ghost" @click="showDeleteEmployee = false">{{ $t('common.cancel') }}</button>
+        <button class="btn-danger" :disabled="deleteEmployeeSaving" @click="confirmDeleteEmployee">
+          {{ $t('common.delete') }}
         </button>
       </template>
     </Dialog>
@@ -1629,6 +1720,38 @@ async function assignScoringModel(radioValue: number) {
 .icon-btn:hover {
   color: var(--accent-2);
   border-color: var(--accent-2);
+}
+
+.icon-btn.danger:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.btn-danger {
+  padding: 0.5rem 1.1rem;
+  border-radius: 9px;
+  border: none;
+  background: var(--danger);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+
+.btn-danger:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.delete-confirm-text {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 0.9rem;
 }
 
 .w-full {

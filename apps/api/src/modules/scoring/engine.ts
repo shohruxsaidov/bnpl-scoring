@@ -89,7 +89,7 @@ export interface ScoringInputs {
   age?: number
   citizenship?: 'Uzbekistan' | 'NonResident'
   gender?: 'Male' | 'Female'
-  monthlyPaymentRatio?: number
+  monthlyPayment?: number
   creditHistoryContracts?: number    // count: 0=no history, 1=clean, 2+=has overdues
   contingentLiability?: number       // open loan count
   overdue30Count?: number
@@ -169,7 +169,7 @@ export function computeScoringModel(
     IncomeSum:               inputs.incomeSum,
     WorkExperience:          inputs.workExperienceMonths,
     Age:                     inputs.age,
-    MonthlyAveragePayment:   inputs.monthlyPaymentRatio,
+    MonthlyAveragePayment:   inputs.monthlyPayment,
     CreditHistoryContracts:  inputs.creditHistoryContracts,
     ContingentLiability:     inputs.contingentLiability,
     Overdue30Days:           inputs.overdue30Count,

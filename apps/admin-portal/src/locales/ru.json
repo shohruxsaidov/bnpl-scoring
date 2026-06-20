@@ -912,7 +912,14 @@
     "noRegion": "Регион не указан",
     "editRegion": "Изменить регион",
     "regionSaved": "Регион сохранён",
-    "regionSaveFailed": "Не удалось сохранить регион"
+    "regionSaveFailed": "Не удалось сохранить регион",
+    "changeRole": "Изменить роль",
+    "changeRoleTitle": "Изменить роль сотрудника",
+    "roleChanged": "Роль обновлена",
+    "deleteEmployee": "Удалить сотрудника",
+    "deleteEmployeeTitle": "Удалить сотрудника",
+    "deleteEmployeeConfirm": "Вы уверены, что хотите удалить «{name}»? Это действие необратимо.",
+    "employeeDeleted": "Сотрудник удалён"
   },
   "deals": {
     "status": "Статус",

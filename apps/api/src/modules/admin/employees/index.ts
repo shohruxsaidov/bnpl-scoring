@@ -75,4 +75,14 @@ export default async function adminEmployeeRoutes(app: FastifyInstance) {
       return { ok: true }
     },
   )
+
+  fastify.delete(
+    "/:id",
+    { schema: { params: IdParams }, preHandler },
+    async (request, reply) => {
+      const employee = await updateEmployee({ id: Number(request.params.id), active: false })
+      if (!employee) return reply.code(404).sendError("not_found")
+      return { ok: true }
+    },
+  )
 }

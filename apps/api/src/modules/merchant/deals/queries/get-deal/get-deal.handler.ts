@@ -62,6 +62,7 @@ export async function getDealById(id: string, merchantId: number) {
     clientName: c ? `${c.firstName} ${c.lastName}` : null,
     clientPinfl: c?.pinfl ?? null,
     clientPhone: c?.phone ?? null,
+    clientAddress: c?.address ?? null,
     clientPassportSeries: c?.passportSeries ?? null,
     clientPassportNumber: c?.passportNumber ?? null,
     tariffId: serializeNumber(d.tariffId),
