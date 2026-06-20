@@ -494,7 +494,10 @@
     "scoreError": "Skoring amalga oshmadi. Qayta urinib ko'ring yoki boshqa kartani tanlang.",
     "useDifferentCard": "Boshqa kartani tanlash",
     "back": "Orqaga",
-    "continue": "Davom etish"
+    "continue": "Davom etish",
+    "rejectedTitle": "Ariza rad etildi",
+    "rejectedDesc": "Skoring rad javobi bilan yakunlandi. Sessiya yopildi. Yangi sessiya boshlashingiz mumkin.",
+    "newSession": "Yangi sessiya"
   },
   "stepTariff": {
     "title": "Tarif",

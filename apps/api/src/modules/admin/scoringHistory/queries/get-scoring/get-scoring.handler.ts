@@ -7,6 +7,35 @@ export interface ScoringFactor {
   score: number
 }
 
+export interface CriterionResult {
+  key: string
+  name: string
+  rawScore: number
+  weightedScore: number
+  importantLevel: number
+  skipped: boolean
+}
+
+export type ModelData =
+  | { rejected: true; stopFactor: string; name: string }
+  | { rejected: false; totalScore: number; coefficient: number; breakdown: CriterionResult[] }
+
+export interface KatmData {
+  katmScore: number | null
+  katmClass: string | null
+  scoringLevel: string | null
+  openCredits: number | null
+  totalDebt: number | null
+  overdueInOpenCredits: number | null
+  totalContracts: number | null
+  totalClaims: number | null
+  overdueCount: number | null
+  maxOverdueDays: number | null
+  maxOverdueSum: number | null
+  avgMonthlyPayment: number | null
+  hasCreditBan: boolean | null
+}
+
 export interface ScoringDetail {
   id: string
   fullName: string
@@ -24,6 +53,8 @@ export interface ScoringDetail {
   gender: string | null
   coefficient: number | null
   factors: ScoringFactor[]
+  katmData: KatmData | null
+  modelData: ModelData | null
   platformStats: {
     total: number
     active: number
@@ -155,6 +186,45 @@ export async function getScoring(id: number): Promise<ScoringDetail | null> {
   const rawGender = clientDetail?.gender as string | undefined
   const gender = rawGender === "1" ? "Erkak" : rawGender === "2" ? "Ayol" : null
 
+  const rawModel = criteriaScores?.model as Record<string, unknown> | undefined
+  let modelData: ModelData | null = null
+  if (rawModel) {
+    if (rawModel.rejected === true) {
+      modelData = {
+        rejected: true,
+        stopFactor: rawModel.stopFactor as string,
+        name: rawModel.name as string,
+      }
+    } else if (rawModel.rejected === false) {
+      modelData = {
+        rejected: false,
+        totalScore: Number(rawModel.totalScore),
+        coefficient: Number(rawModel.coefficient),
+        breakdown: (rawModel.breakdown as CriterionResult[] | undefined) ?? [],
+      }
+    }
+  }
+
+  const katmDetail = (criteriaScores?.katm as Record<string, unknown> | undefined)
+    ?.detail as Record<string, unknown> | undefined
+  const katmData: KatmData | null = katmDetail
+    ? {
+        katmScore: katmDetail.katmScore != null ? Number(katmDetail.katmScore) : null,
+        katmClass: (katmDetail.katmClass as string | undefined) ?? null,
+        scoringLevel: (katmDetail.scoringLevel as string | undefined) ?? null,
+        openCredits: katmDetail.openCredits != null ? Number(katmDetail.openCredits) : null,
+        totalDebt: katmDetail.totalDebt != null ? Number(katmDetail.totalDebt) : null,
+        overdueInOpenCredits: katmDetail.overdueInOpenCredits != null ? Number(katmDetail.overdueInOpenCredits) : null,
+        totalContracts: katmDetail.totalContracts != null ? Number(katmDetail.totalContracts) : null,
+        totalClaims: katmDetail.totalClaims != null ? Number(katmDetail.totalClaims) : null,
+        overdueCount: katmDetail.overdueCount != null ? Number(katmDetail.overdueCount) : null,
+        maxOverdueDays: katmDetail.maxOverdueDays != null ? Number(katmDetail.maxOverdueDays) : null,
+        maxOverdueSum: katmDetail.maxOverdueSum != null ? Number(katmDetail.maxOverdueSum) : null,
+        avgMonthlyPayment: katmDetail.avgMonthlyPayment != null ? Number(katmDetail.avgMonthlyPayment) : null,
+        hasCreditBan: katmDetail.hasCreditBan != null ? Boolean(katmDetail.hasCreditBan) : null,
+      }
+    : null
+
   return {
     id: scoring.id.toString(),
     fullName:
@@ -173,6 +243,8 @@ export async function getScoring(id: number): Promise<ScoringDetail | null> {
     gender,
     coefficient: scoring.coefficient != null ? Number(scoring.coefficient) : null,
     factors: criteriaToFactors(criteriaScores),
+    katmData,
+    modelData,
     platformStats,
   }
 }

@@ -56,6 +56,25 @@ export interface ScoringDetail {
   citizenship: string
   coefficient: number | null
   factors: ScoringFactor[]
+  modelData: (
+    | { rejected: true; stopFactor: string; name: string }
+    | { rejected: false; totalScore: number; coefficient: number; breakdown: { key: string; name: string; rawScore: number; weightedScore: number; importantLevel: number; skipped: boolean }[] }
+  ) | null
+  katmData: {
+    katmScore: number | null
+    katmClass: string | null
+    scoringLevel: string | null
+    openCredits: number | null
+    totalDebt: number | null
+    overdueInOpenCredits: number | null
+    totalContracts: number | null
+    totalClaims: number | null
+    overdueCount: number | null
+    maxOverdueDays: number | null
+    maxOverdueSum: number | null
+    avgMonthlyPayment: number | null
+    hasCreditBan: boolean | null
+  } | null
   platformStats: {
     total: number
     active: number

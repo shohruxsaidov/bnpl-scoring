@@ -29,6 +29,7 @@ import { confirmCard } from '../../integrations/plumgate/commands/confirm-card/c
 import { scoreCard } from '../../integrations/plumgate/queries/score-card/score-card.handler';
 import { createScoring } from '../scoringHistory/commands/create-scoring/create-scoring.handler';
 import { stampScoring } from './commands/stamp-scoring/stamp-scoring.handler';
+import { rejectSession } from './commands/reject-session/reject-session.handler';
 import type { CriteriaScores } from '../../scoring/service/service.handler';
 import { resolveScoringModel } from '../../scoring/resolve-model';
 import { computeScoringModel, type ScoringInputs, type ScoringResult } from '../../scoring/engine';
@@ -638,7 +639,8 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           platformCreditLimit: 0,
           criteriaScores: {},
         });
-        return { score: 0, limit: 0, decision: 'reject', scoringId: null, coefficient: 0, criteriaScores: {} };
+        await rejectSession(sessionAfterCard);
+        return { score: 0, limit: 0, decision: 'reject', scoringId: null, coefficient: 0, criteriaScores: {}, sessionClosed: true };
       }
 
       const result = await scoreCard({ plumCardId, pcType });
@@ -770,7 +772,11 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         criteriaScores: criteriaScores as Record<string, unknown>,
       });
 
-      return { ...result, scoringId, coefficient, scoreSum, criteriaScores };
+      if (finalDecision === 'reject') {
+        await rejectSession(sessionAfterCard);
+      }
+
+      return { ...result, scoringId, coefficient, scoreSum, criteriaScores, sessionClosed: finalDecision === 'reject' };
     },
   );
 }

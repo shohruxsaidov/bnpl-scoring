@@ -199,6 +199,7 @@ interface ServerScoreResult {
   scoringId: string | null
   coefficient: number
   criteriaScores: Record<string, unknown>
+  sessionClosed?: boolean
 }
 
 const scoring = ref(false)
@@ -206,6 +207,7 @@ const progress = ref(0)
 const result = ref<CardScoreResult | null>(null)
 const serverResult = ref<ServerScoreResult | null>(null)
 const scoreError = ref<string | null>(null)
+const rejected = ref(false)
 
 let progressTimer: ReturnType<typeof setInterval> | null = null
 
@@ -266,6 +268,7 @@ function resetSelection() {
   result.value = null
   serverResult.value = null
   scoreError.value = null
+  rejected.value = false
 }
 
 // ── Continue ─────────────────────────────────────────────────────────────────
@@ -278,6 +281,11 @@ async function next() {
   const score = result.value && serverResult.value ? result.value : await runScoring()
   const server = serverResult.value
   if (!score || !server || !selectedCard.value) return
+
+  if (server.sessionClosed) {
+    rejected.value = true
+    return
+  }
 
   deal.setCard(selectedCard.value)
 
@@ -421,7 +429,21 @@ async function next() {
       </div>
     </transition>
 
-    <footer class="sc-foot">
+    <!-- Scoring rejected -->
+    <transition name="fade">
+      <div v-if="rejected" class="rejected-block">
+        <i class="pi pi-times-circle rejected-icon" />
+        <div class="rejected-body">
+          <p class="rejected-title">{{ $t('stepCard.rejectedTitle') }}</p>
+          <p class="rejected-desc">{{ $t('stepCard.rejectedDesc') }}</p>
+        </div>
+        <button class="btn-ghost" style="margin-left: auto" @click="deal.reset()">
+          {{ $t('stepCard.newSession') }}
+        </button>
+      </div>
+    </transition>
+
+    <footer v-if="!rejected" class="sc-foot">
       <button class="btn-ghost" @click="deal.back()">
         <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
       </button>
@@ -677,6 +699,43 @@ async function next() {
 
 .btn-muted {
   opacity: 0.7;
+}
+
+/* ── Rejected block ──────────────────────────────────────────────────────── */
+.rejected-block {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  background: var(--danger-bg, #fff0f0);
+  border: 1px solid var(--danger);
+  border-radius: 14px;
+  padding: 1.2rem 1.4rem;
+  margin-top: 1.4rem;
+}
+
+.rejected-icon {
+  font-size: 2rem;
+  color: var(--danger);
+  flex-shrink: 0;
+}
+
+.rejected-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.rejected-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--danger);
+}
+
+.rejected-desc {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
 }
 
 /* ── Footer ──────────────────────────────────────────────────────────────── */

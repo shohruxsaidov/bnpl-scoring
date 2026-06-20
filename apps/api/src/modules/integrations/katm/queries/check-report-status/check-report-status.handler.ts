@@ -11,14 +11,10 @@ import type { ReportOutcome, ReportData, KatmResponse } from '../../service/shar
 
 export type { ReportOutcome } from '../../service/shared';
 
-export async function checkReportStatus<T = unknown>(params: {
+export async function checkReportStatus(params: {
   claimId: string;
   token: string;
-}): Promise<{
-  status: 'ready' | 'pending';
-  token?: string;
-  result?: T;
-}> {
+}): Promise<ReportOutcome> {
   const data = await callKatm<ReportData>('v1/credit/report/status', {
     security: security(),
     data: {
@@ -34,6 +30,6 @@ export async function checkReportStatus<T = unknown>(params: {
   if (data.result === KATM_REPORT_PENDING || !data.reportBase64) {
     return { status: 'pending', token: params.token };
   }
-  const decode = decodeReport<T>('credit/report/status', data.reportBase64);
-  return { status: 'ready', result: decode };
+  const raw = decodeReport<KatmResponse>('credit/report/status', data.reportBase64);
+  return { status: 'ready', result: parseKatm077ReportResponse(raw) };
 }

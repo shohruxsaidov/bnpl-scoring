@@ -6,8 +6,9 @@ import {
   KATM_REPORT_PENDING,
   KatmVendorError,
   decodeReport,
+  parseKatm077ReportResponse,
 } from '../../service/shared';
-import type { ReportOutcome, ReportData } from '../../service/shared';
+import type { ReportOutcome, ReportData, KatmResponse } from '../../service/shared';
 
 export type { ReportOutcome } from '../../service/shared';
 
@@ -34,5 +35,6 @@ export async function request077Report(params: { claimId: string }): Promise<Rep
   if (!data.reportBase64) {
     throw new KatmVendorError('credit/report', data.result ?? null, 'success without reportBase64');
   }
-  return { status: 'ready', result: decodeReport('credit/report', data.reportBase64) };
+  const raw = decodeReport<KatmResponse>('credit/report', data.reportBase64);
+  return { status: 'ready', result: parseKatm077ReportResponse(raw) };
 }

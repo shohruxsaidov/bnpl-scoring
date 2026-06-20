@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useScoringHistoryStore, type ScoringDetail } from '@/stores/scoring-history'
 import MonoAmount from '@/components/mono-amount.vue'
@@ -11,7 +11,7 @@ const store = useScoringHistoryStore()
 onMounted(() => store.fetchDetail(route.params.id as string))
 
 const detail = computed<ScoringDetail | null>(() => store.detail)
-
+const modelExpanded = ref(false)
 
 </script>
 
@@ -75,15 +75,118 @@ const detail = computed<ScoringDetail | null>(() => store.detail)
         </div>
       </div>
 
-      <div class="surface-card panel">
-        <h2 class="panel-title">{{ $t('scoringHistory.factors') }}</h2>
-        <div v-if="detail.factors.length === 0" class="muted">{{ $t('common.noData') }}</div>
-        <div v-else class="factors">
-          <div v-for="(f, i) in detail.factors" :key="i" class="factor-row">
-            <span class="factor-label">{{ f.label }}</span>
-            <span class="factor-score font-mono">{{ f.score.toFixed(2) }}</span>
+      <div class="grid-2">
+        <div v-if="detail.katmData" class="surface-card panel">
+          <h2 class="panel-title">KATM</h2>
+          <dl class="info-list">
+            <div v-if="detail.katmData.katmScore != null">
+              <dt>KATM bahosi</dt><dd class="font-mono">{{ detail.katmData.katmScore }}</dd>
+            </div>
+            <div v-if="detail.katmData.katmClass">
+              <dt>KATM sinfi</dt><dd class="font-mono">{{ detail.katmData.katmClass }}</dd>
+            </div>
+            <div v-if="detail.katmData.scoringLevel">
+              <dt>Scoring darajasi</dt><dd class="font-mono">{{ detail.katmData.scoringLevel }}</dd>
+            </div>
+            <div v-if="detail.katmData.openCredits != null">
+              <dt>Faol kreditlar</dt><dd class="font-mono">{{ detail.katmData.openCredits }}</dd>
+            </div>
+            <div v-if="detail.katmData.totalDebt != null">
+              <dt>Umumiy qarz</dt><dd><MonoAmount :value="detail.katmData.totalDebt" size="sm" /></dd>
+            </div>
+            <div v-if="detail.katmData.overdueInOpenCredits != null">
+              <dt>Muddati o'tgan qarz</dt><dd><MonoAmount :value="detail.katmData.overdueInOpenCredits" size="sm" /></dd>
+            </div>
+            <div v-if="detail.katmData.totalContracts != null">
+              <dt>Jami shartnomalar</dt><dd class="font-mono">{{ detail.katmData.totalContracts }}</dd>
+            </div>
+            <div v-if="detail.katmData.totalClaims != null">
+              <dt>Jami so'rovlar</dt><dd class="font-mono">{{ detail.katmData.totalClaims }}</dd>
+            </div>
+            <div v-if="detail.katmData.overdueCount != null">
+              <dt>Muddati o'tgan kreditlar</dt><dd class="font-mono">{{ detail.katmData.overdueCount }}</dd>
+            </div>
+            <div v-if="detail.katmData.maxOverdueDays != null">
+              <dt>Maks. kechikish (kun)</dt><dd class="font-mono">{{ detail.katmData.maxOverdueDays }}</dd>
+            </div>
+            <div v-if="detail.katmData.maxOverdueSum != null">
+              <dt>Maks. muddati o'tgan summa</dt><dd><MonoAmount :value="detail.katmData.maxOverdueSum" size="sm" /></dd>
+            </div>
+            <div v-if="detail.katmData.avgMonthlyPayment != null">
+              <dt>O'rt. oylik to'lov</dt><dd><MonoAmount :value="detail.katmData.avgMonthlyPayment" size="sm" /></dd>
+            </div>
+            <div v-if="detail.katmData.hasCreditBan != null">
+              <dt>Kredit taqiqi</dt>
+              <dd>
+                <span class="pill" :style="detail.katmData.hasCreditBan
+                  ? { color: 'var(--danger)', background: 'var(--danger-bg)' }
+                  : { color: 'var(--success)', background: 'var(--success-bg)' }">
+                  {{ detail.katmData.hasCreditBan ? 'Kredit taqiqi bor' : 'Kredit taqiqi yo\'q' }}
+                </span>
+              </dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="surface-card panel">
+          <h2 class="panel-title">{{ $t('scoringHistory.factors') }}</h2>
+          <div v-if="detail.factors.length === 0" class="muted">{{ $t('common.noData') }}</div>
+          <div v-else class="factors">
+            <div v-for="(f, i) in detail.factors" :key="i" class="factor-row">
+              <span class="factor-label">{{ f.label }}</span>
+              <span class="factor-score font-mono">{{ f.score.toFixed(2) }}</span>
+            </div>
           </div>
         </div>
+      </div>
+      <div v-if="detail.modelData" class="surface-card panel">
+        <h2 class="panel-title">Scoring modeli</h2>
+        <div v-if="detail.modelData.rejected" class="model-rejected">
+          <span class="pill" style="color:var(--danger);background:var(--danger-bg)">Rad etildi</span>
+          <span class="model-stop-name">{{ detail.modelData.name }}</span>
+        </div>
+        <template v-else>
+          <div class="model-summary">
+            <div class="model-stat">
+              <span class="muted">Umumiy ball</span>
+              <span class="font-mono" style="font-weight:800">{{ detail.modelData.totalScore }}</span>
+            </div>
+            <div class="model-stat">
+              <span class="muted">Koeffitsient</span>
+              <span class="font-mono" style="font-weight:800">{{ detail.modelData.coefficient }}</span>
+            </div>
+            <button class="toggle-btn" @click="modelExpanded = !modelExpanded">
+              {{ modelExpanded ? 'Yopish' : 'Batafsil ko\'rish' }}
+              <i :class="modelExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" />
+            </button>
+          </div>
+          <table v-if="modelExpanded" class="breakdown-table">
+            <thead>
+              <tr>
+                <th>Mezon</th>
+                <th class="col-num">Og'irlik</th>
+                <th class="col-num">Xom ball</th>
+                <th class="col-num">Og'irlangan ball</th>
+                <th class="col-status">Holat</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in detail.modelData.breakdown" :key="r.key" :class="{ skipped: r.skipped }">
+                <td>{{ r.name }}</td>
+                <td class="col-num font-mono">{{ r.importantLevel }}</td>
+                <td class="col-num font-mono">{{ r.rawScore }}</td>
+                <td class="col-num font-mono">{{ r.weightedScore }}</td>
+                <td class="col-status">
+                  <span class="pill" :style="r.skipped
+                    ? { color: 'var(--text-secondary)', background: 'var(--bg-surface)' }
+                    : { color: 'var(--success)', background: 'var(--success-bg)' }">
+                    {{ r.skipped ? 'O\'tkazib yuborildi' : 'Hisoblandi' }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </template>
       </div>
     </template>
   </div>
@@ -149,6 +252,25 @@ const detail = computed<ScoringDetail | null>(() => store.detail)
 .factor-row { display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0.8rem; background: var(--bg-surface); border-radius: 8px; }
 .factor-label { font-weight: 600; font-size: 0.85rem; }
 .factor-score { font-weight: 700; }
+
+.toggle-btn {
+  margin-left: auto; display: inline-flex; align-items: center; gap: 0.35rem;
+  background: none; border: 1px solid var(--border-subtle); border-radius: 8px;
+  padding: 0.3rem 0.75rem; font-size: 0.8rem; font-weight: 700; font-family: inherit;
+  color: var(--text-secondary); cursor: pointer; transition: all 0.15s;
+}
+.toggle-btn:hover { color: var(--text-primary); border-color: var(--accent-2); }
+.model-rejected { display: flex; align-items: center; gap: 0.75rem; }
+.model-stop-name { font-weight: 700; font-size: 0.9rem; }
+.model-summary { display: flex; gap: 2rem; margin-bottom: 1.2rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border-subtle); }
+.model-stat { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.85rem; }
+.breakdown-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.breakdown-table th { text-align: left; padding: 0.45rem 0.6rem; font-size: 0.72rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; border-bottom: 1px solid var(--border-subtle); }
+.breakdown-table td { padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--border-subtle); font-weight: 600; }
+.breakdown-table tr.skipped td { color: var(--text-secondary); }
+.breakdown-table tr:last-child td { border-bottom: none; }
+.col-num { text-align: right; width: 110px; }
+.col-status { text-align: center; width: 140px; }
 
 .muted { color: var(--text-secondary); }
 .pill {
