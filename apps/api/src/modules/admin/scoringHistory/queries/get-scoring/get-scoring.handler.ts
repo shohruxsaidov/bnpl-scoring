@@ -20,6 +20,8 @@ export interface ScoringDetail {
   scoredAt: string
   pinfl: string
   passport: string
+  birthDate: string | null
+  gender: string | null
   coefficient: number | null
   factors: ScoringFactor[]
   platformStats: {
@@ -146,6 +148,13 @@ export async function getScoring(id: number): Promise<ScoringDetail | null> {
     }
   }
 
+  const criteriaScores = scoring.criteriaScores as Record<string, unknown> | null
+  const clientDetail = (criteriaScores?.client as Record<string, unknown> | undefined)
+    ?.detail as Record<string, unknown> | undefined
+  const birthDate = (clientDetail?.birthDate as string | undefined) ?? null
+  const rawGender = clientDetail?.gender as string | undefined
+  const gender = rawGender === "1" ? "Erkak" : rawGender === "2" ? "Ayol" : null
+
   return {
     id: scoring.id.toString(),
     fullName:
@@ -160,8 +169,10 @@ export async function getScoring(id: number): Promise<ScoringDetail | null> {
     scoredAt: scoring.scoredAt.toISOString(),
     pinfl: scoring.pinfl ?? "—",
     passport,
+    birthDate,
+    gender,
     coefficient: scoring.coefficient != null ? Number(scoring.coefficient) : null,
-    factors: criteriaToFactors(scoring.criteriaScores as Record<string, unknown> | null),
+    factors: criteriaToFactors(criteriaScores),
     platformStats,
   }
 }

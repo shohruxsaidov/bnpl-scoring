@@ -3,7 +3,6 @@ import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useScoringHistoryStore, type ScoringDetail } from '@/stores/scoring-history'
 import MonoAmount from '@/components/mono-amount.vue'
-import { formatDateTime, maskPinfl } from '@/utils/money'
 
 const route = useRoute()
 const router = useRouter()
@@ -13,11 +12,7 @@ onMounted(() => store.fetchDetail(route.params.id as string))
 
 const detail = computed<ScoringDetail | null>(() => store.detail)
 
-const STATUS_COLORS: Record<ScoringDetail['status'], { fg: string; bg: string }> = {
-  approved: { fg: 'var(--success)', bg: 'var(--success-bg)' },
-  declined: { fg: 'var(--danger)', bg: 'var(--danger-bg)' },
-  review: { fg: 'var(--warning)', bg: 'var(--warning-bg)' },
-}
+
 </script>
 
 <template>
@@ -48,10 +43,6 @@ const STATUS_COLORS: Record<ScoringDetail['status'], { fg: string; bg: string }>
         </div>
         <div class="hc-score">
           <span class="hc-score-val font-mono text-gradient">{{ detail.score }}</span>
-          <span
-            class="pill"
-            :style="{ color: STATUS_COLORS[detail.status].fg, background: STATUS_COLORS[detail.status].bg }"
-          >{{ $t('scoringHistory.' + detail.status) }}</span>
         </div>
       </div>
 
@@ -59,13 +50,10 @@ const STATUS_COLORS: Record<ScoringDetail['status'], { fg: string; bg: string }>
         <div class="surface-card panel">
           <h2 class="panel-title">{{ $t('scoringHistory.clientInfo') }}</h2>
           <dl class="info-list">
-            <div><dt>{{ $t('scoringHistory.pinfl') }}</dt><dd class="font-mono">{{ maskPinfl(detail.pinfl) }}</dd></div>
+            <div><dt>{{ $t('scoringHistory.pinfl') }}</dt><dd class="font-mono">{{ detail.pinfl }}</dd></div>
             <div><dt>{{ $t('scoringHistory.birthDate') }}</dt><dd>{{ detail.birthDate || '—' }}</dd></div>
             <div><dt>{{ $t('scoringHistory.gender') }}</dt><dd>{{ detail.gender || '—' }}</dd></div>
             <div><dt>{{ $t('scoringHistory.passport') }}</dt><dd class="font-mono">{{ detail.passport }}</dd></div>
-            <div><dt>{{ $t('scoringHistory.limit') }}</dt><dd><MonoAmount :value="detail.limit" size="sm" /></dd></div>
-            <div><dt>{{ $t('scoringHistory.date') }}</dt><dd>{{ formatDateTime(detail.scoredAt) }}</dd></div>
-            <div v-if="detail.coefficient != null"><dt>{{ $t('scoringHistory.coefficient') }}</dt><dd class="font-mono">{{ detail.coefficient }}</dd></div>
           </dl>
         </div>
 
