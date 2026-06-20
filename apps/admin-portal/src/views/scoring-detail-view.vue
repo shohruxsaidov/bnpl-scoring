@@ -13,6 +13,16 @@ onMounted(() => store.fetchDetail(route.params.id as string))
 const detail = computed<ScoringDetail | null>(() => store.detail)
 const modelExpanded = ref(false)
 
+const age = computed(() => {
+  if (!detail.value?.birthDate) return null
+  const birth = new Date(detail.value.birthDate)
+  const today = new Date()
+  let years = today.getFullYear() - birth.getFullYear()
+  const m = today.getMonth() - birth.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) years--
+  return years
+})
+
 </script>
 
 <template>
@@ -52,27 +62,13 @@ const modelExpanded = ref(false)
           <dl class="info-list">
             <div><dt>{{ $t('scoringHistory.pinfl') }}</dt><dd class="font-mono">{{ detail.pinfl }}</dd></div>
             <div><dt>{{ $t('scoringHistory.birthDate') }}</dt><dd>{{ detail.birthDate || '—' }}</dd></div>
+            <div><dt>{{ $t('scoringHistory.age') }}</dt><dd>{{ age != null ? age : '—' }}</dd></div>
+            <div><dt>{{ $t('scoringHistory.address') }}</dt><dd>{{ detail.address || '—' }}</dd></div>
             <div><dt>{{ $t('scoringHistory.gender') }}</dt><dd>{{ detail.gender || '—' }}</dd></div>
             <div><dt>{{ $t('scoringHistory.passport') }}</dt><dd class="font-mono">{{ detail.passport }}</dd></div>
           </dl>
         </div>
 
-        <div class="surface-card panel">
-          <h2 class="panel-title">{{ $t('scoringHistory.platformStats') }}</h2>
-          <template v-if="detail.platformStats">
-            <div class="stat-grid">
-              <div class="stat"><span class="stat-num font-mono">{{ detail.platformStats.total }}</span><span class="stat-lbl">{{ $t('scoringHistory.statTotal') }}</span></div>
-              <div class="stat"><span class="stat-num font-mono" style="color:var(--success)">{{ detail.platformStats.active }}</span><span class="stat-lbl">{{ $t('scoringHistory.statActive') }}</span></div>
-              <div class="stat"><span class="stat-num font-mono">{{ detail.platformStats.closed }}</span><span class="stat-lbl">{{ $t('scoringHistory.statClosed') }}</span></div>
-              <div class="stat"><span class="stat-num font-mono" style="color:var(--danger)">{{ detail.platformStats.overdue }}</span><span class="stat-lbl">{{ $t('scoringHistory.statOverdue') }}</span></div>
-            </div>
-            <div class="paid-row">
-              <span class="muted">{{ $t('scoringHistory.totalPaid') }}</span>
-              <MonoAmount :value="detail.platformStats.totalPaid" size="sm" />
-            </div>
-          </template>
-          <div v-else class="muted">{{ $t('common.noData') }}</div>
-        </div>
       </div>
 
       <div class="grid-2">

@@ -218,6 +218,8 @@
     "clientInfo": "Данные клиента",
     "pinfl": "ПИНФЛ",
     "birthDate": "Дата рождения",
+    "age": "Возраст",
+    "address": "Адрес",
     "gender": "Пол",
     "passport": "Паспорт",
     "coefficient": "Коэффициент",

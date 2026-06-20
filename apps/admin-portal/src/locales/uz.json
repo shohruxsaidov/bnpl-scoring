@@ -210,6 +210,8 @@
     "clientInfo": "Mijoz ma'lumotlari",
     "pinfl": "PINFL",
     "birthDate": "Tug'ilgan sana",
+    "age": "Yosh",
+    "address": "Manzil",
     "gender": "Jins",
     "passport": "Pasport",
     "coefficient": "Koeffitsient",
