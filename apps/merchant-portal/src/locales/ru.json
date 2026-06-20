@@ -497,6 +497,9 @@
     "continue": "Продолжить",
     "rejectedTitle": "Заявка отклонена",
     "rejectedDesc": "Скоринг завершился отказом. Сессия закрыта. Вы можете начать новую.",
+    "rejectedCreditBan": "Клиенту запрещено кредитование (кредитный запрет).",
+    "rejectedCardDeclined": "Карта не прошла скоринг в платёжной системе.",
+    "rejectedStopFactor": "Стоп-фактор: {factor}.",
     "newSession": "Новая сессия"
   },
   "stepTariff": {

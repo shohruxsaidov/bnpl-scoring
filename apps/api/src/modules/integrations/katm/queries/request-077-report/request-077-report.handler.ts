@@ -35,6 +35,6 @@ export async function request077Report(params: { claimId: string }): Promise<Rep
   if (!data.reportBase64) {
     throw new KatmVendorError('credit/report', data.result ?? null, 'success without reportBase64');
   }
-  const raw = decodeReport<KatmResponse>('credit/report', data.reportBase64);
-  return { status: 'ready', result: parseKatm077ReportResponse(raw) };
+  const raw = decodeReport<{ report: KatmResponse }>('credit/report', data.reportBase64);
+  return { status: 'ready', result: parseKatm077ReportResponse(raw.report) };
 }

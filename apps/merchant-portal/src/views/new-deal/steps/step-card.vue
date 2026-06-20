@@ -192,6 +192,8 @@ async function confirmOtp() {
 // The server runs the score AND stamps the full result onto the Deal Session
 // (ADR-0024) — the response here is display-only.
 
+type RejectionCode = 'credit_ban' | 'card_declined' | 'model_stop_factor'
+
 interface ServerScoreResult {
   score: number
   limit: number
@@ -200,6 +202,7 @@ interface ServerScoreResult {
   coefficient: number
   criteriaScores: Record<string, unknown>
   sessionClosed?: boolean
+  rejectionReason?: { code: RejectionCode; factorKey?: string } | null
 }
 
 const scoring = ref(false)
@@ -208,6 +211,20 @@ const result = ref<CardScoreResult | null>(null)
 const serverResult = ref<ServerScoreResult | null>(null)
 const scoreError = ref<string | null>(null)
 const rejected = ref(false)
+
+const rejectionDesc = computed(() => {
+  const reason = serverResult.value?.rejectionReason
+  if (!reason) return t('stepCard.rejectedDesc')
+  if (reason.code === 'credit_ban') return t('stepCard.rejectedCreditBan')
+  if (reason.code === 'card_declined') return t('stepCard.rejectedCardDeclined')
+  if (reason.code === 'model_stop_factor') {
+    const breakdown = (serverResult.value?.criteriaScores?.model as Record<string, unknown> | undefined)
+      ?.breakdown as Array<{ key: string; name: string }> | undefined
+    const factorName = breakdown?.find((b) => b.key === reason.factorKey)?.name ?? reason.factorKey
+    return t('stepCard.rejectedStopFactor', { factor: factorName })
+  }
+  return t('stepCard.rejectedDesc')
+})
 
 let progressTimer: ReturnType<typeof setInterval> | null = null
 
@@ -435,7 +452,7 @@ async function next() {
         <i class="pi pi-times-circle rejected-icon" />
         <div class="rejected-body">
           <p class="rejected-title">{{ $t('stepCard.rejectedTitle') }}</p>
-          <p class="rejected-desc">{{ $t('stepCard.rejectedDesc') }}</p>
+          <p class="rejected-desc">{{ rejectionDesc }}</p>
         </div>
         <button class="btn-ghost" style="margin-left: auto" @click="deal.reset()">
           {{ $t('stepCard.newSession') }}

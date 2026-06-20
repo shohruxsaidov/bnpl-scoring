@@ -30,6 +30,6 @@ export async function checkReportStatus(params: {
   if (data.result === KATM_REPORT_PENDING || !data.reportBase64) {
     return { status: 'pending', token: params.token };
   }
-  const raw = decodeReport<KatmResponse>('credit/report/status', data.reportBase64);
-  return { status: 'ready', result: parseKatm077ReportResponse(raw) };
+  const raw = decodeReport<{ report: KatmResponse }>('credit/report/status', data.reportBase64);
+  return { status: 'ready', result: parseKatm077ReportResponse(raw.report) };
 }

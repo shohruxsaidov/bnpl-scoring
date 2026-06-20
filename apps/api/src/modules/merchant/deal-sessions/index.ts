@@ -640,7 +640,11 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           criteriaScores: {},
         });
         await rejectSession(sessionAfterCard);
-        return { score: 0, limit: 0, decision: 'reject', scoringId: null, coefficient: 0, criteriaScores: {}, sessionClosed: true };
+        return {
+          score: 0, limit: 0, decision: 'reject', scoringId: null, coefficient: 0, criteriaScores: {},
+          sessionClosed: true,
+          rejectionReason: { code: 'credit_ban' as const },
+        };
       }
 
       const result = await scoreCard({ plumCardId, pcType });
@@ -772,11 +776,18 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         criteriaScores: criteriaScores as Record<string, unknown>,
       });
 
+      type RejectionCode = 'credit_ban' | 'card_declined' | 'model_stop_factor';
+      let rejectionReason: { code: RejectionCode; factorKey?: string } | null = null;
       if (finalDecision === 'reject') {
         await rejectSession(sessionAfterCard);
+        if (engineResult.rejected) {
+          rejectionReason = { code: 'model_stop_factor', factorKey: (engineResult as Extract<ScoringResult, { rejected: true }>).stopFactor };
+        } else {
+          rejectionReason = { code: 'card_declined' };
+        }
       }
 
-      return { ...result, scoringId, coefficient, scoreSum, criteriaScores, sessionClosed: finalDecision === 'reject' };
+      return { ...result, scoringId, coefficient, scoreSum, criteriaScores, sessionClosed: finalDecision === 'reject', rejectionReason };
     },
   );
 }
