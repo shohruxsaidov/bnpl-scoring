@@ -1124,7 +1124,18 @@
     "commentsEmpty": "Комментариев пока нет",
     "commentPlaceholder": "Написать комментарий…",
     "commentSubmit": "Отправить",
-    "commentSubmitting": "Отправка…"
+    "commentSubmitting": "Отправка…",
+    "bailsmen": "Поручители",
+    "noBailsmen": "Поручители не указаны",
+    "bailsmanPhone": "Телефон",
+    "bailsmanRelation": "Связь",
+    "relations": {
+      "father": "Отец",
+      "mother": "Мать",
+      "brother": "Брат",
+      "friend": "Друг",
+      "other": "Другое"
+    }
   },
   "onboarding": {
     "title": "Онбординг нового мерчанта",

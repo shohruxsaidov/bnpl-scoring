@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm"
 import { db } from "@db"
 import { deals, dealItems, dealPaymentSchedules } from "../../../../deals/schema"
-import { users, tariffs, merchantUsers, merchants } from '@db/schema'
+import { users, tariffs, merchantUsers, merchants, dealSessions } from '@db/schema'
 
 function formatDealNumber(n: number | null | undefined): string {
   return n != null ? String(n) : "—"
@@ -15,19 +15,21 @@ export async function getAdminDeal(id: string) {
       tariff: tariffs,
       agent: merchantUsers,
       merchant: merchants,
+      session: dealSessions,
     })
     .from(deals)
     .leftJoin(users, eq(deals.userId, users.id))
     .leftJoin(tariffs, eq(deals.tariffId, tariffs.id))
     .leftJoin(merchantUsers, eq(deals.agentId, merchantUsers.id))
     .leftJoin(merchants, eq(deals.merchantId, merchants.id))
+    .leftJoin(dealSessions, eq(deals.dealSessionId, dealSessions.id))
     .where(eq(deals.id, id))
     .limit(1)
 
   const row = rows[0]
   if (!row) return null
 
-  const { deal, client, tariff, agent, merchant } = row
+  const { deal, client, tariff, agent, merchant, session } = row
 
   const [itemRows, scheduleRows] = await Promise.all([
     db.select().from(dealItems).where(eq(dealItems.dealId, id)).orderBy(dealItems.id),
@@ -74,5 +76,6 @@ export async function getAdminDeal(id: string) {
       paidAt: s.paidAt?.toISOString() ?? null,
     })),
     factors: [],
+    bailsmen: ((session?.stepData as Record<string, unknown> | null)?.bailsmen as Array<{ relation: string; phone: string }> | undefined) ?? [],
   }
 }

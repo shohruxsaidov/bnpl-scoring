@@ -1111,7 +1111,18 @@
     "notFound": "Shartnoma topilmadi.",
     "toDeals": "Barcha shartnomalar",
     "som": "so'm",
-    "month": "oy"
+    "month": "oy",
+    "bailsmen": "Kafillар",
+    "noBailsmen": "Kafil ko'rsatilmagan",
+    "bailsmanPhone": "Telefon",
+    "bailsmanRelation": "Aloqa",
+    "relations": {
+      "father": "Ota",
+      "mother": "Ona",
+      "brother": "Aka/Uka",
+      "friend": "Do'st",
+      "other": "Boshqa"
+    }
   },
   "onboarding": {
     "title": "Yangi merchant onboarding",

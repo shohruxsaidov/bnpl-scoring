@@ -28,6 +28,11 @@ export interface AdminDealFactor {
   value: string
 }
 
+export interface AdminDealBailsman {
+  relation: 'father' | 'mother' | 'brother' | 'friend' | 'other'
+  phone: string
+}
+
 export interface AdminDealDetail {
   id: string
   dealNumber: string
@@ -52,6 +57,7 @@ export interface AdminDealDetail {
   basket: AdminDealBasketItem[]
   schedule: AdminDealScheduleRow[]
   factors: AdminDealFactor[]
+  bailsmen: AdminDealBailsman[]
 }
 
 export interface DealComment {

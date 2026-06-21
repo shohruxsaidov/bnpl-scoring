@@ -375,6 +375,21 @@ function formatDateShort(iso: string): string {
         </table>
       </div>
 
+      <!-- Bailsmen -->
+      <div class="section">
+        <h4 class="section-title">{{ $t('dealDetail.bailsmen') }}</h4>
+        <div v-if="!deal.bailsmen?.length" class="muted" style="font-size:.85rem">
+          {{ $t('dealDetail.noBailsmen') }}
+        </div>
+        <div v-else class="bailsmen-list">
+          <div v-for="(b, i) in deal.bailsmen" :key="i" class="bailsman-row">
+            <span class="bailsman-index muted font-mono">{{ i + 1 }}</span>
+            <span class="bailsman-phone font-mono">{{ b.phone }}</span>
+            <span class="bailsman-relation muted">{{ $t(`dealDetail.relations.${b.relation}`) }}</span>
+          </div>
+        </div>
+      </div>
+
       <!-- Score breakdown (if factors available) -->
       <div v-if="deal.factors.length" class="section">
         <h4 class="section-title">{{ $t('dealDetail.scoreBreakdown') }} · {{ deal.scoreSum ?? '—' }}</h4>
@@ -803,6 +818,17 @@ function formatDateShort(iso: string): string {
 }
 .data-table td { padding: 0.75rem 0.9rem; border-bottom: 1px solid var(--border-subtle); }
 .data-table tbody tr:last-child td { border-bottom: none; }
+
+/* ── Bailsmen ─────────────────────────────────────────────────────────────── */
+.bailsmen-list { display: flex; flex-direction: column; gap: 0; }
+.bailsman-row {
+  display: flex; align-items: center; gap: 1rem;
+  padding: 0.55rem 0; border-bottom: 1px solid var(--border-subtle); font-size: 0.88rem;
+}
+.bailsman-row:last-child { border-bottom: none; }
+.bailsman-index { width: 1.4rem; flex-shrink: 0; }
+.bailsman-phone { flex: 1; font-weight: 600; }
+.bailsman-relation { }
 
 /* ── Score factors ────────────────────────────────────────────────────────── */
 .factor-row { display: flex; align-items: center; gap: 0.6rem; padding: 0.32rem 0; font-size: 0.82rem; }
