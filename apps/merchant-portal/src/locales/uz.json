@@ -490,7 +490,7 @@
     "rejectedTitle": "Ariza rad etildi",
     "rejectedDesc": "Skoring rad javobi bilan yakunlandi. Sessiya yopildi. Yangi sessiya boshlashingiz mumkin.",
     "rejectedCreditBan": "Mijozga kreditlash taqiqlangan (kredit taqiqi).",
-    "rejectedCardDeclined": "Karta to'lov tizimida skoringdan o'tmadi.",
+    "rejectedZeroLimit": "Skoring natijasida kredit limiti nolga teng. Sessiya yopildi.",
     "rejectedStopFactor": "To'xtash omili: {factor}.",
     "newSession": "Yangi sessiya",
     "bailsmen": {

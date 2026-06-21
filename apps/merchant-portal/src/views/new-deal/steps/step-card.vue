@@ -250,7 +250,7 @@ async function confirmOtp() {
 // The server runs the score AND stamps the full result onto the Deal Session
 // (ADR-0024) — the response here is display-only.
 
-type RejectionCode = 'credit_ban' | 'card_declined' | 'model_stop_factor'
+type RejectionCode = 'credit_ban' | 'model_stop_factor' | 'zero_limit'
 
 interface ServerScoreResult {
   score: number
@@ -274,7 +274,7 @@ const rejectionDesc = computed(() => {
   const reason = serverResult.value?.rejectionReason
   if (!reason) return t('stepCard.rejectedDesc')
   if (reason.code === 'credit_ban') return t('stepCard.rejectedCreditBan')
-  if (reason.code === 'card_declined') return t('stepCard.rejectedCardDeclined')
+  if (reason.code === 'zero_limit') return t('stepCard.rejectedZeroLimit')
   if (reason.code === 'model_stop_factor') {
     const breakdown = (serverResult.value?.criteriaScores?.model as Record<string, unknown> | undefined)
       ?.breakdown as Array<{ key: string; name: string }> | undefined
