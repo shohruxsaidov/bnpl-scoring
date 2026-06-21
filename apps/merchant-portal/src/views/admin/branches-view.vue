@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import SkeletonTable from '@/components/skeleton-table.vue'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -13,7 +12,6 @@ import { useRegions } from '@/composables/use-regions'
 import type { Branch } from '@/types'
 
 const catalog = useCatalogStore()
-const { t } = useI18n()
 const { regionOptions, districtOptions, onRegionChange } = useRegions()
 
 onMounted(() => catalog.fetchBranches())

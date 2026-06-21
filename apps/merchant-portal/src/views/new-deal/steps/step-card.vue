@@ -6,7 +6,7 @@ import Select from 'primevue/select'
 import { useDealStore } from '@/stores/deal'
 import { useClientScoringStore } from '@/stores/client-scoring'
 import { apiFetch } from '@/utils/apiFetch'
-import type { Bailsman, BailsmanRelation, Card, CardScoreResult, ScoreDecision } from '@/types'
+import type { BailsmanRelation, Card, CardScoreResult, ScoreDecision } from '@/types'
 
 const deal = useDealStore()
 const clientScoring = useClientScoringStore()
