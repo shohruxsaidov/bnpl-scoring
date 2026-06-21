@@ -73,10 +73,27 @@ export interface ClientCriteriaDetail {
   nationality: string;
 }
 
+export interface InpsIncomeEntry {
+  period: string;
+  orgname: string;
+  income_summa: string;
+  inps_summa: string;
+  org_inn: string;
+}
+
+export interface InpsCriteriaDetail {
+  incomesAllSumma: number;
+  avgMonthlyIncome: number;
+  periodBegin: string;
+  periodEnd: string;
+  incomes: InpsIncomeEntry[];
+}
+
 export interface CriteriaScores {
   katm?: { katmScore: number; detail: KatmCriteriaDetail };
   card?: { score: number; detail: CardCriteriaDetail };
   client?: { detail: ClientCriteriaDetail };
+  inps?: { detail: InpsCriteriaDetail };
   model?: Record<string, unknown>;
 }
 

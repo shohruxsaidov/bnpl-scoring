@@ -75,6 +75,19 @@ export interface ScoringDetail {
     avgMonthlyPayment: number | null
     hasCreditBan: boolean | null
   } | null
+  inpsData: {
+    incomesAllSumma: number | null
+    avgMonthlyIncome: number | null
+    periodBegin: string | null
+    periodEnd: string | null
+    incomes: Array<{
+      period: string
+      orgname: string
+      income_summa: string
+      inps_summa: string
+      org_inn: string
+    }>
+  } | null
   platformStats: {
     total: number
     active: number

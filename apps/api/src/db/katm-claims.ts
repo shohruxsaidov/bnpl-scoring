@@ -3,9 +3,9 @@ import { users } from './users';
 
 // ---------------------------------------------------------------------------
 // katm_claims — one row per successful KATM claim registration (ADR-0025).
-// Tracks the claim lifecycle: created on successful v1/claim/registration,
-// token populated when the report is async (05050). session_id has no FK
-// because it is polymorphic (deal_sessions or scoring_sessions).
+// Tracks claim registration only. The report and its polling token live in
+// katm_reports. session_id has no FK because it is polymorphic
+// (deal_sessions or scoring_sessions).
 // ---------------------------------------------------------------------------
 export const katmClaims = pgTable('katm_claims', {
   claimId: varchar('claim_id', { length: 20 }).primaryKey(),
@@ -18,8 +18,6 @@ export const katmClaims = pgTable('katm_claims', {
   sessionId: uuid('session_id').notNull(),
   katmSir: varchar('katm_sir').notNull(),
   verified: jsonb('verified').notNull(),
-  // Null when the report resolved synchronously (no polling needed)
-  token: varchar('token'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });

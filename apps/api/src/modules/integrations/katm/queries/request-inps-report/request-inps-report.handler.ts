@@ -6,12 +6,13 @@ import {
   KATM_REPORT_PENDING,
   KatmVendorError,
   decodeReport,
+  parseInpsReportResponse,
 } from '../../service/shared';
-import type { ReportOutcome, ReportData } from '../../service/shared';
+import type { InpsReportOutcome, InpsReportResponse, ReportData } from '../../service/shared';
 
-export type { ReportOutcome } from '../../service/shared';
+export type { InpsReportOutcome } from '../../service/shared';
 
-export async function requestINPSReport(params: { claimId: string }): Promise<ReportOutcome> {
+export async function requestINPSReport(params: { claimId: string }): Promise<InpsReportOutcome> {
   const data = await callKatm<ReportData>('v1/credit/report', {
     security: security(),
     data: {
@@ -21,7 +22,7 @@ export async function requestINPSReport(params: { claimId: string }): Promise<Re
       pClaimId: params.claimId,
       pReportId: '025',
       pLang: 'ru',
-      pReportFormat: 1, // For json format 1; for xml format 0
+      pReportFormat: 1,
     },
   });
   assertOk('credit/report', data, [KATM_REPORT_PENDING]);
@@ -34,5 +35,6 @@ export async function requestINPSReport(params: { claimId: string }): Promise<Re
   if (!data.reportBase64) {
     throw new KatmVendorError('credit/report', data.result ?? null, 'success without reportBase64');
   }
-  return { status: 'ready', result: decodeReport('credit/inps-report', data.reportBase64) };
+  const raw = decodeReport<InpsReportResponse>('credit/inps-report', data.reportBase64);
+  return { status: 'ready', result: parseInpsReportResponse(raw) };
 }

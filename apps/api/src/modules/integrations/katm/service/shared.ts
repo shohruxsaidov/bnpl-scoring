@@ -226,6 +226,68 @@ export function parseKatm077ReportResponse(data: KatmResponse): KatmResult {
   };
 }
 
+// ---------------------------------------------------------------------------
+// InfoScore 025 (INPS) response types + parser
+// ---------------------------------------------------------------------------
+
+export interface InpsIncomeEntry {
+  period: string;
+  orgname: string;
+  send_date: string;
+  num: string;
+  inps_summa: string;
+  income_summa: string;
+  oper_date: string;
+  org_inn: string;
+}
+
+interface InpsIncomesPeriod {
+  incomes_period_begin: string;
+  incomes_period_end: string;
+  incomes_all_summa: string;
+}
+
+interface InpsSysinfo {
+  id_demand: string;
+}
+
+interface InpsReportBody {
+  incomes?: { income?: InpsIncomeEntry | InpsIncomeEntry[] };
+  incomes_period?: InpsIncomesPeriod;
+  sysinfo?: InpsSysinfo;
+}
+
+export interface InpsReportResponse {
+  report: InpsReportBody;
+}
+
+export interface InpsResult {
+  demandId: string;
+  incomesAllSumma: number;
+  periodBegin: string;
+  periodEnd: string;
+  incomes: InpsIncomeEntry[];
+  raw: unknown;
+}
+
+export type InpsReportOutcome =
+  | { status: 'ready'; result: InpsResult }
+  | { status: 'pending'; token: string };
+
+export function parseInpsReportResponse(data: InpsReportResponse): InpsResult {
+  const report = data.report;
+  const raw = report.incomes?.income;
+  const incomes: InpsIncomeEntry[] = Array.isArray(raw) ? raw : raw ? [raw] : [];
+  return {
+    demandId: report.sysinfo?.id_demand ?? '',
+    incomesAllSumma: toFloat(report.incomes_period?.incomes_all_summa),
+    periodBegin: report.incomes_period?.incomes_period_begin ?? '',
+    periodEnd: report.incomes_period?.incomes_period_end ?? '',
+    incomes,
+    raw: data,
+  };
+}
+
 export function decodeReport<T>(methodName: string, base64: string): T {
   let outer: T;
   try {

@@ -32,12 +32,6 @@ export async function saveStep(
   console.log('[saveStep] next stepData after invalidation', next);
 
   if (step === 'client') {
-    const userId = (saved as NonNullable<SessionStepData['client']>).userId;
-    console.log('[saveStep] client step — userId', userId, 'katm.userId', next.katm?.userId);
-    if (next.katm && next.katm.userId !== userId) {
-      console.log('[saveStep] dropping katm (userId mismatch)');
-      delete next.katm;
-    }
     if (next.scoring) {
       console.log('[saveStep] dropping scoring (client changed)');
       delete next.scoring;

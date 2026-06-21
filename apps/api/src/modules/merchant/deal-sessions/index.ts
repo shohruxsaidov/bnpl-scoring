@@ -4,8 +4,10 @@ import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { eq } from 'drizzle-orm';
 import { users } from '@db/schema';
+import { katm077Reports } from '@db/katm-077-reports';
+import { katmInpsReports } from '@db/katm-inps-reports';
 import { dealSessions } from '../../deals/schema';
-import { isWizardStep, type DealSessionRow, type SessionStepData } from './types';
+import { isWizardStep, logEvent, type DealSessionRow, type SessionStepData } from './types';
 import { getActiveSession } from './queries/get-active-session/get-active-session.handler';
 import { loadOwnedActiveSession } from './queries/load-owned-active-session/load-owned-active-session.handler';
 import { createSession } from './commands/create-session/create-session.handler';
@@ -15,7 +17,6 @@ import { stampPrepayment } from './commands/stamp-prepayment/stamp-prepayment.ha
 import { setSessionUserId } from './commands/set-session-user-id/set-session-user-id.handler';
 import { setKatmClaimId } from './commands/set-katm-claim-id/set-katm-claim-id.handler';
 import { stampKatmPending } from './commands/stamp-katm-pending/stamp-katm-pending.handler';
-import { stampKatm } from './commands/stamp-katm/stamp-katm.handler';
 import {
   allocateKatmClaimId,
   createKatmConsent,
@@ -30,7 +31,7 @@ import { scoreCard } from '../../integrations/plumgate/queries/score-card/score-
 import { createScoring } from '../scoringHistory/commands/create-scoring/create-scoring.handler';
 import { stampScoring } from './commands/stamp-scoring/stamp-scoring.handler';
 import { rejectSession } from './commands/reject-session/reject-session.handler';
-import type { CriteriaScores } from '../../scoring/service/service.handler';
+import type { CriteriaScores, InpsIncomeEntry } from '../../scoring/service/service.handler';
 import { resolveScoringModel } from '../../scoring/resolve-model';
 import { computeScoringModel, type ScoringInputs, type ScoringResult } from '../../scoring/engine';
 import { createOtp, verifyOtp } from '../../auth/client/service/service.handler';
@@ -75,7 +76,6 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       }
     }
 
-    delete (session as any).stepData['katm'];
     return {
       id: session.id,
       currentStep: session.currentStep,
@@ -344,27 +344,18 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           status: 'pending',
           startedAt: new Date().toISOString(),
         });
-        await enqueueKatmPoll(app.katmPollQueue, {
-          flow: 'wizard',
-          sessionId: session.id,
-          claimId,
-          token: outcome.token,
-          consentId: consent.agreementId,
-          consentDate,
-        });
+        const baseJob = { flow: 'wizard' as const, sessionId: session.id, claimId, consentId: consent.agreementId, consentDate };
+        if (outcome.pending077) {
+          await enqueueKatmPoll(app.katmPollQueue, { ...baseJob, token: outcome.pending077, reportType: '077' });
+        }
+        if (outcome.pendingInps) {
+          await enqueueKatmPoll(app.katmPollQueue, { ...baseJob, token: outcome.pendingInps, reportType: 'inps' });
+        }
         return { status: 'pending' as const };
       }
 
       const summary = katmSummary(outcome.result);
-      await stampKatm(session, {
-        userId,
-        claimId,
-        consentId: consent.agreementId,
-        consentDate: consentDate.slice(0, 10),
-        raw: outcome.result.raw ?? null,
-        ...summary,
-      });
-
+      await logEvent(session.id, 'katm', { claimId });
       return { status: 'completed' as const, ...summary };
     },
   );
@@ -462,18 +453,18 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         throw err;
       }
 
-      const data = (session.stepData ?? {}) as SessionStepData;
-      if (data.katm) {
-        const {
-          raw: _raw,
-          userId: _c,
-          claimId: _cl,
-          consentId: _ci,
-          consentDate: _cd,
-          ...summary
-        } = data.katm;
-        return { status: 'completed' as const, ...summary };
+      if (session.katmClaimId) {
+        const [report] = await db
+          .select()
+          .from(katm077Reports)
+          .where(eq(katm077Reports.claimId, session.katmClaimId))
+          .limit(1);
+        if (report?.demandId != null) {
+          const { claimId: _c, token: _t, raw: _r, createdAt: _ca, updatedAt: _ua, ...summary } = report;
+          return { status: 'completed' as const, ...summary };
+        }
       }
+      const data = (session.stepData ?? {}) as SessionStepData;
       if (data.katmPending) {
         return { status: data.katmPending.status, error: data.katmPending.error ?? null };
       }
@@ -623,7 +614,16 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
       if (session.userId == null) return reply.code(409).sendError('client_step_missing');
 
-      const katm = (session.stepData as SessionStepData).katm;
+      let katm: typeof katm077Reports.$inferSelect | null = null;
+      let inps: typeof katmInpsReports.$inferSelect | null = null;
+      if (session.katmClaimId) {
+        const [report, inpsReport] = await Promise.all([
+          db.select().from(katm077Reports).where(eq(katm077Reports.claimId, session.katmClaimId)).limit(1),
+          db.select().from(katmInpsReports).where(eq(katmInpsReports.claimId, session.katmClaimId)).limit(1),
+        ]);
+        if (report[0]?.demandId != null) katm = report[0];
+        if (inpsReport[0]?.demandId != null) inps = inpsReport[0];
+      }
 
       // Pre-engine hard gate: credit ban is a regulatory constraint, not a scoring criterion
       if (katm?.hasCreditBan === true) {
@@ -660,12 +660,12 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
       const scoringInputs: ScoringInputs = {
         ...(katm && {
-          contingentLiability: katm.activeLoans,
-          allDebts: katm.allDebtSum,
-          creditHistoryContracts: katm.totalContracts,
-          loanApplicationCount: katm.totalClaims,
-          monthlyPayment: katm.avgMonthlyPayment,
-          ...katmOverdueBucket(katm.overdueCount, katm.maxOverdueDays),
+          contingentLiability: katm.activeLoans ?? 0,
+          allDebts: katm.allDebtSum ?? 0,
+          creditHistoryContracts: katm.totalContracts ?? 0,
+          loanApplicationCount: katm.totalClaims ?? 0,
+          monthlyPayment: katm.avgMonthlyPayment ?? 0,
+          ...katmOverdueBucket(katm.overdueCount ?? 0, katm.maxOverdueDays ?? 0),
         }),
         ...(userRow && {
           age: ageYears(userRow.birthDate),
@@ -699,21 +699,21 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       const criteriaScores: CriteriaScores = {
         ...(katm && {
           katm: {
-            katmScore: katm.score,
+            katmScore: katm.score ?? 0,
             detail: {
-              katmScore: katm.score,
-              katmClass: katm.scoringClass,
-              scoringLevel: katm.scoringLevel,
-              openCredits: katm.activeLoans,
-              totalDebt: katm.allDebtSum,
-              overdueInOpenCredits: katm.overdueAmount,
-              totalContracts: katm.totalContracts,
-              totalClaims: katm.totalClaims,
-              overdueCount: katm.overdueCount,
-              maxOverdueDays: katm.maxOverdueDays,
-              maxOverdueSum: katm.overdueAmount,
-              avgMonthlyPayment: katm.avgMonthlyPayment,
-              hasCreditBan: katm.hasCreditBan,
+              katmScore: katm.score ?? 0,
+              katmClass: katm.scoringClass ?? '',
+              scoringLevel: katm.scoringLevel ?? '',
+              openCredits: katm.activeLoans ?? 0,
+              totalDebt: katm.allDebtSum ?? 0,
+              overdueInOpenCredits: katm.overdueAmount ?? 0,
+              totalContracts: katm.totalContracts ?? 0,
+              totalClaims: katm.totalClaims ?? 0,
+              overdueCount: katm.overdueCount ?? 0,
+              maxOverdueDays: katm.maxOverdueDays ?? 0,
+              maxOverdueSum: katm.overdueAmount ?? 0,
+              avgMonthlyPayment: katm.avgMonthlyPayment ?? 0,
+              hasCreditBan: katm.hasCreditBan ?? false,
             },
           },
         }),
@@ -735,6 +735,17 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
               birthDate: userRow.birthDate,
               gender: String(userRow.gender),
               nationality: userRow.nationality,
+            },
+          },
+        }),
+        ...(inps && {
+          inps: {
+            detail: {
+              incomesAllSumma: inps.incomesAllSumma ?? 0,
+              avgMonthlyIncome: (inps.incomesAllSumma ?? 0) / 12,
+              periodBegin: inps.periodBegin ?? '',
+              periodEnd: inps.periodEnd ?? '',
+              incomes: (inps.incomes as InpsIncomeEntry[]) ?? [],
             },
           },
         }),

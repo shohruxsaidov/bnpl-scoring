@@ -11,6 +11,7 @@ import {
 } from '../../../../deals/schema';
 import { calcTotalPayable, splitInstallments } from '../../../../deals/installments';
 import { users, products } from '@db/schema';
+import { katm077Reports } from '@db/katm-077-reports';
 import type { CreateDealInput } from './create-deal.command';
 import type { DealSessionRow, SessionStepData } from '../../../deal-sessions/types';
 
@@ -26,7 +27,17 @@ function coded(code: string): Error & { code: string } {
  */
 export async function createDealFromSession(session: DealSessionRow) {
   const data = (session.stepData ?? {}) as SessionStepData;
-  const { client, tariff, products: productsStep, payment, verification, scoring, katm } = data;
+  const { client, tariff, products: productsStep, payment, verification, scoring } = data;
+
+  let katmReport: typeof katm077Reports.$inferSelect | null = null;
+  if (session.katmClaimId) {
+    const [r] = await db
+      .select()
+      .from(katm077Reports)
+      .where(eq(katm077Reports.claimId, session.katmClaimId))
+      .limit(1);
+    if (r?.demandId != null) katmReport = r;
+  }
 
   // Deal creation requires every step saved; the invalidation rule (a redone
   // step clears everything after it) guarantees верификация is the latest.
@@ -96,10 +107,10 @@ export async function createDealFromSession(session: DealSessionRow) {
     criteriaScores: scoring.criteriaScores,
     scoringId: scoring.scoringId && /^\d+$/.test(scoring.scoringId) ? Number(scoring.scoringId) : null,
     lang: verification.lang,
-    consentId: katm?.consentId ?? null,
-    consentDate: katm?.consentDate ?? null,
-    demandId: katm?.demandId ?? null,
-    infoscoreRaw: katm?.raw ?? null,
+    consentId: katmReport?.consentId ?? null,
+    consentDate: null,
+    demandId: katmReport?.demandId ?? null,
+    infoscoreRaw: katmReport?.raw ?? null,
     prepaymentAmount,
   });
 }

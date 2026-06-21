@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import { useScoringHistoryStore, type ClientListItem } from '@/stores/scoring-history'
@@ -10,23 +9,12 @@ import { formatDate } from '@/utils/money'
 
 const store = useScoringHistoryStore()
 const router = useRouter()
-const { t } = useI18n()
-
 const search = ref('')
-const statusFilter = ref<ClientListItem['lastStatus'] | null>(null)
 
 onMounted(() => store.fetchClients())
 
-const statusOptions = computed(() => [
-  { label: t('scoringHistory.allStatuses'), value: null },
-  { label: t('scoringHistory.approved'), value: 'approved' },
-  { label: t('scoringHistory.declined'), value: 'declined' },
-  { label: t('scoringHistory.pending'), value: 'pending' },
-])
-
 const filtered = computed<ClientListItem[]>(() => {
   let list = store.clients
-  if (statusFilter.value) list = list.filter((r) => r.lastStatus === statusFilter.value)
   if (search.value.trim()) {
     const q = search.value.toLowerCase()
     list = list.filter(
@@ -44,12 +32,6 @@ const stats = computed(() => ({
     ? Math.round(store.clients.reduce((s, r) => s + r.lastScore, 0) / store.clients.length)
     : 0,
 }))
-
-const STATUS_COLORS: Record<ClientListItem['lastStatus'], { fg: string; bg: string }> = {
-  approved: { fg: 'var(--success)', bg: 'var(--success-bg)' },
-  declined: { fg: 'var(--danger)', bg: 'var(--danger-bg)' },
-  pending: { fg: 'var(--warning)', bg: 'var(--warning-bg)' },
-}
 
 function openLastScoring(row: ClientListItem) {
   router.push(`/scoring-history/${row.lastScoringId}`)
@@ -107,9 +89,6 @@ function openLastScoring(row: ClientListItem) {
           <i class="pi pi-search search-icon" />
           <input v-model="search" class="search-input" :placeholder="$t('scoringHistory.searchClient')" />
         </span>
-        <select v-model="statusFilter" class="filter-select-native">
-          <option v-for="opt in statusOptions" :key="String(opt.value)" :value="opt.value">{{ opt.label }}</option>
-        </select>
       </div>
 
       <div class="surface-card table-card">
@@ -133,14 +112,6 @@ function openLastScoring(row: ClientListItem) {
           <Column :header="$t('scoringHistory.limit')" field="lastLimit" sortable style="width:160px">
             <template #body="{ data }">
               <MonoAmount :value="data.lastLimit" size="sm" />
-            </template>
-          </Column>
-          <Column :header="$t('scoringHistory.status')" field="lastStatus" sortable style="width:130px">
-            <template #body="{ data }">
-              <span class="pill"
-                :style="{ color: STATUS_COLORS[data.lastStatus as ClientListItem['lastStatus']].fg, background: STATUS_COLORS[data.lastStatus as ClientListItem['lastStatus']].bg }">
-                {{ $t('scoringHistory.' + data.lastStatus) }}
-              </span>
             </template>
           </Column>
           <Column :header="$t('scoringHistory.totalRuns')" field="totalRuns" sortable style="width:110px">
@@ -301,19 +272,6 @@ function openLastScoring(row: ClientListItem) {
   border-color: var(--accent-2);
 }
 
-.filter-select-native {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  background: var(--bg-base);
-  color: var(--text-primary);
-  font-size: 0.88rem;
-  font-family: inherit;
-  outline: none;
-  cursor: pointer;
-  width: 200px;
-  flex-shrink: 0;
-}
 
 .table-card {
   padding: 0;
@@ -370,16 +328,6 @@ function openLastScoring(row: ClientListItem) {
   color: var(--text-secondary);
 }
 
-.pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.18rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  white-space: nowrap;
-  border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
-}
 
 .open-btn {
   width: 32px;
@@ -432,7 +380,6 @@ function openLastScoring(row: ClientListItem) {
 @media (max-width: 450px) {
   .filters-bar { flex-direction: column; align-items: stretch; }
   .search-wrap { min-width: 0; }
-  .filter-select-native { width: 100%; }
 }
 
 @media (max-width: 600px) {

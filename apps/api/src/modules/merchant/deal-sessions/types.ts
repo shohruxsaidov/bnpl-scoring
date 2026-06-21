@@ -16,29 +16,6 @@ export function isWizardStep(s: string): s is WizardStep {
   return (WIZARD_STEPS as readonly string[]).includes(s);
 }
 
-/** KATM result stamped by the server at /merchant/katm/query. */
-export interface KatmStamp {
-  userId: string;
-  claimId: string;
-  demandId: string;
-  consentId: string;
-  consentDate: string;
-  score: number;
-  scoringClass: string;
-  scoringLevel: string;
-  activeLoans: number;
-  allDebtSum: number;
-  overdueCount: number;
-  overdueAmount: number;
-  maxOverdueDays: number;
-  totalContracts: number;
-  totalClaims: number;
-  avgMonthlyPayment: number;
-  hasDefaults: boolean;
-  hasCreditBan: boolean;
-  raw: unknown;
-}
-
 /** Scoring result stamped by the server at /merchant/cards/score. */
 export interface ScoringStamp {
   cardId: string;
@@ -97,7 +74,6 @@ export interface SessionStepData {
   };
   payment?: { paymentDay: number };
   verification?: { lang: 'ru' | 'uz'; otpVerifiedAt: string | null };
-  katm?: KatmStamp;
   katmPending?: KatmPendingState;
   scoring?: ScoringStamp;
   prepayment?: PrepaymentStamp;

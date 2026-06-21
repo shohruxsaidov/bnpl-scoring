@@ -1,19 +1,23 @@
 /**
  * KATM consume flow orchestration (ADR-0025):
  *
- *   consent → ban pre-check → claim registration → report request
+ *   consent → ban pre-check → claim registration → 077 + INPS reports (parallel)
  *
  * Shared by the Wizard (Deal Session) and self-service (Scoring Session)
- * paths. When the report is async (05050) the caller enqueues a BullMQ
- * polling job — see poller.ts.
+ * paths. When either report is async (05050) the caller enqueues BullMQ
+ * polling jobs — see poller.ts. Both reports must resolve before the session
+ * advances.
  */
 
 import { eq, sql } from 'drizzle-orm';
 import { db } from '@db';
 import { agreements } from '@db/agreements';
 import { katmClaims } from '@db/katm-claims';
+import { katm077Reports } from '@db/katm-077-reports';
+import { katmInpsReports } from '@db/katm-inps-reports';
 import { registerClaim } from './commands/register-claim/register-claim.handler';
 import { request077Report } from './queries/request-077-report/request-077-report.handler';
+import { requestINPSReport } from './queries/request-inps-report/request-inps-report.handler';
 import type { KatmResult } from './service/shared';
 
 // ---------------------------------------------------------------------------
@@ -33,8 +37,7 @@ export interface KatmSubject {
 
 /**
  * Validate a clients/users row against the claim-registration requirements.
- * Returns the list of missing field names (empty = OK) — the routes surface
- * this so the Agent / self-service user can fill the gaps manually.
+ * Returns the list of missing field names (empty = OK).
  */
 export function missingKatmFields(row: {
   pinfl: string | null;
@@ -104,7 +107,7 @@ export async function createKatmConsent(input: {
 export type KatmFlowOutcome =
   | { status: 'banned' }
   | { status: 'ready'; katmSir: string; result: KatmResult }
-  | { status: 'pending'; katmSir: string; token: string };
+  | { status: 'pending'; katmSir: string; pending077: string | null; pendingInps: string | null };
 
 export async function startKatmFlow(input: {
   claimId: string;
@@ -115,7 +118,7 @@ export async function startKatmFlow(input: {
   channel: 'wizard' | 'self_service';
 }): Promise<KatmFlowOutcome> {
   // Idempotency: if this claimId was already registered (e.g. retry after a
-  // transient failure), skip registration and re-request the report directly.
+  // transient failure), skip registration and re-request both reports.
   const [existing] = await db
     .select({ katmSir: katmClaims.katmSir })
     .from(katmClaims)
@@ -127,11 +130,6 @@ export async function startKatmFlow(input: {
   if (existing) {
     katmSir = existing.katmSir;
   } else {
-    // Ban pre-check — an actively banned client must not even have a claim
-    // registered with the bureau (ADR-0025)
-    // const ban = await checkCreditBan({ pinfl: input.subject.pinfl })
-    // if (ban.banned) return { status: 'banned' }
-
     const claim = await registerClaim({
       claimId: input.claimId,
       agreementId: input.consent.agreementId,
@@ -159,15 +157,62 @@ export async function startKatmFlow(input: {
     katmSir = claim.katmSir;
   }
 
-  const report = await request077Report({ claimId: input.claimId });
+  // Request both reports in parallel — each may be sync (ready) or async (pending).
+  const [report077, reportInps] = await Promise.all([
+    request077Report({ claimId: input.claimId }),
+    requestINPSReport({ claimId: input.claimId }),
+  ]);
 
-  if (report.status === 'pending') {
-    await db
-      .update(katmClaims)
-      .set({ token: report.token, updatedAt: new Date() })
-      .where(eq(katmClaims.claimId, input.claimId));
-    return { status: 'pending', katmSir, token: report.token };
+  // Persist 077 result or pending placeholder
+  if (report077.status === 'pending') {
+    await db.insert(katm077Reports).values({ claimId: input.claimId, token: report077.token });
+  } else {
+    const r = report077.result;
+    await db.insert(katm077Reports).values({
+      claimId: input.claimId,
+      demandId: r.demandId,
+      consentId: r.consentId,
+      score: r.score,
+      scoringClass: r.scoringClass,
+      scoringLevel: r.scoringLevel,
+      activeLoans: r.activeLoans,
+      allDebtSum: r.allDebtSum,
+      overdueCount: r.overdueCount,
+      overdueAmount: r.overdueAmount,
+      maxOverdueDays: r.maxOverdueDays,
+      totalContracts: r.totalContracts,
+      totalClaims: r.totalClaims,
+      avgMonthlyPayment: r.avgMonthlyPayment,
+      hasDefaults: r.hasDefaults,
+      hasCreditBan: r.hasCreditBan,
+      raw: r.raw as Record<string, unknown>,
+    });
   }
 
-  return { status: 'ready', katmSir, result: report.result };
+  // Persist INPS result or pending placeholder
+  if (reportInps.status === 'pending') {
+    await db.insert(katmInpsReports).values({ claimId: input.claimId, token: reportInps.token });
+  } else {
+    const r = reportInps.result;
+    await db.insert(katmInpsReports).values({
+      claimId: input.claimId,
+      demandId: r.demandId,
+      incomesAllSumma: r.incomesAllSumma,
+      periodBegin: r.periodBegin,
+      periodEnd: r.periodEnd,
+      incomes: r.incomes as unknown as Record<string, unknown>[],
+      raw: r.raw as Record<string, unknown>,
+    });
+  }
+
+  if (report077.status === 'pending' || reportInps.status === 'pending') {
+    return {
+      status: 'pending',
+      katmSir,
+      pending077: report077.status === 'pending' ? report077.token : null,
+      pendingInps: reportInps.status === 'pending' ? reportInps.token : null,
+    };
+  }
+
+  return { status: 'ready', katmSir, result: report077.result };
 }

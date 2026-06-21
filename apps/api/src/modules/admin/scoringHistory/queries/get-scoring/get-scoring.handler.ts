@@ -36,6 +36,22 @@ export interface KatmData {
   hasCreditBan: boolean | null
 }
 
+export interface InpsIncomeRow {
+  period: string
+  orgname: string
+  income_summa: string
+  inps_summa: string
+  org_inn: string
+}
+
+export interface InpsData {
+  incomesAllSumma: number | null
+  avgMonthlyIncome: number | null
+  periodBegin: string | null
+  periodEnd: string | null
+  incomes: InpsIncomeRow[]
+}
+
 export interface ScoringDetail {
   id: string
   fullName: string
@@ -54,6 +70,7 @@ export interface ScoringDetail {
   coefficient: number | null
   factors: ScoringFactor[]
   katmData: KatmData | null
+  inpsData: InpsData | null
   modelData: ModelData | null
   platformStats: {
     total: number
@@ -225,6 +242,18 @@ export async function getScoring(id: number): Promise<ScoringDetail | null> {
       }
     : null
 
+  const inpsDetail = (criteriaScores?.inps as Record<string, unknown> | undefined)
+    ?.detail as Record<string, unknown> | undefined
+  const inpsData: InpsData | null = inpsDetail
+    ? {
+        incomesAllSumma: inpsDetail.incomesAllSumma != null ? Number(inpsDetail.incomesAllSumma) : null,
+        avgMonthlyIncome: inpsDetail.avgMonthlyIncome != null ? Number(inpsDetail.avgMonthlyIncome) : null,
+        periodBegin: (inpsDetail.periodBegin as string | undefined) ?? null,
+        periodEnd: (inpsDetail.periodEnd as string | undefined) ?? null,
+        incomes: (inpsDetail.incomes as InpsIncomeRow[] | undefined) ?? [],
+      }
+    : null
+
   return {
     id: scoring.id.toString(),
     fullName:
@@ -244,6 +273,7 @@ export async function getScoring(id: number): Promise<ScoringDetail | null> {
     coefficient: scoring.coefficient != null ? Number(scoring.coefficient) : null,
     factors: criteriaToFactors(criteriaScores),
     katmData,
+    inpsData,
     modelData,
     platformStats,
   }

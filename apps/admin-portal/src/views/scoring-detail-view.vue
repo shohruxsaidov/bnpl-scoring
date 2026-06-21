@@ -135,6 +135,42 @@ const age = computed(() => {
           </div>
         </div>
       </div>
+
+      <div v-if="detail.inpsData" class="surface-card panel">
+        <h2 class="panel-title">INPS (Daromad)</h2>
+        <dl class="info-list">
+          <div v-if="detail.inpsData.avgMonthlyIncome != null">
+            <dt>O'rt. oylik daromad</dt>
+            <dd><MonoAmount :value="detail.inpsData.avgMonthlyIncome" size="sm" /></dd>
+          </div>
+          <div v-if="detail.inpsData.incomesAllSumma != null">
+            <dt>Jami daromad (12 oy)</dt>
+            <dd><MonoAmount :value="detail.inpsData.incomesAllSumma" size="sm" /></dd>
+          </div>
+          <div v-if="detail.inpsData.periodBegin && detail.inpsData.periodEnd">
+            <dt>Davr</dt>
+            <dd class="font-mono">{{ detail.inpsData.periodBegin }} — {{ detail.inpsData.periodEnd }}</dd>
+          </div>
+        </dl>
+        <table v-if="detail.inpsData.incomes.length > 0" class="breakdown-table" style="margin-top:1rem">
+          <thead>
+            <tr>
+              <th>Davr</th>
+              <th>Tashkilot</th>
+              <th class="col-num">Daromad</th>
+              <th class="col-num">INPS ulushi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in detail.inpsData.incomes" :key="row.period + row.org_inn">
+              <td class="font-mono">{{ row.period }}</td>
+              <td>{{ row.orgname }}</td>
+              <td class="col-num font-mono">{{ Number(row.income_summa).toLocaleString() }}</td>
+              <td class="col-num font-mono">{{ Number(row.inps_summa).toLocaleString() }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
       <div v-if="detail.modelData" class="surface-card panel">
         <h2 class="panel-title">Scoring modeli</h2>
         <div v-if="detail.modelData.rejected" class="model-rejected">
