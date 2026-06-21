@@ -36,6 +36,8 @@ import { resolveScoringModel } from '../../scoring/resolve-model';
 import { computeScoringModel, type ScoringInputs, type ScoringResult } from '../../scoring/engine';
 import { createOtp, verifyOtp } from '../../auth/client/service/service.handler';
 
+const BRV_UZS = 340_000
+
 type JwtPayload = {
   sub: string;
   merchantId: string;
@@ -684,6 +686,9 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           age: ageYears(userRow.birthDate),
           gender: userRow.gender === 1 ? 'Male' : userRow.gender === 2 ? 'Female' : undefined,
           citizenship: userRow.nationality === 'Uzbekistan' ? 'Uzbekistan' : 'NonResident',
+        }),
+        ...(inps && {
+          incomeSum: (inps.incomesAllSumma ?? 0) / 12 / BRV_UZS,
         }),
       };
 

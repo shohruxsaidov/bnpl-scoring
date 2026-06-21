@@ -12,6 +12,7 @@ onMounted(() => store.fetchDetail(route.params.id as string))
 
 const detail = computed<ScoringDetail | null>(() => store.detail)
 const modelExpanded = ref(false)
+const inpsExpanded = ref(false)
 
 const age = computed(() => {
   if (!detail.value?.birthDate) return null
@@ -76,130 +77,120 @@ const age = computed(() => {
           <h2 class="panel-title">KATM</h2>
           <dl class="info-list">
             <div v-if="detail.katmData.katmScore != null">
-              <dt>KATM bahosi</dt><dd class="font-mono">{{ detail.katmData.katmScore }}</dd>
+              <dt>{{ $t('scoringHistory.katmScore') }}</dt><dd class="font-mono">{{ detail.katmData.katmScore }}</dd>
             </div>
             <div v-if="detail.katmData.katmClass">
-              <dt>KATM sinfi</dt><dd class="font-mono">{{ detail.katmData.katmClass }}</dd>
+              <dt>{{ $t('scoringHistory.katmClass') }}</dt><dd class="font-mono">{{ detail.katmData.katmClass }}</dd>
             </div>
             <div v-if="detail.katmData.scoringLevel">
-              <dt>Scoring darajasi</dt><dd class="font-mono">{{ detail.katmData.scoringLevel }}</dd>
+              <dt>{{ $t('scoringHistory.scoringLevel') }}</dt><dd class="font-mono">{{ detail.katmData.scoringLevel }}</dd>
             </div>
             <div v-if="detail.katmData.openCredits != null">
-              <dt>Faol kreditlar</dt><dd class="font-mono">{{ detail.katmData.openCredits }}</dd>
+              <dt>{{ $t('scoringHistory.openCredits') }}</dt><dd class="font-mono">{{ detail.katmData.openCredits }}</dd>
             </div>
             <div v-if="detail.katmData.totalDebt != null">
-              <dt>Umumiy qarz</dt><dd><MonoAmount :value="detail.katmData.totalDebt" size="sm" /></dd>
+              <dt>{{ $t('scoringHistory.totalDebt') }}</dt><dd><MonoAmount :value="detail.katmData.totalDebt" size="sm" /></dd>
             </div>
             <div v-if="detail.katmData.overdueInOpenCredits != null">
-              <dt>Muddati o'tgan qarz</dt><dd><MonoAmount :value="detail.katmData.overdueInOpenCredits" size="sm" /></dd>
+              <dt>{{ $t('scoringHistory.overdueInOpenCredits') }}</dt><dd><MonoAmount :value="detail.katmData.overdueInOpenCredits" size="sm" /></dd>
             </div>
             <div v-if="detail.katmData.totalContracts != null">
-              <dt>Jami shartnomalar</dt><dd class="font-mono">{{ detail.katmData.totalContracts }}</dd>
+              <dt>{{ $t('scoringHistory.totalContracts') }}</dt><dd class="font-mono">{{ detail.katmData.totalContracts }}</dd>
             </div>
             <div v-if="detail.katmData.totalClaims != null">
-              <dt>Jami so'rovlar</dt><dd class="font-mono">{{ detail.katmData.totalClaims }}</dd>
+              <dt>{{ $t('scoringHistory.totalClaims') }}</dt><dd class="font-mono">{{ detail.katmData.totalClaims }}</dd>
             </div>
             <div v-if="detail.katmData.overdueCount != null">
-              <dt>Muddati o'tgan kreditlar</dt><dd class="font-mono">{{ detail.katmData.overdueCount }}</dd>
+              <dt>{{ $t('scoringHistory.overdueCount') }}</dt><dd class="font-mono">{{ detail.katmData.overdueCount }}</dd>
             </div>
             <div v-if="detail.katmData.maxOverdueDays != null">
-              <dt>Maks. kechikish (kun)</dt><dd class="font-mono">{{ detail.katmData.maxOverdueDays }}</dd>
+              <dt>{{ $t('scoringHistory.maxOverdueDays') }}</dt><dd class="font-mono">{{ detail.katmData.maxOverdueDays }}</dd>
             </div>
             <div v-if="detail.katmData.maxOverdueSum != null">
-              <dt>Maks. muddati o'tgan summa</dt><dd><MonoAmount :value="detail.katmData.maxOverdueSum" size="sm" /></dd>
+              <dt>{{ $t('scoringHistory.maxOverdueSum') }}</dt><dd><MonoAmount :value="detail.katmData.maxOverdueSum" size="sm" /></dd>
             </div>
             <div v-if="detail.katmData.avgMonthlyPayment != null">
-              <dt>O'rt. oylik to'lov</dt><dd><MonoAmount :value="detail.katmData.avgMonthlyPayment" size="sm" /></dd>
+              <dt>{{ $t('scoringHistory.avgMonthlyPayment') }}</dt><dd><MonoAmount :value="detail.katmData.avgMonthlyPayment" size="sm" /></dd>
             </div>
             <div v-if="detail.katmData.hasCreditBan != null">
-              <dt>Kredit taqiqi</dt>
+              <dt>{{ $t('scoringHistory.creditBan') }}</dt>
               <dd>
                 <span class="pill" :style="detail.katmData.hasCreditBan
                   ? { color: 'var(--danger)', background: 'var(--danger-bg)' }
                   : { color: 'var(--success)', background: 'var(--success-bg)' }">
-                  {{ detail.katmData.hasCreditBan ? 'Kredit taqiqi bor' : 'Kredit taqiqi yo\'q' }}
+                  {{ detail.katmData.hasCreditBan ? $t('scoringHistory.creditBanYes') : $t('scoringHistory.creditBanNo') }}
                 </span>
               </dd>
             </div>
           </dl>
         </div>
 
-        <div class="surface-card panel">
-          <h2 class="panel-title">{{ $t('scoringHistory.factors') }}</h2>
-          <div v-if="detail.factors.length === 0" class="muted">{{ $t('common.noData') }}</div>
-          <div v-else class="factors">
-            <div v-for="(f, i) in detail.factors" :key="i" class="factor-row">
-              <span class="factor-label">{{ f.label }}</span>
-              <span class="factor-score font-mono">{{ f.score.toFixed(2) }}</span>
-            </div>
-          </div>
-        </div>
       </div>
 
       <div v-if="detail.inpsData" class="surface-card panel">
-        <h2 class="panel-title">INPS (Daromad)</h2>
-        <dl class="info-list">
-          <div v-if="detail.inpsData.avgMonthlyIncome != null">
-            <dt>O'rt. oylik daromad</dt>
-            <dd><MonoAmount :value="detail.inpsData.avgMonthlyIncome" size="sm" /></dd>
+        <h2 class="panel-title">{{ $t('scoringHistory.inpsTitle') }}</h2>
+        <div class="model-summary">
+          <div class="model-stat">
+            <span class="muted">{{ $t('scoringHistory.avgMonthlyIncome') }}</span>
+            <MonoAmount v-if="detail.inpsData.avgMonthlyIncome != null" :value="detail.inpsData.avgMonthlyIncome" size="sm" />
+            <span v-else class="font-mono">—</span>
           </div>
-          <div v-if="detail.inpsData.incomesAllSumma != null">
-            <dt>Jami daromad (12 oy)</dt>
-            <dd><MonoAmount :value="detail.inpsData.incomesAllSumma" size="sm" /></dd>
+          <div class="model-stat">
+            <span class="muted">{{ $t('scoringHistory.totalIncome12') }}</span>
+            <MonoAmount v-if="detail.inpsData.incomesAllSumma != null" :value="detail.inpsData.incomesAllSumma" size="sm" />
+            <span v-else class="font-mono">—</span>
           </div>
-          <div v-if="detail.inpsData.periodBegin && detail.inpsData.periodEnd">
-            <dt>Davr</dt>
-            <dd class="font-mono">{{ detail.inpsData.periodBegin }} — {{ detail.inpsData.periodEnd }}</dd>
-          </div>
-        </dl>
-        <table v-if="detail.inpsData.incomes.length > 0" class="breakdown-table" style="margin-top:1rem">
+          <button v-if="detail.inpsData.incomes.length > 0" class="toggle-btn" @click="inpsExpanded = !inpsExpanded">
+            {{ inpsExpanded ? $t('scoringHistory.collapse') : $t('scoringHistory.expand') }}
+            <i :class="inpsExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" />
+          </button>
+        </div>
+        <table v-if="inpsExpanded && detail.inpsData.incomes.length > 0" class="breakdown-table" style="margin-top:1rem">
           <thead>
             <tr>
-              <th>Davr</th>
-              <th>Tashkilot</th>
-              <th class="col-num">Daromad</th>
-              <th class="col-num">INPS ulushi</th>
+              <th>{{ $t('scoringHistory.period') }}</th>
+              <th>{{ $t('scoringHistory.organization') }}</th>
+              <th class="col-num">{{ $t('scoringHistory.income') }}</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="row in detail.inpsData.incomes" :key="row.period + row.org_inn">
+            <tr v-for="row in [...detail.inpsData.incomes].sort((a, b) => b.period.localeCompare(a.period))" :key="row.period + row.org_inn">
               <td class="font-mono">{{ row.period }}</td>
               <td>{{ row.orgname }}</td>
               <td class="col-num font-mono">{{ Number(row.income_summa).toLocaleString() }}</td>
-              <td class="col-num font-mono">{{ Number(row.inps_summa).toLocaleString() }}</td>
             </tr>
           </tbody>
         </table>
       </div>
       <div v-if="detail.modelData" class="surface-card panel">
-        <h2 class="panel-title">Scoring modeli</h2>
+        <h2 class="panel-title">{{ $t('scoringHistory.scoringModel') }}</h2>
         <div v-if="detail.modelData.rejected" class="model-rejected">
-          <span class="pill" style="color:var(--danger);background:var(--danger-bg)">Rad etildi</span>
+          <span class="pill" style="color:var(--danger);background:var(--danger-bg)">{{ $t('scoringHistory.rejected') }}</span>
           <span class="model-stop-name">{{ detail.modelData.name }}</span>
         </div>
         <template v-else>
           <div class="model-summary">
             <div class="model-stat">
-              <span class="muted">Umumiy ball</span>
+              <span class="muted">{{ $t('scoringHistory.totalScore') }}</span>
               <span class="font-mono" style="font-weight:800">{{ detail.modelData.totalScore }}</span>
             </div>
             <div class="model-stat">
-              <span class="muted">Koeffitsient</span>
+              <span class="muted">{{ $t('scoringHistory.coefficient') }}</span>
               <span class="font-mono" style="font-weight:800">{{ detail.modelData.coefficient }}</span>
             </div>
             <button class="toggle-btn" @click="modelExpanded = !modelExpanded">
-              {{ modelExpanded ? 'Yopish' : 'Batafsil ko\'rish' }}
+              {{ modelExpanded ? $t('scoringHistory.collapse') : $t('scoringHistory.expand') }}
               <i :class="modelExpanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'" />
             </button>
           </div>
           <table v-if="modelExpanded" class="breakdown-table">
             <thead>
               <tr>
-                <th>Mezon</th>
-                <th class="col-num">Og'irlik</th>
-                <th class="col-num">Xom ball</th>
-                <th class="col-num">Og'irlangan ball</th>
-                <th class="col-status">Holat</th>
+                <th>{{ $t('scoringHistory.criterion') }}</th>
+                <th class="col-num">{{ $t('scoringHistory.importantLevel') }}</th>
+                <th class="col-num">{{ $t('scoringHistory.rawScore') }}</th>
+                <th class="col-num">{{ $t('scoringHistory.weightedScore') }}</th>
+                <th class="col-status">{{ $t('scoringHistory.modelStatus') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -212,7 +203,7 @@ const age = computed(() => {
                   <span class="pill" :style="r.skipped
                     ? { color: 'var(--text-secondary)', background: 'var(--bg-surface)' }
                     : { color: 'var(--success)', background: 'var(--success-bg)' }">
-                    {{ r.skipped ? 'O\'tkazib yuborildi' : 'Hisoblandi' }}
+                    {{ r.skipped ? $t('scoringHistory.skipped') : $t('scoringHistory.calculated') }}
                   </span>
                 </td>
               </tr>

@@ -246,8 +246,8 @@ export async function getScoring(id: number): Promise<ScoringDetail | null> {
     ?.detail as Record<string, unknown> | undefined
   const inpsData: InpsData | null = inpsDetail
     ? {
-        incomesAllSumma: inpsDetail.incomesAllSumma != null ? Number(inpsDetail.incomesAllSumma) : null,
-        avgMonthlyIncome: inpsDetail.avgMonthlyIncome != null ? Number(inpsDetail.avgMonthlyIncome) : null,
+        incomesAllSumma: inpsDetail.incomesAllSumma != null ? Math.round(Number(inpsDetail.incomesAllSumma) * 100) : null,
+        avgMonthlyIncome: inpsDetail.avgMonthlyIncome != null ? Math.round(Number(inpsDetail.avgMonthlyIncome) * 100) : null,
         periodBegin: (inpsDetail.periodBegin as string | undefined) ?? null,
         periodEnd: (inpsDetail.periodEnd as string | undefined) ?? null,
         incomes: (inpsDetail.incomes as InpsIncomeRow[] | undefined) ?? [],

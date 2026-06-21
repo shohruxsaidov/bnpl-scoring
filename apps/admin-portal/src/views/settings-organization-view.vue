@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
+import InputMask from 'primevue/inputmask'
 import { useToast } from 'primevue/usetoast'
 import { useOrganizationStore } from '@/stores/organization'
 import { useMerchantsStore } from '@/stores/merchants'
@@ -40,10 +41,10 @@ const orgValid = computed(() => {
     f.name.trim().length > 0 &&
     f.legalName.trim().length > 0 &&
     f.address.trim().length > 0 &&
-    f.phone.trim().length > 0 &&
-    /^\d{9}$/.test(f.inn) &&
-    /^\d{5}$/.test(f.mfo) &&
-    /^\d{20}$/.test(f.accountNumber) &&
+    f.phone.length > 0 && !f.phone.includes('_') &&
+    /^\d{9}$/.test(f.inn) && !f.inn.includes('_') &&
+    /^\d{5}$/.test(f.mfo) && !f.mfo.includes('_') &&
+    /^\d{20}$/.test(f.accountNumber) && !f.accountNumber.includes('_') &&
     f.bankName.length > 0
   )
 })
@@ -58,7 +59,7 @@ async function submitOrganization() {
       legalName: f.legalName.trim(),
       directorName: f.directorName.trim() || null,
       address: f.address.trim(),
-      phone: f.phone.trim(),
+      phone: '998' + f.phone.replace(/\D/g, ''),
       inn: f.inn,
       mfo: f.mfo,
       accountNumber: f.accountNumber,
@@ -81,7 +82,7 @@ onMounted(async () => {
       legalName: org.legalName,
       directorName: org.directorName ?? '',
       address: org.address,
-      phone: org.phone,
+      phone: org.phone.replace(/^998/, ''),
       inn: org.inn,
       mfo: org.mfo,
       accountNumber: org.accountNumber,
@@ -122,19 +123,20 @@ onMounted(async () => {
           <InputText v-model="orgForm.address" :placeholder="$t('settings.orgAddressPlaceholder')" />
         </div>
         <div class="field-row">
-          <div class="field">
+          <div class="field phone-field">
             <label class="field-label">{{ $t('settings.orgPhone') }}</label>
-            <InputText v-model="orgForm.phone" placeholder="+998 ..." maxlength="20" />
+            <span class="p-inputgroup-addon">+998</span>
+            <InputMask v-model="orgForm.phone" mask="999999999" placeholder="000000000" />
           </div>
           <div class="field">
             <label class="field-label">{{ $t('settings.orgInn') }}</label>
-            <InputText v-model="orgForm.inn" placeholder="123456789" maxlength="9" class="font-mono" />
+            <InputMask v-model="orgForm.inn" mask="999999999" placeholder="000000000" class="font-mono" />
           </div>
         </div>
         <div class="field-row">
           <div class="field">
             <label class="field-label">{{ $t('settings.orgMfo') }}</label>
-            <InputText v-model="orgForm.mfo" placeholder="00000" maxlength="5" class="font-mono" @input="onMfoInput" />
+            <InputMask v-model="orgForm.mfo" mask="99999" placeholder="00000" class="font-mono" @input="onMfoInput" />
             <span v-if="orgForm.mfo.length === 5 && !orgForm.bankName" class="field-error">
               {{ $t('settings.bankNotFound') }}
             </span>
@@ -146,7 +148,7 @@ onMounted(async () => {
         </div>
         <div class="field">
           <label class="field-label">{{ $t('settings.orgAccountNumber') }}</label>
-          <InputText v-model="orgForm.accountNumber" placeholder="00000000000000000000" maxlength="20" class="font-mono" />
+          <InputMask v-model="orgForm.accountNumber" mask="99999999999999999999" placeholder="00000000000000000000" class="font-mono" />
         </div>
         <div class="org-actions">
           <button class="btn-gradient" :disabled="orgSaving || !orgValid" @click="submitOrganization">
@@ -200,6 +202,22 @@ onMounted(async () => {
   flex-direction: column;
   flex: 1;
   min-width: 0;
+}
+.phone-field {
+  position: relative;
+}
+.p-inputgroup-addon {
+  color: var(--text-secondary);
+  position: absolute;
+  left: 10px;
+  top: 26px;
+  height: 40px;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+.phone-field :deep(.p-inputtext) {
+  padding-left: 3.25rem;
 }
 .field-row {
   display: flex;
