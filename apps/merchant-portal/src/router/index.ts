@@ -122,24 +122,6 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: 'notifications',
-        name: 'notifications',
-        component: () => import('@/views/notifications-view.vue'),
-        meta: {
-          titleKey: 'routeTitle.notifications',
-          breadcrumbKeys: ['breadcrumb.notifications'],
-        },
-      },
-      {
-        path: 'notifications/:id',
-        name: 'notification-detail',
-        component: () => import('@/views/notification-detail-view.vue'),
-        meta: {
-          titleKey: 'routeTitle.notificationDetail',
-          breadcrumbKeys: ['breadcrumb.notifications', 'breadcrumb.detail'],
-        },
-      },
-      {
         path: 'settings',
         name: 'settings',
         component: () => import('@/views/settings-view.vue'),

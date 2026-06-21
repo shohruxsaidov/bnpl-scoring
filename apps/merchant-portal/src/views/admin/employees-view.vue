@@ -9,12 +9,10 @@ import InputText from 'primevue/inputtext'
 import MultiSelect from 'primevue/multiselect'
 import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
-import { useToast } from 'primevue/usetoast'
 import { useCatalogStore } from '@/stores/catalog'
 import type { Employee, EmployeeRole } from '@/types'
 
 const catalog = useCatalogStore()
-const toast = useToast()
 const { t } = useI18n()
 
 const search = ref('')
@@ -66,27 +64,17 @@ function openEdit(e: Employee) {
 }
 
 async function save() {
-  if (!form.fullName || !form.branchId || form.roles.length === 0) {
-    toast.add({ severity: 'warn', summary: t('employees.missingFields'), life: 2500 })
-    return
-  }
+  if (!form.fullName || !form.branchId || form.roles.length === 0) return
   saving.value = true
   try {
     if (editingId.value) {
       await catalog.updateEmployee(editingId.value, { fullName: form.fullName, branchId: form.branchId, roles: form.roles })
-      toast.add({ severity: 'success', summary: t('employees.updated'), detail: form.fullName, life: 2000 })
     } else {
-      if (!form.phone || form.password.length < 8) {
-        toast.add({ severity: 'warn', summary: t('employees.missingFields'), life: 2500 })
-        return
-      }
+      if (!form.phone || form.password.length < 8) return
       await catalog.addEmployee({ phone: form.phone, password: form.password, fullName: form.fullName, branchId: form.branchId, roles: form.roles })
-      toast.add({ severity: 'success', summary: t('employees.added'), detail: form.fullName, life: 2000 })
     }
     dialogVisible.value = false
-  } catch {
-    toast.add({ severity: 'error', summary: t('common.error'), life: 2500 })
-  } finally {
+  } catch {} finally {
     saving.value = false
   }
 }

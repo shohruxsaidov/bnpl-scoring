@@ -4,7 +4,6 @@ import piniaPersistedstate from 'pinia-plugin-persistedstate'
 import { VueQueryPlugin } from '@tanstack/vue-query'
 import PrimeVue from 'primevue/config'
 import Aura from '@primeuix/themes/aura'
-import ToastService from 'primevue/toastservice'
 import ConfirmationService from 'primevue/confirmationservice'
 import Tooltip from 'primevue/tooltip'
 import { createI18n } from 'vue-i18n'
@@ -17,7 +16,6 @@ import uz from './locales/uz.json'
 import ru from './locales/ru.json'
 import './styles/main.css'
 import { useAuthStore } from './stores/auth'
-import { useNotificationsStore } from './stores/notifications'
 
 const i18n = createI18n({
   legacy: false,
@@ -47,7 +45,6 @@ app.use(PrimeVue, {
     },
   },
 })
-app.use(ToastService)
 app.use(ConfirmationService)
 app.directive('tooltip', Tooltip)
 
@@ -58,9 +55,4 @@ app.directive('tooltip', Tooltip)
   app.use(router)
   app.mount('#app')
 
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').then(() => {
-      useNotificationsStore().listenForPushMessages()
-    }).catch(() => {})
-  }
 })()

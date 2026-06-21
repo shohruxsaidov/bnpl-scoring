@@ -3,13 +3,11 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
-import { useNotificationsStore } from '@/stores/notifications'
 
 const props = defineProps<{ collapsed: boolean; mobileOpen?: boolean; isMobile?: boolean }>()
 const emit = defineEmits<{ (e: 'toggle'): void; (e: 'close'): void }>()
 
 const auth = useAuthStore()
-const notificationsStore = useNotificationsStore()
 const router = useRouter()
 const { t } = useI18n()
 
@@ -25,7 +23,6 @@ const mainNav = computed<NavItem[]>(() => [
   { label: t('nav.deals'), icon: 'pi pi-briefcase', to: '/deals', show: auth.can('view_deals') },
   { label: t('nav.newDeal'), icon: 'pi pi-plus-circle', to: '/deals/create', show: auth.can('create_deal') },
   { label: t('nav.calculator'), icon: 'pi pi-calculator', to: '/calculator', show: auth.can('create_deal') },
-  { label: t('nav.notifications'), icon: 'pi pi-bell', to: '/notifications', show: auth.can('view_notifications') },
   { label: t('nav.settings'), icon: 'pi pi-cog', to: '/settings', show: true },
 ])
 
@@ -65,10 +62,6 @@ async function logout() {
         <RouterLink v-if="item.show" :to="item.to" class="nav-link" exact-active-class="active" :title="item.label" @click="props.isMobile && emit('close')">
           <i :class="item.icon" />
           <span v-if="!props.collapsed">{{ item.label }}</span>
-          <span v-if="item.to === '/notifications' && notificationsStore.unreadCount > 0" class="nav-badge"
-            :class="{ solo: props.collapsed }">
-            {{ notificationsStore.unreadCount > 9 ? '9+' : notificationsStore.unreadCount }}
-          </span>
         </RouterLink>
       </template>
 
@@ -239,27 +232,6 @@ async function logout() {
   background: var(--gradient-accent);
   color: #fff;
   box-shadow: var(--accent-glow);
-}
-
-.nav-badge {
-  margin-left: auto;
-  background: var(--danger);
-  color: #fff;
-  font-size: 0.6rem;
-  font-weight: 800;
-  min-width: 17px;
-  height: 17px;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  padding: 0 4px;
-}
-
-.nav-badge.solo {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  margin: 0;
 }
 
 .divider {

@@ -8,13 +8,11 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
 import ToggleSwitch from 'primevue/toggleswitch'
-import { useToast } from 'primevue/usetoast'
 import { useCatalogStore } from '@/stores/catalog'
 import { useRegions } from '@/composables/use-regions'
 import type { Branch } from '@/types'
 
 const catalog = useCatalogStore()
-const toast = useToast()
 const { t } = useI18n()
 const { regionOptions, districtOptions, onRegionChange } = useRegions()
 
@@ -48,10 +46,7 @@ function openEdit(b: Branch) {
 }
 
 async function save() {
-  if (!form.name || !form.address || !form.phone) {
-    toast.add({ severity: 'warn', summary: t('branches.missingFields'), life: 2500 })
-    return
-  }
+  if (!form.name || !form.address || !form.phone) return
   saving.value = true
   try {
     if (editingId.value) {
@@ -61,7 +56,6 @@ async function save() {
         phone: form.phone,
         regionId: form.regionId ?? undefined,
       })
-      toast.add({ severity: 'success', summary: t('branches.updated'), detail: form.name, life: 2000 })
     } else {
       await catalog.addBranch({
         name: form.name,
@@ -69,12 +63,9 @@ async function save() {
         phone: form.phone,
         regionId: form.regionId ?? undefined,
       })
-      toast.add({ severity: 'success', summary: t('branches.added'), detail: form.name, life: 2000 })
     }
     dialogVisible.value = false
-  } catch {
-    toast.add({ severity: 'error', summary: t('common.error'), life: 2500 })
-  } finally {
+  } catch {} finally {
     saving.value = false
   }
 }

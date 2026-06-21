@@ -293,7 +293,8 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
       const missing = missingKatmFields(client);
       if (missing.length > 0) {
-        return reply.code(422).sendError('client_katm_fields_missing', { missing });
+        await rejectSession(session);
+        return reply.code(409).sendError('client_data_missing');
       }
 
       const consent = await createKatmConsent({

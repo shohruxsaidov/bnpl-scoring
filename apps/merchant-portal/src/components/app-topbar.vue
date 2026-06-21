@@ -1,18 +1,13 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import NotificationsPopup from './notifications-popup.vue'
-import { useNotificationsStore } from '@/stores/notifications'
 
 defineProps<{ showMenuBtn?: boolean }>()
 const emit = defineEmits<{ (e: 'menu'): void }>()
 
 const route = useRoute()
 const { t } = useI18n()
-const notifStore = useNotificationsStore()
-
-const bellOpen = ref(false)
 
 const title = computed(() => {
   const key = route.meta.titleKey as string | undefined
@@ -43,18 +38,7 @@ const breadcrumb = computed(() => {
       </div>
     </div>
 
-    <div class="right">
-      <div class="bell-wrap">
-        <button class="bell" :class="{ active: bellOpen }" :title="$t('topbar.notifications')"
-          @click.stop="bellOpen = !bellOpen">
-          <i class="pi pi-bell" />
-          <span v-if="notifStore.unreadCount > 0" class="badge">
-            {{ notifStore.unreadCount > 9 ? '9+' : notifStore.unreadCount }}
-          </span>
-        </button>
-        <NotificationsPopup v-if="bellOpen" @close="bellOpen = false" />
-      </div>
-    </div>
+    <div class="right"></div>
   </header>
 </template>
 
@@ -114,31 +98,6 @@ const breadcrumb = computed(() => {
   font-weight: 600;
 }
 
-.bell {
-  position: relative;
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-surface);
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: grid;
-  place-items: center;
-  transition: all 0.15s ease;
-}
-
-.bell:hover,
-.bell.active {
-  color: var(--accent-2);
-  border-color: var(--accent-2);
-}
-
-
-.bell-wrap {
-  position: relative;
-}
-
 .menu-btn {
   margin-right: 1.2rem;
   width: 38px;
@@ -166,24 +125,5 @@ const breadcrumb = computed(() => {
     gap: 0.5rem;
   }
 
-  .bell-wrap {
-    display: none;
-  }
-}
-
-.badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background: var(--danger);
-  color: #fff;
-  font-size: 0.62rem;
-  font-weight: 800;
-  min-width: 17px;
-  height: 17px;
-  border-radius: 999px;
-  display: grid;
-  place-items: center;
-  padding: 0 4px;
 }
 </style>

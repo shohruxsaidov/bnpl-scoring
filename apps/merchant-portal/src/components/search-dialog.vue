@@ -19,7 +19,6 @@ const allItems = computed(() => [
   { label: t('nav.dashboard'),      icon: 'pi pi-th-large',    to: '/',                  group: 'main',  show: true },
   { label: t('nav.deals'),          icon: 'pi pi-briefcase',   to: '/deals',             group: 'main',  show: auth.can('view_deals') },
   { label: t('nav.newDeal'),        icon: 'pi pi-plus-circle', to: '/deals/create',      group: 'main',  show: auth.can('create_deal') },
-  { label: t('nav.notifications'),  icon: 'pi pi-bell',        to: '/notifications',     group: 'main',  show: auth.can('view_notifications') },
   { label: t('nav.products'),       icon: 'pi pi-box',         to: '/admin/products',    group: 'admin', show: auth.can('manage_products') },
   { label: t('nav.categories'),     icon: 'pi pi-tags',        to: '/admin/categories',  group: 'admin', show: auth.can('manage_categories') },
   { label: t('nav.branches'),       icon: 'pi pi-map-marker',  to: '/admin/branches',    group: 'admin', show: auth.can('manage_branches') },

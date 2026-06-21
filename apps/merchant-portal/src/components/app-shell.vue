@@ -3,9 +3,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { RouterView } from 'vue-router'
 import AppSidebar from './app-sidebar.vue'
 import AppTopbar from './app-topbar.vue'
-import { useNotificationsStore } from '@/stores/notifications'
 
-const notifStore = useNotificationsStore()
 const collapsed = ref(false)
 const mobileOpen = ref(false)
 const isMobile = ref(false)
@@ -18,12 +16,9 @@ function checkMobile() {
 onMounted(() => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
-  notifStore.fetchAll()
-  notifStore.connectSSE()
 })
 onUnmounted(() => {
   window.removeEventListener('resize', checkMobile)
-  notifStore.disconnectSSE()
 })
 
 function handleToggle() {

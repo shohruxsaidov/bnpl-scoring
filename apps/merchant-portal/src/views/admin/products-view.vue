@@ -9,7 +9,6 @@ import InputText from 'primevue/inputtext'
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
 import { useCatalogStore } from '@/stores/catalog'
 import { useMxik, type MxikPackage, type MxikEntry } from '@/composables/use-mxik'
 import type { Product } from '@/types'
@@ -17,7 +16,6 @@ import { useAuthStore } from '@/stores/auth'
 
 const catalog = useCatalogStore()
 const confirm = useConfirm()
-const toast = useToast()
 const auth = useAuthStore()
 const { t } = useI18n()
 
@@ -59,9 +57,7 @@ const {
   clearSearch,
 } = useMxik('/merchant/mxik')
 
-watch(mxikLookupError, (isError) => {
-  if (isError) toast.add({ severity: 'warn', summary: t('products.mxikNotFound'), life: 2500 })
-})
+watch(mxikLookupError, () => {})
 
 watch(selectedCode, () => {
   form.packageCode = null
@@ -125,10 +121,7 @@ async function openEdit(p: Product) {
 }
 
 async function save() {
-  if (!form.name || !form.categoryId || form.priceNum <= 0) {
-    toast.add({ severity: 'warn', summary: t('products.missingFields'), detail: t('products.fillAllFields'), life: 2500 })
-    return
-  }
+  if (!form.name || !form.categoryId || form.priceNum <= 0) return
   const price = form.priceNum.toFixed(2)
   try {
     if (editingId.value) {
@@ -140,7 +133,6 @@ async function save() {
         packageCode: form.packageCode ?? undefined,
         packageName: form.packageName || undefined,
       })
-      toast.add({ severity: 'success', summary: t('products.updated'), detail: form.name, life: 2000 })
     } else {
       await catalog.addProduct({
         name: form.name,
@@ -150,12 +142,9 @@ async function save() {
         packageCode: form.packageCode ?? undefined,
         packageName: form.packageName || undefined,
       })
-      toast.add({ severity: 'success', summary: t('products.added'), detail: form.name, life: 2000 })
     }
     dialogVisible.value = false
-  } catch {
-    toast.add({ severity: 'error', summary: t('common.error'), life: 2500 })
-  }
+  } catch {}
 }
 
 function remove(p: Product) {
@@ -167,7 +156,6 @@ function remove(p: Product) {
     acceptProps: { label: t('common.delete'), severity: 'danger' },
     accept: async () => {
       await catalog.deleteProduct(p.id)
-      toast.add({ severity: 'info', summary: t('products.deleted'), detail: p.name, life: 2000 })
     },
   })
 }

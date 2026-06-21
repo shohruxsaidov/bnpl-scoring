@@ -3,13 +3,11 @@ import { onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Skeleton from 'primevue/skeleton'
 import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
 import { useCatalogStore } from '@/stores/catalog'
 import type { Category } from '@/types'
 
 const catalog = useCatalogStore()
 const confirm = useConfirm()
-const toast = useToast()
 const { t } = useI18n()
 
 onMounted(() => catalog.fetchCategories())
@@ -23,7 +21,6 @@ function remove(c: Category) {
     acceptProps: { label: t('common.delete'), severity: 'danger' },
     accept: async () => {
       await catalog.disableCategory(c.id)
-      toast.add({ severity: 'info', summary: t('categories.deleted'), life: 2000 })
     },
   })
 }

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
-import Toast from 'primevue/toast'
 import ConfirmDialog from 'primevue/confirmdialog'
 
 onMounted(() => {
@@ -14,6 +13,5 @@ onMounted(() => {
 
 <template>
   <RouterView />
-  <Toast position="top-right" />
   <ConfirmDialog />
 </template>
