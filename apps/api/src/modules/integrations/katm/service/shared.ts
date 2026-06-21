@@ -149,12 +149,79 @@ interface KatmCreditBan {
   credit_ban_date: string;
 }
 
+interface KatmOverduePrincipalItem {
+  overdue_principal_days: string;
+  overdue_principal_sum: string;
+}
+
+interface KatmContractOverduePrincipals {
+  overdue_principal: KatmOverduePrincipalItem | KatmOverduePrincipalItem[];
+}
+
+interface KatmContract {
+  overdue_principals?: KatmContractOverduePrincipals | '' | null;
+}
+
+interface KatmContractsBlock {
+  contract: KatmContract | KatmContract[];
+}
+
 export interface KatmResponse {
   sysinfo: KatmSysinfo;
   overview: KatmOverview;
   scorring: KatmScoringBlock; // note: vendor typo — single 'r' in "scorring"
   open_contracts: KatmOpenContracts;
   credit_ban: KatmCreditBan;
+  contracts?: KatmContractsBlock;
+}
+
+export interface OverdueBuckets {
+  overdue30Count: number;
+  overdue30to60Count: number;
+  overdue60to90Count: number;
+  overdue90Count: number;
+}
+
+export function computeOverdueBuckets(raw: unknown): OverdueBuckets {
+  const buckets: OverdueBuckets = {
+    overdue30Count: 0,
+    overdue30to60Count: 0,
+    overdue60to90Count: 0,
+    overdue90Count: 0,
+  };
+
+  const contractsBlock = (raw as KatmResponse)?.contracts;
+  if (!contractsBlock) return buckets;
+
+  const rawContracts = contractsBlock.contract;
+  const contracts: KatmContract[] = Array.isArray(rawContracts)
+    ? rawContracts
+    : rawContracts
+      ? [rawContracts]
+      : [];
+
+  for (const contract of contracts) {
+    const principalsBlock = contract.overdue_principals;
+    if (!principalsBlock) continue;
+
+    const rawItems = (principalsBlock as KatmContractOverduePrincipals).overdue_principal;
+    if (!rawItems) continue;
+
+    const items: KatmOverduePrincipalItem[] = Array.isArray(rawItems) ? rawItems : [rawItems];
+    let maxDays = 0;
+    for (const item of items) {
+      const d = parseInt(item.overdue_principal_days ?? '0', 10);
+      if (!isNaN(d) && d > maxDays) maxDays = d;
+    }
+
+    if (maxDays <= 0) continue;
+    if (maxDays >= 90) buckets.overdue90Count++;
+    else if (maxDays >= 60) buckets.overdue60to90Count++;
+    else if (maxDays >= 30) buckets.overdue30to60Count++;
+    else buckets.overdue30Count++;
+  }
+
+  return buckets;
 }
 
 export interface KatmResult {
@@ -173,6 +240,10 @@ export interface KatmResult {
   avgMonthlyPayment: number;
   hasDefaults: boolean;
   hasCreditBan: boolean;
+  overdue30Count: number;
+  overdue30to60Count: number;
+  overdue60to90Count: number;
+  overdue90Count: number;
   /** Full raw vendor payload — persisted on the session stamp */
   raw: unknown;
 }
@@ -205,6 +276,7 @@ export function parseKatm077ReportResponse(data: KatmResponse): KatmResult {
   const { sysinfo, overview, scorring, open_contracts, credit_ban } = data;
   const score = toInt(scorring?.scoring_grade);
   const overdueMaxDays = toInt(overview?.max_overdue_principal_days);
+  const buckets = computeOverdueBuckets(data);
 
   return {
     demandId: sysinfo?.demand_id ?? '',
@@ -222,6 +294,7 @@ export function parseKatm077ReportResponse(data: KatmResponse): KatmResult {
     avgMonthlyPayment: toFloat(overview?.actual_average_monthly_payment),
     hasDefaults: overdueMaxDays > 0 || toFloat(open_contracts?.all_overdue_debt_sum) > 0,
     hasCreditBan: credit_ban?.credit_ban_status !== '0',
+    ...buckets,
     raw: data,
   };
 }

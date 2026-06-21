@@ -262,7 +262,8 @@
     "weightedScore": "Взвешенный балл",
     "modelStatus": "Статус",
     "skipped": "Пропущен",
-    "calculated": "Рассчитан"
+    "calculated": "Рассчитан",
+    "katmMetrics": "Метрики КАТМ"
   },
   "payments": {
     "allMerchants": "Все мерчанты",

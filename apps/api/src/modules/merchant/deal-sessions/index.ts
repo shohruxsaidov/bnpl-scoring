@@ -594,13 +594,6 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
     bailsmen: Type.Optional(Type.Array(BailsmanItemSchema, { minItems: 1, maxItems: 5 })),
   });
 
-  function katmOverdueBucket(overdueCount: number, maxOverdueDays: number): Partial<ScoringInputs> {
-    if (overdueCount === 0 || maxOverdueDays < 30) return {};
-    if (maxOverdueDays >= 90) return { overdue90Count: overdueCount };
-    if (maxOverdueDays >= 60) return { overdue60to90Count: overdueCount };
-    return { overdue30Count: overdueCount };
-  }
-
   function ageYears(birthDate: string): number {
     const b = new Date(birthDate);
     const now = new Date();
@@ -680,7 +673,10 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           creditHistoryContracts: katm.totalContracts ?? 0,
           loanApplicationCount: katm.totalClaims ?? 0,
           monthlyPayment: katm.avgMonthlyPayment ?? 0,
-          ...katmOverdueBucket(katm.overdueCount ?? 0, katm.maxOverdueDays ?? 0),
+          overdue30Count: katm.overdue30Count ?? 0,
+          overdue30to60Count: katm.overdue30to60Count ?? 0,
+          overdue60to90Count: katm.overdue60to90Count ?? 0,
+          overdue90Count: katm.overdue90Count ?? 0,
         }),
         ...(userRow && {
           age: ageYears(userRow.birthDate),

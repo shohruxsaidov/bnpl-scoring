@@ -254,7 +254,8 @@
     "weightedScore": "Og'irlangan ball",
     "modelStatus": "Holat",
     "skipped": "O'tkazib yuborildi",
-    "calculated": "Hisoblandi"
+    "calculated": "Hisoblandi",
+    "katmMetrics": "KATM ko'rsatkichlari"
   },
   "payments": {
     "allMerchants": "Barcha merchantlar",

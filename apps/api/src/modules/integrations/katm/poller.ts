@@ -131,6 +131,10 @@ async function load077Result(claimId: string): Promise<KatmResult | null> {
     avgMonthlyPayment: row.avgMonthlyPayment ?? 0,
     hasDefaults: row.hasDefaults ?? false,
     hasCreditBan: row.hasCreditBan ?? false,
+    overdue30Count: row.overdue30Count ?? 0,
+    overdue30to60Count: row.overdue30to60Count ?? 0,
+    overdue60to90Count: row.overdue60to90Count ?? 0,
+    overdue90Count: row.overdue90Count ?? 0,
     raw: row.raw,
   }
 }
@@ -183,6 +187,10 @@ export async function saveKatmReport(claimId: string, result: KatmResult): Promi
       avgMonthlyPayment: result.avgMonthlyPayment,
       hasDefaults: result.hasDefaults,
       hasCreditBan: result.hasCreditBan,
+      overdue30Count: result.overdue30Count,
+      overdue30to60Count: result.overdue30to60Count,
+      overdue60to90Count: result.overdue60to90Count,
+      overdue90Count: result.overdue90Count,
       raw: result.raw as Record<string, unknown>,
       updatedAt: new Date(),
     })
