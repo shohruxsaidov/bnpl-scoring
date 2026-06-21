@@ -1,0 +1,2 @@
+ALTER TABLE "katm_077_reports" ADD COLUMN "status" varchar(20) DEFAULT 'created' NOT NULL;--> statement-breakpoint
+ALTER TABLE "katm_inps_reports" ADD COLUMN "status" varchar(20) DEFAULT 'created' NOT NULL;

@@ -37,7 +37,7 @@ import { resolveScoringModel } from '../../scoring/resolve-model';
 import { computeScoringModel, type ScoringInputs, type ScoringResult } from '../../scoring/engine';
 import { createOtp, verifyOtp } from '../../auth/client/service/service.handler';
 
-const BRV_UZS = 340_000
+const BRV_UZS = 340_000;
 
 type JwtPayload = {
   sub: string;
@@ -356,12 +356,26 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           status: 'pending',
           startedAt: new Date().toISOString(),
         });
-        const baseJob = { flow: 'wizard' as const, sessionId: session.id, claimId, consentId: consent.agreementId, consentDate };
+        const baseJob = {
+          flow: 'wizard' as const,
+          sessionId: session.id,
+          claimId,
+          consentId: consent.agreementId,
+          consentDate,
+        };
         if (outcome.pending077) {
-          await enqueueKatmPoll(app.katmPollQueue, { ...baseJob, token: outcome.pending077, reportType: '077' });
+          await enqueueKatmPoll(app.katmPollQueue, {
+            ...baseJob,
+            token: outcome.pending077,
+            reportType: '077',
+          });
         }
         if (outcome.pendingInps) {
-          await enqueueKatmPoll(app.katmPollQueue, { ...baseJob, token: outcome.pendingInps, reportType: 'inps' });
+          await enqueueKatmPoll(app.katmPollQueue, {
+            ...baseJob,
+            token: outcome.pendingInps,
+            reportType: 'inps',
+          });
         }
         return { status: 'pending' as const };
       }
@@ -466,13 +480,28 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       }
 
       if (session.katmClaimId) {
-        const [report] = await db
-          .select()
-          .from(katm077Reports)
-          .where(eq(katm077Reports.claimId, session.katmClaimId))
-          .limit(1);
-        if (report?.demandId != null) {
-          const { claimId: _c, token: _t, raw: _r, createdAt: _ca, updatedAt: _ua, ...summary } = report;
+        const [report077, reportInps] = await Promise.all([
+          db
+            .select()
+            .from(katm077Reports)
+            .where(eq(katm077Reports.claimId, session.katmClaimId))
+            .limit(1),
+          db
+            .select({ status: katmInpsReports.status })
+            .from(katmInpsReports)
+            .where(eq(katmInpsReports.claimId, session.katmClaimId))
+            .limit(1),
+        ]);
+        if (report077[0]?.status === 'completed' && reportInps[0]?.status === 'completed') {
+          const {
+            claimId: _c,
+            token: _t,
+            raw: _r,
+            createdAt: _ca,
+            updatedAt: _ua,
+            status: _s,
+            ...summary
+          } = report077[0];
           return { status: 'completed' as const, ...summary };
         }
       }
@@ -635,17 +664,31 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       let inps: typeof katmInpsReports.$inferSelect | null = null;
       if (session.katmClaimId) {
         const [report, inpsReport] = await Promise.all([
-          db.select().from(katm077Reports).where(eq(katm077Reports.claimId, session.katmClaimId)).limit(1),
-          db.select().from(katmInpsReports).where(eq(katmInpsReports.claimId, session.katmClaimId)).limit(1),
+          db
+            .select()
+            .from(katm077Reports)
+            .where(eq(katm077Reports.claimId, session.katmClaimId))
+            .limit(1),
+          db
+            .select()
+            .from(katmInpsReports)
+            .where(eq(katmInpsReports.claimId, session.katmClaimId))
+            .limit(1),
         ]);
         if (report[0]?.demandId != null) katm = report[0];
         if (inpsReport[0]?.demandId != null) inps = inpsReport[0];
+        console.log({ message: 'REPORTSsssssss', report, inpsReport });
       }
 
       // Pre-engine hard gate: credit ban is a regulatory constraint, not a scoring criterion
       if (katm?.hasCreditBan === true) {
         const sessionAfterCard = await saveStep(session, 'card', {
-          cardId: plumCardId, maskedPan, pcType, bank, holderName, expiry,
+          cardId: plumCardId,
+          maskedPan,
+          pcType,
+          bank,
+          holderName,
+          expiry,
         });
         await stampScoring(sessionAfterCard, {
           cardId: plumCardId,
@@ -658,19 +701,26 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         });
         await rejectSession(sessionAfterCard);
         return {
-          score: 0, limit: 0, decision: 'reject', scoringId: null, coefficient: 0, criteriaScores: {},
+          score: 0,
+          limit: 0,
+          decision: 'reject',
+          scoringId: null,
+          coefficient: 0,
+          criteriaScores: {},
           sessionClosed: true,
           rejectionReason: { code: 'credit_ban' as const },
         };
       }
 
-      const result = await scoreCard({ plumCardId, pcType });
-
       const resolvedModel = await resolveScoringModel(db, Number(p.merchantId));
       if (!resolvedModel) throw new Error('no_scoring_model_available');
 
       const [userRow] = await db
-        .select({ birthDate: users.birthDate, gender: users.gender, nationality: users.nationality })
+        .select({
+          birthDate: users.birthDate,
+          gender: users.gender,
+          nationality: users.nationality,
+        })
         .from(users)
         .where(eq(users.id, session.userId))
         .limit(1);
@@ -699,7 +749,6 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
       const engineResult = computeScoringModel(resolvedModel.params, scoringInputs);
 
-      const plumRejected = result.decision !== 'approved';
       type RejectedResult = Extract<ScoringResult, { rejected: true }>;
       type PassedResult = Extract<ScoringResult, { rejected: false }>;
       let coefficient: number;
@@ -714,10 +763,16 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         const r = engineResult as PassedResult;
         coefficient = r.coefficient;
         scoreSum = r.totalScore;
-        modelEntry = { rejected: false, totalScore: r.totalScore, coefficient: r.coefficient, breakdown: r.breakdown };
+        modelEntry = {
+          rejected: false,
+          totalScore: r.totalScore,
+          coefficient: r.coefficient,
+          breakdown: r.breakdown,
+        };
       }
-      const finalDecision = plumRejected || engineResult.rejected ? 'reject' : 'approve';
-      const platformCreditLimit = Math.round(result.limit * coefficient);
+      const fullDefaultLimit = 5_000_000;
+      const finalDecision = engineResult.rejected ? 'reject' : 'approve';
+      const platformCreditLimit = Math.round(fullDefaultLimit * coefficient) * 100;
 
       const criteriaScores: CriteriaScores = {
         ...(katm && {
@@ -741,11 +796,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           },
         }),
         card: {
-          score: result.score,
           detail: {
-            score: result.score,
-            limit: result.limit,
-            decision: result.decision,
             pcType,
             bank,
             maskedPan,
@@ -800,28 +851,43 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         expiry,
       });
 
-      await stampScoring(sessionAfterCard, {
-        cardId: plumCardId,
-        scoringId,
-        scoreSum,
-        coefficient,
-        decision: finalDecision,
-        platformCreditLimit,
-        criteriaScores: criteriaScores as Record<string, unknown>,
-      }, request.body.bailsmen);
+      await stampScoring(
+        sessionAfterCard,
+        {
+          cardId: plumCardId,
+          scoringId,
+          scoreSum,
+          coefficient,
+          decision: finalDecision,
+          platformCreditLimit,
+          criteriaScores: criteriaScores as Record<string, unknown>,
+        },
+        request.body.bailsmen,
+      );
 
       type RejectionCode = 'credit_ban' | 'card_declined' | 'model_stop_factor';
       let rejectionReason: { code: RejectionCode; factorKey?: string } | null = null;
       if (finalDecision === 'reject') {
         await rejectSession(sessionAfterCard);
         if (engineResult.rejected) {
-          rejectionReason = { code: 'model_stop_factor', factorKey: (engineResult as Extract<ScoringResult, { rejected: true }>).stopFactor };
+          rejectionReason = {
+            code: 'model_stop_factor',
+            factorKey: (engineResult as Extract<ScoringResult, { rejected: true }>).stopFactor,
+          };
         } else {
           rejectionReason = { code: 'card_declined' };
         }
       }
 
-      return { ...result, scoringId, coefficient, scoreSum, criteriaScores, sessionClosed: finalDecision === 'reject', rejectionReason };
+      return {
+        scoringId,
+        coefficient,
+        scoreSum,
+        limit: platformCreditLimit,
+        criteriaScores,
+        sessionClosed: finalDecision === 'reject',
+        rejectionReason,
+      };
     },
   );
 }

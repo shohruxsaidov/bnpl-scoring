@@ -11,7 +11,7 @@
  * discriminator. The session only advances once both reports are resolved.
  */
 
-import { and, eq, isNotNull } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import type { Queue } from 'bullmq'
 import { db } from '@db'
 import { katm077Reports } from '@db/katm-077-reports'
@@ -95,14 +95,14 @@ export async function handleKatmPollFailure(data: KatmPollJobData, err: Error): 
 async function bothReportsResolved(claimId: string): Promise<boolean> {
   const [r077, rInps] = await Promise.all([
     db
-      .select({ demandId: katm077Reports.demandId })
+      .select({ status: katm077Reports.status })
       .from(katm077Reports)
-      .where(and(eq(katm077Reports.claimId, claimId), isNotNull(katm077Reports.demandId)))
+      .where(and(eq(katm077Reports.claimId, claimId), eq(katm077Reports.status, 'completed')))
       .limit(1),
     db
-      .select({ demandId: katmInpsReports.demandId })
+      .select({ status: katmInpsReports.status })
       .from(katmInpsReports)
-      .where(and(eq(katmInpsReports.claimId, claimId), isNotNull(katmInpsReports.demandId)))
+      .where(and(eq(katmInpsReports.claimId, claimId), eq(katmInpsReports.status, 'completed')))
       .limit(1),
   ])
   return r077.length > 0 && rInps.length > 0
@@ -192,6 +192,7 @@ export async function saveKatmReport(claimId: string, result: KatmResult): Promi
       overdue60to90Count: result.overdue60to90Count,
       overdue90Count: result.overdue90Count,
       raw: result.raw as Record<string, unknown>,
+      status: 'completed',
       updatedAt: new Date(),
     })
     .where(eq(katm077Reports.claimId, claimId))
@@ -207,6 +208,7 @@ export async function saveInpsReport(claimId: string, result: InpsResult): Promi
       periodEnd: result.periodEnd,
       incomes: result.incomes as unknown as Record<string, unknown>[],
       raw: result.raw as Record<string, unknown>,
+      status: 'completed',
       updatedAt: new Date(),
     })
     .where(eq(katmInpsReports.claimId, claimId))

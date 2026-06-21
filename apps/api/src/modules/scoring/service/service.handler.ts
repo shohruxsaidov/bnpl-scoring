@@ -58,9 +58,6 @@ export interface KatmCriteriaDetail {
 }
 
 export interface CardCriteriaDetail {
-  score: number;
-  limit: number;
-  decision: string;
   pcType: 'uzcard' | 'humo';
   bank?: string;
   maskedPan?: string;
@@ -91,7 +88,7 @@ export interface InpsCriteriaDetail {
 
 export interface CriteriaScores {
   katm?: { katmScore: number; detail: KatmCriteriaDetail };
-  card?: { score: number; detail: CardCriteriaDetail };
+  card?: {  detail: CardCriteriaDetail };
   client?: { detail: ClientCriteriaDetail };
   inps?: { detail: InpsCriteriaDetail };
   model?: Record<string, unknown>;
@@ -124,11 +121,7 @@ function buildCriteriaScores(
       },
     },
     card: {
-      score: plumResult.score,
       detail: {
-        score: plumResult.score,
-        limit: plumResult.limit,
-        decision: plumResult.decision,
         pcType,
         ...cardMeta,
       },

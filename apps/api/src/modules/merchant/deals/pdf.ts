@@ -485,7 +485,11 @@ export async function generateContract(data: ContractData, lang: 'ru' | 'uz'): P
       `${fmt(unitWithMarkup * item.quantity)} ${t.currency}`,
     ];
   });
-  y = drawTable(doc, y, pColW, pHeaders, pRows, { fontSize: 8, rowHeight: 15 });
+  y = drawTable(doc, y, pColW, pHeaders, pRows, {
+    fontSize: 8,
+    rowHeight: 15,
+    colAlignments: ['center', 'left', 'center', 'center', 'right', 'right'],
+  });
 
   const totalQty = data.basket.reduce((s, i) => s + i.quantity, 0);
   const grandTotal = data.basket.reduce(
@@ -563,7 +567,7 @@ export async function generateContract(data: ContractData, lang: 'ru' | 'uz'): P
   y = drawTable(doc, y, sColW, sHeaders, [initRow, ...scheduleRows], {
     fontSize: 8.5,
     rowHeight: 14,
-    colAlignments: ['center', 'left', 'right', 'right'],
+    colAlignments: ['center', 'center', 'center', 'right'],
   });
   y = drawMergedTotalRow(
     doc,
@@ -630,16 +634,15 @@ export async function generateContract(data: ContractData, lang: 'ru' | 'uz'): P
   });
 
   // ── Right signature block ──────────────────────────────────────────────────
-  const rSigX = MARGIN + CONTENT_W / 2 + 10;
+  const rStampX = MARGIN + CONTENT_W - stampW;
+  const rSigX = rStampX;
   doc.font('Regular').fontSize(8.5).fillColor('#1a1a1a');
   const acceptLabelW = doc.widthOfString(t.acceptedBy + ' ');
   doc.text(t.acceptedBy + ' ', rSigX, sigTop, { lineBreak: false });
   doc.font('Bold').text(data.clientFullName, rSigX + acceptLabelW, sigTop, {
     lineBreak: false,
-    width: sigW - acceptLabelW,
+    width: stampW - acceptLabelW,
   });
-
-  const rStampX = MARGIN + CONTENT_W - stampW;
   doc.save();
   doc.rect(rStampX, stampY, stampW, 36).stroke('#28a745');
   doc.restore();

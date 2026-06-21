@@ -26,6 +26,7 @@ export const katm077Reports = pgTable('katm_077_reports', {
   overdue60to90Count: integer('overdue_60_to_90_count'),
   overdue90Count: integer('overdue_90_count'),
   raw: jsonb('raw'),
+  status: varchar('status', { length: 20 }).notNull().default('created'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });

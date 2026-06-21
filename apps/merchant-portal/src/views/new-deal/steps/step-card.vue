@@ -490,9 +490,6 @@ async function next() {
     <div v-if="selectedId && !adding" class="bailsmen-section">
       <div class="bailsmen-header">
         <span class="bailsmen-title">{{ $t('stepCard.bailsmen.title') }}</span>
-        <button class="btn-ghost" :disabled="localBailsmen.length >= 5" @click="addBailsman">
-          <i class="pi pi-plus" /> {{ $t('stepCard.bailsmen.add') }}
-        </button>
       </div>
 
       <div v-for="(b, idx) in localBailsmen" :key="idx" class="bailsman-row">
@@ -529,6 +526,10 @@ async function next() {
           <i class="pi pi-trash" />
         </button>
       </div>
+
+      <button class="btn-ghost" :disabled="localBailsmen.length >= 5" @click="addBailsman">
+        <i class="pi pi-plus" /> {{ $t('stepCard.bailsmen.add') }}
+      </button>
     </div>
 
     <!-- Scoring progress -->

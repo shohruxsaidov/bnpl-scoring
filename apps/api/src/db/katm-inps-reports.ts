@@ -12,6 +12,7 @@ export const katmInpsReports = pgTable('katm_inps_reports', {
   periodEnd: varchar('period_end'),
   incomes: jsonb('incomes'),
   raw: jsonb('raw'),
+  status: varchar('status', { length: 20 }).notNull().default('created'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });

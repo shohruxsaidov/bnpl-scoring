@@ -28,14 +28,6 @@ const age = computed(() => {
   return years
 })
 
-const statusColor = computed(() => {
-  switch (detail.value?.status) {
-    case 'approved': return { color: 'var(--success)', bg: 'var(--success-bg)' }
-    case 'declined': return { color: 'var(--danger)', bg: 'var(--danger-bg)' }
-    default: return { color: 'var(--warning)', bg: 'var(--warning-bg)' }
-  }
-})
-
 const coeffColor = computed(() => {
   const c = detail.value?.coefficient
   if (c == null || c === 0) return 'var(--danger)'
@@ -86,13 +78,6 @@ function tileBg(value: number | null | undefined, thresholds: [number, number]):
           <span v-if="detail.merchantName" class="muted">{{ detail.merchantName }}</span>
         </div>
         <div class="verdict-strip">
-          <div class="verdict-item">
-            <span class="verdict-label">{{ $t('scoringHistory.status') }}</span>
-            <span class="pill" :style="{ color: statusColor.color, background: statusColor.bg }">
-              {{ detail.status.toUpperCase() }}
-            </span>
-          </div>
-          <div class="verdict-divider" />
           <div class="verdict-item">
             <span class="verdict-label">{{ $t('scoringHistory.coefficient') }}</span>
             <span class="verdict-coeff font-mono" :style="{ color: coeffColor }">
