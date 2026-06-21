@@ -571,6 +571,17 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
   /* ── POST /:id/cards/score — score a card and stamp result onto session ── */
 
+  const BailsmanItemSchema = Type.Object({
+    relation: Type.Union([
+      Type.Literal('father'),
+      Type.Literal('mother'),
+      Type.Literal('brother'),
+      Type.Literal('friend'),
+      Type.Literal('other'),
+    ]),
+    phone: Type.String({ minLength: 1 }),
+  });
+
   const ScoreCardBody = Type.Object({
     plumCardId: Type.String({ minLength: 1 }),
     pcType: Type.Union([Type.Literal('uzcard'), Type.Literal('humo')]),
@@ -578,6 +589,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
     bank: Type.String({ minLength: 1 }),
     holderName: Type.String(),
     expiry: Type.String({ minLength: 1 }),
+    bailsmen: Type.Optional(Type.Array(BailsmanItemSchema, { minItems: 1, maxItems: 5 })),
   });
 
   function katmOverdueBucket(overdueCount: number, maxOverdueDays: number): Partial<ScoringInputs> {
@@ -786,7 +798,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         decision: finalDecision,
         platformCreditLimit,
         criteriaScores: criteriaScores as Record<string, unknown>,
-      });
+      }, request.body.bailsmen);
 
       type RejectionCode = 'credit_ban' | 'card_declined' | 'model_stop_factor';
       let rejectionReason: { code: RejectionCode; factorKey?: string } | null = null;

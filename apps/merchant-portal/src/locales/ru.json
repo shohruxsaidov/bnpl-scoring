@@ -490,7 +490,21 @@
     "rejectedCreditBan": "Клиенту запрещено кредитование (кредитный запрет).",
     "rejectedCardDeclined": "Карта не прошла скоринг в платёжной системе.",
     "rejectedStopFactor": "Стоп-фактор: {factor}.",
-    "newSession": "Новая сессия"
+    "newSession": "Новая сессия",
+    "bailsmen": {
+      "title": "Поручители",
+      "add": "Добавить поручителя",
+      "relation": "Степень родства",
+      "relationPlaceholder": "Выберите",
+      "phone": "Телефон поручителя",
+      "relations": {
+        "father": "Отец",
+        "mother": "Мать",
+        "brother": "Брат",
+        "friend": "Друг",
+        "other": "Другое"
+      }
+    }
   },
   "stepTariff": {
     "title": "Тариф",

@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import type {
+  Bailsman,
   BasketItem,
   Card,
   Client,
@@ -61,6 +62,7 @@ interface SessionData {
   /** true while the bureau builds the report asynchronously (ADR-0025) */
   katmPending: boolean
   selectedCard: Card | null
+  bailsmen: Bailsman[]
   tariff: Tariff | null
   basket: BasketItem[]
   /** Confirmed prepayment amount in tiyin (ADR-0026); null = no prepayment */
@@ -80,6 +82,7 @@ function emptySession(): SessionData {
     katmResult: null,
     katmPending: false,
     selectedCard: null,
+    bailsmen: [],
     tariff: null,
     basket: [],
     prepaymentAmount: null,
@@ -168,6 +171,10 @@ export const useDealStore = defineStore(
           hasDefaults: data.katm.hasDefaults,
           hasCreditBan: data.katm.hasCreditBan,
         }
+      }
+
+      if (data.bailsmen?.length) {
+        fresh.bailsmen = data.bailsmen as Bailsman[]
       }
 
       if (data.card) {
@@ -279,6 +286,10 @@ export const useDealStore = defineStore(
       sessionData.value.selectedCard = card
     }
 
+    function setBailsmen(bailsmen: Bailsman[]) {
+      sessionData.value.bailsmen = bailsmen
+    }
+
     function setTariff(tariff: Tariff) {
       sessionData.value.tariff = tariff
     }
@@ -351,6 +362,7 @@ export const useDealStore = defineStore(
       setKatmResult,
       setKatmPending,
       setCard,
+      setBailsmen,
       setTariff,
       setPrepayment,
       clearPrepayment,

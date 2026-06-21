@@ -4,6 +4,13 @@
 
 export type EmployeeRole = 'agent' | 'merchant_admin'
 
+export type BailsmanRelation = 'father' | 'mother' | 'brother' | 'friend' | 'other'
+
+export interface Bailsman {
+  relation: BailsmanRelation
+  phone: string
+}
+
 export interface Tenant {
   id: string
   name: string

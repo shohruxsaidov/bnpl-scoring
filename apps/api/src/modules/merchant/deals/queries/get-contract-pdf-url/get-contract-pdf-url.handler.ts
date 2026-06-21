@@ -58,6 +58,7 @@ export async function getContractPdfUrl({
         }
       : null,
     dealId: deal.id,
+    dealNumber: deal.dealNumber,
     merchantName: deal.merchantName,
     createdAt: new Date(deal.createdAt),
     clientFullName: deal.clientName ?? '—',

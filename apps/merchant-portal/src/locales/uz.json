@@ -490,7 +490,21 @@
     "rejectedCreditBan": "Mijozga kreditlash taqiqlangan (kredit taqiqi).",
     "rejectedCardDeclined": "Karta to'lov tizimida skoringdan o'tmadi.",
     "rejectedStopFactor": "To'xtash omili: {factor}.",
-    "newSession": "Yangi sessiya"
+    "newSession": "Yangi sessiya",
+    "bailsmen": {
+      "title": "Kafil shaxslar",
+      "add": "Kafil qo'shish",
+      "relation": "Qarindoshlik darajasi",
+      "relationPlaceholder": "Tanlang",
+      "phone": "Kafil telefoni",
+      "relations": {
+        "father": "Ota",
+        "mother": "Ona",
+        "brother": "Aka/Uka",
+        "friend": "Do'st",
+        "other": "Boshqa"
+      }
+    }
   },
   "stepTariff": {
     "title": "Tarif",

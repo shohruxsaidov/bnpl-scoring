@@ -62,6 +62,7 @@ export interface SessionStepData {
   katmPending?: { status: 'pending' | 'failed'; startedAt: string; error?: string }
   scoring?: SessionScoring
   prepayment?: { amount: number; confirmedAt: string }
+  bailsmen?: Array<{ relation: 'father' | 'mother' | 'brother' | 'friend' | 'other'; phone: string }>
 }
 
 export interface DealSessionDto {

@@ -2,6 +2,13 @@ import { db } from '@db';
 import { dealSessionEvents } from '../../deals/schema';
 import type { dealSessions } from '../../deals/schema';
 
+export type BailsmanRelation = 'father' | 'mother' | 'brother' | 'friend' | 'other';
+
+export interface BailsmanItem {
+  relation: BailsmanRelation;
+  phone: string;
+}
+
 export const WIZARD_STEPS = [
   'client',
   'card',
@@ -74,6 +81,7 @@ export interface SessionStepData {
   };
   payment?: { paymentDay: number };
   verification?: { lang: 'ru' | 'uz'; otpVerifiedAt: string | null };
+  bailsmen?: BailsmanItem[];
   katmPending?: KatmPendingState;
   scoring?: ScoringStamp;
   prepayment?: PrepaymentStamp;

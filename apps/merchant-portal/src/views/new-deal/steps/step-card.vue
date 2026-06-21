@@ -2,14 +2,62 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
+import Select from 'primevue/select'
 import { useDealStore } from '@/stores/deal'
 import { useClientScoringStore } from '@/stores/client-scoring'
 import { apiFetch } from '@/utils/apiFetch'
-import type { Card, CardScoreResult, ScoreDecision } from '@/types'
+import type { Bailsman, BailsmanRelation, Card, CardScoreResult, ScoreDecision } from '@/types'
 
 const deal = useDealStore()
 const clientScoring = useClientScoringStore()
 const { t } = useI18n()
+
+// ── Bailsmen ─────────────────────────────────────────────────────────────────
+
+interface BailsmanLocal {
+  relation: string
+  phone: string
+}
+
+const localBailsmen = ref<BailsmanLocal[]>([])
+
+const RELATION_OPTIONS = computed(() => [
+  { label: t('stepCard.bailsmen.relations.father'), value: 'father' },
+  { label: t('stepCard.bailsmen.relations.mother'), value: 'mother' },
+  { label: t('stepCard.bailsmen.relations.brother'), value: 'brother' },
+  { label: t('stepCard.bailsmen.relations.friend'), value: 'friend' },
+  { label: t('stepCard.bailsmen.relations.other'), value: 'other' },
+])
+
+function rawDigits(phone: string): string {
+  return phone.replace(/\D/g, '')
+}
+
+function handleBailsmanPhone(idx: number, e: Event) {
+  const raw = rawDigits((e.target as HTMLInputElement).value).slice(0, 9)
+  let fmt = raw
+  if (raw.length > 2) fmt = raw.slice(0, 2) + ' ' + raw.slice(2)
+  if (raw.length > 5) fmt = raw.slice(0, 2) + ' ' + raw.slice(2, 5) + ' ' + raw.slice(5)
+  if (raw.length > 7) fmt = raw.slice(0, 2) + ' ' + raw.slice(2, 5) + ' ' + raw.slice(5, 7) + ' ' + raw.slice(7)
+  localBailsmen.value[idx].phone = fmt
+}
+
+function addBailsman() {
+  if (localBailsmen.value.length < 5) {
+    localBailsmen.value.push({ relation: '', phone: '' })
+  }
+}
+
+function removeBailsman(idx: number) {
+  if (localBailsmen.value.length > 1) {
+    localBailsmen.value.splice(idx, 1)
+  }
+}
+
+const bailsmenValid = computed(() =>
+  localBailsmen.value.length >= 1 &&
+  localBailsmen.value.every(b => b.relation !== '' && rawDigits(b.phone).length === 9),
+)
 
 // ── Card list ────────────────────────────────────────────────────────────────
 
@@ -42,7 +90,17 @@ async function fetchCards() {
   }
 }
 
-onMounted(fetchCards)
+onMounted(() => {
+  if (deal.sessionData.bailsmen.length > 0) {
+    localBailsmen.value = deal.sessionData.bailsmen.map(b => ({
+      relation: b.relation,
+      phone: b.phone.replace(/^\+998/, ''),
+    }))
+  } else {
+    localBailsmen.value = [{ relation: '', phone: '' }]
+  }
+  fetchCards()
+})
 
 // ── Card selection ───────────────────────────────────────────────────────────
 
@@ -258,6 +316,10 @@ async function runScoring(): Promise<CardScoreResult | null> {
           bank: selectedCard.value.bank,
           holderName: selectedCard.value.holderName,
           expiry: selectedCard.value.expiry,
+          bailsmen: localBailsmen.value.map(b => ({
+            relation: b.relation as BailsmanRelation,
+            phone: '+998' + rawDigits(b.phone),
+          })),
         }),
       },
     )
@@ -292,6 +354,7 @@ function resetSelection() {
 
 async function next() {
   if (!selectedCard.value || scoring.value) return
+  if (!bailsmenValid.value) return
 
   // Scoring endpoint saves the card step + scoring stamp server-side (ADR-0024).
   // Reuse the result if this card was already scored on a prior pass.
@@ -305,6 +368,10 @@ async function next() {
   }
 
   deal.setCard(selectedCard.value)
+  deal.setBailsmen(localBailsmen.value.map(b => ({
+    relation: b.relation as BailsmanRelation,
+    phone: '+998' + rawDigits(b.phone),
+  })))
 
   clientScoring.setCompleted({
     scoringId: server.scoringId ?? `plum-${selectedCard.value.plumCardId}-${Date.now()}`,
@@ -419,6 +486,51 @@ async function next() {
       <p v-if="addError" class="add-error">{{ addError }}</p>
     </div>
 
+    <!-- Bailsmen -->
+    <div v-if="selectedId && !adding" class="bailsmen-section">
+      <div class="bailsmen-header">
+        <span class="bailsmen-title">{{ $t('stepCard.bailsmen.title') }}</span>
+        <button class="btn-ghost" :disabled="localBailsmen.length >= 5" @click="addBailsman">
+          <i class="pi pi-plus" /> {{ $t('stepCard.bailsmen.add') }}
+        </button>
+      </div>
+
+      <div v-for="(b, idx) in localBailsmen" :key="idx" class="bailsman-row">
+        <div class="field bailsman-relation">
+          <label class="field-label">{{ $t('stepCard.bailsmen.relation') }}</label>
+          <Select
+            v-model="b.relation"
+            :options="RELATION_OPTIONS"
+            optionLabel="label"
+            optionValue="value"
+            :placeholder="$t('stepCard.bailsmen.relationPlaceholder')"
+            class="bailsman-select"
+          />
+        </div>
+        <div class="field bailsman-phone">
+          <label class="field-label">{{ $t('stepCard.bailsmen.phone') }}</label>
+          <div class="phone-input-wrap">
+            <span class="phone-prefix">+998</span>
+            <InputText
+              :value="b.phone"
+              placeholder="90 123 45 67"
+              class="font-mono bailsman-phone-input"
+              maxlength="12"
+              inputmode="numeric"
+              @input="handleBailsmanPhone(idx, $event)"
+            />
+          </div>
+        </div>
+        <button
+          class="btn-remove-bailsman"
+          :disabled="localBailsmen.length <= 1"
+          @click="removeBailsman(idx)"
+        >
+          <i class="pi pi-trash" />
+        </button>
+      </div>
+    </div>
+
     <!-- Scoring progress -->
     <div v-if="scoring" class="verify-row">
       <span class="scoring-label">
@@ -464,7 +576,7 @@ async function next() {
       <button class="btn-ghost" @click="deal.back()">
         <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
       </button>
-      <button class="btn-gradient" :disabled="!selectedId || scoring" @click="next">
+      <button class="btn-gradient" :disabled="!selectedId || scoring || !bailsmenValid" @click="next">
         <i v-if="scoring" class="pi pi-spin pi-spinner" />
         {{ $t('common.continue') }} <i v-if="!scoring" class="pi pi-arrow-right" />
       </button>
@@ -643,6 +755,96 @@ async function next() {
   color: var(--text-secondary);
   cursor: not-allowed;
   text-decoration: none;
+}
+
+/* ── Bailsmen ────────────────────────────────────────────────────────────── */
+.bailsmen-section {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 1.4rem;
+  margin-top: 0.4rem;
+}
+
+.bailsmen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.bailsmen-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.bailsman-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin-bottom: 0.75rem;
+}
+
+.bailsman-relation {
+  flex: 1.2;
+  min-width: 0;
+}
+
+.bailsman-phone {
+  flex: 1;
+  min-width: 0;
+}
+
+.bailsman-select {
+  width: 100%;
+}
+
+.phone-input-wrap {
+  display: flex;
+  align-items: stretch;
+}
+
+.phone-prefix {
+  display: flex;
+  align-items: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  padding: 0 0.65rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.bailsman-phone-input {
+  border-radius: 0 8px 8px 0 !important;
+  flex: 1;
+  min-width: 0;
+}
+
+.btn-remove-bailsman {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0.4rem;
+  color: var(--danger, #e53e3e);
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+  transition: opacity 0.15s ease;
+  margin-bottom: 0.15rem;
+}
+
+.btn-remove-bailsman:hover:not(:disabled) {
+  opacity: 0.7;
+}
+
+.btn-remove-bailsman:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
 }
 
 /* ── Verify row ──────────────────────────────────────────────────────────── */

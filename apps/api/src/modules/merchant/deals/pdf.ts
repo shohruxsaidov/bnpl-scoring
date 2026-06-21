@@ -133,6 +133,7 @@ const STRINGS = {
 export interface ContractData {
   organization: OrganizationRequisites | null;
   dealId: string;
+  dealNumber: string;
   createdAt: Date;
   clientFullName: string;
   clientAddress: string;
@@ -398,7 +399,7 @@ export async function generateContract(data: ContractData, lang: 'ru' | 'uz'): P
 
   const docDate = fmtDate(data.createdAt);
   const docDateTime = fmtDateTime(data.createdAt);
-  const docNumber = data.dealId.split('-')[0]?.toUpperCase() ?? data.dealId;
+  const docNumber = data.dealNumber;
 
   // ── Header ─────────────────────────────────────────────────────────────────
   doc.image(qrBuffer, MARGIN, MARGIN, { width: 60, height: 60 });
