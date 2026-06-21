@@ -1,4 +1,4 @@
-import ky from 'ky';
+import ky, { HTTPError } from 'ky';
 import { db } from '@db';
 import { env } from '@env';
 import { IntegrationError } from '../../../../lib/integrations';
@@ -10,6 +10,14 @@ import { logIntegration } from '../../log';
 
 export const KATM_OK = '05000';
 export const KATM_REPORT_PENDING = '05050';
+
+/** KATM rejected the claim because the client blocked access via One ID. */
+export class KatmOneIdLockedError extends Error {
+  constructor() {
+    super('katm: client data locked by One ID');
+    this.name = 'KatmOneIdLockedError';
+  }
+}
 
 /** Vendor-level failure: HTTP 200 but data.result is not a success code. */
 export class KatmVendorError extends Error {
@@ -81,6 +89,10 @@ export async function callKatm<T>(
     }
     return data;
   } catch (err) {
+    const oneIdLocked =
+      err instanceof HTTPError &&
+      typeof (err.data as any)?.errorMessage === 'string' &&
+      (err.data as any).errorMessage.startsWith('Locked. Data is blocked by OneID');
     if (!(err instanceof KatmVendorError)) {
       logIntegration(db, {
         integration: 'katm',
@@ -94,6 +106,7 @@ export async function callKatm<T>(
         responseTimestamp: new Date(),
       });
     }
+    if (oneIdLocked) throw new KatmOneIdLockedError();
     throw err;
   }
 }

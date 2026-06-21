@@ -76,6 +76,7 @@ export const uz: Record<string, string> = {
   katm_not_completed: "KATM so'rovi hali yakunlanmagan",
   client_katm_fields_missing: "KATM so'rovi uchun mijoz ma'lumotlari yetarli emas (manzil, viloyat, tuman, hujjat turi)",
   user_katm_fields_missing: "KATM so'rovi uchun ma'lumotlar yetarli emas (manzil, viloyat, tuman, hujjat turi)",
+  katm_one_id_locked: "Mijoz One ID orqali ma'lumotlariga kirishga ruxsat bermagan",
   client_credit_banned: "Mijoz kreditlash taqiqi reestrida turibdi",
   credit_banned: "Siz kreditlash taqiqi reestrida turibsiz",
   katm_report_timeout: "KATM kredit hisobotini belgilangan vaqtda shakllantirmadi",

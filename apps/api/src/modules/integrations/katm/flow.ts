@@ -163,9 +163,9 @@ export async function startKatmFlow(input: {
     requestINPSReport({ claimId: input.claimId }),
   ]);
 
-  // Persist 077 result or pending placeholder
+  // Persist 077 result or pending placeholder — onConflictDoNothing for retry idempotency
   if (report077.status === 'pending') {
-    await db.insert(katm077Reports).values({ claimId: input.claimId, token: report077.token });
+    await db.insert(katm077Reports).values({ claimId: input.claimId, token: report077.token }).onConflictDoNothing();
   } else {
     const r = report077.result;
     await db.insert(katm077Reports).values({
@@ -186,12 +186,12 @@ export async function startKatmFlow(input: {
       hasDefaults: r.hasDefaults,
       hasCreditBan: r.hasCreditBan,
       raw: r.raw as Record<string, unknown>,
-    });
+    }).onConflictDoNothing();
   }
 
-  // Persist INPS result or pending placeholder
+  // Persist INPS result or pending placeholder — onConflictDoNothing for retry idempotency
   if (reportInps.status === 'pending') {
-    await db.insert(katmInpsReports).values({ claimId: input.claimId, token: reportInps.token });
+    await db.insert(katmInpsReports).values({ claimId: input.claimId, token: reportInps.token }).onConflictDoNothing();
   } else {
     const r = reportInps.result;
     await db.insert(katmInpsReports).values({
@@ -202,7 +202,7 @@ export async function startKatmFlow(input: {
       periodEnd: r.periodEnd,
       incomes: r.incomes as unknown as Record<string, unknown>[],
       raw: r.raw as Record<string, unknown>,
-    });
+    }).onConflictDoNothing();
   }
 
   if (report077.status === 'pending' || reportInps.status === 'pending') {

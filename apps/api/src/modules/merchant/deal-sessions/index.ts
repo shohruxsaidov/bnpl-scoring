@@ -23,6 +23,7 @@ import {
   missingKatmFields,
   startKatmFlow,
 } from '../../integrations/katm/flow';
+import { KatmOneIdLockedError } from '../../integrations/katm/service/shared';
 import { enqueueKatmPoll, katmSummary, saveKatmSir } from '../../integrations/katm/poller';
 import { listCards } from '../../integrations/plumgate/queries/list-cards/list-cards.handler';
 import { addCard } from '../../integrations/plumgate/commands/add-card/add-card.handler';
@@ -311,23 +312,31 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         session = { ...session, katmClaimId: claimId };
       }
 
-      const outcome = await startKatmFlow({
-        claimId,
-        consent,
-        subject: {
-          pinfl: client.pinfl,
-          passportSerial: client.passportSeries!,
-          passportNumber: client.passportNumber!,
-          docType: client.docType!,
-          regionCode: client.regionCode!,
-          districtCode: client.districtCode!,
-          address: client.address!,
-          phone: client.phone,
-        },
-        userId: client.id,
-        sessionId: session.id,
-        channel: 'wizard',
-      });
+      let outcome;
+      try {
+        outcome = await startKatmFlow({
+          claimId,
+          consent,
+          subject: {
+            pinfl: client.pinfl,
+            passportSerial: client.passportSeries!,
+            passportNumber: client.passportNumber!,
+            docType: client.docType!,
+            regionCode: client.regionCode!,
+            districtCode: client.districtCode!,
+            address: client.address!,
+            phone: client.phone,
+          },
+          userId: client.id,
+          sessionId: session.id,
+          channel: 'wizard',
+        });
+      } catch (err) {
+        if (err instanceof KatmOneIdLockedError) {
+          return reply.code(409).sendError('katm_one_id_locked');
+        }
+        throw err;
+      }
 
       if (outcome.status === 'banned') {
         await stampKatmPending(session, {

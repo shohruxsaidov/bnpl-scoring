@@ -93,6 +93,7 @@ const katmLoading = ref(false)
 const katmError = ref('')
 const katmDone = ref(!!deal.sessionData.katmResult && !!deal.sessionData.client)
 const katmBanned = ref(false)
+const katmOneIdLocked = ref(false)
 // Async report (05050): the server polls the bureau via BullMQ; we poll the
 // session status until the result is stamped
 const katmPending = ref(deal.sessionData.katmPending)
@@ -281,6 +282,7 @@ async function queryKatm(): Promise<boolean> {
   if (!confirmedClient.value || !deal.dealSessionId) return false
   katmLoading.value = true
   katmError.value = ''
+  katmOneIdLocked.value = false
   try {
     const result = await apiFetch<{ status: 'completed' | 'pending' } & KatmSummary>(
       `/merchant/deal-sessions/${deal.dealSessionId}/start`,
@@ -304,6 +306,8 @@ async function queryKatm(): Promise<boolean> {
       rejected.value = true
     } else if (code === 'client_credit_banned') {
       katmBanned.value = true
+    } else if (code === 'katm_one_id_locked') {
+      katmOneIdLocked.value = true
     } else {
       katmError.value = t('stepClient.katmError')
     }
@@ -613,6 +617,19 @@ const clientFullName = computed(() =>
         <div v-if="katmBanned" class="katm-error">
           <i class="pi pi-ban" />
           {{ $t('stepClient.katmBanned') }}
+        </div>
+      </transition>
+
+      <transition name="fade">
+        <div v-if="katmOneIdLocked" class="katm-one-id-hint">
+          <i class="pi pi-lock katm-one-id-hint__icon" />
+          <div class="katm-one-id-hint__body">
+            <p class="katm-one-id-hint__title">{{ $t('stepClient.oneIdLockedTitle') }}</p>
+            <p class="katm-one-id-hint__desc">{{ $t('stepClient.oneIdLockedDesc') }}</p>
+          </div>
+          <button class="btn-ghost btn-sm" style="margin-left: auto; flex-shrink: 0" :disabled="katmLoading" @click="onNext">
+            <i class="pi pi-refresh" /> {{ $t('common.retry') }}
+          </button>
         </div>
       </transition>
 
@@ -1169,6 +1186,43 @@ const clientFullName = computed(() =>
   border-radius: 12px;
   font-weight: 600;
   font-size: 0.86rem;
+}
+
+.katm-one-id-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  background: var(--warning-bg);
+  border: 1px solid var(--warning);
+  border-radius: 14px;
+  padding: 1.2rem 1.4rem;
+  margin-top: 1.4rem;
+}
+
+.katm-one-id-hint__icon {
+  font-size: 1.6rem;
+  color: var(--warning);
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.katm-one-id-hint__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.katm-one-id-hint__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--warning);
+}
+
+.katm-one-id-hint__desc {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--text-secondary);
 }
 
 .rejected-block {
