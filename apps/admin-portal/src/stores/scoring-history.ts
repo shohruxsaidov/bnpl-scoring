@@ -58,7 +58,7 @@ export interface ScoringDetail {
   factors: ScoringFactor[]
   modelData: (
     | { rejected: true; stopFactor: string; name: string }
-    | { rejected: false; totalScore: number; coefficient: number; breakdown: { key: string; name: string; rawScore: number; weightedScore: number; importantLevel: number; skipped: boolean }[] }
+    | { rejected: false; totalScore: number; coefficient: number; breakdown: { key: string; name: string; rawScore: number; weightedScore: number; importantLevel: number; skipped: boolean; inputValue?: string | null }[] }
   ) | null
   katmData: {
     katmScore: number | null

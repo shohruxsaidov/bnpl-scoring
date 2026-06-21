@@ -7,6 +7,7 @@ import {
   LinearScale,
   BarElement,
   Tooltip,
+  type Plugin,
 } from 'chart.js'
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip)
@@ -19,6 +20,7 @@ const props = defineProps<{
     weightedScore: number
     importantLevel: number
     skipped: boolean
+    inputValue?: string | null
   }>
   totalScore: number
 }>()
@@ -52,6 +54,7 @@ const chartOptions = computed(() => ({
   indexAxis: 'y' as const,
   responsive: true,
   maintainAspectRatio: false,
+  layout: { padding: { right: 40 } },
   plugins: {
     legend: { display: false },
     tooltip: {
@@ -59,9 +62,9 @@ const chartOptions = computed(() => ({
         label: (ctx: any) => {
           const item = props.breakdown[ctx.dataIndex]
           if (!item) return ''
-          return item.skipped
-            ? 'Hisoblanmagan'
-            : `${item.weightedScore} ball (og'irlik: ${item.importantLevel})`
+          if (item.skipped) return 'Hisoblanmagan'
+          const base = `${item.weightedScore} ball (og'irlik: ${item.importantLevel})`
+          return item.inputValue ? `${base} · Qiymat: ${item.inputValue}` : base
         },
       },
     },
@@ -85,12 +88,46 @@ const chartOptions = computed(() => ({
   },
 }))
 
-const chartHeight = computed(() => `${Math.max(props.breakdown.length * 28, 200)}px`)
+const hasInputValues = computed(() => props.breakdown.some(r => r.inputValue))
+const chartHeight = computed(() => `${Math.max(props.breakdown.length * (hasInputValues.value ? 36 : 28), 200)}px`)
+
+const dataLabelPlugin: Plugin<'bar'> = {
+  id: 'barDataLabels',
+  afterDatasetsDraw(chart) {
+    const { ctx } = chart
+    const meta = chart.getDatasetMeta(0)
+    meta.data.forEach((bar: any, index: number) => {
+      const item = props.breakdown[index]
+      if (!item || item.skipped || item.weightedScore === 0) return
+      const x = bar.x + 5
+      const y = bar.y
+      ctx.save()
+      if (item.inputValue) {
+        // Two-line label: score on top, input value below
+        ctx.font = 'bold 11px system-ui, sans-serif'
+        ctx.fillStyle = 'rgba(167,150,255,0.95)'
+        ctx.textAlign = 'left'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(String(item.weightedScore), x, y - 6)
+        ctx.font = '10px system-ui, sans-serif'
+        ctx.fillStyle = 'rgba(144,144,176,0.85)'
+        ctx.fillText(item.inputValue, x, y + 6)
+      } else {
+        ctx.font = 'bold 11px system-ui, sans-serif'
+        ctx.fillStyle = 'rgba(167,150,255,0.95)'
+        ctx.textAlign = 'left'
+        ctx.textBaseline = 'middle'
+        ctx.fillText(String(item.weightedScore), x, y)
+      }
+      ctx.restore()
+    })
+  }
+}
 </script>
 
 <template>
   <div class="chart-wrap" :style="{ height: chartHeight }">
-    <Bar :data="chartData" :options="(chartOptions as any)" />
+    <Bar :data="chartData" :options="(chartOptions as any)" :plugins="[dataLabelPlugin]" />
   </div>
 </template>
 

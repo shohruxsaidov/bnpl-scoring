@@ -14,6 +14,7 @@ export interface CriterionResult {
   weightedScore: number
   importantLevel: number
   skipped: boolean
+  inputValue?: string | null
 }
 
 export type ModelData =
@@ -101,6 +102,62 @@ const CRITERIA_LABELS: Record<string, string> = {
   maxOverdueDays: "Maks. kechikish (kun)",
   maxOverdueSum: "Maks. muddati o'tgan summa",
   avgMonthlyPayment: "O'rt. oylik to'lov",
+}
+
+function buildCriterionInputValues(
+  clientDetail: Record<string, unknown>,
+  katmDetail: Record<string, unknown>,
+  inpsDetail: Record<string, unknown>,
+  birthDate: string | null,
+  gender: string | null,
+): Record<string, string | null> {
+  const fmtSom = (tiyin: unknown): string | null => {
+    const n = Number(tiyin)
+    if (tiyin == null || isNaN(n)) return null
+    return `${Math.round(n / 100).toLocaleString("ru-RU")} so'm`
+  }
+  const fmtCount = (n: unknown, suffix = "ta"): string | null => {
+    const v = Number(n)
+    if (n == null || isNaN(v)) return null
+    return `${v} ${suffix}`
+  }
+
+  let ageStr: string | null = null
+  if (birthDate) {
+    const birth = new Date(birthDate)
+    const now = new Date()
+    let age = now.getFullYear() - birth.getFullYear()
+    const m = now.getMonth() - birth.getMonth()
+    if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--
+    ageStr = `${age} yosh`
+  }
+
+  // inpsDetail.avgMonthlyIncome is stored in som (handler multiplies × 100 for tiyin output)
+  const avgIncomeSom = inpsDetail.avgMonthlyIncome != null
+    ? `${Math.round(Number(inpsDetail.avgMonthlyIncome)).toLocaleString("ru-RU")} so'm`
+    : null
+
+  return {
+    Age: ageStr,
+    Gender: gender,
+    AllDebts: fmtSom(katmDetail.totalDebt),
+    Mortgage: null,
+    IncomeSum: avgIncomeSom,
+    Citizenship: (clientDetail.nationality as string | undefined) ?? null,
+    PassportData: (clientDetail.region as string | undefined) ?? null,
+    Overdue30Days: fmtCount(katmDetail.overdueCount),
+    Overdue90Days: katmDetail.maxOverdueDays != null ? `${Number(katmDetail.maxOverdueDays)} kun` : null,
+    WorkExperience: null,
+    LoanApplication: fmtCount(katmDetail.totalClaims),
+    PledgerLiability: null,
+    Overdue30To60Days: null,
+    Overdue60To90Days: null,
+    GuarantorLiability: null,
+    CoBorrowerLiability: null,
+    ContingentLiability: fmtCount(katmDetail.openCredits),
+    MonthlyAveragePayment: fmtSom(katmDetail.avgMonthlyPayment),
+    CreditHistoryContracts: fmtCount(katmDetail.totalContracts),
+  }
 }
 
 function criteriaToFactors(
@@ -203,6 +260,11 @@ export async function getScoring(id: number): Promise<ScoringDetail | null> {
   const rawGender = clientDetail?.gender as string | undefined
   const gender = rawGender === "1" ? "Erkak" : rawGender === "2" ? "Ayol" : null
 
+  const katmDetail = (criteriaScores?.katm as Record<string, unknown> | undefined)
+    ?.detail as Record<string, unknown> | undefined
+  const inpsDetail = (criteriaScores?.inps as Record<string, unknown> | undefined)
+    ?.detail as Record<string, unknown> | undefined
+
   const rawModel = criteriaScores?.model as Record<string, unknown> | undefined
   let modelData: ModelData | null = null
   if (rawModel) {
@@ -213,17 +275,25 @@ export async function getScoring(id: number): Promise<ScoringDetail | null> {
         name: rawModel.name as string,
       }
     } else if (rawModel.rejected === false) {
+      const inputValues = buildCriterionInputValues(
+        clientDetail ?? {},
+        katmDetail ?? {},
+        inpsDetail ?? {},
+        birthDate,
+        gender,
+      )
       modelData = {
         rejected: false,
         totalScore: Number(rawModel.totalScore),
         coefficient: Number(rawModel.coefficient),
-        breakdown: (rawModel.breakdown as CriterionResult[] | undefined) ?? [],
+        breakdown: ((rawModel.breakdown as CriterionResult[] | undefined) ?? []).map(item => ({
+          ...item,
+          inputValue: inputValues[item.key] ?? null,
+        })),
       }
     }
   }
 
-  const katmDetail = (criteriaScores?.katm as Record<string, unknown> | undefined)
-    ?.detail as Record<string, unknown> | undefined
   const katmData: KatmData | null = katmDetail
     ? {
         katmScore: katmDetail.katmScore != null ? Number(katmDetail.katmScore) : null,
@@ -242,8 +312,6 @@ export async function getScoring(id: number): Promise<ScoringDetail | null> {
       }
     : null
 
-  const inpsDetail = (criteriaScores?.inps as Record<string, unknown> | undefined)
-    ?.detail as Record<string, unknown> | undefined
   const inpsData: InpsData | null = inpsDetail
     ? {
         incomesAllSumma: inpsDetail.incomesAllSumma != null ? Math.round(Number(inpsDetail.incomesAllSumma) * 100) : null,
