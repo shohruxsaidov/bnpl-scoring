@@ -1,5 +1,5 @@
 {
-  "id": "2c96fee3-be07-46e5-9a2e-6c7cb3b4be94",
+  "id": "e820a9fc-7092-4dea-bdbc-4160743074d0",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -1755,8 +1755,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.katm_reports": {
-      "name": "katm_reports",
+    "public.katm_077_reports": {
+      "name": "katm_077_reports",
       "schema": "",
       "columns": {
         "claim_id": {
@@ -1861,11 +1861,42 @@
           "primaryKey": false,
           "notNull": false
         },
+        "overdue_30_count": {
+          "name": "overdue_30_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "overdue_30_to_60_count": {
+          "name": "overdue_30_to_60_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "overdue_60_to_90_count": {
+          "name": "overdue_60_to_90_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "overdue_90_count": {
+          "name": "overdue_90_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "raw": {
           "name": "raw",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'created'"
         },
         "created_at": {
           "name": "created_at",
@@ -1884,9 +1915,105 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "katm_reports_claim_id_katm_claims_claim_id_fk": {
-          "name": "katm_reports_claim_id_katm_claims_claim_id_fk",
-          "tableFrom": "katm_reports",
+        "katm_077_reports_claim_id_katm_claims_claim_id_fk": {
+          "name": "katm_077_reports_claim_id_katm_claims_claim_id_fk",
+          "tableFrom": "katm_077_reports",
+          "tableTo": "katm_claims",
+          "columnsFrom": [
+            "claim_id"
+          ],
+          "columnsTo": [
+            "claim_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.katm_inps_reports": {
+      "name": "katm_inps_reports",
+      "schema": "",
+      "columns": {
+        "claim_id": {
+          "name": "claim_id",
+          "type": "varchar(20)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "demand_id": {
+          "name": "demand_id",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "incomes_all_summa": {
+          "name": "incomes_all_summa",
+          "type": "double precision",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "period_begin": {
+          "name": "period_begin",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "period_end": {
+          "name": "period_end",
+          "type": "varchar",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "incomes": {
+          "name": "incomes",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "raw": {
+          "name": "raw",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'created'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "katm_inps_reports_claim_id_katm_claims_claim_id_fk": {
+          "name": "katm_inps_reports_claim_id_katm_claims_claim_id_fk",
+          "tableFrom": "katm_inps_reports",
           "tableTo": "katm_claims",
           "columnsFrom": [
             "claim_id"

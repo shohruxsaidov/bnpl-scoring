@@ -222,7 +222,7 @@ CREATE TABLE "katm_claims" (
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "katm_reports" (
+CREATE TABLE "katm_077_reports" (
 	"claim_id" varchar(20) PRIMARY KEY NOT NULL,
 	"token" varchar,
 	"demand_id" varchar,
@@ -240,7 +240,26 @@ CREATE TABLE "katm_reports" (
 	"avg_monthly_payment" double precision,
 	"has_defaults" boolean,
 	"has_credit_ban" boolean,
+	"overdue_30_count" integer,
+	"overdue_30_to_60_count" integer,
+	"overdue_60_to_90_count" integer,
+	"overdue_90_count" integer,
 	"raw" jsonb,
+	"status" varchar(20) DEFAULT 'created' NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "katm_inps_reports" (
+	"claim_id" varchar(20) PRIMARY KEY NOT NULL,
+	"token" varchar,
+	"demand_id" varchar,
+	"incomes_all_summa" double precision,
+	"period_begin" varchar,
+	"period_end" varchar,
+	"incomes" jsonb,
+	"raw" jsonb,
+	"status" varchar(20) DEFAULT 'created' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -572,7 +591,8 @@ ALTER TABLE "deals" ADD CONSTRAINT "deals_user_id_users_id_fk" FOREIGN KEY ("use
 ALTER TABLE "deals" ADD CONSTRAINT "deals_tariff_id_tariffs_id_fk" FOREIGN KEY ("tariff_id") REFERENCES "public"."tariffs"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "deals" ADD CONSTRAINT "deals_deal_session_id_deal_sessions_id_fk" FOREIGN KEY ("deal_session_id") REFERENCES "public"."deal_sessions"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "katm_claims" ADD CONSTRAINT "katm_claims_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "katm_reports" ADD CONSTRAINT "katm_reports_claim_id_katm_claims_claim_id_fk" FOREIGN KEY ("claim_id") REFERENCES "public"."katm_claims"("claim_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "katm_077_reports" ADD CONSTRAINT "katm_077_reports_claim_id_katm_claims_claim_id_fk" FOREIGN KEY ("claim_id") REFERENCES "public"."katm_claims"("claim_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "katm_inps_reports" ADD CONSTRAINT "katm_inps_reports_claim_id_katm_claims_claim_id_fk" FOREIGN KEY ("claim_id") REFERENCES "public"."katm_claims"("claim_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "manual_payments" ADD CONSTRAINT "manual_payments_deal_id_deals_id_fk" FOREIGN KEY ("deal_id") REFERENCES "public"."deals"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "manual_payments" ADD CONSTRAINT "manual_payments_admin_user_id_admin_users_id_fk" FOREIGN KEY ("admin_user_id") REFERENCES "public"."admin_users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "merchant_categories" ADD CONSTRAINT "merchant_categories_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

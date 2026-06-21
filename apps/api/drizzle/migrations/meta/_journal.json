@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1781990888633,
-      "tag": "0000_volatile_outlaw_kid",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1781998953895,
-      "tag": "0001_colossal_mockingbird",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1782031256204,
-      "tag": "0002_loose_jocasta",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1782061987909,
-      "tag": "0003_silly_shinko_yamashiro",
+      "when": 1782064145042,
+      "tag": "0000_certain_grandmaster",
       "breakpoints": true
     }
   ]
