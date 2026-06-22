@@ -7,7 +7,7 @@ import { users } from '@db/schema';
 import { katm077Reports } from '@db/katm-077-reports';
 import { katmInpsReports } from '@db/katm-inps-reports';
 import { dealSessions } from '../../deals/schema';
-import { isWizardStep, logEvent, type DealSessionRow, type SessionStepData } from './types';
+import { isWizardStep, type DealSessionRow, type SessionStepData } from './types';
 import { getActiveSession } from './queries/get-active-session/get-active-session.handler';
 import { loadOwnedActiveSession } from './queries/load-owned-active-session/load-owned-active-session.handler';
 import { createSession } from './commands/create-session/create-session.handler';
@@ -381,7 +381,6 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       }
 
       const summary = katmSummary(outcome.result);
-      await logEvent(session.id, 'katm', { claimId });
       return { status: 'completed' as const, ...summary };
     },
   );

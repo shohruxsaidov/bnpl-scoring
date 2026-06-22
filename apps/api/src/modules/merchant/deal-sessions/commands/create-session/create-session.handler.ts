@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '@db';
-import { dealSessions, dealSessionEvents } from '../../../../deals/schema';
+import { dealSessions } from '../../../../deals/schema';
 import type { CreateSessionCommand } from './create-session.command';
 import type { DealSessionRow } from '../../types';
 
@@ -16,9 +16,6 @@ export async function createSession(input: CreateSessionCommand): Promise<DealSe
         .update(dealSessions)
         .set({ status: 'abandoned', updatedAt: new Date() })
         .where(eq(dealSessions.id, existing.id));
-      await tx
-        .insert(dealSessionEvents)
-        .values({ sessionId: existing.id, step: 'abandoned', payload: { reason: 'superseded' } });
     }
 
     const [session] = await tx
@@ -32,9 +29,6 @@ export async function createSession(input: CreateSessionCommand): Promise<DealSe
       .returning();
     if (!session) throw new Error('session_insert_failed');
 
-    await tx
-      .insert(dealSessionEvents)
-      .values({ sessionId: session.id, step: 'opened', payload: null });
     return session;
   });
 }

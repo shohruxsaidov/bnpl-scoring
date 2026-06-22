@@ -383,10 +383,7 @@
     "status": "Holat",
     "katmClaimId": "KATM so'rov ID",
     "createdAt": "Yaratildi",
-    "updatedAt": "Yangilandi",
-    "events": "Voqealar",
-    "eventStep": "Qadam",
-    "eventCreatedAt": "Vaqt"
+    "updatedAt": "Yangilandi"
   },
   "notifications": {
     "pageTitle": "Bildirishnomalar",

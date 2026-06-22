@@ -2,8 +2,6 @@
 import { onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import DataTable from 'primevue/datatable'
-import Column from 'primevue/column'
 import { useScoringSessionsStore } from '@/stores/scoring-sessions'
 import { formatDateTime } from '@/utils/money'
 
@@ -96,21 +94,6 @@ function statusLabel(s: string): string {
             <span class="info-value">{{ formatDateTime(store.detail.updatedAt) }}</span>
           </div>
         </div>
-      </div>
-
-      <!-- Events table -->
-      <div class="surface-card events-card">
-        <div class="section-title">{{ $t('scoringSessions.events') }}</div>
-        <DataTable :value="store.detail.events" striped-rows>
-          <Column :header="$t('scoringSessions.eventStep')">
-            <template #body="{ data }">
-              <span class="step-tag">{{ data.step }}</span>
-            </template>
-          </Column>
-          <Column :header="$t('scoringSessions.eventCreatedAt')">
-            <template #body="{ data }">{{ formatDateTime(data.createdAt) }}</template>
-          </Column>
-        </DataTable>
       </div>
     </template>
   </div>
@@ -214,28 +197,6 @@ function statusLabel(s: string): string {
 .info-value.mono {
   font-family: var(--font-mono, monospace);
   font-size: 0.84rem;
-}
-
-.events-card {
-  padding: 1.25rem 1.5rem 0;
-}
-
-.section-title {
-  font-size: 1rem;
-  font-weight: 800;
-  margin-bottom: 1rem;
-  color: var(--text-primary);
-}
-
-.step-tag {
-  display: inline-block;
-  padding: 0.2rem 0.6rem;
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--accent-2) 10%, transparent);
-  color: var(--accent-2);
-  font-size: 0.78rem;
-  font-weight: 700;
-  font-family: var(--font-mono, monospace);
 }
 
 .skeleton-block {

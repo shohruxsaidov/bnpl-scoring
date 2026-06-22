@@ -16,12 +16,6 @@ export interface ScoringSessionListItem {
   updatedAt: string
 }
 
-export interface DealSessionEventItem {
-  id: string
-  step: string
-  createdAt: string
-}
-
 export interface ScoringSessionDetail {
   id: string
   clientName: string | null
@@ -35,7 +29,6 @@ export interface ScoringSessionDetail {
   stepData: Record<string, unknown>
   createdAt: string
   updatedAt: string
-  events: DealSessionEventItem[]
 }
 
 export const useScoringSessionsStore = defineStore('scoringSessions', () => {

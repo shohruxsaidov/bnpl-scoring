@@ -391,10 +391,7 @@
     "status": "Статус",
     "katmClaimId": "ID заявки КАТМ",
     "createdAt": "Создано",
-    "updatedAt": "Обновлено",
-    "events": "События",
-    "eventStep": "Шаг",
-    "eventCreatedAt": "Время"
+    "updatedAt": "Обновлено"
   },
   "notifications": {
     "pageTitle": "Уведомления",

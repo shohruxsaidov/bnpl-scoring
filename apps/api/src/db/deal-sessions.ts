@@ -8,8 +8,8 @@ import { users } from './users';
 // deal_sessions
 // One row per Wizard run, created the moment an Agent opens the Wizard
 // (before a Client is identified). The mutable head of the run: current_step
-// and step_data are overwritten as steps are saved; the immutable trail lives
-// in deal_session_events. The run's bureau claim is identified by katm_claim_id
+// and step_data are overwritten as steps are saved. The run's bureau claim is
+// identified by katm_claim_id
 // (shared sequence — ADR-0025; the UUID does not fit KATM's pClaimId String(20)).
 // At most one 'active' session per Agent — starting a new run abandons the
 // previous one. See ADR-0024.

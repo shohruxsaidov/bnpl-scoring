@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from '@db';
 import { dealSessions } from '../../../../deals/schema';
-import { stepDataOf, logEvent, type DealSessionRow, type ScoringStamp, type BailsmanItem } from '../../types';
+import { stepDataOf, type DealSessionRow, type ScoringStamp, type BailsmanItem } from '../../types';
 
 export async function stampScoring(
   session: DealSessionRow,
@@ -15,5 +15,4 @@ export async function stampScoring(
     .update(dealSessions)
     .set({ stepData: next, updatedAt: new Date() })
     .where(eq(dealSessions.id, session.id));
-  await logEvent(session.id, 'scoring', stamp);
 }

@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from '@db';
 import { dealSessions } from '../../../../deals/schema';
-import { stepDataOf, logEvent, type DealSessionRow } from '../../types';
+import { stepDataOf, type DealSessionRow } from '../../types';
 
 export async function stampKatm(session: DealSessionRow): Promise<void> {
   const data = stepDataOf(session);
@@ -10,5 +10,4 @@ export async function stampKatm(session: DealSessionRow): Promise<void> {
     .update(dealSessions)
     .set({ stepData: rest, updatedAt: new Date() })
     .where(eq(dealSessions.id, session.id));
-  await logEvent(session.id, 'katm', { claimId: session.katmClaimId });
 }

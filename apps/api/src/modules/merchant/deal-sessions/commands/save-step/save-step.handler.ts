@@ -5,7 +5,6 @@ import { products, tariffs } from '@db/schema';
 import {
   err,
   stepDataOf,
-  logEvent,
   WIZARD_STEPS,
   type WizardStep,
   type DealSessionRow,
@@ -69,7 +68,6 @@ export async function saveStep(
   console.log('[saveStep] db.update result', updated ?? 'NOT FOUND');
   if (!updated) throw err('session_not_found');
 
-  await logEvent(session.id, step, saved);
   console.log('[saveStep] done — returning updated session');
   return updated;
 }

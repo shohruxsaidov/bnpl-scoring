@@ -12,7 +12,6 @@ export * from './deal-comments';
 export * from './deal-documents';
 export * from './deal-items';
 export * from './deal-payment-schedules';
-export * from './deal-session-events';
 export * from './deal-sessions';
 export * from './deals';
 export * from './files';

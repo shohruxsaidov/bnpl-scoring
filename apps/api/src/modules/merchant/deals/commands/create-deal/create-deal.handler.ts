@@ -5,7 +5,6 @@ import {
   dealItems,
   dealPaymentSchedules,
   dealSessions,
-  dealSessionEvents,
   scoringHistories,
   buyouts,
 } from '../../../../deals/schema';
@@ -222,9 +221,6 @@ export async function createDeal(input: CreateDealInput) {
         .update(dealSessions)
         .set({ status: 'completed', updatedAt: now })
         .where(eq(dealSessions.id, input.dealSessionId));
-      await tx
-        .insert(dealSessionEvents)
-        .values({ sessionId: input.dealSessionId, step: 'completed', payload: { dealId: deal.id } });
     }
 
     return deal;

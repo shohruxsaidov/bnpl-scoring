@@ -1,14 +1,8 @@
-import { asc, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { db } from '@db'
-import { dealSessions, dealSessionEvents } from '../../../../deals/schema'
+import { dealSessions } from '../../../../deals/schema'
 import { users, merchants, merchantUsers } from '@db/schema'
 import type { GetScoringSessionQuery } from './get-scoring-session.query'
-
-export interface DealSessionEventItem {
-  id: string
-  step: string
-  createdAt: string
-}
 
 export interface DealSessionDetail {
   id: string
@@ -23,7 +17,6 @@ export interface DealSessionDetail {
   stepData: Record<string, unknown>
   createdAt: string
   updatedAt: string
-  events: DealSessionEventItem[]
 }
 
 export async function getScoringSession({ id }: GetScoringSessionQuery): Promise<DealSessionDetail | null> {
@@ -53,12 +46,6 @@ export async function getScoringSession({ id }: GetScoringSessionQuery): Promise
   const session = rows[0]
   if (!session) return null
 
-  const eventRows = await db
-    .select()
-    .from(dealSessionEvents)
-    .where(eq(dealSessionEvents.sessionId, id))
-    .orderBy(asc(dealSessionEvents.createdAt))
-
   return {
     id: session.id,
     clientName: session.clientFirstName ? `${session.clientLastName} ${session.clientFirstName}` : null,
@@ -72,10 +59,5 @@ export async function getScoringSession({ id }: GetScoringSessionQuery): Promise
     stepData: session.stepData as Record<string, unknown>,
     createdAt: session.createdAt.toISOString(),
     updatedAt: session.updatedAt.toISOString(),
-    events: eventRows.map((e) => ({
-      id: e.id.toString(),
-      step: e.step,
-      createdAt: e.createdAt.toISOString(),
-    })),
   }
 }

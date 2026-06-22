@@ -1,5 +1,3 @@
-import { db } from '@db';
-import { dealSessionEvents } from '../../deals/schema';
 import type { dealSessions } from '../../deals/schema';
 
 export type BailsmanRelation = 'father' | 'mother' | 'brother' | 'friend' | 'other';
@@ -95,8 +93,4 @@ export function err(code: string): Error & { code: string } {
 
 export function stepDataOf(session: DealSessionRow): SessionStepData {
   return (session.stepData ?? {}) as SessionStepData;
-}
-
-export async function logEvent(sessionId: string, step: string, payload: unknown) {
-  await db.insert(dealSessionEvents).values({ sessionId, step, payload });
 }

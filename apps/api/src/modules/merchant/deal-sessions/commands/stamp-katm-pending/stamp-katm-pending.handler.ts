@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from '@db';
 import { dealSessions } from '../../../../deals/schema';
-import { stepDataOf, logEvent, type DealSessionRow, type KatmPendingState } from '../../types';
+import { stepDataOf, type DealSessionRow, type KatmPendingState } from '../../types';
 
 export async function stampKatmPending(
   session: DealSessionRow,
@@ -12,5 +12,4 @@ export async function stampKatmPending(
     .update(dealSessions)
     .set({ stepData: { ...data, katmPending: state }, updatedAt: new Date() })
     .where(eq(dealSessions.id, session.id));
-  await logEvent(session.id, 'katm_pending', state);
 }
