@@ -265,26 +265,6 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: 'scoring-model/:id/revisions/:revId/try',
-        name: 'scoring-model-try',
-        component: () => import('@/views/scoring-model-try-view.vue'),
-        meta: {
-          titleKey: 'routeTitle.scoringModelTry',
-          breadcrumbKeys: ['breadcrumb.scoringModel', 'breadcrumb.scoringModelTry'],
-          feature: 'manage_scoring_model',
-        },
-      },
-      {
-        path: 'scoring-test-cases',
-        name: 'scoring-test-cases',
-        component: () => import('@/views/scoring-test-cases-view.vue'),
-        meta: {
-          titleKey: 'routeTitle.scoringTestCases',
-          breadcrumbKeys: ['breadcrumb.scoringTestCases'],
-          feature: 'manage_scoring_model',
-        },
-      },
-      {
         path: 'integration-logs',
         name: 'integration-logs',
         component: () => import('@/views/integration-logs-view.vue'),
@@ -322,16 +302,6 @@ const routes: RouteRecordRaw[] = [
           titleKey: 'routeTitle.categories',
           breadcrumbKeys: ['breadcrumb.categories'],
           feature: 'manage_global_categories',
-        },
-      },
-      {
-        path: 'scoring-test-cases/run',
-        name: 'scoring-test-run',
-        component: () => import('@/views/scoring-test-run-view.vue'),
-        meta: {
-          titleKey: 'routeTitle.scoringTestRun',
-          breadcrumbKeys: ['breadcrumb.scoringTestCases', 'breadcrumb.scoringTestRun'],
-          feature: 'manage_scoring_model',
         },
       },
     ],

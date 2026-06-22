@@ -21,7 +21,6 @@ import adminBankRoutes from "./banks/index"
 import adminOrganizationRoutes from "./organization/index"
 import adminScoringSessionsRoutes from "./scoringSessions/index"
 import adminScoringModelRoutes from "./scoringModel/index"
-import adminScoringTestCasesRoutes from "./scoringTestCases/index"
 import adminIntegrationLogRoutes from "./integrationLogs/index"
 import regionRoutes from "../regions/index"
 
@@ -61,7 +60,6 @@ export default async function adminModule(app: FastifyInstance) {
   await app.register(adminBankRoutes, { prefix: "/admin/banks" })
   await app.register(guarded(adminOrganizationRoutes, { read: "manage_settings", write: "manage_settings" }), { prefix: "/admin/organization" })
   await app.register(guarded(adminScoringModelRoutes, { read: "manage_scoring_model", write: "manage_scoring_model" }), { prefix: "/admin/scoring-model" })
-  await app.register(guarded(adminScoringTestCasesRoutes, { read: "manage_scoring_model", write: "manage_scoring_model" }), { prefix: "/admin/scoring-test-cases" })
   await app.register(guarded(adminIntegrationLogRoutes, { read: "view_integration_logs" }), { prefix: "/admin/integration-logs" })
   await app.register(regionRoutes, { prefix: "/admin/regions", preHandler: app.verifyAdminJwt })
 }

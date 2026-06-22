@@ -213,13 +213,6 @@ function bandDescription(band: Record<string, unknown>): string {
         >
           <i class="pi pi-globe" /> {{ t('scoringModel.makeGlobal') }}
         </button>
-        <button
-          v-if="store.revision"
-          class="btn-secondary"
-          @click="router.push(`/scoring-model/${modelId}/revisions/${store.revision.id}/try`)"
-        >
-          <i class="pi pi-play" /> {{ t('scoringModel.tryModel') }}
-        </button>
         <button class="btn-primary" :disabled="store.saving || !localParams" @click="openSaveDialog">
           <i class="pi pi-plus" />
           {{ store.saving ? '…' : t(readOnly ? 'scoringModel.restoreRevision' : 'scoringModel.saveRevision') }}

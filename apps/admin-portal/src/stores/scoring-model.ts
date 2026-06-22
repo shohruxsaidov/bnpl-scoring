@@ -28,19 +28,6 @@ export interface ScoringModelRevision {
   createdAt: string
 }
 
-export interface CriterionResult {
-  key: string
-  name: string
-  rawScore: number
-  importantLevel: number
-  weightedScore: number
-  skipped: boolean
-}
-
-export type ScoringTryResult =
-  | { rejected: true; stopFactor: string; name: string }
-  | { rejected: false; totalScore: number; coefficient: number; breakdown: CriterionResult[] }
-
 export interface ScoringModelHistoryItem {
   id: number
   name: string
@@ -109,17 +96,6 @@ export const useScoringModelStore = defineStore('scoringModel', () => {
     history.value = body.revisions
   }
 
-  // Revisions of the current Global Model (test runs execute against it).
-  async function fetchGlobalHistory(): Promise<void> {
-    await fetchModels()
-    const global = models.value.find((m) => m.isGlobal)
-    if (!global) {
-      history.value = []
-      return
-    }
-    await fetchModelHistory(global.id)
-  }
-
   // Params of the Global Model's active revision, used to seed the editor
   // of a model that has no revisions yet. Does not touch store state.
   async function fetchGlobalTemplateParams(): Promise<Record<string, unknown> | null> {
@@ -141,13 +117,6 @@ export const useScoringModelStore = defineStore('scoringModel', () => {
     } finally {
       loading.value = false
     }
-  }
-
-  async function tryModel(revisionId: number, inputs: Record<string, unknown>): Promise<ScoringTryResult> {
-    return api<ScoringTryResult>(`/admin/scoring-model/${revisionId}/try`, {
-      method: 'POST',
-      body: JSON.stringify(inputs),
-    })
   }
 
   async function save(
@@ -183,10 +152,8 @@ export const useScoringModelStore = defineStore('scoringModel', () => {
     setGlobal,
     fetchModel,
     fetchModelHistory,
-    fetchGlobalHistory,
     fetchGlobalTemplateParams,
     loadRevision,
-    tryModel,
     save,
   }
 })

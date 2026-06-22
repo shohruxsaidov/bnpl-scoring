@@ -44,6 +44,4 @@ export * from './scoring-model-revisions';
 export * from './scoring-models';
 export * from './scoring-pipelines';
 export * from './scoring-sessions';
-export * from './scoring-test-cases';
-export * from './scoring-test-runs';
 export * from './users';

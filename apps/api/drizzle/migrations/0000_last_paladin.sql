@@ -517,25 +517,6 @@ CREATE TABLE "scoring_sessions" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "scoring_test_cases" (
-	"id" serial PRIMARY KEY NOT NULL,
-	"name" varchar(200) NOT NULL,
-	"description" text,
-	"inputs" jsonb NOT NULL,
-	"expected_outcome" varchar(20) NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "scoring_test_runs" (
-	"id" serial PRIMARY KEY NOT NULL,
-	"model_revision_id" integer NOT NULL,
-	"ran_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"pass_count" integer NOT NULL,
-	"fail_count" integer NOT NULL,
-	"results" jsonb NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE "users" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"phone" varchar(20) NOT NULL,
@@ -616,7 +597,6 @@ ALTER TABLE "scoring_model_revisions" ADD CONSTRAINT "scoring_model_revisions_sc
 ALTER TABLE "scoring_model_revisions" ADD CONSTRAINT "scoring_model_revisions_created_by_admin_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."admin_users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scoring_pipelines" ADD CONSTRAINT "scoring_pipelines_session_id_scoring_sessions_id_fk" FOREIGN KEY ("session_id") REFERENCES "public"."scoring_sessions"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scoring_sessions" ADD CONSTRAINT "scoring_sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "scoring_test_runs" ADD CONSTRAINT "scoring_test_runs_model_revision_id_scoring_model_revisions_id_fk" FOREIGN KEY ("model_revision_id") REFERENCES "public"."scoring_model_revisions"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "integration_logs_request_timestamp_idx" ON "integration_logs" USING btree ("request_timestamp");--> statement-breakpoint
 CREATE INDEX "integration_logs_integration_idx" ON "integration_logs" USING btree ("integration");--> statement-breakpoint
 CREATE UNIQUE INDEX "scoring_models_single_global_idx" ON "scoring_models" USING btree ("is_global") WHERE "scoring_models"."is_global";

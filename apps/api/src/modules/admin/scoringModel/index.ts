@@ -9,8 +9,6 @@ import { getModelById } from "./queries/get-model-by-id/get-model-by-id.handler"
 import { saveModel } from "./commands/save-model/save-model.handler"
 import { createScoringModel } from "./commands/create-scoring-model/create-scoring-model.handler"
 import { setGlobalModel } from "./commands/set-global-model/set-global-model.handler"
-import { computeScoringModel } from "../../scoring/engine"
-import type { ScoringModelData, ScoringInputs } from "../../scoring/engine"
 
 function serializeRevision(row: NonNullable<Awaited<ReturnType<typeof getActiveModel>>>) {
   return {
@@ -133,7 +131,7 @@ export default async function adminScoringModelRoutes(app: FastifyInstance) {
     },
   )
 
-  /* ── Revision lookup & dry-run (revision ids, shared across models) ─────── */
+  /* ── Revision lookup (revision ids, shared across models) ─────── */
 
   fastify.get(
     "/:id",
@@ -142,44 +140,6 @@ export default async function adminScoringModelRoutes(app: FastifyInstance) {
       const row = await getModelById(parseInt(request.params.id, 10))
       if (!row) return reply.code(404).sendError("not_found")
       return serializeRevision(row)
-    },
-  )
-
-  const TryBody = Type.Object({
-    incomeSum:                Type.Optional(Type.Number()),
-    workExperienceMonths:     Type.Optional(Type.Number()),
-    age:                      Type.Optional(Type.Number()),
-    citizenship:              Type.Optional(Type.Union([Type.Literal("Uzbekistan"), Type.Literal("NonResident")])),
-    gender:                   Type.Optional(Type.Union([Type.Literal("Male"), Type.Literal("Female")])),
-    monthlyPayment:           Type.Optional(Type.Number()),
-    creditHistoryContracts:   Type.Optional(Type.Number()),
-    contingentLiability:      Type.Optional(Type.Number()),
-    overdue30Count:           Type.Optional(Type.Number()),
-    overdue30to60Count:       Type.Optional(Type.Number()),
-    overdue60to90Count:       Type.Optional(Type.Number()),
-    overdue90Count:           Type.Optional(Type.Number()),
-    hasJuridical:             Type.Optional(Type.Boolean()),
-    hasDecommission:          Type.Optional(Type.Boolean()),
-    loanApplicationCount:     Type.Optional(Type.Number()),
-    coBorrowerMaxDays:        Type.Optional(Type.Union([Type.Number(), Type.Null()])),
-    guarantorMaxDays:         Type.Optional(Type.Union([Type.Number(), Type.Null()])),
-    pledgerMaxDays:           Type.Optional(Type.Union([Type.Number(), Type.Null()])),
-    hasMortgage:              Type.Optional(Type.Boolean()),
-    passportRegion:           Type.Optional(Type.String()),
-    allDebts:                 Type.Optional(Type.Number()),
-  })
-
-  fastify.post(
-    "/:id/try",
-    { schema: { params: Type.Object({ id: Type.String() }), body: TryBody } },
-    async (request, reply) => {
-      const row = await getModelById(parseInt(request.params.id, 10))
-      if (!row) return reply.code(404).sendError("not_found")
-      const result = computeScoringModel(
-        row.params as unknown as ScoringModelData,
-        request.body as ScoringInputs,
-      )
-      return result
     },
   )
 }
