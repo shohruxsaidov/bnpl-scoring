@@ -15,13 +15,7 @@ import redisPlugin from './plugins/redis';
 import queuePlugin from './plugins/queue';
 import i18nPlugin from './plugins/i18n';
 import healthRoutes from './routes/health.js';
-import {
-  authModule,
-  merchantModule,
-  adminModule,
-  notificationsModule,
-  pushModule,
-} from './modules/index.js';
+import { authModule, merchantModule, adminModule } from './modules/index.js';
 import { env } from './env.js';
 
 const isDev = env.NODE_ENV !== 'production';
@@ -112,8 +106,6 @@ export async function buildApp() {
   await app.register(authModule, { prefix: '/api/v1' });
   await app.register(merchantModule, { prefix: '/api/v1' });
   await app.register(adminModule, { prefix: '/api/v1' });
-  await app.register(notificationsModule, { prefix: '/api/v1' });
-  await app.register(pushModule, { prefix: '/api/v1' });
 
   return app;
 }

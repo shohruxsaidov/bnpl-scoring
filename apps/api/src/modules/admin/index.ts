@@ -7,7 +7,6 @@ import adminCategoryRoutes from "./categories/index"
 import adminProductRoutes from "./products/index"
 import adminTariffRoutes from "./tariffs/index"
 import adminBlacklistRoutes from "./blacklist/index"
-import adminNotificationRoutes from "./notifications/index"
 import adminDealRoutes from "./deals/index"
 import adminUsersRoutes from "./users/index"
 import adminPermissionsRoutes from "./permissions/index"
@@ -46,7 +45,6 @@ export default async function adminModule(app: FastifyInstance) {
   await app.register(guarded(adminProductRoutes, { read: "manage_products", write: "manage_products" }), { prefix: "/admin/products" })
   await app.register(guarded(adminTariffRoutes, { read: "view_tariffs", write: "manage_tariffs" }), { prefix: "/admin/tariffs" })
   await app.register(guarded(adminBlacklistRoutes, { read: "manage_blacklist", write: "manage_blacklist" }), { prefix: "/admin/blacklist" })
-  await app.register(guarded(adminNotificationRoutes, { read: "send_notifications", write: "send_notifications" }), { prefix: "/admin/notifications" })
   await app.register(guarded(adminDealRoutes, { read: "view_deals", write: "manage_payments" }), { prefix: "/admin/deals" })
   await app.register(guarded(adminScoringHistoryRoutes, { read: "view_scoring_history" }), { prefix: "/admin/scoring-history" })
   await app.register(guarded(adminScoringSessionsRoutes, { read: "view_scoring_history" }), { prefix: "/admin/scoring-sessions" })

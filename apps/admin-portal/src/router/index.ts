@@ -215,16 +215,6 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: 'notifications',
-        name: 'notifications',
-        component: () => import('@/views/send-notification-view.vue'),
-        meta: {
-          titleKey: 'routeTitle.sendNotification',
-          breadcrumbKeys: ['breadcrumb.notifications'],
-          feature: 'send_notifications',
-        },
-      },
-      {
         path: 'permissions',
         name: 'permissions',
         component: () => import('@/views/permissions-view.vue'),

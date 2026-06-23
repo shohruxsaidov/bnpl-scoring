@@ -17,7 +17,6 @@ import { db } from '@db'
 import { katm077Reports } from '@db/katm-077-reports'
 import { katmInpsReports } from '@db/katm-inps-reports'
 import { env } from '../../../env'
-import { ssePush } from '../../../lib/sse'
 import { dealSessions } from '../../deals/schema'
 import { scoringPipelines, scoringSessions } from '../../scoring/schema'
 import { stampKatm } from '../../merchant/deal-sessions/commands/stamp-katm/stamp-katm.handler'
@@ -225,10 +224,6 @@ async function finalizeWizard(data: KatmPollJobData): Promise<void> {
   if (!result077) return
 
   await stampKatm(session)
-  ssePush('employee', session.agentId.toString(), 'katm.completed', {
-    dealSessionId: session.id,
-    ...katmSummary(result077),
-  })
 }
 
 async function failWizard(data: KatmPollJobData, error: string): Promise<void> {
@@ -237,10 +232,6 @@ async function failWizard(data: KatmPollJobData, error: string): Promise<void> {
   await stampKatmPending(session, {
     status: 'failed',
     startedAt: new Date().toISOString(),
-    error,
-  })
-  ssePush('employee', session.agentId.toString(), 'katm.failed', {
-    dealSessionId: session.id,
     error,
   })
 }

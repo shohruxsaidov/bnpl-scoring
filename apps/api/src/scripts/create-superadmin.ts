@@ -12,7 +12,7 @@ const password = process.argv[3] ?? 'adminpass123';
 const fullName = process.argv[4] ?? 'Super Admin';
 
 const MERCHANT_ROLE_GRANTS: Record<string, string[]> = {
-  agent: ['view_dashboard', 'view_deals', 'create_deal', 'view_notifications'],
+  agent: ['view_dashboard', 'view_deals', 'create_deal'],
   merchant_admin: [...MERCHANT_FEATURES],
 };
 

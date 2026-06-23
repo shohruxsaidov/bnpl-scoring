@@ -47,7 +47,6 @@ const MODULE_CONFIG: Record<Platform, ModuleDef[]> = {
     { key: 'employees', icon: 'users', features: ['manage_employees'] },
     { key: 'collection', icon: 'exclamation-triangle', features: ['view_collection_board'] },
     { key: 'scoring', icon: 'sliders-h', features: ['view_scoring_history'] },
-    { key: 'notifications', icon: 'bell', features: ['view_notifications'] },
   ],
   admin: [
     { key: 'overview', icon: 'chart-bar', features: ['view_overview'] },
@@ -62,7 +61,6 @@ const MODULE_CONFIG: Record<Platform, ModuleDef[]> = {
     { key: 'scoring', icon: 'sliders-h', features: ['view_scoring_history'] },
     { key: 'payments', icon: 'credit-card', features: ['view_payments', 'manage_payments'] },
     { key: 'buyout', icon: 'wallet', features: ['manage_buyout'] },
-    { key: 'notifications', icon: 'bell', features: ['send_notifications'] },
     { key: 'integrationLogs', icon: 'history', features: ['view_integration_logs'] },
     { key: 'settings', icon: 'cog', features: ['manage_settings'] },
     { key: 'roles', icon: 'shield', features: ['manage_roles'] },

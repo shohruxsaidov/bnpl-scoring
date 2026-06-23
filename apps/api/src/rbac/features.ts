@@ -14,7 +14,6 @@ export const MERCHANT_FEATURES = [
   'manage_employees',
   'view_collection_board',
   'view_scoring_history',
-  'view_notifications',
 ] as const;
 
 export const ADMIN_FEATURES = [
@@ -36,7 +35,6 @@ export const ADMIN_FEATURES = [
   'view_payments',
   'manage_payments',
   'manage_buyout',
-  'send_notifications',
   'manage_settings',
   'manage_roles',
   'manage_admins',

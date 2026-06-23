@@ -6,7 +6,6 @@ import { loadOwnedActiveSession } from '../deal-sessions/queries/load-owned-acti
 import { listDeals } from './queries/list-deals/list-deals.handler';
 import { getDealById } from './queries/get-deal/get-deal.handler';
 import { getContractPdfUrl } from './queries/get-contract-pdf-url/get-contract-pdf-url.handler';
-import { notifyDealCreated, notifyDealDecision } from '../../notifications/service/service.handler';
 
 type JwtPayload = {
   sub: string;
@@ -88,24 +87,6 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
           return reply.code(400).sendError('amount_above_tariff_max');
         throw err;
       }
-
-      const scoringDecision = deal.scoringDecision;
-
-      notifyDealCreated({
-        dealId: deal.id,
-        agentId: +p.sub,
-        merchantId: +p.merchantId,
-        branchId: +p.branchId,
-        userId: deal.userId,
-        amountTiyin: deal.amount,
-      }).catch((err) => app.log.warn({ err }, 'notifyDealCreated failed'));
-
-      notifyDealDecision({
-        dealId: deal.id,
-        userId: deal.userId ?? Number(0),
-        scoringDecision: scoringDecision ?? null,
-        lang: deal.lang as 'ru' | 'uz',
-      }).catch((err) => app.log.warn({ err }, 'notifyDealDecision failed'));
 
       return reply
         .code(201)
