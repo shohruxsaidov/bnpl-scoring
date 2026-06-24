@@ -38,6 +38,4 @@ export * from './roles';
 export * from './scoring-histories';
 export * from './scoring-model-revisions';
 export * from './scoring-models';
-export * from './scoring-pipelines';
-export * from './scoring-sessions';
 export * from './users';

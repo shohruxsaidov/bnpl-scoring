@@ -1,14 +1,3 @@
-/**
- * KATM consume flow orchestration (ADR-0025):
- *
- *   consent → ban pre-check → claim registration → 077 + INPS reports (parallel)
- *
- * Shared by the Wizard (Deal Session) and self-service (Scoring Session)
- * paths. When either report is async (05050) the caller enqueues BullMQ
- * polling jobs — see poller.ts. Both reports must resolve before the session
- * advances.
- */
-
 import { eq, sql } from 'drizzle-orm';
 import { db } from '@db';
 import { agreements } from '@db/agreements';
@@ -84,14 +73,12 @@ export interface AgreementRecord {
 }
 
 export async function createKatmConsent(input: {
-  channel: 'wizard' | 'self_service';
   userId?: number;
   sessionId?: string;
 }): Promise<AgreementRecord> {
   const [row] = await db
     .insert(agreements)
     .values({
-      channel: input.channel,
       userId: input.userId ?? null,
       sessionId: input.sessionId ?? null,
     })
@@ -115,7 +102,6 @@ export async function startKatmFlow(input: {
   subject: KatmSubject;
   userId: number;
   sessionId: string;
-  channel: 'wizard' | 'self_service';
 }): Promise<KatmFlowOutcome> {
   // Idempotency: if this claimId was already registered (e.g. retry after a
   // transient failure), skip registration and re-request both reports.
@@ -147,7 +133,6 @@ export async function startKatmFlow(input: {
 
     await db.insert(katmClaims).values({
       claimId: input.claimId,
-      channel: input.channel,
       userId: input.userId,
       sessionId: input.sessionId,
       katmSir: claim.katmSir,

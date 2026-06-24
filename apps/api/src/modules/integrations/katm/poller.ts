@@ -7,6 +7,8 @@
  * (~15 min); the Deal Session is resumable so the Agent can park the run.
  * Exhaustion fails the run — KATM failure hard-blocks the Deal.
  *
+ * Reports are polled for the Wizard (Deal Session) flow only.
+ *
  * Both 077 and INPS reports are polled via the same queue with a reportType
  * discriminator. The session only advances once both reports are resolved.
  */
@@ -18,7 +20,6 @@ import { katm077Reports } from '@db/katm-077-reports'
 import { katmInpsReports } from '@db/katm-inps-reports'
 import { env } from '../../../env'
 import { dealSessions } from '../../deals/schema'
-import { scoringPipelines, scoringSessions } from '../../scoring/schema'
 import { stampKatm } from '../../merchant/deal-sessions/commands/stamp-katm/stamp-katm.handler'
 import { stampKatmPending } from '../../merchant/deal-sessions/commands/stamp-katm-pending/stamp-katm-pending.handler'
 import type { DealSessionRow } from '../../merchant/deal-sessions/types'
@@ -29,8 +30,7 @@ import type { KatmResult, InpsResult } from './service/shared'
 export const KATM_POLL_QUEUE = 'katm-report-poll'
 
 export interface KatmPollJobData {
-  flow: 'wizard' | 'self_service'
-  /** deal_sessions.id (wizard) or scoring_sessions.id (self_service) */
+  /** deal_sessions.id */
   sessionId: string
   claimId: string
   token: string
@@ -76,15 +76,13 @@ export async function processKatmPollJob(data: KatmPollJobData): Promise<void> {
     await saveKatmReport(data.claimId, outcome.result)
   }
 
-  if (data.flow === 'wizard') await finalizeWizard(data)
-  else await finalizeSelfService(data)
+  await finalizeWizard(data)
 }
 
 /** Called by the worker's failed handler once all attempts are exhausted. */
 export async function handleKatmPollFailure(data: KatmPollJobData, err: Error): Promise<void> {
   const error = err instanceof KatmReportPendingError ? 'katm_report_timeout' : err.message
-  if (data.flow === 'wizard') await failWizard(data, error)
-  else await failSelfService(data, error)
+  await failWizard(data, error)
 }
 
 // ---------------------------------------------------------------------------
@@ -234,33 +232,6 @@ async function failWizard(data: KatmPollJobData, error: string): Promise<void> {
     startedAt: new Date().toISOString(),
     error,
   })
-}
-
-// ---------------------------------------------------------------------------
-// Self-service (Scoring Session) finalizers
-// ---------------------------------------------------------------------------
-
-async function finalizeSelfService(data: KatmPollJobData): Promise<void> {
-  const allDone = await bothReportsResolved(data.claimId)
-  if (!allDone) return // other report still pending
-
-  await db
-    .update(scoringPipelines)
-    .set({ status: 'completed', completedAt: new Date() })
-    .where(and(eq(scoringPipelines.sessionId, data.sessionId), eq(scoringPipelines.type, 'katm')))
-}
-
-async function failSelfService(data: KatmPollJobData, error: string): Promise<void> {
-  await Promise.all([
-    db
-      .update(scoringPipelines)
-      .set({ status: 'failed', error, completedAt: new Date() })
-      .where(and(eq(scoringPipelines.sessionId, data.sessionId), eq(scoringPipelines.type, 'katm'))),
-    db
-      .update(scoringSessions)
-      .set({ status: 'failed' })
-      .where(eq(scoringSessions.id, data.sessionId)),
-  ])
 }
 
 // ---------------------------------------------------------------------------

@@ -32,7 +32,7 @@ import { scoreCard } from '../../integrations/plumgate/queries/score-card/score-
 import { createScoring } from '../scoringHistory/commands/create-scoring/create-scoring.handler';
 import { stampScoring } from './commands/stamp-scoring/stamp-scoring.handler';
 import { rejectSession } from './commands/reject-session/reject-session.handler';
-import type { CriteriaScores, InpsIncomeEntry } from '../../scoring/service/service.handler';
+import type { CriteriaScores, InpsIncomeEntry } from '../../deals/schema';
 import { resolveScoringModel } from '../../scoring/resolve-model';
 import { computeScoringModel, type ScoringInputs, type ScoringResult } from '../../scoring/engine';
 import { createOtp, verifyOtp } from '../../auth/client/service/service.handler';
@@ -301,7 +301,6 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       }
 
       const consent = await createKatmConsent({
-        channel: 'wizard',
         userId: client.id,
         sessionId: session.id,
       });
@@ -329,7 +328,6 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           },
           userId: client.id,
           sessionId: session.id,
-          channel: 'wizard',
         });
       } catch (err) {
         if (err instanceof KatmOneIdLockedError) {
@@ -357,7 +355,6 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           startedAt: new Date().toISOString(),
         });
         const baseJob = {
-          flow: 'wizard' as const,
           sessionId: session.id,
           claimId,
           consentId: consent.agreementId,

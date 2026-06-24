@@ -32,3 +32,61 @@ export const scoringHistories = pgTable('scoring_histories', {
   platformCreditLimit: integer('platform_credit_limit').notNull(),
   scoredAt: timestamp('scored_at', { withTimezone: true }).defaultNow().notNull(),
 });
+
+// ---------------------------------------------------------------------------
+// criteria_scores jsonb shape
+// The per-criterion breakdown persisted into scoring_histories.criteria_scores.
+// ---------------------------------------------------------------------------
+
+export interface KatmCriteriaDetail {
+  katmScore: number;
+  katmClass: string;
+  scoringLevel: string;
+  openCredits: number;
+  totalDebt: number;
+  overdueInOpenCredits: number;
+  totalContracts: number;
+  totalClaims: number;
+  overdueCount: number;
+  maxOverdueDays: number;
+  maxOverdueSum: number;
+  avgMonthlyPayment: number;
+  hasCreditBan: boolean;
+}
+
+export interface CardCriteriaDetail {
+  pcType: 'uzcard' | 'humo';
+  bank?: string;
+  maskedPan?: string;
+  holderName?: string;
+}
+
+export interface ClientCriteriaDetail {
+  birthDate: string;
+  gender: string;
+  nationality: string;
+}
+
+export interface InpsIncomeEntry {
+  period: string;
+  orgname: string;
+  income_summa: string;
+  inps_summa: string;
+  org_inn: string;
+}
+
+export interface InpsCriteriaDetail {
+  incomesAllSumma: number;
+  avgMonthlyIncome: number;
+  periodBegin: string;
+  periodEnd: string;
+  incomes: InpsIncomeEntry[];
+}
+
+export interface CriteriaScores {
+  katm?: { katmScore: number; detail: KatmCriteriaDetail };
+  card?: { detail: CardCriteriaDetail };
+  client?: { detail: ClientCriteriaDetail };
+  inps?: { detail: InpsCriteriaDetail };
+  model?: Record<string, unknown>;
+}

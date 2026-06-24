@@ -1,1 +1,0 @@
-- [Project Design System](project-design-system.md) — tokens, theming, PrimeVue 4 Aura, typography, button gradient, score band colors

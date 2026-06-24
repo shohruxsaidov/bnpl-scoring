@@ -24,7 +24,6 @@ CREATE TABLE "admin_users" (
 CREATE TABLE "agreements" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" integer,
-	"channel" varchar(20) NOT NULL,
 	"session_id" uuid,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -205,7 +204,6 @@ CREATE TABLE "integration_logs" (
 CREATE TABLE "katm_claims" (
 	"claim_id" varchar(20) PRIMARY KEY NOT NULL,
 	"status" varchar(20) DEFAULT 'created' NOT NULL,
-	"channel" varchar(20) NOT NULL,
 	"user_id" integer NOT NULL,
 	"session_id" uuid NOT NULL,
 	"katm_sir" varchar NOT NULL,
@@ -355,27 +353,6 @@ CREATE TABLE "mxik_cache" (
 	"cached_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "notification_broadcasts" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"admin_id" integer NOT NULL,
-	"target_type" varchar(30) NOT NULL,
-	"target_id" varchar(30),
-	"title" text NOT NULL,
-	"body" text NOT NULL,
-	"recipient_count" integer DEFAULT 0 NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "notifications" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"actor_type" varchar(20) NOT NULL,
-	"actor_id" integer NOT NULL,
-	"type" varchar(40) NOT NULL,
-	"params" jsonb DEFAULT '{}'::jsonb NOT NULL,
-	"read" boolean DEFAULT false NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE "organization" (
 	"id" integer PRIMARY KEY DEFAULT 1 NOT NULL,
 	"name" varchar(200) NOT NULL,
@@ -413,17 +390,6 @@ CREATE TABLE "products" (
 	"package_name" varchar(200),
 	"active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "push_subscriptions" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"actor_type" varchar(20) DEFAULT 'client' NOT NULL,
-	"user_id" integer NOT NULL,
-	"endpoint" text NOT NULL,
-	"p256dh" text NOT NULL,
-	"auth" text NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "push_subscriptions_endpoint_unique" UNIQUE("endpoint")
 );
 --> statement-breakpoint
 CREATE TABLE "regions" (
@@ -484,28 +450,6 @@ CREATE TABLE "scoring_models" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" varchar(200) NOT NULL,
 	"is_global" boolean DEFAULT false NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE "scoring_pipelines" (
-	"id" serial PRIMARY KEY NOT NULL,
-	"session_id" uuid NOT NULL,
-	"type" varchar(20) NOT NULL,
-	"status" varchar(20) DEFAULT 'pending' NOT NULL,
-	"result" jsonb,
-	"error" text,
-	"started_at" timestamp with time zone,
-	"completed_at" timestamp with time zone
-);
---> statement-breakpoint
-CREATE TABLE "scoring_sessions" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"user_id" integer NOT NULL,
-	"consent_id" varchar(100) NOT NULL,
-	"consent_date" date NOT NULL,
-	"status" varchar(20) DEFAULT 'pending' NOT NULL,
-	"katm_claim_id" varchar(20),
-	"scored_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
@@ -586,8 +530,6 @@ ALTER TABLE "scoring_histories" ADD CONSTRAINT "scoring_histories_client_id_user
 ALTER TABLE "scoring_histories" ADD CONSTRAINT "scoring_histories_model_revision_id_scoring_model_revisions_id_fk" FOREIGN KEY ("model_revision_id") REFERENCES "public"."scoring_model_revisions"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scoring_model_revisions" ADD CONSTRAINT "scoring_model_revisions_scoring_model_id_scoring_models_id_fk" FOREIGN KEY ("scoring_model_id") REFERENCES "public"."scoring_models"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scoring_model_revisions" ADD CONSTRAINT "scoring_model_revisions_created_by_admin_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."admin_users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "scoring_pipelines" ADD CONSTRAINT "scoring_pipelines_session_id_scoring_sessions_id_fk" FOREIGN KEY ("session_id") REFERENCES "public"."scoring_sessions"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "scoring_sessions" ADD CONSTRAINT "scoring_sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "integration_logs_request_timestamp_idx" ON "integration_logs" USING btree ("request_timestamp");--> statement-breakpoint
 CREATE INDEX "integration_logs_integration_idx" ON "integration_logs" USING btree ("integration");--> statement-breakpoint
 CREATE UNIQUE INDEX "scoring_models_single_global_idx" ON "scoring_models" USING btree ("is_global") WHERE "scoring_models"."is_global";
