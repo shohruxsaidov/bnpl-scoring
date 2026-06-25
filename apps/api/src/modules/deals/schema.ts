@@ -1,6 +1,5 @@
 export * from '../../db/deal-sessions'
 export * from '../../db/deals'
-export * from '../../db/scoring-histories'
 export * from '../../db/deal-items'
 export * from '../../db/manual-payments'
 export * from '../../db/deal-payment-schedules'

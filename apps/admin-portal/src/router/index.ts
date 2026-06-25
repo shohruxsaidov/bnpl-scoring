@@ -175,36 +175,6 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: 'scoring-history',
-        name: 'scoring-history',
-        component: () => import('@/views/scoring-history-view.vue'),
-        meta: {
-          titleKey: 'routeTitle.scoringHistory',
-          breadcrumbKeys: ['breadcrumb.scoringHistory'],
-          feature: 'view_scoring_history',
-        },
-      },
-      {
-        path: 'scoring-history/all',
-        name: 'scoring-history-all',
-        component: () => import('@/views/scoring-history-all-view.vue'),
-        meta: {
-          titleKey: 'routeTitle.scoringHistory',
-          breadcrumbKeys: ['breadcrumb.scoringHistory', 'breadcrumb.scoringHistoryAll'],
-          feature: 'view_scoring_history',
-        },
-      },
-      {
-        path: 'scoring-history/:id',
-        name: 'scoring-detail',
-        component: () => import('@/views/scoring-detail-view.vue'),
-        meta: {
-          titleKey: 'routeTitle.scoringHistory',
-          breadcrumbKeys: ['breadcrumb.scoringHistory', 'breadcrumb.detail'],
-          feature: 'view_scoring_history',
-        },
-      },
-      {
         path: 'payments',
         name: 'payments',
         component: () => import('@/views/payments-view.vue'),

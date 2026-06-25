@@ -1,7 +1,7 @@
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '@db';
 import { users, merchants, branches, tariffs } from '@db/schema';
-import { deals, scoringHistories } from '../../../../deals/schema';
+import { deals } from '../../../../deals/schema';
 
 export async function getUserOverview(id: number) {
   const userRows = await db.select().from(users).where(eq(users.id, id)).limit(1);
@@ -16,23 +16,10 @@ export async function getUserOverview(id: number) {
     .where(eq(users.pinfl, pinfl));
   const allUserIds = allUserRows.map((r) => r.id);
 
-  let creditLimit: number | null = null;
-  let creditLimitScoredAt: string | null = null;
-
-  const scoringRows = await db
-    .select({
-      platformCreditLimit: scoringHistories.platformCreditLimit,
-      scoredAt: scoringHistories.scoredAt,
-    })
-    .from(scoringHistories)
-    .where(eq(scoringHistories.pinfl, pinfl))
-    .orderBy(desc(scoringHistories.scoredAt))
-    .limit(1);
-
-  if (scoringRows[0]) {
-    creditLimit = Number(scoringRows[0].platformCreditLimit);
-    creditLimitScoredAt = scoringRows[0].scoredAt.toISOString();
-  }
+  // TODO: scoring rebuild — credit limit source removed with scoring_histories.
+  // Returns null until the new scoring persistence lands.
+  const creditLimit: number | null = null;
+  const creditLimitScoredAt: string | null = null;
 
   let committedAmount = 0;
   if (allUserIds.length > 0) {

@@ -10,7 +10,6 @@ import adminBlacklistRoutes from "./blacklist/index"
 import adminDealRoutes from "./deals/index"
 import adminUsersRoutes from "./users/index"
 import adminPermissionsRoutes from "./permissions/index"
-import adminScoringHistoryRoutes from "./scoringHistory/index"
 import adminPaymentRoutes from "./payments/index"
 import adminCollectionBoardRoutes from "./collectionBoard/index"
 import adminBuyoutRoutes from "./buyouts/index"
@@ -46,7 +45,6 @@ export default async function adminModule(app: FastifyInstance) {
   await app.register(guarded(adminTariffRoutes, { read: "view_tariffs", write: "manage_tariffs" }), { prefix: "/admin/tariffs" })
   await app.register(guarded(adminBlacklistRoutes, { read: "manage_blacklist", write: "manage_blacklist" }), { prefix: "/admin/blacklist" })
   await app.register(guarded(adminDealRoutes, { read: "view_deals", write: "manage_payments" }), { prefix: "/admin/deals" })
-  await app.register(guarded(adminScoringHistoryRoutes, { read: "view_scoring_history" }), { prefix: "/admin/scoring-history" })
   await app.register(guarded(adminScoringSessionsRoutes, { read: "view_scoring_history" }), { prefix: "/admin/scoring-sessions" })
   await app.register(guarded(adminPaymentRoutes, { read: "view_payments", write: "manage_payments" }), { prefix: "/admin/payments" })
   await app.register(guarded(adminCollectionBoardRoutes, { read: "view_collection_board" }), { prefix: "/admin/collection-board" })

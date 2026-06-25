@@ -29,10 +29,10 @@ import { listCards } from '../../integrations/plumgate/queries/list-cards/list-c
 import { addCard } from '../../integrations/plumgate/commands/add-card/add-card.handler';
 import { confirmCard } from '../../integrations/plumgate/commands/confirm-card/confirm-card.handler';
 import { scoreCard } from '../../integrations/plumgate/queries/score-card/score-card.handler';
-import { createScoring } from '../scoringHistory/commands/create-scoring/create-scoring.handler';
 import { stampScoring } from './commands/stamp-scoring/stamp-scoring.handler';
 import { rejectSession } from './commands/reject-session/reject-session.handler';
-import type { CriteriaScores, InpsIncomeEntry } from '../../deals/schema';
+import type { CriteriaScores } from '../../scoring/criteria-scores';
+import type { InpsIncomeEntry } from '../../integrations/katm/service/shared';
 import { resolveScoringModel } from '../../scoring/resolve-model';
 import { computeScoringModel, type ScoringInputs, type ScoringResult } from '../../scoring/engine';
 import { createOtp, verifyOtp } from '../../auth/client/service/service.handler';
@@ -822,21 +822,9 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         model: modelEntry,
       };
 
-      let scoringId: string | null = null;
-      try {
-        const res = await createScoring({
-          merchantId: Number(p.merchantId),
-          userId: session.userId,
-          scoreSum,
-          coefficient,
-          decision: finalDecision,
-          platformCreditLimit,
-          criteriaScores: criteriaScores as Record<string, unknown>,
-        });
-        scoringId = res.id;
-      } catch (err) {
-        request.log.warn({ err }, 'scoring history record failed');
-      }
+      // Scoring history persistence removed — to be rebuilt from scratch.
+      // The computed result is still stamped onto the session below.
+      const scoringId: string | null = null;
 
       const sessionAfterCard = await saveStep(session, 'card', {
         cardId: plumCardId,

@@ -35,7 +35,6 @@ export * from './products';
 export * from './regions';
 export * from './role-permissions';
 export * from './roles';
-export * from './scoring-histories';
 export * from './scoring-model-revisions';
 export * from './scoring-models';
 export * from './users';

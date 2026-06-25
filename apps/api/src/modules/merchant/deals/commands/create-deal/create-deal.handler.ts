@@ -5,11 +5,10 @@ import {
   dealItems,
   dealPaymentSchedules,
   dealSessions,
-  scoringHistories,
   buyouts,
 } from '../../../../deals/schema';
 import { calcTotalPayable, splitInstallments } from '../../../../deals/installments';
-import { users, products } from '@db/schema';
+import { products } from '@db/schema';
 import { katm077Reports } from '@db/katm-077-reports';
 import type { CreateDealInput } from './create-deal.command';
 import type { DealSessionRow, SessionStepData } from '../../../deal-sessions/types';
@@ -178,35 +177,8 @@ export async function createDeal(input: CreateDealInput) {
 
     await tx.insert(dealPaymentSchedules).values(scheduleRows);
 
-    if (input.scoringDecision != null && input.platformCreditLimit != null && input.scoringId == null) {
-      const [userSnap] = await tx
-        .select({
-          firstName: users.firstName,
-          lastName: users.lastName,
-          middleName: users.middleName,
-          passportNumber: users.passportNumber,
-          passportSeries: users.passportSeries,
-          pinfl: users.pinfl,
-          phone: users.phone,
-        })
-        .from(users)
-        .where(eq(users.id, input.userId))
-        .limit(1);
-      await tx.insert(scoringHistories).values({
-        firstName: userSnap?.firstName ?? null,
-        lastName: userSnap?.lastName ?? null,
-        middleName: userSnap?.middleName ?? null,
-        passportNumber: userSnap?.passportNumber ?? null,
-        passportSeries: userSnap?.passportSeries ?? null,
-        pinfl: userSnap?.pinfl ?? null,
-        phoneNumber: userSnap?.phone ?? null,
-        criteriaScores: input.criteriaScores ?? null,
-        scoreSum: input.scoreSum?.toString() ?? null,
-        coefficient: input.coefficient != null ? input.coefficient.toString() : null,
-        decision: input.scoringDecision,
-        platformCreditLimit: input.platformCreditLimit,
-      });
-    }
+    // Scoring history snapshot removed — to be rebuilt from scratch. The deal
+    // keeps its own denormalized scoreSum/scoringDecision set above.
 
     await tx.insert(buyouts).values({
       dealId: deal.id,
