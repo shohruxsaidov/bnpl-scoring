@@ -13,7 +13,6 @@ export const MERCHANT_FEATURES = [
   'manage_branches',
   'manage_employees',
   'view_collection_board',
-  'view_scoring_history',
 ] as const;
 
 export const ADMIN_FEATURES = [
@@ -31,7 +30,6 @@ export const ADMIN_FEATURES = [
   'manage_global_categories',
   'manage_blacklist',
   'view_collection_board',
-  'view_scoring_history',
   'view_payments',
   'manage_payments',
   'manage_buyout',

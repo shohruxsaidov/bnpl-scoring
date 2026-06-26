@@ -40,7 +40,6 @@
     "clients": "Клиенты",
     "scoringModel": "Модель скоринга · #{version}",
     "integrationLogs": "Логи интеграций",
-    "scoringSessions": "Скоринг-сессии",
     "categories": "Категории"
   },
   "breadcrumb": {
@@ -63,7 +62,6 @@
     "payments": "Платежи",
     "clients": "Клиенты",
     "integrationLogs": "Логи интеграций",
-    "scoringSessions": "Скоринг-сессии",
     "categories": "Категории"
   },
   "topbar": {
@@ -90,7 +88,6 @@
     "toggleSidebar": "Переключить панель",
     "clients": "Клиенты",
     "integrationLogs": "Логи интеграций",
-    "scoringSessions": "Скоринг-сессии",
     "categories": "Категории"
   },
   "categories": {
@@ -291,23 +288,6 @@
     "errorMessage": "Сообщение об ошибке",
     "request": "Тело запроса",
     "response": "Тело ответа"
-  },
-  "scoringSessions": {
-    "count": "Всего сессий: {count}",
-    "searchPlaceholder": "Поиск по клиенту, мерчанту или агенту…",
-    "allStatuses": "Все статусы",
-    "statusActive": "Активная",
-    "statusCompleted": "Завершена",
-    "statusAbandoned": "Прервана",
-    "client": "Клиент",
-    "noClient": "Клиент не выбран",
-    "merchant": "Мерчант",
-    "agent": "Агент",
-    "currentStep": "Текущий шаг",
-    "status": "Статус",
-    "katmClaimId": "ID заявки КАТМ",
-    "createdAt": "Создано",
-    "updatedAt": "Обновлено"
   },
   "scoringModel": {
     "title": "Модель скоринга",

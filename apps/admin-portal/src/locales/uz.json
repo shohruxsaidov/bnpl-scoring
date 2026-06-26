@@ -40,7 +40,6 @@
     "clients": "Mijozlar",
     "scoringModel": "Skoring modeli · #{version}",
     "integrationLogs": "Integratsiya loglari",
-    "scoringSessions": "Skoring sessiyalari",
     "categories": "Kategoriyalar"
   },
   "breadcrumb": {
@@ -63,7 +62,6 @@
     "payments": "To'lovlar",
     "clients": "Mijozlar",
     "integrationLogs": "Integratsiya loglari",
-    "scoringSessions": "Skoring sessiyalari",
     "categories": "Kategoriyalar"
   },
   "topbar": {
@@ -90,7 +88,6 @@
     "toggleSidebar": "Yon panelni almashtirish",
     "clients": "Mijozlar",
     "integrationLogs": "Integratsiya loglari",
-    "scoringSessions": "Skoring sessiyalari",
     "categories": "Kategoriyalar"
   },
   "categories": {
@@ -283,23 +280,6 @@
     "errorMessage": "Xato xabari",
     "request": "So'rov tanasi",
     "response": "Javob tanasi"
-  },
-  "scoringSessions": {
-    "count": "Jami sessiyalar: {count}",
-    "searchPlaceholder": "Mijoz, merchant yoki agent bo'yicha qidirish…",
-    "allStatuses": "Barcha holat",
-    "statusActive": "Faol",
-    "statusCompleted": "Yakunlandi",
-    "statusAbandoned": "Bekor qilingan",
-    "client": "Mijoz",
-    "noClient": "Mijoz tanlanmagan",
-    "merchant": "Merchant",
-    "agent": "Agent",
-    "currentStep": "Joriy qadam",
-    "status": "Holat",
-    "katmClaimId": "KATM so'rov ID",
-    "createdAt": "Yaratildi",
-    "updatedAt": "Yangilandi"
   },
   "scoringModel": {
     "title": "Skoring modeli",

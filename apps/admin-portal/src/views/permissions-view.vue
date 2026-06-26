@@ -46,7 +46,6 @@ const MODULE_CONFIG: Record<Platform, ModuleDef[]> = {
     { key: 'branches', icon: 'building', features: ['manage_branches'] },
     { key: 'employees', icon: 'users', features: ['manage_employees'] },
     { key: 'collection', icon: 'exclamation-triangle', features: ['view_collection_board'] },
-    { key: 'scoring', icon: 'sliders-h', features: ['view_scoring_history'] },
   ],
   admin: [
     { key: 'overview', icon: 'chart-bar', features: ['view_overview'] },
@@ -58,7 +57,6 @@ const MODULE_CONFIG: Record<Platform, ModuleDef[]> = {
     { key: 'categories', icon: 'tags', features: ['manage_categories'] },
     { key: 'blacklist', icon: 'ban', features: ['manage_blacklist'] },
     { key: 'collection', icon: 'exclamation-triangle', features: ['view_collection_board'] },
-    { key: 'scoring', icon: 'sliders-h', features: ['view_scoring_history'] },
     { key: 'payments', icon: 'credit-card', features: ['view_payments', 'manage_payments'] },
     { key: 'buyout', icon: 'wallet', features: ['manage_buyout'] },
     { key: 'integrationLogs', icon: 'history', features: ['view_integration_logs'] },

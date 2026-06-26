@@ -235,26 +235,6 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: 'scoring-sessions',
-        name: 'scoring-sessions',
-        component: () => import('@/views/scoring-sessions-view.vue'),
-        meta: {
-          titleKey: 'routeTitle.scoringSessions',
-          breadcrumbKeys: ['breadcrumb.scoringSessions'],
-          feature: 'view_scoring_history',
-        },
-      },
-      {
-        path: 'scoring-sessions/:id',
-        name: 'scoring-session-detail',
-        component: () => import('@/views/scoring-session-detail-view.vue'),
-        meta: {
-          titleKey: 'routeTitle.scoringSessions',
-          breadcrumbKeys: ['breadcrumb.scoringSessions', 'breadcrumb.detail'],
-          feature: 'view_scoring_history',
-        },
-      },
-      {
         path: 'categories',
         name: 'categories',
         component: () => import('@/views/categories-view.vue'),
