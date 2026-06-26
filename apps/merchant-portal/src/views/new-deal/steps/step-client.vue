@@ -5,7 +5,7 @@ import InputText from 'primevue/inputtext'
 import { useDealStore } from '@/stores/deal'
 import type { KatmSummary } from '@/stores/deal'
 import { useClientApi } from '@/composables/use-client-api'
-import { saveSessionStep } from '@/composables/use-deal-session-api'
+import { createDealSession, saveSessionStep } from '@/composables/use-deal-session-api'
 import { apiFetch } from '@/utils/apiFetch'
 import type { Client } from '@/types'
 
@@ -100,6 +100,40 @@ const katmPending = ref(deal.sessionData.katmPending)
 let katmPollTimer: ReturnType<typeof setInterval> | null = null
 
 const rejected = ref(false)
+// Holds the specific reason behind a generic (non-ban, non-oneid) rejection so
+// the template can show why and, for data_missing, which fields to fix.
+const rejectReason = ref<{ code: string; category: string; missingFields: string[] } | null>(null)
+
+// Localized one-liner for an ineligible/other rejection. data_missing renders
+// its own field list instead of this.
+const rejectReasonText = computed(() => {
+  const code = rejectReason.value?.code
+  if (!code) return t('stepClient.rejectReasons.generic')
+  const key = `stepClient.rejectReasons.${code}`
+  const msg = t(key)
+  return msg === key ? t('stepClient.rejectReasons.generic') : msg
+})
+
+// Route a pipeline rejection to the right UI state. credit_ban and oneid_locked
+// keep their dedicated blocks; everything else uses the reason block.
+function applyRejection(
+  reasonCode?: string | null,
+  category?: string | null,
+  missingFields?: string[],
+) {
+  if (reasonCode === 'credit_ban') {
+    katmBanned.value = true
+  } else if (reasonCode === 'oneid_locked' || category === 'access') {
+    katmOneIdLocked.value = true
+  } else {
+    rejectReason.value = {
+      code: reasonCode ?? '',
+      category: category ?? 'ineligible',
+      missingFields: missingFields ?? [],
+    }
+    rejected.value = true
+  }
+}
 
 function stopKatmPolling() {
   if (katmPollTimer) {
@@ -118,9 +152,9 @@ function startKatmPolling() {
 async function checkKatmStatus() {
   if (!deal.dealSessionId) return
   try {
-    const res = await apiFetch<{ status: string; error?: string | null } & KatmSummary>(
-      `/merchant/deal-sessions/${deal.dealSessionId}/katm-status`,
-    )
+    const res = await apiFetch<
+      { status: string; error?: string | null; reasonCategory?: string | null } & KatmSummary
+    >(`/merchant/deal-sessions/${deal.dealSessionId}/katm-status`)
     if (res.status === 'completed') {
       stopKatmPolling()
       katmPending.value = false
@@ -131,7 +165,9 @@ async function checkKatmStatus() {
       stopKatmPolling()
       katmPending.value = false
       deal.setKatmPending(false)
-      katmError.value = t('stepClient.katmError')
+      // An async knockout (credit_ban / has_defaults / no_income) — surface the
+      // specific reason rather than a generic error.
+      applyRejection(res.error, res.reasonCategory)
     }
   } catch {
     // transient — keep polling
@@ -282,35 +318,39 @@ async function queryKatm(): Promise<boolean> {
   if (!confirmedClient.value || !deal.dealSessionId) return false
   katmLoading.value = true
   katmError.value = ''
+  katmBanned.value = false
   katmOneIdLocked.value = false
+  rejected.value = false
+  rejectReason.value = null
   try {
-    const result = await apiFetch<{ status: 'completed' | 'pending' } & KatmSummary>(
-      `/merchant/deal-sessions/${deal.dealSessionId}/start`,
+    const result = await apiFetch<
       {
-        method: 'POST',
-        body: JSON.stringify({
-          userId: confirmedClient.value.id,
-        }),
-      },
-    )
+        status: 'completed' | 'pending' | 'rejected'
+        reasonCode?: string
+        reasonCategory?: string
+        missingFields?: string[]
+      } & Partial<KatmSummary>
+    >(`/merchant/deal-sessions/${deal.dealSessionId}/start`, {
+      method: 'POST',
+      body: JSON.stringify({
+        userId: confirmedClient.value.id,
+      }),
+    })
     if (result.status === 'pending') {
       startKatmPolling()
       return false
     }
-    deal.setKatmResult(result)
+    // A rejection is a normal 200 outcome now — show the specific reason.
+    if (result.status === 'rejected') {
+      applyRejection(result.reasonCode, result.reasonCategory, result.missingFields)
+      return false
+    }
+    deal.setKatmResult(result as KatmSummary)
     katmDone.value = true
     return true
-  } catch (err) {
-    const code = (err as Error).message
-    if (code === 'client_data_missing') {
-      rejected.value = true
-    } else if (code === 'client_credit_banned') {
-      katmBanned.value = true
-    } else if (code === 'katm_one_id_locked') {
-      katmOneIdLocked.value = true
-    } else {
-      katmError.value = t('stepClient.katmError')
-    }
+  } catch {
+    // Only transport/system failures reach here — rejections come back as 200.
+    katmError.value = t('stepClient.katmError')
     return false
   } finally {
     katmLoading.value = false
@@ -336,11 +376,23 @@ function resetSearch() {
   katmDone.value = false
   katmError.value = ''
   katmBanned.value = false
+  katmOneIdLocked.value = false
   rejected.value = false
+  rejectReason.value = null
   stopKatmPolling()
   katmPending.value = false
   deal.setKatmPending(false)
   myidError.value = ''
+}
+
+// "New session" from a rejection: clear the store + local state and open a fresh
+// backend deal session, mirroring step-card's recreateSession so the wizard is
+// usable again instead of dead-ending on a reset-but-sessionless state.
+async function recreateSession() {
+  deal.reset()
+  resetSearch()
+  const { id } = await createDealSession()
+  deal.setDealSessionId(id)
 }
 
 const saving = ref(false)
@@ -454,7 +506,8 @@ const clientFullName = computed(() =>
         </div>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.passport') }}</span>
-          <span class="cf-value font-mono">{{ confirmedClient!.passportSerial }}</span>
+          <span class="cf-value font-mono">{{ confirmedClient!.passportSeries }}{{ confirmedClient?.passportNumber
+            }}</span>
         </div>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.birthDate') }}</span>
@@ -574,7 +627,7 @@ const clientFullName = computed(() =>
         </div>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.passport') }}</span>
-          <span class="cf-value font-mono">{{ confirmedClient!.passportSerial }}</span>
+          <span class="cf-value font-mono">{{ confirmedClient!.passportSeries }}{{ confirmedClient?.passportNumber }}</span>
         </div>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.birthDate') }}</span>
@@ -627,7 +680,8 @@ const clientFullName = computed(() =>
             <p class="katm-one-id-hint__title">{{ $t('stepClient.oneIdLockedTitle') }}</p>
             <p class="katm-one-id-hint__desc">{{ $t('stepClient.oneIdLockedDesc') }}</p>
           </div>
-          <button class="btn-ghost btn-sm" style="margin-left: auto; flex-shrink: 0" :disabled="katmLoading" @click="onNext">
+          <button class="btn-ghost btn-sm" style="margin-left: auto; flex-shrink: 0" :disabled="katmLoading"
+            @click="onNext">
             <i class="pi pi-refresh" /> {{ $t('common.retry') }}
           </button>
         </div>
@@ -638,9 +692,17 @@ const clientFullName = computed(() =>
           <i class="pi pi-times-circle rejected-icon" />
           <div class="rejected-body">
             <p class="rejected-title">{{ $t('stepCard.rejectedTitle') }}</p>
-            <p class="rejected-desc">{{ $t('stepClient.rejectedClientDataMissing') }}</p>
+            <template v-if="rejectReason?.category === 'data_missing'">
+              <p class="rejected-desc">{{ $t('stepClient.rejectReasons.dataMissingDesc') }}</p>
+              <ul class="rejected-fields">
+                <li v-for="f in rejectReason.missingFields" :key="f">
+                  {{ $t(`stepClient.rejectReasons.fields.${f}`) }}
+                </li>
+              </ul>
+            </template>
+            <p v-else class="rejected-desc">{{ rejectReasonText }}</p>
           </div>
-          <button class="btn-ghost" style="margin-left: auto" @click="deal.reset()">
+          <button class="btn-ghost" style="margin-left: auto" @click="recreateSession">
             {{ $t('stepCard.newSession') }}
           </button>
         </div>

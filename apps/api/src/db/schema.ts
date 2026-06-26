@@ -37,4 +37,6 @@ export * from './role-permissions';
 export * from './roles';
 export * from './scoring-model-revisions';
 export * from './scoring-models';
+export * from './scoring-pipelines';
+export * from './scorings';
 export * from './users';

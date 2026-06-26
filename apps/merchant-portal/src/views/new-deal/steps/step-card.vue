@@ -7,6 +7,7 @@ import { useDealStore } from '@/stores/deal'
 import { useClientScoringStore } from '@/stores/client-scoring'
 import { apiFetch } from '@/utils/apiFetch'
 import type { BailsmanRelation, Card, CardScoreResult, ScoreDecision } from '@/types'
+import { createDealSession } from '@/composables/use-deal-session-api'
 
 const deal = useDealStore()
 const clientScoring = useClientScoringStore()
@@ -22,11 +23,11 @@ interface BailsmanLocal {
 const localBailsmen = ref<BailsmanLocal[]>([])
 
 const RELATION_OPTIONS = computed(() => [
-  { label: t('stepCard.bailsmen.relations.father'), value: 'father' },
-  { label: t('stepCard.bailsmen.relations.mother'), value: 'mother' },
-  { label: t('stepCard.bailsmen.relations.brother'), value: 'brother' },
-  { label: t('stepCard.bailsmen.relations.friend'), value: 'friend' },
-  { label: t('stepCard.bailsmen.relations.other'), value: 'other' },
+  { label: t('stepCard.contacts.relations.father'), value: 'father' },
+  { label: t('stepCard.contacts.relations.mother'), value: 'mother' },
+  { label: t('stepCard.contacts.relations.brother'), value: 'brother' },
+  { label: t('stepCard.contacts.relations.friend'), value: 'friend' },
+  { label: t('stepCard.contacts.relations.other'), value: 'other' },
 ])
 
 function rawDigits(phone: string): string {
@@ -250,7 +251,7 @@ async function confirmOtp() {
 // The server runs the score AND stamps the full result onto the Deal Session
 // (ADR-0024) — the response here is display-only.
 
-type RejectionCode = 'credit_ban' | 'card_declined'  | 'model_stop_factor' | 'zero_limit'
+type RejectionCode = 'credit_ban' | 'card_declined' | 'model_stop_factor' | 'zero_limit'
 
 interface ServerScoreResult {
   score: number
@@ -288,6 +289,12 @@ let progressTimer: ReturnType<typeof setInterval> | null = null
 
 function clearTimer() {
   if (progressTimer) { clearInterval(progressTimer); progressTimer = null }
+}
+
+async function recreateSession() {
+  deal.reset()
+  const { id } = await createDealSession()
+  deal.setDealSessionId(id)
 }
 
 async function runScoring(): Promise<CardScoreResult | null> {
@@ -489,46 +496,30 @@ async function next() {
     <!-- Bailsmen -->
     <div v-if="selectedId && !adding" class="bailsmen-section">
       <div class="bailsmen-header">
-        <span class="bailsmen-title">{{ $t('stepCard.bailsmen.title') }}</span>
+        <span class="bailsmen-title">{{ $t('stepCard.contacts.title') }}</span>
       </div>
 
       <div v-for="(b, idx) in localBailsmen" :key="idx" class="bailsman-row">
         <div class="field bailsman-relation">
-          <label class="field-label">{{ $t('stepCard.bailsmen.relation') }}</label>
-          <Select
-            v-model="b.relation"
-            :options="RELATION_OPTIONS"
-            optionLabel="label"
-            optionValue="value"
-            :placeholder="$t('stepCard.bailsmen.relationPlaceholder')"
-            class="bailsman-select"
-          />
+          <label class="field-label">{{ $t('stepCard.contacts.relation') }}</label>
+          <Select v-model="b.relation" :options="RELATION_OPTIONS" optionLabel="label" optionValue="value"
+            :placeholder="$t('stepCard.contacts.relationPlaceholder')" class="bailsman-select" />
         </div>
         <div class="field bailsman-phone">
-          <label class="field-label">{{ $t('stepCard.bailsmen.phone') }}</label>
+          <label class="field-label">{{ $t('stepVerification.phone') }}</label>
           <div class="phone-input-wrap">
             <span class="phone-prefix">+998</span>
-            <InputText
-              :value="b.phone"
-              placeholder="90 123 45 67"
-              class="font-mono bailsman-phone-input"
-              maxlength="12"
-              inputmode="numeric"
-              @input="handleBailsmanPhone(idx, $event)"
-            />
+            <InputText :value="b.phone" placeholder="90 123 45 67" class="font-mono bailsman-phone-input" maxlength="12"
+              inputmode="numeric" @input="handleBailsmanPhone(idx, $event)" />
           </div>
         </div>
-        <button
-          class="btn-remove-bailsman"
-          :disabled="localBailsmen.length <= 1"
-          @click="removeBailsman(idx)"
-        >
+        <button class="btn-remove-bailsman" :disabled="localBailsmen.length <= 1" @click="removeBailsman(idx)">
           <i class="pi pi-trash" />
         </button>
       </div>
 
       <button class="btn-ghost" :disabled="localBailsmen.length >= 5" @click="addBailsman">
-        <i class="pi pi-plus" /> {{ $t('stepCard.bailsmen.add') }}
+        <i class="pi pi-plus" /> {{ $t('stepCard.contacts.add') }}
       </button>
     </div>
 
@@ -567,7 +558,7 @@ async function next() {
           <p class="rejected-title">{{ $t('stepCard.rejectedTitle') }}</p>
           <p class="rejected-desc">{{ rejectionDesc }}</p>
         </div>
-        <button class="btn-ghost" style="margin-left: auto" @click="deal.reset()">
+        <button class="btn-ghost" style="margin-left: auto" @click="recreateSession">
           {{ $t('stepCard.newSession') }}
         </button>
       </div>
@@ -851,6 +842,7 @@ async function next() {
 /* ── Verify row ──────────────────────────────────────────────────────────── */
 .verify-row {
   display: flex;
+  margin-top: 32px;
   align-items: center;
   gap: 1.2rem;
 }

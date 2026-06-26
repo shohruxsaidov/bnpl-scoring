@@ -13,7 +13,7 @@
  * discriminator. The session only advances once both reports are resolved.
  */
 
-import { and, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import type { Queue } from 'bullmq'
 import { db } from '@db'
 import { katm077Reports } from '@db/katm-077-reports'
@@ -22,10 +22,13 @@ import { env } from '../../../env'
 import { dealSessions } from '../../deals/schema'
 import { stampKatm } from '../../merchant/deal-sessions/commands/stamp-katm/stamp-katm.handler'
 import { stampKatmPending } from '../../merchant/deal-sessions/commands/stamp-katm-pending/stamp-katm-pending.handler'
+import { rejectSession } from '../../merchant/deal-sessions/commands/reject-session/reject-session.handler'
 import type { DealSessionRow } from '../../merchant/deal-sessions/types'
 import { checkReportStatus } from './queries/check-report-status/check-report-status.handler'
 import { checkInpsReportStatus } from './queries/check-inps-report-status/check-inps-report-status.handler'
 import type { KatmResult, InpsResult } from './service/shared'
+import { evaluate077, evaluateInps, type PipelineStepResult } from './flow'
+import { loadScoringBySession } from '../../scoring/pipelines/store'
 
 export const KATM_POLL_QUEUE = 'katm-report-poll'
 
@@ -63,20 +66,59 @@ export async function enqueueKatmPoll(queue: Queue<KatmPollJobData>, data: KatmP
 // Worker body
 // ---------------------------------------------------------------------------
 
-export async function processKatmPollJob(data: KatmPollJobData): Promise<void> {
+export async function processKatmPollJob(
+  data: KatmPollJobData,
+  queue: Queue<KatmPollJobData>,
+): Promise<void> {
   const reportType = data.reportType ?? '077'
+
+  const session = await loadWizardSession(data)
+  const scoring = session ? await loadScoringBySession(session.id) : null
 
   if (reportType === 'inps') {
     const outcome = await checkInpsReportStatus({ claimId: data.claimId, token: data.token })
     if (outcome.status === 'pending') throw new KatmReportPendingError()
     await saveInpsReport(data.claimId, outcome.result)
+    if (!session || !scoring) return
+    const step = await evaluateInps(scoring.id, outcome.result)
+    await applyKatmStep(step, session, queue, data)
   } else {
     const outcome = await checkReportStatus({ claimId: data.claimId, token: data.token })
     if (outcome.status === 'pending') throw new KatmReportPendingError()
     await saveKatmReport(data.claimId, outcome.result)
+    if (!session || !scoring) return
+    // evaluate077 chains into the chargeable INPS request only if 077 passed.
+    const step = await evaluate077(scoring.id, data.claimId, outcome.result)
+    await applyKatmStep(step, session, queue, data)
   }
+}
 
-  await finalizeWizard(data)
+/**
+ * Reflect a KATM chain step onto the deal session (the wizard's read model) and
+ * enqueue the next poll when a follow-on report went async.
+ */
+async function applyKatmStep(
+  step: PipelineStepResult,
+  session: DealSessionRow,
+  queue: Queue<KatmPollJobData>,
+  data: KatmPollJobData,
+): Promise<void> {
+  if (step.kind === 'enqueue_poll') {
+    await enqueueKatmPoll(queue, { ...data, token: step.token, reportType: step.reportType })
+    await stampKatmPending(session, { status: 'pending', startedAt: new Date().toISOString() })
+    return
+  }
+  if (step.kind === 'rejected') {
+    await stampKatmPending(session, {
+      status: 'failed',
+      startedAt: new Date().toISOString(),
+      error: step.reasonCode,
+    })
+    await rejectSession(session)
+    return
+  }
+  // gates_passed — all KATM stop-factors cleared; advance the wizard.
+  await stampKatm(session)
 }
 
 /** Called by the worker's failed handler once all attempts are exhausted. */
@@ -86,58 +128,7 @@ export async function handleKatmPollFailure(data: KatmPollJobData, err: Error): 
 }
 
 // ---------------------------------------------------------------------------
-// Coordination — session advances only once both 077 and INPS are resolved
-// ---------------------------------------------------------------------------
-
-async function bothReportsResolved(claimId: string): Promise<boolean> {
-  const [r077, rInps] = await Promise.all([
-    db
-      .select({ status: katm077Reports.status })
-      .from(katm077Reports)
-      .where(and(eq(katm077Reports.claimId, claimId), eq(katm077Reports.status, 'completed')))
-      .limit(1),
-    db
-      .select({ status: katmInpsReports.status })
-      .from(katmInpsReports)
-      .where(and(eq(katmInpsReports.claimId, claimId), eq(katmInpsReports.status, 'completed')))
-      .limit(1),
-  ])
-  return r077.length > 0 && rInps.length > 0
-}
-
-async function load077Result(claimId: string): Promise<KatmResult | null> {
-  const [row] = await db
-    .select()
-    .from(katm077Reports)
-    .where(eq(katm077Reports.claimId, claimId))
-    .limit(1)
-  if (!row?.demandId) return null
-  return {
-    demandId: row.demandId,
-    consentId: row.consentId ?? '',
-    score: row.score ?? 0,
-    scoringClass: row.scoringClass ?? '',
-    scoringLevel: row.scoringLevel ?? '',
-    activeLoans: row.activeLoans ?? 0,
-    allDebtSum: row.allDebtSum ?? 0,
-    overdueCount: row.overdueCount ?? 0,
-    overdueAmount: row.overdueAmount ?? 0,
-    maxOverdueDays: row.maxOverdueDays ?? 0,
-    totalContracts: row.totalContracts ?? 0,
-    totalClaims: row.totalClaims ?? 0,
-    avgMonthlyPayment: row.avgMonthlyPayment ?? 0,
-    hasDefaults: row.hasDefaults ?? false,
-    hasCreditBan: row.hasCreditBan ?? false,
-    overdue30Count: row.overdue30Count ?? 0,
-    overdue30to60Count: row.overdue30to60Count ?? 0,
-    overdue60to90Count: row.overdue60to90Count ?? 0,
-    overdue90Count: row.overdue90Count ?? 0,
-    raw: row.raw,
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Wizard (Deal Session) finalizers
+// Wizard (Deal Session) helpers
 // ---------------------------------------------------------------------------
 
 export function katmSummary(result: KatmResult) {
@@ -209,19 +200,6 @@ export async function saveInpsReport(claimId: string, result: InpsResult): Promi
       updatedAt: new Date(),
     })
     .where(eq(katmInpsReports.claimId, claimId))
-}
-
-async function finalizeWizard(data: KatmPollJobData): Promise<void> {
-  const session = await loadWizardSession(data)
-  if (!session || !session.userId) return
-
-  const allDone = await bothReportsResolved(data.claimId)
-  if (!allDone) return // other report still pending — its job will call stampKatm
-
-  const result077 = await load077Result(data.claimId)
-  if (!result077) return
-
-  await stampKatm(session)
 }
 
 async function failWizard(data: KatmPollJobData, error: string): Promise<void> {

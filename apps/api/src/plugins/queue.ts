@@ -33,7 +33,7 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
 
   const worker = new Worker<KatmPollJobData>(
     KATM_POLL_QUEUE,
-    async (job) => processKatmPollJob(job.data),
+    async (job) => processKatmPollJob(job.data, queue),
     { connection, concurrency: 5 },
   )
 

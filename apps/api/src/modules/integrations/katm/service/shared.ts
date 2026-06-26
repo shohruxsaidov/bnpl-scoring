@@ -157,6 +157,14 @@ interface KatmOpenContracts {
   average_monthly_payment: string;
 }
 
+interface KatmClaimWoContract {
+  claim_date?: string;
+}
+
+interface KatmClaimsWoContractsBlock {
+  claim_wo_contract: KatmClaimWoContract | KatmClaimWoContract[];
+}
+
 interface KatmCreditBan {
   credit_ban_status: string;
   credit_ban_date: string;
@@ -165,6 +173,7 @@ interface KatmCreditBan {
 interface KatmOverduePrincipalItem {
   overdue_principal_days: string;
   overdue_principal_sum: string;
+  overdue_date?: string;
 }
 
 interface KatmContractOverduePrincipals {
@@ -172,11 +181,24 @@ interface KatmContractOverduePrincipals {
 }
 
 interface KatmContract {
+  contract_id?: string | number;
+  contract_date?: string;
+  contract_status?: string;
+  total_debt_sum?: string;
+  claim_date?: string;
+  credit_type?: string;
+  credit_type_name?: string;
   overdue_principals?: KatmContractOverduePrincipals | '' | null;
 }
 
 interface KatmContractsBlock {
   contract: KatmContract | KatmContract[];
+}
+
+interface KatmOpenContractItem {
+  contract_id?: string | number;
+  total_debt_sum?: string;
+  monthly_average_payment?: string;
 }
 
 export interface KatmResponse {
@@ -186,6 +208,7 @@ export interface KatmResponse {
   open_contracts: KatmOpenContracts;
   credit_ban: KatmCreditBan;
   contracts?: KatmContractsBlock;
+  claims_wo_contracts?: KatmClaimsWoContractsBlock;
 }
 
 export interface OverdueBuckets {
@@ -235,6 +258,138 @@ export function computeOverdueBuckets(raw: unknown): OverdueBuckets {
   }
 
   return buckets;
+}
+
+// KATM credit_type "24" / credit_type_name "Ипотечный кредит" identifies a mortgage.
+const MORTGAGE_CREDIT_TYPE = '24';
+const MORTGAGE_CREDIT_TYPE_NAME = 'Ипотечный кредит';
+
+// Vendor quirk: a block with one item is a bare object; with many, an array.
+function toArray<T>(v: T | T[] | '' | null | undefined): T[] {
+  return Array.isArray(v) ? v : v ? [v] : [];
+}
+
+// KATM dates are "YYYY-MM-DD" — zero-padded, so lexicographic compare == chronological.
+// Returns the validated string, or null if missing/unparseable (caller excludes + counts).
+function katmDateKey(s: string | undefined | null): string | null {
+  if (typeof s !== 'string') return null;
+  const t = s.trim();
+  return /^\d{4}-\d{2}-\d{2}$/.test(t) ? t : null;
+}
+
+function toFloatNum(s: string | undefined | null): number {
+  const n = parseFloat(s ?? '0');
+  return isNaN(n) ? 0 : n;
+}
+
+export interface KatmWindowedInputs {
+  contingentLiability: number; // open-contract count (in window)
+  allDebts: number;
+  creditHistoryContracts: number;
+  loanApplicationCount: number;
+  monthlyPayment: number;
+  overdue30Count: number;
+  overdue30to60Count: number;
+  overdue60to90Count: number;
+  overdue90Count: number;
+  hasMortgage: boolean;
+}
+
+// Re-derive the KATM scoring inputs from the raw 077 detail records, counting only
+// records whose own event/origination date is on or after `cutoff` (server now − 24mo).
+// The vendor overview/open_contracts aggregates roll up the entire credit history and
+// cannot be sliced, so every input is recomputed here. A record is "in window" by its
+// event date (contract_date / overdue_date / claim_date); undated records are excluded
+// and counted so a date-format mismatch surfaces loudly instead of silently zeroing all.
+export function deriveKatm2yInputs(raw: unknown, cutoff: Date): KatmWindowedInputs {
+  const data = raw as KatmResponse | undefined;
+  const cutoffKey = cutoff.toISOString().slice(0, 10); // YYYY-MM-DD
+  let droppedUndated = 0;
+
+  const inWindow = (date: string | undefined | null): boolean => {
+    const key = katmDateKey(date);
+    if (key === null) {
+      droppedUndated++;
+      return false;
+    }
+    return key >= cutoffKey;
+  };
+
+  const contracts = toArray<KatmContract>(data?.contracts?.contract);
+  const openContracts = toArray<KatmOpenContractItem>(
+    data?.open_contracts?.open_contract as KatmOpenContractItem | KatmOpenContractItem[] | undefined,
+  );
+
+  // contract_id -> contract, so open contracts can read their origination date & credit type.
+  const contractById = new Map<string, KatmContract>();
+  for (const c of contracts) {
+    if (c.contract_id != null) contractById.set(String(c.contract_id), c);
+  }
+
+  // Historical event-counts -----------------------------------------------------------
+  const creditHistoryContracts = contracts.filter((c) => inWindow(c.contract_date)).length;
+
+  // Claims = each contract's originating claim + standalone claims-without-contracts.
+  const claimDates: (string | undefined)[] = [
+    ...contracts.map((c) => c.claim_date),
+    ...toArray<KatmClaimWoContract>(data?.claims_wo_contracts?.claim_wo_contract).map(
+      (c) => c.claim_date,
+    ),
+  ];
+  const loanApplicationCount = claimDates.filter((d) => inWindow(d)).length;
+
+  // Overdue episodes: filter individual overdue rows by overdue_date, then bucket each
+  // contract by its worst (max-days) in-window overdue — matching computeOverdueBuckets.
+  const buckets = { overdue30Count: 0, overdue30to60Count: 0, overdue60to90Count: 0, overdue90Count: 0 };
+  for (const contract of contracts) {
+    const items = toArray<KatmOverduePrincipalItem>(
+      (contract.overdue_principals as KatmContractOverduePrincipals | undefined)?.overdue_principal,
+    ).filter((it) => inWindow(it.overdue_date));
+    let maxDays = 0;
+    for (const it of items) {
+      const d = parseInt(it.overdue_principal_days ?? '0', 10);
+      if (!isNaN(d) && d > maxDays) maxDays = d;
+    }
+    if (maxDays <= 0) continue;
+    if (maxDays >= 90) buckets.overdue90Count++;
+    else if (maxDays >= 60) buckets.overdue60to90Count++;
+    else if (maxDays >= 30) buckets.overdue30to60Count++;
+    else buckets.overdue30Count++;
+  }
+
+  // Current-state snapshots, also windowed by contract origination (decision #6):
+  // an open contract counts only if its underlying contract_date is in window.
+  let contingentLiability = 0;
+  let allDebts = 0;
+  let monthlyPayment = 0; // sum of per-open-contract monthly_average_payment (== overview.average_monthly_payment)
+  let hasMortgage = false;
+  for (const oc of openContracts) {
+    const contract = oc.contract_id != null ? contractById.get(String(oc.contract_id)) : undefined;
+    if (!inWindow(contract?.contract_date)) continue;
+    contingentLiability++;
+    allDebts += toFloatNum(oc.total_debt_sum);
+    monthlyPayment += toFloatNum(oc.monthly_average_payment);
+    if (
+      contract?.credit_type === MORTGAGE_CREDIT_TYPE ||
+      contract?.credit_type_name === MORTGAGE_CREDIT_TYPE_NAME
+    ) {
+      hasMortgage = true;
+    }
+  }
+
+  if (droppedUndated > 0) {
+    console.warn(`katm 2y window: dropped ${droppedUndated} record(s) with unparseable date`);
+  }
+
+  return {
+    contingentLiability,
+    allDebts,
+    creditHistoryContracts,
+    loanApplicationCount,
+    monthlyPayment,
+    ...buckets,
+    hasMortgage,
+  };
 }
 
 export interface KatmResult {

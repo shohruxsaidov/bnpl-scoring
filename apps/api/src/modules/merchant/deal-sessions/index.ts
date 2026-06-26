@@ -3,6 +3,7 @@ import { Type } from '@sinclair/typebox';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { eq } from 'drizzle-orm';
+import { db as appDb } from '@db';
 import { users } from '@db/schema';
 import { katm077Reports } from '@db/katm-077-reports';
 import { katmInpsReports } from '@db/katm-inps-reports';
@@ -19,12 +20,26 @@ import { setKatmClaimId } from './commands/set-katm-claim-id/set-katm-claim-id.h
 import { stampKatmPending } from './commands/stamp-katm-pending/stamp-katm-pending.handler';
 import {
   allocateKatmClaimId,
+  runScoringPipeline,
   createKatmConsent,
-  missingKatmFields,
-  startKatmFlow,
+  type PipelineStepResult,
 } from '../../integrations/katm/flow';
-import { KatmOneIdLockedError } from '../../integrations/katm/service/shared';
-import { enqueueKatmPoll, katmSummary, saveKatmSir } from '../../integrations/katm/poller';
+import { enqueueKatmPoll } from '../../integrations/katm/poller';
+import {
+  REJECT_REASON_CATEGORY,
+  type ScoringRejectReasonCode,
+} from '../../scoring/pipelines/types';
+import { stampKatm } from './commands/stamp-katm/stamp-katm.handler';
+import {
+  startScoringRun,
+  setKatmClaimIdOnScoring,
+  loadScoringBySession,
+  markScored,
+  markRejected,
+  markError,
+  setCurrentPipeline,
+  recordPipeline,
+} from '../../scoring/pipelines/store';
 import { listCards } from '../../integrations/plumgate/queries/list-cards/list-cards.handler';
 import { addCard } from '../../integrations/plumgate/commands/add-card/add-card.handler';
 import { confirmCard } from '../../integrations/plumgate/commands/confirm-card/confirm-card.handler';
@@ -32,6 +47,7 @@ import { scoreCard } from '../../integrations/plumgate/queries/score-card/score-
 import { stampScoring } from './commands/stamp-scoring/stamp-scoring.handler';
 import { rejectSession } from './commands/reject-session/reject-session.handler';
 import type { CriteriaScores } from '../../scoring/criteria-scores';
+import { deriveKatm2yInputs } from '../../integrations/katm/service/shared';
 import type { InpsIncomeEntry } from '../../integrations/katm/service/shared';
 import { resolveScoringModel } from '../../scoring/resolve-model';
 import { computeScoringModel, type ScoringInputs, type ScoringResult } from '../../scoring/engine';
@@ -48,6 +64,36 @@ type JwtPayload = {
 
 function payload(request: { user: unknown }) {
   return request.user as JwtPayload;
+}
+
+/**
+ * Build the up-front KATM summary the wizard shows, from the persisted 077
+ * report. Used on the synchronous gates-passed path where the 077 result is no
+ * longer in hand (the chain returns only its next step).
+ */
+async function load077Summary(claimId: string) {
+  const [row] = await appDb
+    .select()
+    .from(katm077Reports)
+    .where(eq(katm077Reports.claimId, claimId))
+    .limit(1);
+  if (!row) return {};
+  return {
+    demandId: row.demandId ?? '',
+    score: row.score ?? 0,
+    scoringClass: row.scoringClass ?? '',
+    scoringLevel: row.scoringLevel ?? '',
+    activeLoans: row.activeLoans ?? 0,
+    allDebtSum: row.allDebtSum ?? 0,
+    overdueCount: row.overdueCount ?? 0,
+    overdueAmount: row.overdueAmount ?? 0,
+    maxOverdueDays: row.maxOverdueDays ?? 0,
+    totalContracts: row.totalContracts ?? 0,
+    totalClaims: row.totalClaims ?? 0,
+    avgMonthlyPayment: row.avgMonthlyPayment ?? 0,
+    hasDefaults: row.hasDefaults ?? false,
+    hasCreditBan: row.hasCreditBan ?? false,
+  };
 }
 
 export default async function merchantDealSessionRoutes(app: FastifyInstance) {
@@ -294,12 +340,6 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
       await setSessionUserId(session, client.id);
 
-      const missing = missingKatmFields(client);
-      if (missing.length > 0) {
-        await rejectSession(session);
-        return reply.code(409).sendError('client_data_missing');
-      }
-
       const consent = await createKatmConsent({
         userId: client.id,
         sessionId: session.id,
@@ -311,73 +351,78 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         session = { ...session, katmClaimId: claimId };
       }
 
-      let outcome;
-      try {
-        outcome = await startKatmFlow({
-          claimId,
-          consent,
-          subject: {
-            pinfl: client.pinfl,
-            passportSerial: client.passportSeries!,
-            passportNumber: client.passportNumber!,
-            docType: client.docType!,
-            regionCode: client.regionCode!,
-            districtCode: client.districtCode!,
-            address: client.address!,
-            phone: client.phone,
-          },
-          userId: client.id,
-          sessionId: session.id,
-        });
-      } catch (err) {
-        if (err instanceof KatmOneIdLockedError) {
-          return reply.code(409).sendError('katm_one_id_locked');
-        }
-        throw err;
-      }
-
-      if (outcome.status === 'banned') {
-        await stampKatmPending(session, {
-          status: 'failed',
-          startedAt: new Date().toISOString(),
-          error: 'credit_ban',
-        });
-        return reply.code(409).sendError('client_credit_banned');
-      }
-
-      await saveKatmSir({ userId: client.id }, outcome.katmSir);
+      // Open (or reset) the scoring run for this session and pin its KATM claim.
+      const scoring = await startScoringRun(session.id, client.id);
+      await setKatmClaimIdOnScoring(scoring.id, claimId);
 
       const consentDate = consent.agreementDate.toISOString();
 
-      if (outcome.status === 'pending') {
+      // The pipeline chain (myid → katm_claim → 077 → INPS) drives the scoring
+      // run. It returns what the caller must do next; the poll worker handles
+      // the same PipelineStepResult when a report resolves asynchronously.
+      // myid and katm_claim knockouts (incl. OneID-locked) come back as
+      // kind:'rejected' — they are recorded scoring rejections, not throws.
+      const step: PipelineStepResult = await runScoringPipeline({
+        scoringId: scoring.id,
+        claimId,
+        consent,
+        subject: {
+          pinfl: client.pinfl,
+          passportSerial: client.passportSeries!,
+          passportNumber: client.passportNumber!,
+          docType: client.docType!,
+          regionCode: client.regionCode!,
+          districtCode: client.districtCode!,
+          address: client.address!,
+          phone: client.phone,
+          birthDate: client.birthDate,
+        },
+        userId: client.id,
+        sessionId: session.id,
+      });
+
+      // A chargeable report went async — mark the wizard pending and enqueue the
+      // follow-up poll, which will resume the chain when the report resolves.
+      if (step.kind === 'enqueue_poll') {
         await stampKatmPending(session, {
           status: 'pending',
           startedAt: new Date().toISOString(),
         });
-        const baseJob = {
+        await enqueueKatmPoll(app.katmPollQueue, {
           sessionId: session.id,
           claimId,
           consentId: consent.agreementId,
           consentDate,
-        };
-        if (outcome.pending077) {
-          await enqueueKatmPoll(app.katmPollQueue, {
-            ...baseJob,
-            token: outcome.pending077,
-            reportType: '077',
-          });
-        }
-        if (outcome.pendingInps) {
-          await enqueueKatmPoll(app.katmPollQueue, {
-            ...baseJob,
-            token: outcome.pendingInps,
-            reportType: 'inps',
-          });
-        }
+          token: step.token,
+          reportType: step.reportType,
+        });
         return { status: 'pending' as const };
       }
 
-      const summary = katmSummary(outcome.result);
+      // A stop-factor knocked the client out (scorings already marked rejected).
+      // myid / katm_claim / 077 / inps knockouts all arrive here uniformly. A
+      // rejection is a scoring OUTCOME, not a transport error: return 200 with
+      // the specific reasonCode + category so the client can show why and which
+      // fields (if any) to fix. Mirrors /cards/score's 200 reject responses.
+      if (step.kind === 'rejected') {
+        await stampKatmPending(session, {
+          status: 'failed',
+          startedAt: new Date().toISOString(),
+          error: step.reasonCode,
+        });
+        await rejectSession(session);
+        return {
+          status: 'rejected' as const,
+          reasonCode: step.reasonCode,
+          reasonCategory: REJECT_REASON_CATEGORY[step.reasonCode],
+          ...(step.missingFields ? { missingFields: step.missingFields } : {}),
+        };
+      }
+
+      // gates_passed — every KATM gate cleared synchronously. Advance the wizard
+      // and hand the 077 summary back to the client.
+      await stampKatm(session);
+      const summary = await load077Summary(claimId);
       return { status: 'completed' as const, ...summary };
     },
   );
@@ -503,7 +548,14 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       }
       const data = (session.stepData ?? {}) as SessionStepData;
       if (data.katmPending) {
-        return { status: data.katmPending.status, error: data.katmPending.error ?? null };
+        const error = data.katmPending.error ?? null;
+        return {
+          status: data.katmPending.status,
+          error,
+          reasonCategory: error
+            ? (REJECT_REASON_CATEGORY[error as ScoringRejectReasonCode] ?? null)
+            : null,
+        };
       }
       return { status: 'none' as const };
     },
@@ -637,6 +689,21 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
     return age;
   }
 
+  // INPS reports the income window as "YYYYMM" period bounds; derive its span in months.
+  function monthsBetween(begin: string, end: string): number {
+    const parse = (s: string): { y: number; m: number } | null => {
+      const t = (s ?? '').trim();
+      const ym = /^(\d{4})[-/]?(\d{2})/.exec(t); // YYYYMM | YYYY-MM | YYYY/MM | YYYY-MM-DD
+      if (!ym) return null;
+      return { y: Number(ym[1]), m: Number(ym[2]) };
+    };
+    const b = parse(begin);
+    const e = parse(end);
+    if (!b || !e) return 0;
+    const months = (e.y - b.y) * 12 + (e.m - b.m) + 1; // inclusive of both endpoints
+    return months > 0 ? months : 0;
+  }
+
   fastify.post(
     '/:id/cards/score',
     { schema: { params: IdParams, body: ScoreCardBody }, preHandler: guards },
@@ -655,6 +722,11 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       }
 
       if (session.userId == null) return reply.code(409).sendError('client_step_missing');
+
+      // The scoring run opened at /start — used to record the model_score stage
+      // and transition the run to its terminal state. Null only if /start was
+      // never reached for this session.
+      const scoringRun = await loadScoringBySession(session.id);
 
       let katm: typeof katm077Reports.$inferSelect | null = null;
       let inps: typeof katmInpsReports.$inferSelect | null = null;
@@ -707,8 +779,16 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         };
       }
 
+      if (scoringRun) await setCurrentPipeline(scoringRun.id, 'model_score');
+
       const resolvedModel = await resolveScoringModel(db, Number(p.merchantId));
-      if (!resolvedModel) throw new Error('no_scoring_model_available');
+      if (!resolvedModel) {
+        if (scoringRun) {
+          await recordPipeline(scoringRun.id, 'model_score', { status: 'error' });
+          await markError(scoringRun.id);
+        }
+        throw new Error('no_scoring_model_available');
+      }
 
       const [userRow] = await db
         .select({
@@ -720,25 +800,22 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         .where(eq(users.id, session.userId))
         .limit(1);
 
+      // KATM inputs are restricted to the last 2 years: re-derived live from the raw 077
+      // detail records (the stored vendor aggregates roll up the whole history and cannot
+      // be sliced). Cutoff = server now − 24 months; records are kept by their event date.
+      const katmCutoff = new Date();
+      katmCutoff.setFullYear(katmCutoff.getFullYear() - 2);
+
       const scoringInputs: ScoringInputs = {
-        ...(katm && {
-          contingentLiability: katm.activeLoans ?? 0,
-          allDebts: katm.allDebtSum ?? 0,
-          creditHistoryContracts: katm.totalContracts ?? 0,
-          loanApplicationCount: katm.totalClaims ?? 0,
-          monthlyPayment: katm.avgMonthlyPayment ?? 0,
-          overdue30Count: katm.overdue30Count ?? 0,
-          overdue30to60Count: katm.overdue30to60Count ?? 0,
-          overdue60to90Count: katm.overdue60to90Count ?? 0,
-          overdue90Count: katm.overdue90Count ?? 0,
-        }),
+        ...(katm && deriveKatm2yInputs(katm.raw, katmCutoff)),
         ...(userRow && {
           age: ageYears(userRow.birthDate),
           gender: userRow.gender === 1 ? 'Male' : userRow.gender === 2 ? 'Female' : undefined,
-          citizenship: userRow.nationality === 'Uzbekistan' ? 'Uzbekistan' : 'NonResident',
+          citizenship: 'Uzbekistan',
         }),
         ...(inps && {
           incomeSum: (inps.incomesAllSumma ?? 0) / 12 / BRV_UZS,
+          workExperienceMonths: monthsBetween(inps.periodBegin ?? '', inps.periodEnd ?? ''),
         }),
       };
 
@@ -822,6 +899,29 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         model: modelEntry,
       };
 
+      // model_score is a pure execution marker: the row is 'passed' whenever the
+      // model ran (approve, zero-limit, or stop-factor alike). The approve/reject
+      // decision lives on the scorings rollup, not on this pipeline row.
+      if (scoringRun) {
+        await recordPipeline(scoringRun.id, 'model_score', {
+          status: 'passed',
+          summary: { score: scoreSum, coefficient, decision: finalDecision, platformCreditLimit },
+          raw: engineResult,
+        });
+        if (finalDecision === 'approve') {
+          await markScored(scoringRun.id, {
+            score: scoreSum,
+            creditLimit: platformCreditLimit,
+            criteriaScores,
+          });
+        } else {
+          await markRejected(
+            scoringRun.id,
+            engineResult.rejected ? 'model_stop_factor' : 'zero_limit',
+          );
+        }
+      }
+
       // Scoring history persistence removed — to be rebuilt from scratch.
       // The computed result is still stamped onto the session below.
       const scoringId: string | null = null;
@@ -858,6 +958,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         coefficient,
         scoreSum,
         criteriaScores,
+        limit: platformCreditLimit,
         sessionClosed: finalDecision === 'reject',
       };
     },

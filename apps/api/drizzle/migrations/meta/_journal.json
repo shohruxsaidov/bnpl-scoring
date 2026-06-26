@@ -15,6 +15,20 @@
       "when": 1782366146998,
       "tag": "0001_certain_baron_strucker",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1782375990855,
+      "tag": "0002_superb_vulture",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782459005810,
+      "tag": "0003_thick_zombie",
+      "breakpoints": true
     }
   ]
 }

@@ -220,7 +220,7 @@ async function signSubmit() {
           </div>
           <div>
             <dt>{{ $t('stepVerification.passport') }}</dt>
-            <dd class="font-mono">{{ sd.client?.passportSerial }}{{ sd.client?.passportNumber }}</dd>
+            <dd class="font-mono">{{ sd.client?.passportSeries }}{{ sd.client?.passportNumber }}</dd>
           </div>
 
         </dl>

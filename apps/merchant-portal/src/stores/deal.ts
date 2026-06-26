@@ -1,5 +1,5 @@
-import { computed, ref } from 'vue'
-import { defineStore } from 'pinia'
+import { computed, ref } from 'vue';
+import { defineStore } from 'pinia';
 
 import type {
   Bailsman,
@@ -9,9 +9,9 @@ import type {
   DealPaymentSchedule,
   Product,
   Tariff,
-} from '@/types'
-import type { DealSessionDto } from '@/composables/use-deal-session-api'
-import { buildSchedulePreview } from '@/utils/schedule-preview'
+} from '@/types';
+import type { DealSessionDto } from '@/composables/use-deal-session-api';
+import { buildSchedulePreview } from '@/utils/schedule-preview';
 
 export type DealStepKey =
   | 'client'
@@ -20,12 +20,12 @@ export type DealStepKey =
   | 'products'
   | 'payment'
   | 'verification'
-  | 'done'
+  | 'done';
 
 export interface DealStep {
-  key: DealStepKey
-  label: string
-  icon: string
+  key: DealStepKey;
+  label: string;
+  icon: string;
 }
 
 export const DEAL_STEPS: DealStep[] = [
@@ -36,41 +36,41 @@ export const DEAL_STEPS: DealStep[] = [
   { key: 'payment', label: "To'lov kuni", icon: 'pi pi-calendar' },
   { key: 'verification', label: 'Верификация', icon: 'pi pi-shield' },
   { key: 'done', label: 'Готово', icon: 'pi pi-check-circle' },
-]
+];
 
 export interface KatmSummary {
-  demandId: string
+  demandId: string;
   /** Present on resumed sessions (server stamp); the live query response omits it */
-  consentId?: string
-  score: number
-  scoringClass: string
-  scoringLevel: string
-  activeLoans: number
-  allDebtSum: number
-  overdueCount: number
-  overdueAmount: number
-  hasDefaults: boolean
-  hasCreditBan: boolean
+  consentId?: string;
+  score: number;
+  scoringClass: string;
+  scoringLevel: string;
+  activeLoans: number;
+  allDebtSum: number;
+  overdueCount: number;
+  overdueAmount: number;
+  hasDefaults: boolean;
+  hasCreditBan: boolean;
 }
 
 interface SessionData {
-  client: Client | null
-  isNewClient: boolean
-  myidVerified: boolean
-  katmConsent: boolean
-  katmResult: KatmSummary | null
+  client: Client | null;
+  isNewClient: boolean;
+  myidVerified: boolean;
+  katmConsent: boolean;
+  katmResult: KatmSummary | null;
   /** true while the bureau builds the report asynchronously (ADR-0025) */
-  katmPending: boolean
-  selectedCard: Card | null
-  bailsmen: Bailsman[]
-  tariff: Tariff | null
-  basket: BasketItem[]
+  katmPending: boolean;
+  selectedCard: Card | null;
+  bailsmen: Bailsman[];
+  tariff: Tariff | null;
+  basket: BasketItem[];
   /** Confirmed prepayment amount in tiyin (ADR-0026); null = no prepayment */
-  prepaymentAmount: number | null
-  paymentDay: number | null
-  schedule: DealPaymentSchedule[]
-  createdDealId: string | null
-  createdDealNumber: string | null
+  prepaymentAmount: number | null;
+  paymentDay: number | null;
+  schedule: DealPaymentSchedule[];
+  createdDealId: string | null;
+  createdDealNumber: string | null;
 }
 
 function emptySession(): SessionData {
@@ -90,7 +90,7 @@ function emptySession(): SessionData {
     schedule: [],
     createdDealId: null,
     createdDealNumber: null,
-  }
+  };
 }
 
 function emptyCompleted(): Record<DealStepKey, boolean> {
@@ -102,44 +102,42 @@ function emptyCompleted(): Record<DealStepKey, boolean> {
     payment: false,
     verification: false,
     done: false,
-  }
+  };
 }
 
 export const useDealStore = defineStore(
   'deal',
   () => {
-    const currentStep = ref<DealStepKey>('client')
-    const completed = ref<Record<DealStepKey, boolean>>(emptyCompleted())
-    const sessionData = ref<SessionData>(emptySession())
+    const currentStep = ref<DealStepKey>('client');
+    const completed = ref<Record<DealStepKey, boolean>>(emptyCompleted());
+    const sessionData = ref<SessionData>(emptySession());
     /** Server-side Deal Session id (ADR-0024) — set the moment the Wizard opens. */
-    const dealSessionId = ref<string | null>(null)
+    const dealSessionId = ref<string | null>(null);
 
-    const steps = computed(() => DEAL_STEPS)
+    const steps = computed(() => DEAL_STEPS);
 
-    const currentIndex = computed(() =>
-      DEAL_STEPS.findIndex((x) => x.key === currentStep.value),
-    )
+    const currentIndex = computed(() => DEAL_STEPS.findIndex((x) => x.key === currentStep.value));
 
     const basketTotal = computed(() =>
       sessionData.value.basket.reduce(
         (sum, i) => sum + Math.round(parseFloat(i.product.price) * 100) * i.quantity,
         0,
       ),
-    )
+    );
 
     const basketCount = computed(() =>
       sessionData.value.basket.reduce((n, i) => n + i.quantity, 0),
-    )
+    );
 
     function reset() {
-      currentStep.value = 'client'
-      completed.value = emptyCompleted()
-      sessionData.value = emptySession()
-      dealSessionId.value = null
+      currentStep.value = 'client';
+      completed.value = emptyCompleted();
+      sessionData.value = emptySession();
+      dealSessionId.value = null;
     }
 
     function setDealSessionId(id: string) {
-      dealSessionId.value = id
+      dealSessionId.value = id;
     }
 
     /**
@@ -147,15 +145,15 @@ export const useDealStore = defineStore(
      * the source of truth (ADR-0024); the persisted store is only a cache.
      */
     function hydrateFromSession(dto: DealSessionDto) {
-      const data = dto.stepData
-      const fresh = emptySession()
+      const data = dto.stepData;
+      const fresh = emptySession();
 
-      fresh.client = dto.client
-      fresh.isNewClient = data.client?.isNewClient ?? false
-      fresh.myidVerified = data.client?.myidVerified ?? false
-      fresh.katmConsent = data.client?.katmConsent ?? false
+      fresh.client = dto.client;
+      fresh.isNewClient = data.client?.isNewClient ?? false;
+      fresh.myidVerified = data.client?.myidVerified ?? false;
+      fresh.katmConsent = data.client?.katmConsent ?? false;
 
-      fresh.katmPending = data.katmPending?.status === 'pending'
+      fresh.katmPending = data.katmPending?.status === 'pending';
 
       if (data.katm) {
         fresh.katmResult = {
@@ -170,11 +168,11 @@ export const useDealStore = defineStore(
           overdueAmount: data.katm.overdueAmount,
           hasDefaults: data.katm.hasDefaults,
           hasCreditBan: data.katm.hasCreditBan,
-        }
+        };
       }
 
       if (data.bailsmen?.length) {
-        fresh.bailsmen = data.bailsmen as Bailsman[]
+        fresh.bailsmen = data.bailsmen as Bailsman[];
       }
 
       if (data.card) {
@@ -186,7 +184,7 @@ export const useDealStore = defineStore(
           holderName: data.card.holderName,
           expiry: data.card.expiry,
           bank: data.card.bank,
-        }
+        };
       }
 
       if (data.tariff) {
@@ -198,7 +196,7 @@ export const useDealStore = defineStore(
           minAmount: data.tariff.minAmount != null ? parseInt(data.tariff.minAmount, 10) : null,
           maxAmount: data.tariff.maxAmount != null ? parseInt(data.tariff.maxAmount, 10) : null,
           active: true,
-        }
+        };
       }
 
       if (data.products) {
@@ -216,130 +214,133 @@ export const useDealStore = defineStore(
             createdAt: '',
           },
           quantity: line.quantity,
-        }))
+        }));
       }
 
-      fresh.prepaymentAmount = data.prepayment?.amount ?? null
-      fresh.paymentDay = data.payment?.paymentDay ?? null
+      fresh.prepaymentAmount = data.prepayment?.amount ?? null;
+      fresh.paymentDay = data.payment?.paymentDay ?? null;
 
       if (fresh.tariff && fresh.paymentDay) {
         const principal = fresh.basket.reduce(
           (sum, i) => sum + Math.round(parseFloat(i.product.price) * 100) * i.quantity,
           0,
-        )
-        const totalPayable = Math.round(principal * (1 + fresh.tariff.markupPercent / 100))
-        fresh.schedule = buildSchedulePreview(totalPayable, fresh.tariff.termMonths, fresh.paymentDay)
+        );
+        const totalPayable = Math.round(principal * (1 + fresh.tariff.markupPercent / 100));
+        fresh.schedule = buildSchedulePreview(
+          totalPayable,
+          fresh.tariff.termMonths,
+          fresh.paymentDay,
+        );
       }
 
-      sessionData.value = fresh
-      dealSessionId.value = dto.id
+      sessionData.value = fresh;
+      dealSessionId.value = dto.id;
 
-      const done = emptyCompleted()
-      done.client = !!data.client
-      done.card = !!data.card
-      done.tariff = !!data.tariff
-      done.products = !!data.products
-      done.payment = !!data.payment
-      done.verification = false // verification completes only when the Deal is created
-      completed.value = done
+      const done = emptyCompleted();
+      done.client = !!data.client;
+      done.card = !!data.card;
+      done.tariff = !!data.tariff;
+      done.products = !!data.products;
+      done.payment = !!data.payment;
+      done.verification = false; // verification completes only when the Deal is created
+      completed.value = done;
 
-      const step = dto.currentStep as DealStepKey
-      currentStep.value = DEAL_STEPS.some((s) => s.key === step) && step !== 'done' ? step : 'client'
+      const step = dto.currentStep as DealStepKey;
+      currentStep.value =
+        DEAL_STEPS.some((s) => s.key === step) && step !== 'done' ? step : 'client';
     }
 
     function goTo(step: DealStepKey) {
-      currentStep.value = step
+      currentStep.value = step;
     }
 
     function complete(step: DealStepKey) {
-      completed.value[step] = true
-      const idx = DEAL_STEPS.findIndex((x) => x.key === step)
-      const next = DEAL_STEPS[idx + 1]
-      if (next) currentStep.value = next.key
+      completed.value[step] = true;
+      const idx = DEAL_STEPS.findIndex((x) => x.key === step);
+      const next = DEAL_STEPS[idx + 1];
+      if (next) currentStep.value = next.key;
     }
 
     function back() {
-      const idx = currentIndex.value
-      if (idx > 0) currentStep.value = DEAL_STEPS[idx - 1].key
+      const idx = currentIndex.value;
+      if (idx > 0) currentStep.value = DEAL_STEPS[idx - 1].key;
     }
 
     function setClient(client: Client, opts?: { isNew?: boolean; myidVerified?: boolean }) {
-      sessionData.value.client = client
-      sessionData.value.isNewClient = opts?.isNew ?? false
-      sessionData.value.myidVerified = opts?.myidVerified ?? false
+      sessionData.value.client = client;
+      sessionData.value.isNewClient = opts?.isNew ?? false;
+      sessionData.value.myidVerified = opts?.myidVerified ?? false;
     }
 
     function setKatmConsent(v: boolean) {
-      sessionData.value.katmConsent = v
+      sessionData.value.katmConsent = v;
     }
 
     function setKatmResult(result: KatmSummary) {
-      sessionData.value.katmResult = result
-      sessionData.value.katmPending = false
+      sessionData.value.katmResult = result;
+      sessionData.value.katmPending = false;
     }
 
     function setKatmPending(v: boolean) {
-      sessionData.value.katmPending = v
+      sessionData.value.katmPending = v;
     }
 
     function setCard(card: Card) {
-      sessionData.value.selectedCard = card
+      sessionData.value.selectedCard = card;
     }
 
     function setBailsmen(bailsmen: Bailsman[]) {
-      sessionData.value.bailsmen = bailsmen
+      sessionData.value.bailsmen = bailsmen;
     }
 
     function setTariff(tariff: Tariff) {
-      sessionData.value.tariff = tariff
+      sessionData.value.tariff = tariff;
     }
 
     function setPrepayment(amount: number) {
-      sessionData.value.prepaymentAmount = amount
+      sessionData.value.prepaymentAmount = amount;
     }
 
     function clearPrepayment() {
-      sessionData.value.prepaymentAmount = null
+      sessionData.value.prepaymentAmount = null;
     }
 
     function addToBasket(product: Product) {
-      const existing = sessionData.value.basket.find((i) => i.product.id === product.id)
-      if (existing) existing.quantity++
-      else sessionData.value.basket.push({ product, quantity: 1 })
-      sessionData.value.prepaymentAmount = null
+      const existing = sessionData.value.basket.find((i) => i.product.id === product.id);
+      if (existing) existing.quantity++;
+      else sessionData.value.basket.push({ product, quantity: 1 });
+      sessionData.value.prepaymentAmount = null;
     }
 
     function incrementItem(productId: string) {
-      const i = sessionData.value.basket.find((x) => x.product.id === productId)
-      if (i) i.quantity++
-      sessionData.value.prepaymentAmount = null
+      const i = sessionData.value.basket.find((x) => x.product.id === productId);
+      if (i) i.quantity++;
+      sessionData.value.prepaymentAmount = null;
     }
 
     function decrementItem(productId: string) {
-      const i = sessionData.value.basket.find((x) => x.product.id === productId)
-      if (i && i.quantity > 1) i.quantity--
-      else removeFromBasket(productId)
-      sessionData.value.prepaymentAmount = null
+      const i = sessionData.value.basket.find((x) => x.product.id === productId);
+      if (i && i.quantity > 1) i.quantity--;
+      else removeFromBasket(productId);
+      sessionData.value.prepaymentAmount = null;
     }
 
     function removeFromBasket(productId: string) {
-      sessionData.value.basket = sessionData.value.basket.filter(
-        (i) => i.product.id !== productId,
-      )
-      sessionData.value.prepaymentAmount = null
+      sessionData.value.basket = sessionData.value.basket.filter((i) => i.product.id !== productId);
+      sessionData.value.prepaymentAmount = null;
     }
 
     function setPaymentDay(day: number) {
-      sessionData.value.paymentDay = day
+      sessionData.value.paymentDay = day;
     }
 
     function setSchedule(rows: DealPaymentSchedule[]) {
-      sessionData.value.schedule = rows
+      sessionData.value.schedule = rows;
     }
 
     function setCreatedDealId(id: string, dealNumber?: string | null) {
-      sessionData.value.createdDealId = id
-      sessionData.value.createdDealNumber = dealNumber ?? null
+      sessionData.value.createdDealId = id;
+      sessionData.value.createdDealNumber = dealNumber ?? null;
     }
 
     return {
@@ -373,11 +374,11 @@ export const useDealStore = defineStore(
       setPaymentDay,
       setSchedule,
       setCreatedDealId,
-    }
+    };
   },
   {
     persist: {
       pick: ['currentStep', 'completed', 'sessionData', 'dealSessionId'],
     },
   },
-)
+);

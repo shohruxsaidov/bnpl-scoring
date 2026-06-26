@@ -918,10 +918,9 @@
     "commentPlaceholder": "Написать комментарий…",
     "commentSubmit": "Отправить",
     "commentSubmitting": "Отправка…",
-    "bailsmen": "Поручители",
-    "noBailsmen": "Поручители не указаны",
-    "bailsmanPhone": "Телефон",
-    "bailsmanRelation": "Связь",
+    "contacts": "Контакты",
+    "noContacts": "Контакты не указаны",
+    "bailsmanRelation": "Степень родства",
     "relations": {
       "father": "Отец",
       "mother": "Мать",

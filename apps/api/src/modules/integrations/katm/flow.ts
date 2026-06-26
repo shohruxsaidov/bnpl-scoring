@@ -7,7 +7,21 @@ import { katmInpsReports } from '@db/katm-inps-reports';
 import { registerClaim } from './commands/register-claim/register-claim.handler';
 import { request077Report } from './queries/request-077-report/request-077-report.handler';
 import { requestINPSReport } from './queries/request-inps-report/request-inps-report.handler';
-import type { KatmResult } from './service/shared';
+import { KatmOneIdLockedError, type InpsResult, type KatmResult } from './service/shared';
+import {
+  evaluateKatm077,
+  evaluateKatmInps,
+  evaluateMyid,
+  type MyidSubject,
+} from '../../scoring/pipelines/registry';
+import {
+  markError,
+  markGatesPassed,
+  markRejected,
+  recordPipeline,
+  setCurrentPipeline,
+} from '../../scoring/pipelines/store';
+import type { MyidSummary, RejectReasonCode } from '../../scoring/pipelines/types';
 
 // ---------------------------------------------------------------------------
 // Subject — the client/user fields claim registration requires
@@ -88,48 +102,126 @@ export async function createKatmConsent(input: {
 }
 
 // ---------------------------------------------------------------------------
-// The flow itself
+// The flow itself — sequential, scoring-aware (ADR-0025 + scoring pipelines)
+//
+// Cost short-circuit: 077 is fetched and evaluated first; INPS is requested
+// ONLY if 077 passes its stop-factors. Each report may resolve synchronously
+// ('ready') or asynchronously ('pending' → BullMQ poll). The scoring_pipelines
+// rows and the scorings rollup are written through the scoring store as the
+// chain advances. registerClaim is free; the 077/INPS report fetches are the
+// chargeable calls.
 // ---------------------------------------------------------------------------
 
-export type KatmFlowOutcome =
-  | { status: 'banned' }
-  | { status: 'ready'; katmSir: string; result: KatmResult }
-  | { status: 'pending'; katmSir: string; pending077: string | null; pendingInps: string | null };
+/** What the caller (the /start endpoint or the poll worker) must do next. */
+export type PipelineStepResult =
+  // A chargeable report went async — enqueue its poll.
+  | { kind: 'enqueue_poll'; reportType: '077' | 'inps'; token: string }
+  // A stop-factor knocked out — scorings already marked 'rejected'. For a
+  // data_missing myid knockout, the full absent-field list rides along so the
+  // client can fix everything in one pass.
+  | { kind: 'rejected'; reasonCode: RejectReasonCode; missingFields?: string[] }
+  // All KATM gates passed — scorings already marked 'passed' (model may run).
+  | { kind: 'gates_passed' };
 
-export async function startKatmFlow(input: {
+const CREDIT_AMOUNT_TIYIN = 35000000; // 350 000 so'm
+
+/**
+ * Run the pre-model pipeline chain for a scoring run, in cost-ascending order:
+ *   myid (free, on-hand data) → katm_claim (free registration) → 077 → INPS.
+ * Each stage writes its scoring_pipelines row; the first knockout short-circuits.
+ * Idempotent on claimId for retries. The async poll worker re-enters mid-chain
+ * via evaluate077 / evaluateInps when a chargeable report resolves later.
+ */
+export async function runScoringPipeline(input: {
+  scoringId: number;
   claimId: string;
   consent: AgreementRecord;
-  subject: KatmSubject;
+  subject: KatmSubject & { birthDate: string | null };
   userId: number;
   sessionId: string;
-}): Promise<KatmFlowOutcome> {
-  // Idempotency: if this claimId was already registered (e.g. retry after a
-  // transient failure), skip registration and re-request both reports.
+}): Promise<PipelineStepResult> {
+  // --- Pipeline 1: myid — validate the MyID-sourced fields already on hand ---
+  await setCurrentPipeline(input.scoringId, 'myid');
+  const myidSubject: MyidSubject = {
+    birthDate: input.subject.birthDate,
+    address: input.subject.address,
+    pinfl: input.subject.pinfl,
+    passportSeries: input.subject.passportSerial,
+    passportNumber: input.subject.passportNumber,
+    docType: input.subject.docType,
+    regionCode: input.subject.regionCode,
+    districtCode: input.subject.districtCode,
+    phone: input.subject.phone,
+  };
+  const myidEv = evaluateMyid(myidSubject, new Date());
+  if (myidEv.status === 'rejected') {
+    const summary = myidEv.summary as MyidSummary;
+    await recordPipeline(input.scoringId, 'myid', {
+      status: 'rejected',
+      rejectReasonCode: myidEv.rejectReasonCode,
+      summary,
+      raw: myidEv.raw,
+    });
+    await markRejected(input.scoringId, myidEv.rejectReasonCode);
+    return {
+      kind: 'rejected',
+      reasonCode: myidEv.rejectReasonCode,
+      missingFields: summary.missingFields,
+    };
+  }
+  await recordPipeline(input.scoringId, 'myid', {
+    status: 'passed',
+    summary: myidEv.status === 'passed' ? myidEv.summary : null,
+    raw: myidEv.status === 'passed' ? myidEv.raw : null,
+  });
+
+  // --- Pipeline 2: katm_claim — register the shared claim (free, idempotent) ---
+  await setCurrentPipeline(input.scoringId, 'katm_claim');
   const [existing] = await db
     .select({ katmSir: katmClaims.katmSir })
     .from(katmClaims)
     .where(eq(katmClaims.claimId, input.claimId))
     .limit(1);
 
-  let katmSir: string;
-
   if (existing) {
-    katmSir = existing.katmSir;
-  } else {
-    const claim = await registerClaim({
-      claimId: input.claimId,
-      agreementId: input.consent.agreementId,
-      agreementDate: input.consent.agreementDate,
-      pinfl: input.subject.pinfl,
-      passportSeries: input.subject.passportSerial,
-      passportNumber: input.subject.passportNumber,
-      passportType: input.subject.docType,
-      regionCode: input.subject.regionCode,
-      districtCode: input.subject.districtCode,
-      address: input.subject.address,
-      phone: input.subject.phone,
-      amount: 35000000, // in tiyin 350 000 dom
+    await recordPipeline(input.scoringId, 'katm_claim', {
+      status: 'passed',
+      summary: { claimId: input.claimId, katmSir: existing.katmSir },
     });
+  } else {
+    let claim;
+    try {
+      claim = await registerClaim({
+        claimId: input.claimId,
+        agreementId: input.consent.agreementId,
+        agreementDate: input.consent.agreementDate,
+        pinfl: input.subject.pinfl,
+        passportSeries: input.subject.passportSerial,
+        passportNumber: input.subject.passportNumber,
+        passportType: input.subject.docType,
+        regionCode: input.subject.regionCode,
+        districtCode: input.subject.districtCode,
+        address: input.subject.address,
+        phone: input.subject.phone,
+        amount: CREDIT_AMOUNT_TIYIN,
+      });
+    } catch (err) {
+      if (err instanceof KatmOneIdLockedError) {
+        await recordPipeline(input.scoringId, 'katm_claim', {
+          status: 'rejected',
+          rejectReasonCode: 'oneid_locked',
+          raw: { message: err.message },
+        });
+        await markRejected(input.scoringId, 'oneid_locked');
+        return { kind: 'rejected', reasonCode: 'oneid_locked' };
+      }
+      await recordPipeline(input.scoringId, 'katm_claim', {
+        status: 'error',
+        raw: { message: err instanceof Error ? err.message : String(err) },
+      });
+      await markError(input.scoringId);
+      throw err;
+    }
 
     await db.insert(katmClaims).values({
       claimId: input.claimId,
@@ -138,23 +230,114 @@ export async function startKatmFlow(input: {
       katmSir: claim.katmSir,
       verified: claim.verified,
     });
-
-    katmSir = claim.katmSir;
+    await recordPipeline(input.scoringId, 'katm_claim', {
+      status: 'passed',
+      summary: { claimId: input.claimId, katmSir: claim.katmSir },
+      raw: claim.verified,
+    });
   }
 
-  // Request both reports in parallel — each may be sync (ready) or async (pending).
-  const [report077, reportInps] = await Promise.all([
-    request077Report({ claimId: input.claimId }),
-    requestINPSReport({ claimId: input.claimId }),
-  ]);
+  // --- Pipelines 3 & 4: chargeable 077, then INPS only if 077 passes ---
+  return request077({ scoringId: input.scoringId, claimId: input.claimId });
+}
 
-  // Persist 077 result or pending placeholder — onConflictDoNothing for retry idempotency
-  if (report077.status === 'pending') {
-    await db.insert(katm077Reports).values({ claimId: input.claimId, token: report077.token, status: 'created' }).onConflictDoNothing();
-  } else {
-    const r = report077.result;
-    await db.insert(katm077Reports).values({
-      claimId: input.claimId,
+/** Pipeline 2 — request the chargeable 077 report, then evaluate it. */
+export async function request077(input: { scoringId: number; claimId: string }): Promise<PipelineStepResult> {
+  await setCurrentPipeline(input.scoringId, 'katm_077');
+  const report = await request077Report({ claimId: input.claimId });
+
+  if (report.status === 'pending') {
+    await db
+      .insert(katm077Reports)
+      .values({ claimId: input.claimId, token: report.token, status: 'created' })
+      .onConflictDoNothing();
+    await recordPipeline(input.scoringId, 'katm_077', { status: 'pending' });
+    return { kind: 'enqueue_poll', reportType: '077', token: report.token };
+  }
+
+  await persist077Ready(input.claimId, report.result);
+  return evaluate077(input.scoringId, input.claimId, report.result);
+}
+
+/**
+ * Evaluate a resolved 077 report against its stop-factors. On pass, chains to
+ * the INPS request. Called by request077 (sync path) and the poll worker.
+ */
+export async function evaluate077(
+  scoringId: number,
+  claimId: string,
+  result: KatmResult,
+): Promise<PipelineStepResult> {
+  const ev = evaluateKatm077(result);
+  if (ev.status === 'rejected') {
+    await recordPipeline(scoringId, 'katm_077', {
+      status: 'rejected',
+      rejectReasonCode: ev.rejectReasonCode,
+      summary: ev.summary,
+      raw: ev.raw,
+    });
+    await markRejected(scoringId, ev.rejectReasonCode);
+    return { kind: 'rejected', reasonCode: ev.rejectReasonCode };
+  }
+  // passed → only now do we pay for INPS
+  await recordPipeline(scoringId, 'katm_077', {
+    status: 'passed',
+    summary: ev.status === 'passed' ? ev.summary : null,
+    raw: ev.status === 'passed' ? ev.raw : null,
+  });
+  return requestInps(scoringId, claimId);
+}
+
+/** Pipeline 3 — request the chargeable INPS report, then evaluate it. */
+export async function requestInps(scoringId: number, claimId: string): Promise<PipelineStepResult> {
+  await setCurrentPipeline(scoringId, 'katm_inps');
+  const report = await requestINPSReport({ claimId });
+
+  if (report.status === 'pending') {
+    await db
+      .insert(katmInpsReports)
+      .values({ claimId, token: report.token, status: 'created' })
+      .onConflictDoNothing();
+    await recordPipeline(scoringId, 'katm_inps', { status: 'pending' });
+    return { kind: 'enqueue_poll', reportType: 'inps', token: report.token };
+  }
+
+  await persistInpsReady(claimId, report.result);
+  return evaluateInps(scoringId, report.result);
+}
+
+/**
+ * Evaluate a resolved INPS report against its stop-factors. On pass, the KATM
+ * gates are cleared and the run is marked 'passed' (model-ready).
+ */
+export async function evaluateInps(scoringId: number, result: InpsResult): Promise<PipelineStepResult> {
+  const ev = evaluateKatmInps(result);
+  if (ev.status === 'rejected') {
+    await recordPipeline(scoringId, 'katm_inps', {
+      status: 'rejected',
+      rejectReasonCode: ev.rejectReasonCode,
+      summary: ev.summary,
+      raw: ev.raw,
+    });
+    await markRejected(scoringId, ev.rejectReasonCode);
+    return { kind: 'rejected', reasonCode: ev.rejectReasonCode };
+  }
+  await recordPipeline(scoringId, 'katm_inps', {
+    status: 'passed',
+    summary: ev.status === 'passed' ? ev.summary : null,
+    raw: ev.status === 'passed' ? ev.raw : null,
+  });
+  await markGatesPassed(scoringId);
+  return { kind: 'gates_passed' };
+}
+
+// --- report persistence (ready path) ----------------------------------------
+
+async function persist077Ready(claimId: string, r: KatmResult): Promise<void> {
+  await db
+    .insert(katm077Reports)
+    .values({
+      claimId,
       demandId: r.demandId,
       consentId: r.consentId,
       score: r.score,
@@ -170,18 +353,21 @@ export async function startKatmFlow(input: {
       avgMonthlyPayment: r.avgMonthlyPayment,
       hasDefaults: r.hasDefaults,
       hasCreditBan: r.hasCreditBan,
+      overdue30Count: r.overdue30Count,
+      overdue30to60Count: r.overdue30to60Count,
+      overdue60to90Count: r.overdue60to90Count,
+      overdue90Count: r.overdue90Count,
       raw: r.raw as Record<string, unknown>,
       status: 'completed',
-    }).onConflictDoNothing();
-  }
+    })
+    .onConflictDoNothing();
+}
 
-  // Persist INPS result or pending placeholder — onConflictDoNothing for retry idempotency
-  if (reportInps.status === 'pending') {
-    await db.insert(katmInpsReports).values({ claimId: input.claimId, token: reportInps.token, status: 'created' }).onConflictDoNothing();
-  } else {
-    const r = reportInps.result;
-    await db.insert(katmInpsReports).values({
-      claimId: input.claimId,
+async function persistInpsReady(claimId: string, r: InpsResult): Promise<void> {
+  await db
+    .insert(katmInpsReports)
+    .values({
+      claimId,
       demandId: r.demandId,
       incomesAllSumma: r.incomesAllSumma,
       periodBegin: r.periodBegin,
@@ -189,17 +375,6 @@ export async function startKatmFlow(input: {
       incomes: r.incomes as unknown as Record<string, unknown>[],
       raw: r.raw as Record<string, unknown>,
       status: 'completed',
-    }).onConflictDoNothing();
-  }
-
-  if (report077.status === 'pending' || reportInps.status === 'pending') {
-    return {
-      status: 'pending',
-      katmSir,
-      pending077: report077.status === 'pending' ? report077.token : null,
-      pendingInps: reportInps.status === 'pending' ? reportInps.token : null,
-    };
-  }
-
-  return { status: 'ready', katmSir, result: report077.result };
+    })
+    .onConflictDoNothing();
 }

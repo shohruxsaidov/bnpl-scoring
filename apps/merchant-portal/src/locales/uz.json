@@ -457,7 +457,35 @@
     "katmBanned": "Mijoz kreditlash taqiqi reestrida turibdi — rasmiylashtirish mumkin emas",
     "rejectedClientDataMissing": "Mijoz ma'lumotlari KATM so'rovi uchun yetarli emas. Ma'lumotlarni to'ldirish uchun operatorgaa murojaat qiling.",
     "oneIdLockedTitle": "One ID orqali ruxsat talab qilinadi",
-    "oneIdLockedDesc": "Mijoz One ID ilovasida shaxsiy ma'lumotlariga kirishga ruxsat bermagan. Mijozdan One ID ilovasini ochib, ruxsat berishini so'rang, so'ng «Qayta urinish» tugmasini bosing."
+    "oneIdLockedDesc": "Mijoz One ID ilovasida shaxsiy ma'lumotlariga kirishga ruxsat bermagan. Mijozdan One ID ilovasini ochib, ruxsat berishini so'rang, so'ng «Qayta urinish» tugmasini bosing.",
+    "rejectReasons": {
+      "generic": "Mijozga rasmiylashtirish rad etildi.",
+      "dataMissingDesc": "Mijoz ma'lumotlari yetarli emas. Quyidagi yetishmayotgan maydonlarni to'ldiring va qayta urinib ko'ring:",
+      "address_absent": "Mijoz manzili ko'rsatilmagan.",
+      "age_below_21": "Mijoz 21 yoshga to'lmagan.",
+      "pinfl_absent": "Mijoz PINFL raqami ko'rsatilmagan.",
+      "passport_series_absent": "Pasport seriyasi ko'rsatilmagan.",
+      "passport_number_absent": "Pasport raqami ko'rsatilmagan.",
+      "doc_type_absent": "Hujjat turi ko'rsatilmagan.",
+      "region_absent": "Viloyat ko'rsatilmagan.",
+      "district_absent": "Tuman ko'rsatilmagan.",
+      "phone_absent": "Telefon raqami ko'rsatilmagan.",
+      "credit_ban": "Mijoz kreditlash taqiqi reestrida turibdi.",
+      "has_defaults": "Mijozda kredit bo'yicha muddati o'tgan qarzlar bor.",
+      "no_income": "Mijoz daromadi tasdiqlanmagan.",
+      "model_stop_factor": "Skoring modeli stop-faktori bo'yicha rad etildi.",
+      "zero_limit": "Kredit limiti nolga teng.",
+      "fields": {
+        "address": "Manzil",
+        "pinfl": "PINFL",
+        "passportSeries": "Pasport seriyasi",
+        "passportNumber": "Pasport raqami",
+        "docType": "Hujjat turi",
+        "regionCode": "Viloyat",
+        "districtCode": "Tuman",
+        "phone": "Telefon"
+      }
+    }
   },
   "stepCard": {
     "title": "Karta",
@@ -493,7 +521,7 @@
     "rejectedZeroLimit": "Skoring natijasida kredit limiti nolga teng. Sessiya yopildi.",
     "rejectedStopFactor": "To'xtash omili: {factor}.",
     "newSession": "Yangi sessiya",
-    "bailsmen": {
+    "contacts": {
       "title": "Kafil shaxslar",
       "add": "Kafil qo'shish",
       "relation": "Qarindoshlik darajasi",

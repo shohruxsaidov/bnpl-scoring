@@ -8,6 +8,6 @@ export function findUsersHandler({ query }: FindByPhoneQuery) {
   return db
     .select()
     .from(users)
-    .where(or(ilike(users.pinfl, term), ilike(users.pinfl, term)))
-    .limit(2);
+    .where(or(ilike(users.pinfl, term), ilike(users.phone, term)))
+    .limit(4);
 }
