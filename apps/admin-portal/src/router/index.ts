@@ -225,6 +225,26 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'scorings',
+        name: 'scorings',
+        component: () => import('@/views/scorings-view.vue'),
+        meta: {
+          titleKey: 'routeTitle.scorings',
+          breadcrumbKeys: ['breadcrumb.scorings'],
+          feature: 'view_scorings',
+        },
+      },
+      {
+        path: 'scorings/:id',
+        name: 'scoring-detail',
+        component: () => import('@/views/scoring-detail-view.vue'),
+        meta: {
+          titleKey: 'routeTitle.scorings',
+          breadcrumbKeys: ['breadcrumb.scorings', 'breadcrumb.detail'],
+          feature: 'view_scorings',
+        },
+      },
+      {
         path: 'integration-logs',
         name: 'integration-logs',
         component: () => import('@/views/integration-logs-view.vue'),

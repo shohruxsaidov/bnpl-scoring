@@ -39,6 +39,7 @@
     "changePassword": "Смена пароля",
     "clients": "Клиенты",
     "scoringModel": "Модель скоринга · #{version}",
+    "scorings": "Скоринги",
     "integrationLogs": "Логи интеграций",
     "categories": "Категории"
   },
@@ -59,6 +60,7 @@
     "permissions": "Разрешения",
     "collectionBoard": "Коллекшн Борд",
     "scoringModel": "Модель скоринга",
+    "scorings": "Скоринги",
     "payments": "Платежи",
     "clients": "Клиенты",
     "integrationLogs": "Логи интеграций",
@@ -82,6 +84,7 @@
     "permissions": "Разрешения",
     "collectionBoard": "Коллекшн Борд",
     "scoringModel": "Модель скоринга",
+    "scorings": "Скоринги",
     "payments": "Платежи",
     "platformAdmin": "Админ платформы",
     "logout": "Выйти",
@@ -268,6 +271,88 @@
       "admins": "Администраторы",
       "integrationLogs": "Логи интеграций"
     }
+  },
+  "scorings": {
+    "count": "Всего скорингов: {count}",
+    "id": "ID",
+    "client": "Клиент",
+    "status": "Статус",
+    "score": "Балл",
+    "creditLimit": "Кредитный лимит",
+    "pipeline": "Этап",
+    "createdAt": "Дата",
+    "updatedAt": "Обновлён",
+    "empty": "Скоринги не найдены",
+    "noClient": "Клиент не привязан",
+    "rejectedReason": "Причина отказа",
+    "statusValue": {
+      "in_progress": "В процессе",
+      "pending": "Ожидание",
+      "passed": "Пройден",
+      "scored": "Оценён",
+      "rejected": "Отклонён",
+      "error": "Ошибка"
+    },
+    "rejectReason": {
+      "address_absent": "Адрес отсутствует",
+      "age_below_21": "Возраст младше 21",
+      "credit_ban": "Запрет на кредитование",
+      "has_defaults": "Наличие дефолтов",
+      "model_stop_factor": "Стоп-фактор модели",
+      "zero_limit": "Нулевой лимит"
+    }
+  },
+  "scoringPipeline": {
+    "type": {
+      "myid": "MyID",
+      "katm_claim": "Заявка КАТМ",
+      "katm_077": "КАТМ 077",
+      "katm_inps": "КАТМ ИНПС",
+      "model_score": "Оценка модели"
+    }
+  },
+  "scoringReport": {
+    "section": {
+      "client": "Клиент",
+      "scorring": "Скоринг",
+      "overview": "Обзор",
+      "credit_ban": "Запрет на кредитование",
+      "open_contracts": "Открытые договоры",
+      "contracts": "Все договоры",
+      "contingent_liabilities": "Условные обязательства",
+      "credit_requests": "Кредитные заявки",
+      "claims_wo_contracts": "Заявки без договоров",
+      "subscriptions": "Подписки",
+      "dynamics_of_scoring_ball": "Динамика балла",
+      "blacklist": "Чёрный список",
+      "sysinfo": "Информация об отчёте",
+      "incomes_period": "Период дохода",
+      "incomes": "Ежемесячный доход",
+      "donations": "Пенсионные накопления",
+      "credit_reports_info": "Инфо о кредитном отчёте",
+      "presence_reports": "Доступные отчёты",
+      "notifications": "Уведомления"
+    },
+    "model": {
+      "decision": "Решение",
+      "coefficient": "Коэффициент",
+      "criterion": "Критерий",
+      "rawScore": "Исходный балл",
+      "weightedScore": "Взвешенный балл",
+      "importance": "Важность",
+      "skipped": "Пропущен"
+    },
+    "decision": {
+      "approve": "Одобрено",
+      "reject": "Отказано"
+    }
+  },
+  "jsonReport": {
+    "expandAll": "Развернуть всё",
+    "collapseAll": "Свернуть всё",
+    "showTechnical": "Показать технические даты",
+    "hideTechnical": "Скрыть технические даты",
+    "none": "нет"
   },
   "integrationLogs": {
     "count": "Всего записей: {count}",

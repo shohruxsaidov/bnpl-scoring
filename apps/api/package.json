@@ -18,6 +18,7 @@
     "backfill:scoring-models": "tsx src/scripts/backfill-scoring-models.ts"
   },
   "dependencies": {
+    "@fastify/compress": "^9.0.0",
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^10.0.0",
     "@fastify/helmet": "^13.0.0",

@@ -39,6 +39,7 @@
     "changePassword": "Parolni o'zgartirish",
     "clients": "Mijozlar",
     "scoringModel": "Skoring modeli · #{version}",
+    "scorings": "Skoringlar",
     "integrationLogs": "Integratsiya loglari",
     "categories": "Kategoriyalar"
   },
@@ -59,6 +60,7 @@
     "permissions": "Ruxsatlar",
     "collectionBoard": "Kolleksiya",
     "scoringModel": "Skoring modeli",
+    "scorings": "Skoringlar",
     "payments": "To'lovlar",
     "clients": "Mijozlar",
     "integrationLogs": "Integratsiya loglari",
@@ -82,6 +84,7 @@
     "permissions": "Ruxsatlar",
     "collectionBoard": "Kolleksiya",
     "scoringModel": "Skoring modeli",
+    "scorings": "Skoringlar",
     "payments": "To'lovlar",
     "platformAdmin": "Platforma admin",
     "logout": "Chiqish",
@@ -260,6 +263,88 @@
       "admins": "Administratorlar",
       "integrationLogs": "Integratsiya loglari"
     }
+  },
+  "scorings": {
+    "count": "Jami skoringlar: {count}",
+    "id": "ID",
+    "client": "Mijoz",
+    "status": "Holat",
+    "score": "Ball",
+    "creditLimit": "Kredit limiti",
+    "pipeline": "Bosqich",
+    "createdAt": "Sana",
+    "updatedAt": "Yangilangan",
+    "empty": "Skoringlar topilmadi",
+    "noClient": "Mijoz biriktirilmagan",
+    "rejectedReason": "Rad etish sababi",
+    "statusValue": {
+      "in_progress": "Jarayonda",
+      "pending": "Kutilmoqda",
+      "passed": "O'tdi",
+      "scored": "Baholandi",
+      "rejected": "Rad etildi",
+      "error": "Xato"
+    },
+    "rejectReason": {
+      "address_absent": "Manzil mavjud emas",
+      "age_below_21": "Yosh 21 dan kichik",
+      "credit_ban": "Kreditlash taqiqi",
+      "has_defaults": "Defoltlar mavjud",
+      "model_stop_factor": "Model stop-faktori",
+      "zero_limit": "Nol limit"
+    }
+  },
+  "scoringPipeline": {
+    "type": {
+      "myid": "MyID",
+      "katm_claim": "KATM ariza",
+      "katm_077": "KATM 077",
+      "katm_inps": "KATM INPS",
+      "model_score": "Model bahosi"
+    }
+  },
+  "scoringReport": {
+    "section": {
+      "client": "Mijoz",
+      "scorring": "Skoring",
+      "overview": "Umumiy ma'lumot",
+      "credit_ban": "Kreditlash taqiqi",
+      "open_contracts": "Ochiq shartnomalar",
+      "contracts": "Barcha shartnomalar",
+      "contingent_liabilities": "Shartli majburiyatlar",
+      "credit_requests": "Kredit so'rovlari",
+      "claims_wo_contracts": "Shartnomasiz arizalar",
+      "subscriptions": "Obunalar",
+      "dynamics_of_scoring_ball": "Ball dinamikasi",
+      "blacklist": "Qora ro'yxat",
+      "sysinfo": "Hisobot ma'lumotlari",
+      "incomes_period": "Daromad davri",
+      "incomes": "Oylik daromad",
+      "donations": "Pensiya jamg'armasi",
+      "credit_reports_info": "Kredit hisoboti ma'lumoti",
+      "presence_reports": "Mavjud hisobotlar",
+      "notifications": "Bildirishnomalar"
+    },
+    "model": {
+      "decision": "Qaror",
+      "coefficient": "Koeffitsient",
+      "criterion": "Mezon",
+      "rawScore": "Boshlang'ich ball",
+      "weightedScore": "Tortilgan ball",
+      "importance": "Muhimlik",
+      "skipped": "O'tkazib yuborildi"
+    },
+    "decision": {
+      "approve": "Tasdiqlandi",
+      "reject": "Rad etildi"
+    }
+  },
+  "jsonReport": {
+    "expandAll": "Hammasini ochish",
+    "collapseAll": "Hammasini yopish",
+    "showTechnical": "Texnik sanalarni ko'rsatish",
+    "hideTechnical": "Texnik sanalarni yashirish",
+    "none": "yo'q"
   },
   "integrationLogs": {
     "count": "Jami yozuvlar: {count}",

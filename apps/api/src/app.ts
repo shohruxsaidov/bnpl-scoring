@@ -1,5 +1,6 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import compress from '@fastify/compress';
 import helmet from '@fastify/helmet';
 import sensible from '@fastify/sensible';
 import rateLimit from '@fastify/rate-limit';
@@ -86,6 +87,8 @@ export async function buildApp() {
 
   await app.register(new fastifyOtel().plugin());
   await app.register(helmet);
+  // gzip/brotli responses — large admin payloads (e.g. KATM report blobs) compress heavily
+  await app.register(compress, { global: true, threshold: 1024 });
   await app.register(cors, {
     origin: true,
     credentials: true,

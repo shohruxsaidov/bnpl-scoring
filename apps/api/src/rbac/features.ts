@@ -37,6 +37,7 @@ export const ADMIN_FEATURES = [
   'manage_roles',
   'manage_admins',
   'manage_scoring_model',
+  'view_scorings',
   'view_integration_logs',
 ] as const;
 

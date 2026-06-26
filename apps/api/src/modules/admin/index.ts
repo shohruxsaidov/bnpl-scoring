@@ -18,6 +18,7 @@ import mxikRoutes from "../mxik/index"
 import adminBankRoutes from "./banks/index"
 import adminOrganizationRoutes from "./organization/index"
 import adminScoringModelRoutes from "./scoringModel/index"
+import adminScoringRoutes from "./scorings/index"
 import adminIntegrationLogRoutes from "./integrationLogs/index"
 import regionRoutes from "../regions/index"
 
@@ -54,6 +55,7 @@ export default async function adminModule(app: FastifyInstance) {
   await app.register(adminBankRoutes, { prefix: "/admin/banks" })
   await app.register(guarded(adminOrganizationRoutes, { read: "manage_settings", write: "manage_settings" }), { prefix: "/admin/organization" })
   await app.register(guarded(adminScoringModelRoutes, { read: "manage_scoring_model", write: "manage_scoring_model" }), { prefix: "/admin/scoring-model" })
+  await app.register(guarded(adminScoringRoutes, { read: "view_scorings" }), { prefix: "/admin/scorings" })
   await app.register(guarded(adminIntegrationLogRoutes, { read: "view_integration_logs" }), { prefix: "/admin/integration-logs" })
   await app.register(regionRoutes, { prefix: "/admin/regions", preHandler: app.verifyAdminJwt })
 }
