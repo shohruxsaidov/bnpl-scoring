@@ -9,9 +9,10 @@ import { users } from '@db/users';
 const PIPELINE_ORDER: Record<string, number> = {
   myid: 0,
   katm_claim: 1,
-  katm_077: 2,
-  katm_inps: 3,
-  model_score: 4,
+  katm_mib: 2,
+  katm_077: 3,
+  katm_inps: 4,
+  model_score: 5,
 };
 
 export interface ScoringDetailPipeline {

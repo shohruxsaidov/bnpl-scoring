@@ -89,12 +89,25 @@ function formatTimestamp(iso: string): string {
 }
 
 // Render a pipeline's `summary` jsonb as a strip of cards.
-function summaryCards(summary: Record<string, unknown> | null) {
-  if (!summary) return []
-  return Object.entries(summary).map(([key, value]) => ({
-    label: humanize(key),
-    value: formatSummaryValue(value),
-  }))
+function summaryCards(pipeline: { type: string; summary: Record<string, unknown> | null; raw?: unknown } | null) {
+  if (!pipeline?.summary) return []
+  const { type, summary, raw } = pipeline
+  return Object.entries(summary)
+    // KATM 077: hasDefaults is redundant with the credit-ban / overdue cards.
+    .filter(([key]) => !(type === 'katm_077' && key === 'hasDefaults'))
+    .map(([key, value]) => {
+      // KATM 077: append the scoring level (Уровень) to the class, e.g. "A1 ОТЛИЧНЫЙ".
+      if (type === 'katm_077' && key === 'scoringClass') {
+        const level = (raw as { scorring?: { scoring_level?: unknown } } | undefined)?.scorring
+          ?.scoring_level
+        const text = [value, level]
+          .filter((x) => x != null && x !== '')
+          .map(String)
+          .join(' ')
+        return { label: humanize(key), value: text || '—' }
+      }
+      return { label: humanize(key), value: formatSummaryValue(value) }
+    })
 }
 function formatSummaryValue(value: unknown): string {
   if (value == null || value === '') return '—'
@@ -220,9 +233,11 @@ function goBack() {
             <strong>{{ rejectLabel(activePipeline.rejectReasonCode) }}</strong></span>
         </div>
 
-        <!-- summary cards -->
-        <div v-if="summaryCards(activePipeline.summary).length" class="cards">
-          <div v-for="c in summaryCards(activePipeline.summary)" :key="c.label" class="stat">
+        <!-- summary cards (hidden on the My ID, KATM claim and KATM MIB tabs) -->
+        <div
+          v-if="!['myid', 'katm_claim', 'katm_mib'].includes(activePipeline.type) && summaryCards(activePipeline).length"
+          class="cards">
+          <div v-for="c in summaryCards(activePipeline)" :key="c.label" class="stat">
             <div class="l">{{ c.label }}</div>
             <div class="v">{{ c.value }}</div>
           </div>

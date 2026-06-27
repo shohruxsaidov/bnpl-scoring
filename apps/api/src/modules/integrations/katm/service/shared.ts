@@ -529,6 +529,61 @@ export function parseInpsReportResponse(data: InpsReportResponse): InpsResult {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Report 315 (MIB — Бюро принудительного исполнения) response types + parser
+//
+// Unlike 077, the decoded payload is a thin verdict envelope:
+//   { report: { resultCode, resultMessage } }
+// resultCode 204 = "no data found" = the subject has no enforcement proceedings
+// (PASS). The set of "data found" codes is not yet known from the test env, so
+// the pass set is an explicit allow-list and the evaluator fails closed.
+// ---------------------------------------------------------------------------
+
+/** Inner resultCode(s) that mean "no enforcement found" → PASS. Extend as the
+ *  test env reveals more clean-result codes. Anything outside this set is NOT a
+ *  pass (it is either a confirmed reject or an unmapped code → needs-review). */
+export const MIB_PASS_CODES = [204] as const;
+
+/** Inner resultCode(s) confirmed to mean "enforcement found" → REJECT. Empty
+ *  until the KATM test env reveals real "data found" responses; until then every
+ *  non-pass code falls through to needs-review (the evaluator's 'error' path)
+ *  rather than auto-rejecting a clean applicant over an unmapped code. */
+export const MIB_REJECT_CODES = [] as readonly number[];
+
+interface MibReportBody {
+  resultCode?: number | string;
+  resultMessage?: string;
+}
+
+export interface MibReportResponse {
+  report: MibReportBody;
+}
+
+export interface MibResult {
+  /** Inner report.resultCode, normalised to a number (NaN if absent/unparseable). */
+  resultCode: number;
+  resultMessage: string;
+  /** Full decoded vendor payload — persisted on the report row. */
+  raw: unknown;
+}
+
+export type MibReportOutcome =
+  | { status: 'ready'; result: MibResult }
+  | { status: 'pending'; token: string };
+
+export function parseMibReportResponse(data: MibReportResponse): MibResult {
+  const report = data.report ?? {};
+  const code =
+    typeof report.resultCode === 'number'
+      ? report.resultCode
+      : parseInt(String(report.resultCode ?? ''), 10);
+  return {
+    resultCode: code,
+    resultMessage: report.resultMessage ?? '',
+    raw: data,
+  };
+}
+
 export function decodeReport<T>(methodName: string, base64: string): T {
   let outer: T;
   try {

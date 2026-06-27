@@ -17,6 +17,7 @@ import { eq } from 'drizzle-orm'
 import type { Queue } from 'bullmq'
 import { db } from '@db'
 import { katm077Reports } from '@db/katm-077-reports'
+import { katmMibReports } from '@db/katm-mib-reports'
 import { katmInpsReports } from '@db/katm-inps-reports'
 import { env } from '../../../env'
 import { dealSessions } from '../../deals/schema'
@@ -25,9 +26,10 @@ import { stampKatmPending } from '../../merchant/deal-sessions/commands/stamp-ka
 import { rejectSession } from '../../merchant/deal-sessions/commands/reject-session/reject-session.handler'
 import type { DealSessionRow } from '../../merchant/deal-sessions/types'
 import { checkReportStatus } from './queries/check-report-status/check-report-status.handler'
+import { checkMibReportStatus } from './queries/check-mib-report-status/check-mib-report-status.handler'
 import { checkInpsReportStatus } from './queries/check-inps-report-status/check-inps-report-status.handler'
-import type { KatmResult, InpsResult } from './service/shared'
-import { evaluate077, evaluateInps, type PipelineStepResult } from './flow'
+import { MIB_PASS_CODES, type KatmResult, type InpsResult, type MibResult } from './service/shared'
+import { evaluate077, evaluateInps, evaluateMib, type PipelineStepResult } from './flow'
 import { loadScoringBySession } from '../../scoring/pipelines/store'
 
 export const KATM_POLL_QUEUE = 'katm-report-poll'
@@ -41,7 +43,7 @@ export interface KatmPollJobData {
   /** ISO timestamp */
   consentDate: string
   /** Defaults to '077' for backward compat with jobs in-flight */
-  reportType?: '077' | 'inps'
+  reportType?: '077' | 'inps' | 'mib'
 }
 
 /** Thrown when the report is still being built — triggers a BullMQ retry. */
@@ -75,7 +77,15 @@ export async function processKatmPollJob(
   const session = await loadWizardSession(data)
   const scoring = session ? await loadScoringBySession(session.id) : null
 
-  if (reportType === 'inps') {
+  if (reportType === 'mib') {
+    const outcome = await checkMibReportStatus({ claimId: data.claimId, token: data.token })
+    if (outcome.status === 'pending') throw new KatmReportPendingError()
+    await saveMibReport(data.claimId, outcome.result)
+    if (!session || !scoring) return
+    // evaluateMib chains into the chargeable 077 request only on a clean result.
+    const step = await evaluateMib(scoring.id, data.claimId, outcome.result)
+    await applyKatmStep(step, session, queue, data)
+  } else if (reportType === 'inps') {
     const outcome = await checkInpsReportStatus({ claimId: data.claimId, token: data.token })
     if (outcome.status === 'pending') throw new KatmReportPendingError()
     await saveInpsReport(data.claimId, outcome.result)
@@ -115,6 +125,16 @@ async function applyKatmStep(
       error: step.reasonCode,
     })
     await rejectSession(session)
+    return
+  }
+  if (step.kind === 'failed') {
+    // Technical/needs-review failure — fail the KATM step but do NOT close the
+    // session as rejected; it can be retried once the gap is resolved.
+    await stampKatmPending(session, {
+      status: 'failed',
+      startedAt: new Date().toISOString(),
+      error: step.reason,
+    })
     return
   }
   // gates_passed — all KATM stop-factors cleared; advance the wizard.
@@ -184,6 +204,20 @@ export async function saveKatmReport(claimId: string, result: KatmResult): Promi
       updatedAt: new Date(),
     })
     .where(eq(katm077Reports.claimId, claimId))
+}
+
+export async function saveMibReport(claimId: string, result: MibResult): Promise<void> {
+  await db
+    .update(katmMibReports)
+    .set({
+      resultCode: result.resultCode,
+      resultMessage: result.resultMessage,
+      passed: MIB_PASS_CODES.includes(result.resultCode as (typeof MIB_PASS_CODES)[number]),
+      raw: result.raw as Record<string, unknown>,
+      status: 'completed',
+      updatedAt: new Date(),
+    })
+    .where(eq(katmMibReports.claimId, claimId))
 }
 
 export async function saveInpsReport(claimId: string, result: InpsResult): Promise<void> {

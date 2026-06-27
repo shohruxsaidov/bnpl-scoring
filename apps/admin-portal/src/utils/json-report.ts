@@ -87,10 +87,12 @@ export function isTechnicalKey(key: string): boolean {
 // A one-line digest for a list item (income record, contract, …).
 export function itemSummary(o: Json): { main: string; meta: string } {
   const date = o.period || o.send_date || o.oper_date || ''
-  const who = o.orgname || o.report_name || o.name || ''
+  const who = o.orgname || o.org_name || o.report_name || o.name || ''
+  const creditType = o.credit_type_name || o.credit_type || ''
   const amt = o.income_summa || o.inps_summa || o.amount || ''
   const main =
-    [date, who].filter((x) => !isEmpty(x)).map(String).join(' · ') || '#' + (o.num ?? '')
+    [date, who, creditType].filter((x) => !isEmpty(x)).map(String).join(' · ') ||
+    '#' + (o.num ?? '')
   const meta: string[] = []
   if (!isEmpty(amt)) meta.push(formatMoney(amt))
   if (o.presence) meta.push(String(o.presence))

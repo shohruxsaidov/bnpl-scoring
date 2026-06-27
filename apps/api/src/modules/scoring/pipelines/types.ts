@@ -7,7 +7,7 @@
 
 // Ordered cost-ascending: cheap/free checks first so a knockout short-circuits
 // before any chargeable bureau call.
-export const PIPELINE_ORDER = ['myid', 'katm_claim', 'katm_077', 'katm_inps', 'model_score'] as const;
+export const PIPELINE_ORDER = ['myid', 'katm_claim', 'katm_mib', 'katm_077', 'katm_inps', 'model_score'] as const;
 export type PipelineType = (typeof PIPELINE_ORDER)[number];
 
 // scoring_pipelines.status
@@ -30,6 +30,8 @@ export type RejectReasonCode =
   | 'phone_absent'
   // katm_claim — registration knockout
   | 'oneid_locked'
+  // katm_mib — active enforcement proceedings (Бюро принудительного исполнения)
+  | 'mib_enforcement_found'
   // katm_077
   | 'credit_ban'
   | 'has_defaults'
@@ -60,6 +62,8 @@ export const REJECT_REASON_CATEGORY: Record<ScoringRejectReasonCode, RejectReaso
   age_below_21: 'ineligible',
   // katm_claim
   oneid_locked: 'access',
+  // katm_mib
+  mib_enforcement_found: 'ineligible',
   // katm_077
   credit_ban: 'ineligible',
   has_defaults: 'ineligible',
@@ -84,6 +88,14 @@ export interface KatmClaimSummary {
   claimId: string;
   /** KATM-SIR — the bureau's subject identifier (empty if not returned). */
   katmSir: string | null;
+}
+
+export interface KatmMibSummary {
+  /** Inner report.resultCode (204 = no enforcement found). */
+  resultCode: number;
+  resultMessage: string;
+  /** True only when resultCode is a confirmed PASS code. */
+  passed: boolean;
 }
 
 export interface Katm077Summary {
@@ -113,6 +125,7 @@ export interface ModelScoreSummary {
 export type PipelineSummary =
   | MyidSummary
   | KatmClaimSummary
+  | KatmMibSummary
   | Katm077Summary
   | KatmInpsSummary
   | ModelScoreSummary;
@@ -123,4 +136,4 @@ export type PipelineEvaluation =
   | { status: 'passed'; summary: PipelineSummary; raw: unknown }
   | { status: 'rejected'; rejectReasonCode: RejectReasonCode; summary: PipelineSummary; raw: unknown }
   | { status: 'pending'; summary: PipelineSummary | null; raw: unknown }
-  | { status: 'error'; raw: unknown };
+  | { status: 'error'; summary?: PipelineSummary | null; raw: unknown };

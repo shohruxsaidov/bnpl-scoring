@@ -6,7 +6,13 @@
 // run on a report that was already fetched (the charge happens in the
 // orchestrator, only after myid passes).
 // ---------------------------------------------------------------------------
-import type { InpsResult, KatmResult } from '../../integrations/katm/service/shared';
+import {
+  MIB_PASS_CODES,
+  MIB_REJECT_CODES,
+  type InpsResult,
+  type KatmResult,
+  type MibResult,
+} from '../../integrations/katm/service/shared';
 import type { PipelineEvaluation } from './types';
 
 const MIN_AGE = 21;
@@ -79,6 +85,30 @@ export function evaluateMyid(subject: MyidSubject, now: Date): PipelineEvaluatio
     return { status: 'rejected', rejectReasonCode: 'age_below_21', summary, raw: subject };
   }
   return { status: 'passed', summary, raw: subject };
+}
+
+// --- katm_mib: mib_enforcement_found ----------------------------------------
+// Report 315 (Бюро принудительного исполнения). resultCode 204 = "no data found"
+// = clean = PASS. Confirmed "data found" codes (MIB_REJECT_CODES) hard-reject.
+// Any other code is an integration gap, NOT evidence of enforcement, so it routes
+// to 'error' (needs-review) instead of auto-rejecting a clean applicant.
+
+export function evaluateKatmMib(result: MibResult): PipelineEvaluation {
+  const passed = MIB_PASS_CODES.includes(result.resultCode as (typeof MIB_PASS_CODES)[number]);
+  const summary = {
+    resultCode: result.resultCode,
+    resultMessage: result.resultMessage,
+    passed,
+  };
+
+  if (passed) {
+    return { status: 'passed', summary, raw: result.raw };
+  }
+  if (MIB_REJECT_CODES.includes(result.resultCode)) {
+    return { status: 'rejected', rejectReasonCode: 'mib_enforcement_found', summary, raw: result.raw };
+  }
+  // Unmapped code → needs-review (never an auto-reject).
+  return { status: 'error', summary, raw: result.raw };
 }
 
 // --- katm_077: credit_ban, has_defaults -------------------------------------

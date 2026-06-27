@@ -1,16 +1,26 @@
 import { eq, sql } from 'drizzle-orm';
 import { db } from '@db';
+import { env } from '@env';
 import { agreements } from '@db/agreements';
 import { katmClaims } from '@db/katm-claims';
 import { katm077Reports } from '@db/katm-077-reports';
+import { katmMibReports } from '@db/katm-mib-reports';
 import { katmInpsReports } from '@db/katm-inps-reports';
 import { registerClaim } from './commands/register-claim/register-claim.handler';
+import { requestMibReport } from './queries/request-mib-report/request-mib-report.handler';
 import { request077Report } from './queries/request-077-report/request-077-report.handler';
 import { requestINPSReport } from './queries/request-inps-report/request-inps-report.handler';
-import { KatmOneIdLockedError, type InpsResult, type KatmResult } from './service/shared';
+import {
+  KatmOneIdLockedError,
+  MIB_PASS_CODES,
+  type InpsResult,
+  type KatmResult,
+  type MibResult,
+} from './service/shared';
 import {
   evaluateKatm077,
   evaluateKatmInps,
+  evaluateKatmMib,
   evaluateMyid,
   type MyidSubject,
 } from '../../scoring/pipelines/registry';
@@ -115,11 +125,15 @@ export async function createKatmConsent(input: {
 /** What the caller (the /start endpoint or the poll worker) must do next. */
 export type PipelineStepResult =
   // A chargeable report went async — enqueue its poll.
-  | { kind: 'enqueue_poll'; reportType: '077' | 'inps'; token: string }
+  | { kind: 'enqueue_poll'; reportType: '077' | 'inps' | 'mib'; token: string }
   // A stop-factor knocked out — scorings already marked 'rejected'. For a
   // data_missing myid knockout, the full absent-field list rides along so the
   // client can fix everything in one pass.
   | { kind: 'rejected'; reasonCode: RejectReasonCode; missingFields?: string[] }
+  // A technical/needs-review failure (e.g. an unmapped MIB code) — scorings
+  // marked 'error'. NOT a business reject: the session is failed but not closed,
+  // so the run can be retried once the integration gap is resolved.
+  | { kind: 'failed'; reason: string }
   // All KATM gates passed — scorings already marked 'passed' (model may run).
   | { kind: 'gates_passed' };
 
@@ -236,13 +250,75 @@ export async function runScoringPipeline(input: {
       raw: claim.verified,
     });
   }
+  return requestMib({ scoringId: input.scoringId, claimId: input.claimId });
+}
 
-  // --- Pipelines 3 & 4: chargeable 077, then INPS only if 077 passes ---
-  return request077({ scoringId: input.scoringId, claimId: input.claimId });
+/** Pipeline (flag-gated) — request the chargeable MIB (315) report, then evaluate. */
+export async function requestMib(input: {
+  scoringId: number;
+  claimId: string;
+}): Promise<PipelineStepResult> {
+  await setCurrentPipeline(input.scoringId, 'katm_mib');
+  const report = await requestMibReport({ claimId: input.claimId });
+
+  if (report.status === 'pending') {
+    await db
+      .insert(katmMibReports)
+      .values({ claimId: input.claimId, token: report.token, status: 'created' })
+      .onConflictDoNothing();
+    await recordPipeline(input.scoringId, 'katm_mib', { status: 'pending' });
+    return { kind: 'enqueue_poll', reportType: 'mib', token: report.token };
+  }
+
+  await persistMibReady(input.claimId, report.result);
+  return evaluateMib(input.scoringId, input.claimId, report.result);
+}
+
+/**
+ * Evaluate a resolved MIB report. On a clean (204) result, chains forward to the
+ * chargeable 077 request. A confirmed "enforcement found" code rejects; an
+ * unmapped code fails the run for review (never an auto-reject). Called by
+ * requestMib (sync path) and the poll worker.
+ */
+export async function evaluateMib(
+  scoringId: number,
+  claimId: string,
+  result: MibResult,
+): Promise<PipelineStepResult> {
+  const ev = evaluateKatmMib(result);
+  if (ev.status === 'rejected') {
+    await recordPipeline(scoringId, 'katm_mib', {
+      status: 'rejected',
+      rejectReasonCode: ev.rejectReasonCode,
+      summary: ev.summary,
+      raw: ev.raw,
+    });
+    await markRejected(scoringId, ev.rejectReasonCode);
+    return { kind: 'rejected', reasonCode: ev.rejectReasonCode };
+  }
+  if (ev.status === 'error') {
+    await recordPipeline(scoringId, 'katm_mib', {
+      status: 'error',
+      summary: ev.summary ?? null,
+      raw: ev.raw,
+    });
+    await markError(scoringId);
+    return { kind: 'failed', reason: `mib_unmapped_code:${result.resultCode}` };
+  }
+  // passed (clean) → only now do we pay for 077
+  await recordPipeline(scoringId, 'katm_mib', {
+    status: 'passed',
+    summary: ev.status === 'passed' ? ev.summary : null,
+    raw: ev.status === 'passed' ? ev.raw : null,
+  });
+  return request077({ scoringId, claimId });
 }
 
 /** Pipeline 2 — request the chargeable 077 report, then evaluate it. */
-export async function request077(input: { scoringId: number; claimId: string }): Promise<PipelineStepResult> {
+export async function request077(input: {
+  scoringId: number;
+  claimId: string;
+}): Promise<PipelineStepResult> {
   await setCurrentPipeline(input.scoringId, 'katm_077');
   const report = await request077Report({ claimId: input.claimId });
 
@@ -310,7 +386,10 @@ export async function requestInps(scoringId: number, claimId: string): Promise<P
  * Evaluate a resolved INPS report against its stop-factors. On pass, the KATM
  * gates are cleared and the run is marked 'passed' (model-ready).
  */
-export async function evaluateInps(scoringId: number, result: InpsResult): Promise<PipelineStepResult> {
+export async function evaluateInps(
+  scoringId: number,
+  result: InpsResult,
+): Promise<PipelineStepResult> {
   const ev = evaluateKatmInps(result);
   if (ev.status === 'rejected') {
     await recordPipeline(scoringId, 'katm_inps', {
@@ -357,6 +436,20 @@ async function persist077Ready(claimId: string, r: KatmResult): Promise<void> {
       overdue30to60Count: r.overdue30to60Count,
       overdue60to90Count: r.overdue60to90Count,
       overdue90Count: r.overdue90Count,
+      raw: r.raw as Record<string, unknown>,
+      status: 'completed',
+    })
+    .onConflictDoNothing();
+}
+
+async function persistMibReady(claimId: string, r: MibResult): Promise<void> {
+  await db
+    .insert(katmMibReports)
+    .values({
+      claimId,
+      resultCode: r.resultCode,
+      resultMessage: r.resultMessage,
+      passed: MIB_PASS_CODES.includes(r.resultCode as (typeof MIB_PASS_CODES)[number]),
       raw: r.raw as Record<string, unknown>,
       status: 'completed',
     })

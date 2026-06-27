@@ -419,6 +419,18 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         };
       }
 
+      // A technical / needs-review failure (e.g. an unmapped MIB code). Not a
+      // business reject: fail the KATM step but leave the session open so the run
+      // can be retried once the integration gap is resolved.
+      if (step.kind === 'failed') {
+        await stampKatmPending(session, {
+          status: 'failed',
+          startedAt: new Date().toISOString(),
+          error: step.reason,
+        });
+        return { status: 'failed' as const, reason: step.reason };
+      }
+
       // gates_passed — every KATM gate cleared synchronously. Advance the wizard
       // and hand the 077 summary back to the client.
       await stampKatm(session);

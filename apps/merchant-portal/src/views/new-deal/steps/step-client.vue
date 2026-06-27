@@ -325,9 +325,10 @@ async function queryKatm(): Promise<boolean> {
   try {
     const result = await apiFetch<
       {
-        status: 'completed' | 'pending' | 'rejected'
+        status: 'completed' | 'pending' | 'rejected' | 'failed'
         reasonCode?: string
         reasonCategory?: string
+        reason?: string
         missingFields?: string[]
       } & Partial<KatmSummary>
     >(`/merchant/deal-sessions/${deal.dealSessionId}/start`, {
@@ -343,6 +344,12 @@ async function queryKatm(): Promise<boolean> {
     // A rejection is a normal 200 outcome now — show the specific reason.
     if (result.status === 'rejected') {
       applyRejection(result.reasonCode, result.reasonCategory, result.missingFields)
+      return false
+    }
+    // A technical / needs-review failure (e.g. an unmapped MIB code) is NOT a
+    // pass — surface a generic error and do not advance the wizard.
+    if (result.status === 'failed') {
+      katmError.value = t('stepClient.katmError')
       return false
     }
     deal.setKatmResult(result as KatmSummary)

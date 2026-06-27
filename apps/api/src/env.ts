@@ -46,6 +46,10 @@ const schema = z.object({
   KATM_CODE: z.string().optional(), // pCode — org code assigned by KATM
   KATM_HEAD: z.string().optional(), // pHead — head org code (retail = 'RET')
   KATM_REPORT_ID: z.coerce.number().default(77), // pReportId — InfoScore 077
+  // Feature flag: run report 315 (MIB — Бюро принудительного исполнения) as a
+  // knockout before the chargeable 077. Default off so the extra chargeable call
+  // is enabled deliberately after test-env verification. Explicit 'true'/'false'
+  // (z.coerce.boolean would treat the string 'false' as true).
   KATM_POLL_INTERVAL_MS: z.coerce.number().default(1_000),
   KATM_POLL_MAX_ATTEMPTS: z.coerce.number().default(15),
   KATM_TIMEOUT: z.coerce.number().default(10_000),

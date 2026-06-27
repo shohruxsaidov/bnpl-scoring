@@ -19,6 +19,7 @@ export * from './integration-logs';
 export * from './katm-claim-seq';
 export * from './katm-claims';
 export * from './katm-077-reports';
+export * from './katm-mib-reports';
 export * from './katm-inps-reports';
 export * from './manual-payments';
 export * from './merchant-categories';
