@@ -757,7 +757,6 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         ]);
         if (report[0]?.demandId != null) katm = report[0];
         if (inpsReport[0]?.demandId != null) inps = inpsReport[0];
-        console.log({ message: 'REPORTSsssssss', report, inpsReport });
       }
 
       // Pre-engine hard gate: credit ban is a regulatory constraint, not a scoring criterion

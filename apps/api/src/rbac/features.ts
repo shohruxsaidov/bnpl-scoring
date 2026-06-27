@@ -39,6 +39,7 @@ export const ADMIN_FEATURES = [
   'manage_scoring_model',
   'view_scorings',
   'view_integration_logs',
+  'manage_queues',
 ] as const;
 
 export type MerchantFeature = (typeof MERCHANT_FEATURES)[number];

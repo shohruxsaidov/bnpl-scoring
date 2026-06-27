@@ -44,6 +44,21 @@ const items = computed(() =>
   arr.value.map((it, i) => ({ i, raw: it, ...itemSummary(it as Json) })),
 )
 const itemsOpen = computed(() => arr.value.length <= 12)
+// Arrays whose items are each a single-field object (e.g. phones → [{ phone_number }, …])
+// read better as a flat value list than as a stack of collapsible one-row cards.
+const singleLeafList = computed<string[] | null>(() => {
+  if (!itemsAreObjects.value) return null
+  const out: string[] = []
+  for (const it of arr.value) {
+    if (!isObject(it)) return null
+    const { leaves, branches } = partition(it as Json, props.showMeta)
+    if (branches.length || leaves.length !== 1) return null
+    const leaf = formatLeaf(leaves[0], (it as Json)[leaves[0]])
+    if (isEmpty(leaf.text)) continue
+    out.push(leaf.text)
+  }
+  return out.length ? out : null
+})
 const scalarList = computed(() => {
   const txt = arr.value.filter((x) => !isEmpty(x)).map(String).join(', ')
   return txt || '—'
@@ -90,6 +105,13 @@ function leafClass(kind: string): string {
         <JsonNode :value="b.value" :labels="labels" :show-meta="showMeta" />
       </div>
     </details>
+  </template>
+
+  <!-- array of single-field objects: flat value list (e.g. phone numbers) -->
+  <template v-else-if="singleLeafList">
+    <ul class="leaf-list">
+      <li v-for="(v, i) in singleLeafList" :key="i">{{ v }}</li>
+    </ul>
   </template>
 
   <!-- array of objects: list of summarised items -->
@@ -215,6 +237,17 @@ details:not([open]) > summary .tw::before {
 }
 
 .scalar-list {
+  word-break: break-word;
+}
+
+ul.leaf-list {
+  margin: 4px 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+ul.leaf-list li {
+  padding: 6px 0;
   word-break: break-word;
 }
 </style>

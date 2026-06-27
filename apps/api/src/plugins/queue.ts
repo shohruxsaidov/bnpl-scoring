@@ -13,6 +13,9 @@ import {
 declare module 'fastify' {
   interface FastifyInstance {
     katmPollQueue: Queue<KatmPollJobData>;
+    // Every Queue created by this plugin, in registration order. The bull-board
+    // dashboard iterates this so new queues surface without touching its plugin.
+    queues: Queue[];
   }
 }
 
@@ -31,6 +34,9 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
 
   const queue: Queue<KatmPollJobData> = new Queue(KATM_POLL_QUEUE, { connection });
 
+  // Registry consumed by the bull-board dashboard. Push each new queue here.
+  const queues: Queue[] = [queue];
+
   const worker = new Worker<KatmPollJobData>(
     KATM_POLL_QUEUE,
     async (job) => processKatmPollJob(job.data, queue),
@@ -38,7 +44,6 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
   );
 
   worker.on('failed', (job, err) => {
-    console.log(job);
     if (!job) return;
     const exhausted = job.attemptsMade >= (job.opts.attempts ?? 1);
     if (err.name !== 'KatmReportPendingError' || exhausted) {
@@ -52,6 +57,7 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
   });
 
   app.decorate('katmPollQueue', queue);
+  app.decorate('queues', queues);
   app.addHook('onClose', async () => {
     await worker.close();
     await queue.close();

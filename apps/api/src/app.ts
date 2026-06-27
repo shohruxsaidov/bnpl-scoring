@@ -14,6 +14,7 @@ import permissionsPlugin from './plugins/permissions';
 import minioPlugin from './plugins/minio';
 import redisPlugin from './plugins/redis';
 import queuePlugin from './plugins/queue';
+import bullBoardPlugin from './plugins/bull-board';
 import i18nPlugin from './plugins/i18n';
 import healthRoutes from './routes/health.js';
 import { authModule, merchantModule, adminModule } from './modules/index.js';
@@ -103,6 +104,7 @@ export async function buildApp() {
   await app.register(redisPlugin);
   await app.register(minioPlugin);
   await app.register(queuePlugin);
+  await app.register(bullBoardPlugin);
 
   // domain modules register here as encapsulated plugins
   await app.register(healthRoutes);

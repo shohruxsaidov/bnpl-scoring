@@ -30,6 +30,19 @@ export function isEmpty(v: unknown): boolean {
   return v === '' || v == null || v === 'н/д' || v === 'н\\д' || v === '-'
 }
 
+// Recursively empty: a scalar that's blank, or a container whose every value is
+// (recursively) empty. Used to hide report sections that carry no real data even
+// though their wrapper object/array is present (e.g. `{ subscription: '' }`).
+export function isDeepEmpty(v: unknown): boolean {
+  if (isEmpty(v)) return true
+  if (Array.isArray(v)) return v.every(isDeepEmpty)
+  if (isObject(v)) {
+    const vals = Object.values(v)
+    return vals.length === 0 || vals.every(isDeepEmpty)
+  }
+  return false
+}
+
 // `credit_ban_status` -> "Credit ban status" when no curated label exists.
 export function humanize(key: string): string {
   return key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
@@ -86,7 +99,7 @@ export function isTechnicalKey(key: string): boolean {
 
 // A one-line digest for a list item (income record, contract, …).
 export function itemSummary(o: Json): { main: string; meta: string } {
-  const date = o.period || o.send_date || o.oper_date || ''
+  const date = o.period || o.send_date || o.oper_date || o.consent_date || ''
   const who = o.orgname || o.org_name || o.report_name || o.name || ''
   const creditType = o.credit_type_name || o.credit_type || ''
   const amt = o.income_summa || o.inps_summa || o.amount || ''

@@ -7,7 +7,7 @@ import {
   type ReportCard,
   type ReportSection,
   branchCount,
-  isEmpty,
+  isDeepEmpty,
   isObject,
 } from '@/utils/json-report'
 
@@ -36,12 +36,14 @@ const sections = computed<RenderedSection[]>(() =>
     .filter((s) => props.data[s.key] !== undefined)
     .map((s) => {
       const value = props.data[s.key]
-      const empty = isEmpty(value) || (isObject(value) && Object.keys(value).length === 0)
+      const empty = isDeepEmpty(value)
       const note = isObject(value)
         ? ((value as Json).notes as string) || ((value as Json).declaration as string) || null
         : null
       return { key: s.key, title: s.title, value, empty, note, count: branchCount(value) }
-    }),
+    })
+    // Drop sections with no data (e.g. Условные обязательства) rather than show a placeholder.
+    .filter((s) => !s.empty),
 )
 
 function setAll(open: boolean) {
@@ -63,9 +65,6 @@ function setAll(open: boolean) {
     <div class="controls">
       <button class="btn-ghost" @click="setAll(true)">{{ t('jsonReport.expandAll') }}</button>
       <button class="btn-ghost" @click="setAll(false)">{{ t('jsonReport.collapseAll') }}</button>
-      <button class="btn-ghost" @click="showMeta = !showMeta">
-        {{ showMeta ? t('jsonReport.hideTechnical') : t('jsonReport.showTechnical') }}
-      </button>
     </div>
 
     <section v-for="s in sections" :key="s.key" class="block">

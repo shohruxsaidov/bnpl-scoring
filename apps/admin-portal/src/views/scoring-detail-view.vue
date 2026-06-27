@@ -93,8 +93,8 @@ function summaryCards(pipeline: { type: string; summary: Record<string, unknown>
   if (!pipeline?.summary) return []
   const { type, summary, raw } = pipeline
   return Object.entries(summary)
-    // KATM 077: hasDefaults is redundant with the credit-ban / overdue cards.
-    .filter(([key]) => !(type === 'katm_077' && key === 'hasDefaults'))
+    // KATM 077: hide hasDefaults and hasCreditBan from the summary strip.
+    .filter(([key]) => !(type === 'katm_077' && ['hasDefaults', 'hasCreditBan'].includes(key)))
     .map(([key, value]) => {
       // KATM 077: append the scoring level (Уровень) to the class, e.g. "A1 ОТЛИЧНЫЙ".
       if (type === 'katm_077' && key === 'scoringClass') {
