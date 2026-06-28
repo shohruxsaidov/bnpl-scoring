@@ -22,6 +22,7 @@ export type RejectReasonCode =
   | 'address_absent'
   | 'age_below'
   | 'age_above'
+  | 'not_resident_uzbekistan'
   | 'pinfl_absent'
   | 'passport_series_absent'
   | 'passport_number_absent'
@@ -36,6 +37,9 @@ export type RejectReasonCode =
   // katm_077
   | 'credit_ban'
   | 'has_defaults'
+  | 'judicial_or_decommissioned'
+  | 'has_actual_overdue_debts_from_60_to_90'
+  | 'has_actual_overdue_debts_from_30_to_60'
   // katm_inps
   | 'no_income';
 
@@ -62,6 +66,7 @@ export const REJECT_REASON_CATEGORY: Record<ScoringRejectReasonCode, RejectReaso
   // myid — business knockout
   age_below: 'ineligible',
   age_above: 'ineligible',
+  not_resident_uzbekistan: 'ineligible',
   // katm_claim
   oneid_locked: 'access',
   // katm_mib
@@ -69,6 +74,9 @@ export const REJECT_REASON_CATEGORY: Record<ScoringRejectReasonCode, RejectReaso
   // katm_077
   credit_ban: 'ineligible',
   has_defaults: 'ineligible',
+  judicial_or_decommissioned: 'ineligible',
+  has_actual_overdue_debts_from_60_to_90: 'ineligible',
+  has_actual_overdue_debts_from_30_to_60: 'ineligible',
   // katm_inps
   no_income: 'ineligible',
   // model stage
@@ -105,7 +113,15 @@ export interface Katm077Summary {
   scoringClass: string;
   hasCreditBan: boolean;
   hasDefaults: boolean;
+  /** Any contract under judicial collection (lawsuit_principal_sum > 0), all-time. */
+  hasJuridical: boolean;
+  /** Any written-off / off-balance contract (offbalance_principal_sum > 0), all-time. */
+  hasDecommission: boolean;
   maxOverdueDays: number;
+  /** Count of 30–60 DPD overdue items on contracts active within the last year. */
+  actualOverdue30to60Count: number;
+  /** Count of 60–90 DPD overdue items on contracts active within the last 2 years. */
+  actualOverdue60to90Count: number;
 }
 
 export interface KatmInpsSummary {

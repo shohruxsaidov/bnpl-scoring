@@ -16,8 +16,8 @@ export const users = pgTable('users', {
   verifiedAt: timestamp('verified_at', { withTimezone: true }),
   citizenShipId: varchar('citizen_ship_id', { length: 5 }),
   address: varchar('address', { length: 100 }),
-  regionCode: varchar('region_code', { length: 3 }), // dict 016
-  districtCode: varchar('district_code', { length: 3 }), // dict 052
+  regionCode: varchar('region_code', { length: 5 }), // dict 016
+  districtCode: varchar('district_code', { length: 10 }), // dict 052
   docType: integer('doc_type'), // 0 — ID card, 6 — biometric passport
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   hashPassword: varchar('hash_password'),

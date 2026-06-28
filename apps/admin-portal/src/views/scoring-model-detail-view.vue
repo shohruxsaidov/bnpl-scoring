@@ -333,7 +333,7 @@ function bandDescription(band: Record<string, unknown>): string {
             <span class="imp-label">{{ t('scoringModel.baseLimit') }}</span>
             <InputNumber v-model="(getLimitCoefficient() as Record<string, unknown>)['BaseLimit'] as number" :min="0"
               :use-grouping="true" :max-fraction-digits="0" :suffix="' ' + t('scoringModel.baseLimitHint')"
-              :disabled="readOnly" input-class="imp-input" />
+              :disabled="readOnly" input-class="imp-input base-limit-input" />
           </div>
           <div class="default-coeff-wrap">
             <span class="imp-label">{{ t('scoringModel.defaultCoefficient') }}</span>
@@ -764,6 +764,11 @@ function bandDescription(band: Record<string, unknown>): string {
   font-weight: 700;
   font-size: 0.88rem;
   padding: 0.3rem 0.4rem !important;
+}
+
+:deep(.base-limit-input) {
+  width: 160px !important;
+  text-align: right;
 }
 
 /* ── Criteria table ──────────────────────────────────────────────────────────*/

@@ -242,8 +242,12 @@ async function sendOtp() {
     devOtp.value = data.devOtp ?? null
     phase.value = 'otp_verify'
     startResendCooldown()
-  } catch {
-    otpPhoneError.value = t('stepClient.otpSendFailed')
+  } catch (err) {
+    const code = (err as Error).message
+    otpPhoneError.value =
+      code === 'phone_already_registered'
+        ? t('stepClient.phoneAlreadyRegistered')
+        : t('stepClient.otpSendFailed')
   }
 }
 
@@ -514,7 +518,7 @@ const clientFullName = computed(() =>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.passport') }}</span>
           <span class="cf-value font-mono">{{ confirmedClient!.passportSeries }}{{ confirmedClient?.passportNumber
-            }}</span>
+          }}</span>
         </div>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.birthDate') }}</span>
@@ -602,12 +606,12 @@ const clientFullName = computed(() =>
       <p class="reg-step-sub">{{ $t('stepClient.pinflEntrySub') }}</p>
       <div class="field">
         <label class="field-label">{{ $t('stepClient.clientPinfl') }}</label>
-        <InputText v-model="pinfl" maxlength="14" placeholder="31203016740099" class="font-mono" :invalid="!!pinflError"
+        <InputText v-model="pinfl" maxlength="14" placeholder="" class="font-mono" :invalid="!!pinflError"
           @input="pinflError = ''" @keydown.enter="startMyId" />
         <span v-if="pinflError" class="field-error">{{ pinflError }}</span>
       </div>
       <span v-if="myidError" class="field-error mt-1">{{ myidError }}</span>
-      <button class="btn-myid mt-1" :disabled="!pinfl.trim() || renewingSession" @click="startMyId">
+      <button class="btn-myid mt-1" :disabled="pinfl.trim().length !== 14 || renewingSession" @click="startMyId">
         <i v-if="renewingSession" class="pi pi-spin pi-spinner" />
         <span v-else class="myid-logo">MyID</span>
         {{ $t('stepClient.startVerification') }}
@@ -634,7 +638,8 @@ const clientFullName = computed(() =>
         </div>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.passport') }}</span>
-          <span class="cf-value font-mono">{{ confirmedClient!.passportSeries }}{{ confirmedClient?.passportNumber }}</span>
+          <span class="cf-value font-mono">{{ confirmedClient!.passportSeries }}{{ confirmedClient?.passportNumber
+            }}</span>
         </div>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.birthDate') }}</span>
@@ -959,6 +964,19 @@ const clientFullName = computed(() =>
 
 .btn-myid:hover {
   opacity: 0.88;
+}
+
+.btn-myid:disabled {
+  background: var(--bg-deep);
+  color: var(--text-muted);
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.btn-myid:disabled .myid-logo {
+  background: var(--text-muted);
+  color: var(--bg-deep);
 }
 
 .myid-logo {

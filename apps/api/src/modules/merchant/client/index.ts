@@ -2,6 +2,7 @@ import { Type } from '@sinclair/typebox';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { eq } from 'drizzle-orm';
+import { db } from '@db';
 import { users } from '@db/schema';
 import { findClientByPinflAndMerchant } from './queries/search-client/search-client.handler';
 import { createOtp, verifyOtp } from '../../auth/client/service/service.handler';
@@ -89,8 +90,16 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
   fastify.post(
     '/otp',
     { schema: { body: OtpBody }, preHandler: app.verifyMerchantJwt },
-    async (req) => {
+    async (req, reply) => {
       const { phone } = req.body;
+
+      const existing = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.phone, phone))
+        .limit(1);
+      if (existing.length) return reply.code(409).sendError('phone_already_registered');
+
       const isProd = app.hasDecorator('isProd')
         ? (app as any).isProd
         : process.env['NODE_ENV'] === 'production';

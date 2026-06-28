@@ -20,7 +20,7 @@ const props = defineProps<{
     weightedScore: number
     importantLevel: number
     skipped: boolean
-    inputValue?: string | null
+    inputValue?: number | string | boolean | null
   }>
   totalScore: number
 }>()

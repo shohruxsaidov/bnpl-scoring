@@ -289,8 +289,12 @@
       "address_absent": "Manzil mavjud emas",
       "age_below": "Yosh 18 dan kichik",
       "age_above": "Yosh ruxsat etilgan chegaradan yuqori",
+      "not_resident_uzbekistan": "O'zbekiston rezidenti emas",
       "credit_ban": "Kreditlash taqiqi",
       "has_defaults": "Defoltlar mavjud",
+      "judicial_or_decommissioned": "Sud jarayonidagi / hisobdan chiqarilgan kreditlar",
+      "has_actual_overdue_debts_from_30_to_60": "Faol 30–60 kunlik muddati o'tgan qarz",
+      "has_actual_overdue_debts_from_60_to_90": "Faol 60–90 kunlik muddati o'tgan qarz",
       "model_stop_factor": "Model stop-faktori",
       "zero_limit": "Nol limit"
     }
@@ -299,6 +303,7 @@
     "type": {
       "myid": "MyID",
       "katm_claim": "KATM ariza",
+      "katm_mib": "KATM MIB",
       "katm_077": "KATM 077",
       "katm_inps": "KATM INPS",
       "model_score": "Model bahosi"
@@ -330,6 +335,7 @@
       "decision": "Qaror",
       "coefficient": "Koeffitsient",
       "criterion": "Mezon",
+      "inputValue": "Qiymat",
       "rawScore": "Boshlang'ich ball",
       "weightedScore": "Tortilgan ball",
       "importance": "Muhimlik",

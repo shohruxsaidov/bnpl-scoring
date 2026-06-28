@@ -297,8 +297,12 @@
       "address_absent": "Адрес отсутствует",
       "age_below": "Возраст младше 18",
       "age_above": "Возраст выше допустимого",
+      "not_resident_uzbekistan": "Не резидент Узбекистана",
       "credit_ban": "Запрет на кредитование",
       "has_defaults": "Наличие дефолтов",
+      "judicial_or_decommissioned": "Судебные / списанные кредиты",
+      "has_actual_overdue_debts_from_30_to_60": "Активная просрочка 30–60 дней",
+      "has_actual_overdue_debts_from_60_to_90": "Активная просрочка 60–90 дней",
       "model_stop_factor": "Стоп-фактор модели",
       "zero_limit": "Нулевой лимит"
     }
@@ -307,6 +311,7 @@
     "type": {
       "myid": "MyID",
       "katm_claim": "Заявка КАТМ",
+      "katm_mib": "КАТМ МИБ",
       "katm_077": "КАТМ 077",
       "katm_inps": "КАТМ ИНПС",
       "model_score": "Оценка модели"
@@ -338,6 +343,7 @@
       "decision": "Решение",
       "coefficient": "Коэффициент",
       "criterion": "Критерий",
+      "inputValue": "Значение",
       "rawScore": "Исходный балл",
       "weightedScore": "Взвешенный балл",
       "importance": "Важность",

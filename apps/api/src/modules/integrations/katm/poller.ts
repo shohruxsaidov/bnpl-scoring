@@ -195,6 +195,8 @@ export async function saveKatmReport(claimId: string, result: KatmResult): Promi
       avgMonthlyPayment: result.avgMonthlyPayment,
       hasDefaults: result.hasDefaults,
       hasCreditBan: result.hasCreditBan,
+      hasJuridical: result.hasJuridical,
+      hasDecommission: result.hasDecommission,
       overdue30Count: result.overdue30Count,
       overdue30to60Count: result.overdue30to60Count,
       overdue60to90Count: result.overdue60to90Count,

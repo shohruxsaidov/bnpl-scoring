@@ -39,6 +39,7 @@ export const ru: Record<string, string> = {
   no_account: "Аккаунт не найден",
   myid_integration_failed: "Ошибка при работе с сервисом MyID",
   client_already_registered: "Клиент уже зарегистрирован",
+  phone_already_registered: "Этот номер телефона уже зарегистрирован",
   client_pinfl_missing: "У клиента отсутствует ПИНФЛ",
 
   // deals

@@ -10,6 +10,8 @@ import {
   GENDERS,
   MIB_PASS_CODES,
   MIB_REJECT_CODES,
+  countActualOverdue30to60LastYear,
+  countActualOverdue60to90Last2Years,
   type InpsResult,
   type KatmResult,
   type MibResult,
@@ -49,6 +51,7 @@ export interface MyidSubject {
   districtCode: string | null;
   phone: string | null;
   gender: 1 | 2; // 1 => for male, 2 => for female
+  citizenShipId: string; // 182 for uzbekistan
 }
 
 const present = (v: string | null | undefined) => !!v && v.trim().length > 0;
@@ -72,15 +75,22 @@ export function evaluateMyid(subject: MyidSubject, now: Date): PipelineEvaluatio
 
   const summary = { age, hasAddress: present(subject.address), missingFields };
 
+  if (subject.citizenShipId !== '182') {
+    return {
+      status: 'rejected',
+      rejectReasonCode: 'not_resident_uzbekistan',
+      summary,
+      raw: subject,
+    };
+  }
+
   // First tripped knockout wins. Missing required fields short-circuit first.
   for (const { field, code } of FIELD_CHECKS) {
     if (!present(subject[field] as string | null)) {
       return { status: 'rejected', rejectReasonCode: code, summary, raw: subject };
     }
   }
-  if (subject.docType == null) {
-    return { status: 'rejected', rejectReasonCode: 'doc_type_absent', summary, raw: subject };
-  }
+
   if (age == null || age < MIN_AGE) {
     return { status: 'rejected', rejectReasonCode: 'age_below', summary, raw: subject };
   }
@@ -125,19 +135,51 @@ export function evaluateKatmMib(result: MibResult): PipelineEvaluation {
   return { status: 'error', summary, raw: result.raw };
 }
 
-// --- katm_077: credit_ban, has_defaults -------------------------------------
-
 export function evaluateKatm077(result: KatmResult): PipelineEvaluation {
+  const actualOverdue30to60Count = countActualOverdue30to60LastYear(result.raw);
+  const actualOverdue60to90Count = countActualOverdue60to90Last2Years(result.raw);
   const summary = {
     score: result.score,
     scoringClass: result.scoringClass,
     hasCreditBan: result.hasCreditBan,
     hasDefaults: result.hasDefaults,
+    hasJuridical: result.hasJuridical,
+    hasDecommission: result.hasDecommission,
     maxOverdueDays: result.maxOverdueDays,
+    actualOverdue30to60Count,
+    actualOverdue60to90Count,
   };
 
   if (result.hasCreditBan) {
     return { status: 'rejected', rejectReasonCode: 'credit_ban', summary, raw: result.raw };
+  }
+
+  // Any contract under judicial collection or written off (all-time) — hard reject.
+  if (result.hasJuridical || result.hasDecommission) {
+    return {
+      status: 'rejected',
+      rejectReasonCode: 'judicial_or_decommissioned',
+      summary,
+      raw: result.raw,
+    };
+  }
+
+  if (actualOverdue60to90Count > 0) {
+    return {
+      status: 'rejected',
+      rejectReasonCode: 'has_actual_overdue_debts_from_60_to_90',
+      summary,
+      raw: result.raw,
+    };
+  }
+
+  if (actualOverdue30to60Count > 0) {
+    return {
+      status: 'rejected',
+      rejectReasonCode: 'has_actual_overdue_debts_from_30_to_60',
+      summary,
+      raw: result.raw,
+    };
   }
 
   return { status: 'passed', summary, raw: result.raw };

@@ -2,82 +2,84 @@
 // Scoring model types — mirror finsuminpsgnk.json v2 structure
 // ---------------------------------------------------------------------------
 
+import { GENDERS } from '../integrations/katm/service/shared';
+
 export interface RangeBand {
-  From: number
-  To: number | null
-  Score: number
-  Description?: string
+  From: number;
+  To: number | null;
+  Score: number;
+  Description?: string;
 }
 
 export interface CategoryEntry {
-  Score: number
-  Description?: string
+  Score: number;
+  Description?: string;
 }
 
 export interface NotApplicableEntry {
-  Score: number
-  Description?: string
+  Score: number;
+  Description?: string;
 }
 
 export interface RangeParam {
-  Name: string
-  Enabled: boolean
-  ImportantLevel: number
-  Type: 'range'
-  Unit?: string | null
-  DefaultScore: number
-  NotApplicable?: NotApplicableEntry
-  Ranges: RangeBand[]
+  Name: string;
+  Enabled: boolean;
+  ImportantLevel: number;
+  Type: 'range';
+  Unit?: string | null;
+  DefaultScore: number;
+  NotApplicable?: NotApplicableEntry;
+  Ranges: RangeBand[];
 }
 
 export interface CategoricalParam {
-  Name: string
-  Enabled: boolean
-  ImportantLevel: number
-  Type: 'categorical'
-  DefaultScore: number
-  Categories: Record<string, CategoryEntry>
+  Name: string;
+  Enabled: boolean;
+  ImportantLevel: number;
+  Type: 'categorical';
+  DefaultScore: number;
+  Categories: Record<string, CategoryEntry>;
 }
 
 export interface RegionMatchParam {
-  Name: string
-  Enabled: boolean
-  ImportantLevel: number
-  Type: 'regionMatch'
-  DefaultScore: number
-  ValidRegions: string[]
-  MatchScore: number
+  Name: string;
+  Enabled: boolean;
+  ImportantLevel: number;
+  Type: 'regionMatch';
+  DefaultScore: number;
+  ValidRegions: string[];
+  MatchScore: number;
 }
 
-export type ScoringParam = RangeParam | CategoricalParam | RegionMatchParam
+export type ScoringParam = RangeParam | CategoricalParam | RegionMatchParam;
 
 export interface StopFactor {
-  Name: string
-  Type: 'boolean'
-  Match: string
-  Reject: boolean
-  Description?: string
+  Name: string;
+  Type: 'boolean';
+  Match: string;
+  Reject: boolean;
+  Description?: string;
 }
 
 export interface CoefficientBand {
-  From: number
-  To: number | null
-  Coefficient: number
+  From: number;
+  To: number | null;
+  Coefficient: number;
 }
 
 export interface LimitCoefficient {
-  Name?: string
-  Description?: string
-  Unit?: string
-  BaseLimit?: number   // base amount in soms, scaled by the resolved coefficient
-  DefaultCoefficient: number
-  Ranges: CoefficientBand[]
+  Name?: string;
+  Description?: string;
+  Unit?: string;
+  BaseLimit?: number; // base amount in soms, scaled by the resolved coefficient
+  DefaultCoefficient: number;
+  Ranges: CoefficientBand[];
 }
 
 export interface ScoringModelData {
-  StopFactors?: Record<string, StopFactor>
-  ScoringParams: Record<string, ScoringParam>
-  LimitCoefficient: LimitCoefficient
+  StopFactors?: Record<string, StopFactor>;
+  ScoringParams: Record<string, ScoringParam>;
+  LimitCoefficient: LimitCoefficient;
 }
 
 // ---------------------------------------------------------------------------
@@ -85,27 +87,28 @@ export interface ScoringModelData {
 // ---------------------------------------------------------------------------
 
 export interface ScoringInputs {
-  incomeSum?: number
-  workExperienceMonths?: number
-  age?: number
-  citizenship?: 'Uzbekistan' | 'NonResident'
-  gender?: 'Male' | 'Female'
-  monthlyPayment?: number
-  creditHistoryContracts?: number    // count: 0=no history, 1=clean, 2+=has overdues
-  contingentLiability?: number       // open loan count
-  overdue30Count?: number
-  overdue30to60Count?: number
-  overdue60to90Count?: number
-  overdue90Count?: number
-  hasJuridical?: boolean
-  hasDecommission?: boolean
-  loanApplicationCount?: number
-  coBorrowerMaxDays?: number | null  // null = not a co-borrower
-  guarantorMaxDays?: number | null   // null = not a guarantor
-  pledgerMaxDays?: number | null     // null = not a pledger
-  hasMortgage?: boolean
-  passportRegion?: string
-  allDebts?: number                  // UZS
+  incomeSum?: number;
+  incomeSumInBrv?: number;
+  workExperienceMonths?: number;
+  age?: number;
+  citizenship?: string;
+  gender?: GENDERS;
+  monthlyPayment?: number;
+  creditHistoryContracts?: number; // count: 0=no history, 1=clean, 2+=has overdues
+  contingentLiability?: number; // open loan count
+  overdue30Count?: number;
+  overdue30to60Count?: number;
+  overdue60to90Count?: number;
+  overdue90Count?: number;
+  hasJuridical?: boolean;
+  hasDecommission?: boolean;
+  loanApplicationCount?: number;
+  coBorrowerMaxDays?: number | null; // null = not a co-borrower
+  guarantorMaxDays?: number | null; // null = not a guarantor
+  pledgerMaxDays?: number | null; // null = not a pledger
+  hasMortgage?: boolean;
+  passportRegion?: string;
+  allDebts?: number; // UZS
 }
 
 // ---------------------------------------------------------------------------
@@ -113,17 +116,19 @@ export interface ScoringInputs {
 // ---------------------------------------------------------------------------
 
 export interface CriterionResult {
-  key: string
-  name: string
-  rawScore: number
-  importantLevel: number
-  weightedScore: number
-  skipped: boolean
+  key: string;
+  name: string;
+  /** The raw original input value fed into this criterion before scoring. undefined inputs are normalized to null. */
+  inputValue: number | string | boolean | null;
+  rawScore: number;
+  importantLevel: number;
+  weightedScore: number;
+  skipped: boolean;
 }
 
 export type ScoringResult =
   | { rejected: true; stopFactor: string; name: string }
-  | { rejected: false; totalScore: number; coefficient: number; breakdown: CriterionResult[] }
+  | { rejected: false; totalScore: number; coefficient: number; breakdown: CriterionResult[] };
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -133,104 +138,144 @@ export type ScoringResult =
 function matchRange(bands: RangeBand[], value: number): number | null {
   for (const band of bands) {
     if (value >= band.From && (band.To === null || value < band.To)) {
-      return band.Score
+      return band.Score;
     }
   }
-  return null
+  return null;
 }
 
 function scoreRangeParam(param: RangeParam, value: number | null | undefined): number | null {
-  if (value === undefined) return null
-  if (value === null) return param.NotApplicable?.Score ?? null
-  return matchRange(param.Ranges, value)
+  if (value === undefined) return null;
+  if (value === null) return param.NotApplicable?.Score ?? null;
+  return matchRange(param.Ranges, value);
+}
+
+function calculatePaymentBurdenPercent(income: number, monthlyPayment: number): number {
+  if (+monthlyPayment === 0) {
+    return 0;
+  }
+
+  if (+income <= 0) {
+    return 100;
+  }
+
+  return (monthlyPayment * 100) / income;
 }
 
 // ---------------------------------------------------------------------------
 // Main engine
 // ---------------------------------------------------------------------------
 
-export function computeScoringModel(
-  model: ScoringModelData,
-  inputs: ScoringInputs,
-): ScoringResult {
+export function computeScoringModel(model: ScoringModelData, inputs: ScoringInputs): ScoringResult {
   // Stop factors — checked before any scoring
   const stopMatchInputs: Record<string, boolean | undefined> = {
-    WithJuridical:    inputs.hasJuridical,
+    WithJuridical: inputs.hasJuridical,
     WithDecommission: inputs.hasDecommission,
-  }
+  };
+
+  const incomeRatio = calculatePaymentBurdenPercent(
+    inputs.incomeSum ?? 0,
+    inputs.monthlyPayment ?? 0,
+  );
 
   for (const [key, factor] of Object.entries(model.StopFactors ?? {})) {
     if (factor.Reject && stopMatchInputs[factor.Match] === true) {
-      return { rejected: true, stopFactor: key, name: factor.Name }
+      return { rejected: true, stopFactor: key, name: factor.Name };
     }
   }
 
   // Map param keys to their raw input values
   const rangeInputs: Record<string, number | null | undefined> = {
-    IncomeSum:               inputs.incomeSum,
-    WorkExperience:          inputs.workExperienceMonths,
-    Age:                     inputs.age,
-    MonthlyAveragePayment:   inputs.monthlyPayment,
-    CreditHistoryContracts:  inputs.creditHistoryContracts,
-    ContingentLiability:     inputs.contingentLiability,
-    Overdue30Days:           inputs.overdue30Count,
-    Overdue30To60Days:       inputs.overdue30to60Count,
-    Overdue60To90Days:       inputs.overdue60to90Count,
-    Overdue90Days:           inputs.overdue90Count,
-    LoanApplication:         inputs.loanApplicationCount,
-    CoBorrowerLiability:     inputs.coBorrowerMaxDays,
-    GuarantorLiability:      inputs.guarantorMaxDays,
-    PledgerLiability:        inputs.pledgerMaxDays,
-    AllDebts:                inputs.allDebts,
-  }
+    IncomeSum: inputs.incomeSumInBrv,
+    WorkExperience: inputs.workExperienceMonths,
+    Age: inputs.age,
+    MonthlyAveragePayment: incomeRatio,
+    CreditHistoryContracts: inputs.creditHistoryContracts,
+    ContingentLiability: inputs.contingentLiability,
+    Overdue30Days: inputs.overdue30Count,
+    Overdue30To60Days: inputs.overdue30to60Count,
+    Overdue60To90Days: inputs.overdue60to90Count,
+    Overdue90Days: inputs.overdue90Count,
+    LoanApplication: inputs.loanApplicationCount,
+    CoBorrowerLiability: inputs.coBorrowerMaxDays,
+    GuarantorLiability: inputs.guarantorMaxDays,
+    PledgerLiability: inputs.pledgerMaxDays,
+    AllDebts: inputs.allDebts,
+  };
 
   const categoricalInputs: Record<string, string | undefined> = {
-    Citizenship: inputs.citizenship,
-    Gender:      inputs.gender,
-    Mortgage:    inputs.hasMortgage !== undefined
-      ? (inputs.hasMortgage ? 'WithMortgage' : 'WithoutMortgage')
-      : undefined,
-  }
+    Citizenship: inputs.citizenship === '181' ? 'Uzbekistan' : 'NonResident',
+    Gender: inputs.gender === GENDERS.MALE ? 'Male' : 'Female',
+    Mortgage:
+      inputs.hasMortgage !== undefined
+        ? inputs.hasMortgage
+          ? 'WithMortgage'
+          : 'WithoutMortgage'
+        : undefined,
+  };
 
   const regionInputs: Record<string, string | undefined> = {
     PassportData: inputs.passportRegion,
-  }
+  };
 
-  const breakdown: CriterionResult[] = []
+  // Dedicated lookup of the raw original input per param key — reported as-is on
+  // each breakdown entry. Decoupled from the scoring maps above so Mortgage keeps
+  // its original boolean instead of the mapped 'WithMortgage'/'WithoutMortgage' key.
+  const valueByKey: Record<string, number | string | boolean | null | undefined> = {
+    IncomeSum: inputs.incomeSumInBrv,
+    WorkExperience: inputs.workExperienceMonths,
+    Age: inputs.age,
+    MonthlyAveragePayment: incomeRatio,
+    CreditHistoryContracts: inputs.creditHistoryContracts,
+    ContingentLiability: inputs.contingentLiability,
+    Overdue30Days: inputs.overdue30Count,
+    Overdue30To60Days: inputs.overdue30to60Count,
+    Overdue60To90Days: inputs.overdue60to90Count,
+    Overdue90Days: inputs.overdue90Count,
+    LoanApplication: inputs.loanApplicationCount,
+    CoBorrowerLiability: inputs.coBorrowerMaxDays,
+    GuarantorLiability: inputs.guarantorMaxDays,
+    PledgerLiability: inputs.pledgerMaxDays,
+    AllDebts: inputs.allDebts,
+    Citizenship: inputs.citizenship === '182' ? 'Uzbekistan' : 'NonResident',
+    Gender: inputs.gender === GENDERS.MALE ? 'Male' : 'Female',
+    Mortgage: inputs.hasMortgage,
+    PassportData: inputs.passportRegion,
+  };
+
+  const breakdown: CriterionResult[] = [];
 
   for (const [key, param] of Object.entries(model.ScoringParams)) {
-    let rawScore: number | null = null
+    let rawScore: number | null = null;
 
     if (param.Type === 'range') {
-      rawScore = scoreRangeParam(param, rangeInputs[key])
+      rawScore = scoreRangeParam(param, rangeInputs[key]);
     } else if (param.Type === 'categorical') {
-      const catKey = categoricalInputs[key]
-      rawScore = catKey !== undefined ? (param.Categories[catKey]?.Score ?? null) : null
+      const catKey = categoricalInputs[key];
+      rawScore = catKey !== undefined ? (param.Categories[catKey]?.Score ?? null) : null;
     } else if (param.Type === 'regionMatch') {
-      const region = regionInputs[key]
-      rawScore = region !== undefined
-        ? (param.ValidRegions.includes(region) ? param.MatchScore : 0)
-        : null
+      const region = regionInputs[key];
+      rawScore =
+        region !== undefined ? (param.ValidRegions.includes(region) ? param.MatchScore : 0) : null;
     }
 
-    const skipped = !param.Enabled || rawScore === null
+    const skipped = !param.Enabled || rawScore === null;
     breakdown.push({
       key,
       name: param.Name,
+      inputValue: valueByKey[key] ?? null,
       rawScore: skipped ? 0 : rawScore!,
       importantLevel: param.ImportantLevel,
       weightedScore: skipped ? 0 : rawScore! * param.ImportantLevel,
       skipped,
-    })
+    });
   }
 
-  const totalScore = breakdown.reduce((sum, c) => sum + c.weightedScore, 0)
+  const totalScore = breakdown.reduce((sum, c) => sum + c.weightedScore, 0);
 
-  const lc = model.LimitCoefficient
-  const band = lc.Ranges.find(
-    (b) => totalScore >= b.From && (b.To === null || totalScore < b.To),
-  )
-  const coefficient = band?.Coefficient ?? lc.DefaultCoefficient
+  const lc = model.LimitCoefficient;
+  const band = lc.Ranges.find((b) => totalScore >= b.From && (b.To === null || totalScore < b.To));
+  const coefficient = band?.Coefficient ?? lc.DefaultCoefficient;
 
-  return { rejected: false, totalScore, coefficient, breakdown }
+  return { rejected: false, totalScore, coefficient, breakdown };
 }

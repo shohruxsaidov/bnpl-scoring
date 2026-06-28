@@ -377,6 +377,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           phone: client.phone,
           birthDate: client.birthDate,
           gender: client.gender as GENDERS,
+          citizenShipId: client.citizenShipId ?? '',
         },
         userId: client.id,
         sessionId: session.id,
@@ -807,6 +808,8 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           birthDate: users.birthDate,
           gender: users.gender,
           nationality: users.nationality,
+          citizenship: users.citizenShipId,
+          region: users.regionCode,
         })
         .from(users)
         .where(eq(users.id, session.userId))
@@ -820,13 +823,22 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
       const scoringInputs: ScoringInputs = {
         ...(katm && deriveKatm2yInputs(katm.raw, katmCutoff)),
+        // All-time judicial / written-off flags (read from the persisted 077 row,
+        // not the 2y window) — the model's WithJuridical / WithDecommission stop
+        // factors. Normally already knocked out pre-model by evaluateKatm077.
+        ...(katm && {
+          hasJuridical: katm.hasJuridical ?? false,
+          hasDecommission: katm.hasDecommission ?? false,
+        }),
         ...(userRow && {
           age: ageYears(userRow.birthDate),
-          gender: userRow.gender === 1 ? 'Male' : userRow.gender === 2 ? 'Female' : undefined,
-          citizenship: 'Uzbekistan',
+          gender: userRow.gender as GENDERS,
+          citizenship: userRow.citizenship || '',
+          passportRegion: userRow.region || '',
         }),
         ...(inps && {
-          incomeSum: (inps.incomesAllSumma ?? 0) / 12 / BRV_UZS,
+          incomeSum: (inps.incomesAllSumma ?? 0) / 12,
+          incomeSumInBrv: (inps.incomesAllSumma ?? 0) / 12 / BRV_UZS,
           workExperienceMonths: monthsBetween(inps.periodBegin ?? '', inps.periodEnd ?? ''),
         }),
       };

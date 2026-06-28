@@ -27,8 +27,8 @@ export interface MyidUserData {
   // type. Region/district codes are best-effort mapped from MyID's catalog
   // ids; when absent the Agent enters them manually.
   address: string | null;
-  regionCode: string; // KATM dict 016
-  districtCode: string; // KATM dict 052
+  regionCode: string | null; // KATM dict 016
+  districtCode: string | null; // KATM dict 052
   docType: number | null; // 0 — ID card, 6 — biometric passport
   citizenShipId: string;
 }
@@ -221,9 +221,10 @@ export async function exchangeMyidCode(code: string): Promise<MyidUserData> {
             gender: string;
             nationality: string | null;
             nationality_id: string | null;
+            citizenship_id: string;
           };
           doc_data: {
-            pass_data: string | null;
+            pass_data: string;
             doc_type_id?: number | string | null;
           };
           address?: {
@@ -252,8 +253,8 @@ export async function exchangeMyidCode(code: string): Promise<MyidUserData> {
 
     const { common_data, doc_data } = me.profile;
     const passData = doc_data.pass_data ?? '';
-    const passportSerial = passData.slice(0, 2) || null;
-    const passportNumber = passData.slice(2) || null;
+    const passportSerial = passData.slice(0, 2) || '';
+    const passportNumber = passData.slice(2) || '';
 
     // MyID returns DD.MM.YYYY — convert to ISO YYYY-MM-DD for Postgres
     const [day, month, year] = common_data.birth_date.split('.');
@@ -266,9 +267,6 @@ export async function exchangeMyidCode(code: string): Promise<MyidUserData> {
     const reg = me.profile.address?.permanent_registration;
     const addressText =
       reg?.address ?? [reg?.region, reg?.district].filter(Boolean).join(', ') ?? null;
-    // Best-effort mapping of MyID catalog ids onto KATM dict 016/052 codes —
-    // verify against the KATM test env; the Agent manual-entry fallback covers
-    // any mismatch (ADR-0025)
     const regionCode = reg?.region_id != null ? String(reg.region_id).padStart(2, '0') : null;
     const districtCode = reg?.district_id != null ? String(reg.district_id).padStart(3, '0') : null;
 
@@ -278,8 +276,8 @@ export async function exchangeMyidCode(code: string): Promise<MyidUserData> {
       lastName: common_data.last_name,
       middleName: common_data.middle_name,
       birthDate,
-      gender: common_data.gender === '2' ? 'female' : 'male',
-      nationality: common_data.nationality ?? 'UZB',
+      gender: common_data.gender,
+      nationality: common_data.nationality!,
       passportSerial,
       passportNumber,
       photoUrl: null,
@@ -287,6 +285,7 @@ export async function exchangeMyidCode(code: string): Promise<MyidUserData> {
       regionCode,
       districtCode,
       docType,
+      citizenShipId: common_data.citizenship_id,
     };
   } catch (err) {
     logIntegration(db, {

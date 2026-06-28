@@ -21,6 +21,10 @@ export const katm077Reports = pgTable('katm_077_reports', {
   avgMonthlyPayment: doublePrecision('avg_monthly_payment'),
   hasDefaults: boolean('has_defaults'),
   hasCreditBan: boolean('has_credit_ban'),
+  // Any contract under judicial collection / written off (all-time). Hard reject
+  // via the judicial_or_decommissioned stop-factor.
+  hasJuridical: boolean('has_juridical'),
+  hasDecommission: boolean('has_decommission'),
   overdue30Count: integer('overdue_30_count'),
   overdue30to60Count: integer('overdue_30_to_60_count'),
   overdue60to90Count: integer('overdue_60_to_90_count'),

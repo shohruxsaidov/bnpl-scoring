@@ -134,6 +134,7 @@ interface BreakdownRow {
   key: string
   name: string
   skipped: boolean
+  inputValue: number | string | boolean | null
   rawScore: number
   weightedScore: number
   importantLevel: number
@@ -142,6 +143,11 @@ function breakdownOf(p: ScoringDetailPipeline): BreakdownRow[] {
   const raw = p.raw as Json | null
   const list = raw && Array.isArray(raw.breakdown) ? (raw.breakdown as BreakdownRow[]) : []
   return list
+}
+function formatInputValue(value: BreakdownRow['inputValue']): string {
+  if (value === null || value === undefined) return '—'
+  if (typeof value === 'boolean') return value ? t('common.yes') : t('common.no')
+  return String(value)
 }
 function decisionLabel(decision: unknown): string {
   const key = `scoringReport.decision.${decision}`
@@ -255,6 +261,7 @@ function goBack() {
             <thead>
               <tr>
                 <th>{{ t('scoringReport.model.criterion') }}</th>
+                <th class="num">{{ t('scoringReport.model.inputValue') }}</th>
                 <th class="num">{{ t('scoringReport.model.rawScore') }}</th>
                 <th class="num">{{ t('scoringReport.model.weightedScore') }}</th>
                 <th class="num">{{ t('scoringReport.model.importance') }}</th>
@@ -266,6 +273,7 @@ function goBack() {
                   {{ row.name }}
                   <span v-if="row.skipped" class="skip-badge">{{ t('scoringReport.model.skipped') }}</span>
                 </td>
+                <td class="num font-mono">{{ row.skipped ? '—' : formatInputValue(row.inputValue) }}</td>
                 <td class="num font-mono">{{ row.skipped ? '—' : row.rawScore }}</td>
                 <td class="num font-mono">{{ row.skipped ? '—' : row.weightedScore }}</td>
                 <td class="num font-mono">{{ row.importantLevel }}</td>

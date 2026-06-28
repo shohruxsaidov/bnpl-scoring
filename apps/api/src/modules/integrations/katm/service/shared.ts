@@ -184,11 +184,18 @@ interface KatmContract {
   contract_id?: string | number;
   contract_date?: string;
   contract_status?: string;
+  contract_end_date: string; // in format YYYY-MM-DD
   total_debt_sum?: string;
   claim_date?: string;
   credit_type?: string;
   credit_type_name?: string;
   overdue_principals?: KatmContractOverduePrincipals | '' | null;
+  // Per-contract status sums (may be absent / empty / string / number). A
+  // positive lawsuit sum = the contract is under judicial collection; a positive
+  // off-balance sum = the debt was written off (decommissioned). Both are
+  // all-time hard-reject flags (see evaluateKatm077 / judicial_or_decommissioned).
+  lawsuit_principal_sum?: string | number | null;
+  offbalance_principal_sum?: string | number | null;
 }
 
 interface KatmContractsBlock {
@@ -260,6 +267,74 @@ export function computeOverdueBuckets(raw: unknown): OverdueBuckets {
   return buckets;
 }
 
+// Count 30–60 DPD overdue items on contracts active within the last year. An item
+// counts when its contract's end-date is within the last year AND its own
+// overdue_principal_days is in [30, 60). This is item-level (not the per-contract
+// max-days bucketing of computeOverdueBuckets): the "30–60 days" band is checked
+// on each individual overdue record.
+export function countActualOverdue30to60LastYear(raw: unknown): number {
+  const contractsBlock = (raw as KatmResponse)?.contracts;
+  if (!contractsBlock) return 0;
+
+  const contracts: KatmContract[] = toArray(contractsBlock.contract);
+  let lastYear = new Date();
+  lastYear.setFullYear(lastYear.getFullYear() - 1);
+
+  let count = 0;
+  for (const contract of contracts) {
+    const endDate = new Date(contract.contract_end_date);
+    if (endDate.getTime() < lastYear.getTime()) {
+      continue;
+    }
+    const principalsBlock = contract.overdue_principals;
+    if (!principalsBlock || typeof principalsBlock === 'string') continue;
+
+    const items = toArray<KatmOverduePrincipalItem>(
+      (principalsBlock as KatmContractOverduePrincipals).overdue_principal,
+    );
+    for (const item of items) {
+      const days = parseInt(item.overdue_principal_days ?? '0', 10);
+      if (!isNaN(days) && days >= 30 && days < 60) count++;
+    }
+  }
+
+  return count;
+}
+
+// Count 60–90 DPD overdue items on contracts active within the last 2 years. An item
+// counts when its contract's end-date is within the last 2 years AND its own
+// overdue_principal_days is in [60, 90). Item-level, mirroring
+// countActualOverdue30to60LastYear but for the more severe 60–90 band and a longer
+// 2-year horizon (InfoScore data per the stop-factor spec).
+export function countActualOverdue60to90Last2Years(raw: unknown): number {
+  const contractsBlock = (raw as KatmResponse)?.contracts;
+  if (!contractsBlock) return 0;
+
+  const contracts: KatmContract[] = toArray(contractsBlock.contract);
+  let lastTwoYears = new Date();
+  lastTwoYears.setFullYear(lastTwoYears.getFullYear() - 2);
+
+  let count = 0;
+  for (const contract of contracts) {
+    const endDate = new Date(contract.contract_end_date);
+    if (endDate.getTime() < lastTwoYears.getTime()) {
+      continue;
+    }
+    const principalsBlock = contract.overdue_principals;
+    if (!principalsBlock || typeof principalsBlock === 'string') continue;
+
+    const items = toArray<KatmOverduePrincipalItem>(
+      (principalsBlock as KatmContractOverduePrincipals).overdue_principal,
+    );
+    for (const item of items) {
+      const days = parseInt(item.overdue_principal_days ?? '0', 10);
+      if (!isNaN(days) && days >= 60 && days < 90) count++;
+    }
+  }
+
+  return count;
+}
+
 // KATM credit_type "24" / credit_type_name "Ипотечный кредит" identifies a mortgage.
 const MORTGAGE_CREDIT_TYPE = '24';
 const MORTGAGE_CREDIT_TYPE_NAME = 'Ипотечный кредит';
@@ -304,15 +379,17 @@ export interface KatmWindowedInputs {
 export function deriveKatm2yInputs(raw: unknown, cutoff: Date): KatmWindowedInputs {
   const data = raw as KatmResponse | undefined;
   const cutoffKey = cutoff.toISOString().slice(0, 10); // YYYY-MM-DD
-  let droppedUndated = 0;
 
   const inWindow = (date: string | undefined | null): boolean => {
     const key = katmDateKey(date);
     if (key === null) {
-      droppedUndated++;
       return false;
     }
     return key >= cutoffKey;
+  };
+
+  const isOutdated = (date: string) => {
+    return new Date().getTime() > new Date(date).getTime();
   };
 
   const contracts = toArray<KatmContract>(data?.contracts?.contract);
@@ -330,7 +407,14 @@ export function deriveKatm2yInputs(raw: unknown, cutoff: Date): KatmWindowedInpu
   }
 
   // Historical event-counts -----------------------------------------------------------
-  const creditHistoryContracts = contracts.length;
+  const creditHistoryContracts = contracts.filter((item) => inWindow(item.contract_end_date));
+  const closedWithoutOverdueContracts = creditHistoryContracts.filter((item) => {
+    if (isOutdated(item.contract_end_date)) {
+      return typeof item.overdue_principals === 'string';
+    }
+
+    return false;
+  });
 
   // Claims = each contract's originating claim + standalone claims-without-contracts.
   const claimDates: (string | undefined)[] = [
@@ -373,7 +457,6 @@ export function deriveKatm2yInputs(raw: unknown, cutoff: Date): KatmWindowedInpu
   let hasMortgage = false;
   for (const oc of openContracts) {
     const contract = oc.contract_id != null ? contractById.get(String(oc.contract_id)) : undefined;
-    if (!inWindow(contract?.contract_date)) continue;
     contingentLiability++;
     allDebts += toFloatNum(oc.total_debt_sum);
     monthlyPayment += toFloatNum(oc.monthly_average_payment);
@@ -385,14 +468,10 @@ export function deriveKatm2yInputs(raw: unknown, cutoff: Date): KatmWindowedInpu
     }
   }
 
-  if (droppedUndated > 0) {
-    console.warn(`katm 2y window: dropped ${droppedUndated} record(s) with unparseable date`);
-  }
-
   return {
     contingentLiability,
     allDebts,
-    creditHistoryContracts,
+    creditHistoryContracts: closedWithoutOverdueContracts.length,
     loanApplicationCount,
     monthlyPayment,
     ...buckets,
@@ -416,6 +495,10 @@ export interface KatmResult {
   avgMonthlyPayment: number;
   hasDefaults: boolean;
   hasCreditBan: boolean;
+  /** Any contract under judicial collection (lawsuit_principal_sum > 0), all-time. */
+  hasJuridical: boolean;
+  /** Any written-off / off-balance contract (offbalance_principal_sum > 0), all-time. */
+  hasDecommission: boolean;
   overdue30Count: number;
   overdue30to60Count: number;
   overdue60to90Count: number;
@@ -448,11 +531,37 @@ function countOpenContracts(oc: KatmOpenContracts): number {
   return Array.isArray(oc.open_contract) ? oc.open_contract.length : 1;
 }
 
+// Tolerant numeric parse — the per-contract status sums may arrive as a number,
+// a numeric string, '', or be absent. Any non-positive/unparseable value is 0.
+function toNum(v: string | number | undefined | null): number {
+  if (typeof v === 'number') return isNaN(v) ? 0 : v;
+  const n = parseFloat(v ?? '0');
+  return isNaN(n) ? 0 : n;
+}
+
+// Scan every contract (all-time, not windowed) for the two hard-reject status
+// flags. judicial = under court collection; decommission = written off the books.
+function computeJudicialFlags(data: KatmResponse): {
+  hasJuridical: boolean;
+  hasDecommission: boolean;
+} {
+  const contracts = toArray<KatmContract>(data?.contracts?.contract);
+  let hasJuridical = false;
+  let hasDecommission = false;
+  for (const c of contracts) {
+    if (toNum(c.lawsuit_principal_sum) > 0) hasJuridical = true;
+    if (toNum(c.offbalance_principal_sum) > 0) hasDecommission = true;
+    if (hasJuridical && hasDecommission) break;
+  }
+  return { hasJuridical, hasDecommission };
+}
+
 export function parseKatm077ReportResponse(data: KatmResponse): KatmResult {
   const { sysinfo, overview, scorring, open_contracts, credit_ban } = data;
   const score = toInt(scorring?.scoring_grade);
   const overdueMaxDays = toInt(overview?.max_overdue_principal_days);
   const buckets = computeOverdueBuckets(data);
+  const { hasJuridical, hasDecommission } = computeJudicialFlags(data);
 
   return {
     demandId: sysinfo?.demand_id ?? '',
@@ -470,6 +579,8 @@ export function parseKatm077ReportResponse(data: KatmResponse): KatmResult {
     avgMonthlyPayment: toFloat(overview?.actual_average_monthly_payment),
     hasDefaults: overdueMaxDays > 0 || toFloat(open_contracts?.all_overdue_debt_sum) > 0,
     hasCreditBan: credit_ban?.credit_ban_status !== '0',
+    hasJuridical,
+    hasDecommission,
     ...buckets,
     raw: data,
   };

@@ -47,6 +47,7 @@ export interface KatmSubject {
   address: string;
   phone: string;
   gender: 1 | 2; // 1 => male, 2 => female (users.gender)
+  citizenShipId: string; // KATM/MyID citizenship code — '182' = Uzbekistan
 }
 
 /**
@@ -168,6 +169,7 @@ export async function runScoringPipeline(input: {
     districtCode: input.subject.districtCode,
     phone: input.subject.phone,
     gender: input.subject.gender,
+    citizenShipId: input.subject.citizenShipId,
   };
   const myidEv = evaluateMyid(myidSubject, new Date());
   if (myidEv.status === 'rejected') {
@@ -434,6 +436,8 @@ async function persist077Ready(claimId: string, r: KatmResult): Promise<void> {
       avgMonthlyPayment: r.avgMonthlyPayment,
       hasDefaults: r.hasDefaults,
       hasCreditBan: r.hasCreditBan,
+      hasJuridical: r.hasJuridical,
+      hasDecommission: r.hasDecommission,
       overdue30Count: r.overdue30Count,
       overdue30to60Count: r.overdue30to60Count,
       overdue60to90Count: r.overdue60to90Count,
