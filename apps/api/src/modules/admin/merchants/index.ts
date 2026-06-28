@@ -76,6 +76,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     mxikCode: Type.Optional(Type.String()),
     packageCode: Type.Optional(Type.Integer()),
     packageName: Type.Optional(Type.String()),
+    isLabeled: Type.Optional(Type.Boolean()),
   })
 
   const RecordDocumentBody = Type.Object({
@@ -212,6 +213,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
         mxikCode: request.body.mxikCode,
         packageCode: request.body.packageCode,
         packageName: request.body.packageName,
+        isLabeled: request.body.isLabeled,
       })
       return reply.code(201).send({ product: serializeProduct(product) })
     },

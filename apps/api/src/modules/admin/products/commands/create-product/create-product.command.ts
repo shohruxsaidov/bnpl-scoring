@@ -6,4 +6,5 @@ export interface CreateProductInput {
   mxikCode?: string
   packageCode?: number
   packageName?: string
+  isLabeled?: boolean
 }

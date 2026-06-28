@@ -284,6 +284,7 @@ export interface Product {
   mxikCode: string | null
   packageCode: number | null
   packageName: string | null
+  isLabeled: boolean
   active: boolean
   createdAt: string
 }

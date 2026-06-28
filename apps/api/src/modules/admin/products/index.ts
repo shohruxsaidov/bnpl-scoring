@@ -22,6 +22,7 @@ export default async function adminProductRoutes(app: FastifyInstance) {
       mxikCode: Type.String(),
       packageCode: Type.Integer(),
       packageName: Type.String(),
+      isLabeled: Type.Boolean(),
       active: Type.Boolean(),
     }),
   )

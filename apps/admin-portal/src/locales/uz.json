@@ -726,6 +726,7 @@
     "mxikHint": "Yangi kod uchun to'liq 17 ta raqam kiriting va 🔍 bosing",
     "mxikNotFound": "MXIK kodi topilmadi",
     "mxikLabeled": "Belgili",
+    "isLabeled": "Markirovka qilinadi",
     "packageCode": "Qadoqlash turi",
     "selectPackage": "Qadoqlash turini tanlang",
     "optional": "ixtiyoriy",

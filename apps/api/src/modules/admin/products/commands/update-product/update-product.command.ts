@@ -6,5 +6,6 @@ export interface UpdateProductCommand {
   mxikCode?: string
   packageCode?: number
   packageName?: string
+  isLabeled?: boolean
   active?: boolean
 }

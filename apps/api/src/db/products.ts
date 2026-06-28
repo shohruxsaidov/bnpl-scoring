@@ -15,6 +15,7 @@ export const products = pgTable('products', {
   mxikCode: varchar('mxik_code', { length: 50 }),
   packageCode: integer('package_code'),
   packageName: varchar('package_name', { length: 200 }),
+  isLabeled: boolean('is_labeled').notNull().default(false),
   active: boolean('active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });

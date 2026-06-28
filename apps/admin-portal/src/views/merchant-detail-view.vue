@@ -338,12 +338,13 @@ const productForm = ref<{
   mxikCode: string
   packageCode: number | null
   packageName: string
-}>({ categoryId: null, name: '', price: null, mxikCode: '', packageCode: null, packageName: '' })
+  isLabeled: boolean
+}>({ categoryId: null, name: '', price: null, mxikCode: '', packageCode: null, packageName: '', isLabeled: false })
 const productSaving = ref(false)
 
 function openProduct() {
   editingProductId.value = null
-  productForm.value = { categoryId: null, name: '', price: null, mxikCode: '', packageCode: null, packageName: '' }
+  productForm.value = { categoryId: null, name: '', price: null, mxikCode: '', packageCode: null, packageName: '', isLabeled: false }
   _resetMxik()
   showProduct.value = true
 }
@@ -357,6 +358,7 @@ function openEditProduct(product: Product) {
     mxikCode: product.mxikCode ?? '',
     packageCode: product.packageCode,
     packageName: product.packageName ?? '',
+    isLabeled: product.isLabeled,
   }
   _resetMxik()
   if (product.mxikCode) selectedCode.value = product.mxikCode
@@ -376,6 +378,7 @@ async function submitProduct() {
         mxikCode: f.mxikCode || undefined,
         packageCode: f.packageCode ?? undefined,
         packageName: f.packageName || undefined,
+        isLabeled: f.isLabeled,
       })
       toast.add({ severity: 'success', summary: t('merchantDetail.productSaved'), life: 2000 })
     } else {
@@ -386,6 +389,7 @@ async function submitProduct() {
         mxikCode: f.mxikCode || undefined,
         packageCode: f.packageCode ?? undefined,
         packageName: f.packageName || undefined,
+        isLabeled: f.isLabeled,
       })
       toast.add({ severity: 'success', summary: t('merchantDetail.productCreated'), life: 2000 })
     }
@@ -432,6 +436,12 @@ watch(mxikLookupError, (isError) => {
 watch(selectedCode, () => {
   productForm.value.packageCode = null
   productForm.value.packageName = ''
+})
+
+// Auto-enable the "labeled" flag whenever an MXIK lookup reports a marking label.
+// Admin can still uncheck before saving; a later lookup with a label re-enables it.
+watch(mxikData, (data) => {
+  if ((data?.label ?? 0) > 0) productForm.value.isLabeled = true
 })
 
 function onMxikInputAdmin(e: Event) {
@@ -1180,6 +1190,10 @@ async function assignScoringModel(radioValue: number) {
           </p>
         </div>
       </div>
+      <div class="field is-labeled-field">
+        <label class="field-label">{{ $t('merchantDetail.isLabeled') }}</label>
+        <ToggleSwitch v-model="productForm.isLabeled" />
+      </div>
       <template #footer>
         <button class="btn-ghost" @click="showProduct = false">{{ $t('common.cancel') }}</button>
         <button class="btn-gradient" :disabled="productSaving" @click="submitProduct">
@@ -1506,6 +1520,12 @@ async function assignScoringModel(radioValue: number) {
   flex-direction: column;
   gap: 0.35rem;
   position: relative;
+}
+
+.is-labeled-field {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .p-inputgroup-addon {
