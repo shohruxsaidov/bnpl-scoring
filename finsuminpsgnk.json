@@ -333,6 +333,7 @@
     "Name": "Коэффициент итогового лимита",
     "Description": "Множитель кредитного лимита в зависимости от суммарного скор-балла.",
     "Unit": "score",
+    "BaseLimit": 5000000,
     "DefaultCoefficient": 0,
     "Ranges": [
       { "From": -2205, "To": 500,  "Coefficient": 0 },

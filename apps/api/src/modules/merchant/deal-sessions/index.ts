@@ -853,8 +853,14 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           breakdown: r.breakdown,
         };
       }
-      const fullDefaultLimit = 5_000_000;
-      const platformCreditLimit = Math.round(fullDefaultLimit * coefficient) * 100;
+      const baseLimit = resolvedModel.params.LimitCoefficient.BaseLimit;
+      if (baseLimit === undefined) {
+        request.log.warn(
+          { scoringModelId: resolvedModel.model.id, revisionId: resolvedModel.revision.id },
+          'scoring model revision has no LimitCoefficient.BaseLimit; falling back to 5_000_000',
+        );
+      }
+      const platformCreditLimit = Math.round((baseLimit ?? 5_000_000) * coefficient) * 100;
       const finalDecision =
         engineResult.rejected || platformCreditLimit === 0 ? 'reject' : 'approve';
 

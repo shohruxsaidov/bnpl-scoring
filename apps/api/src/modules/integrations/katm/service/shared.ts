@@ -317,7 +317,10 @@ export function deriveKatm2yInputs(raw: unknown, cutoff: Date): KatmWindowedInpu
 
   const contracts = toArray<KatmContract>(data?.contracts?.contract);
   const openContracts = toArray<KatmOpenContractItem>(
-    data?.open_contracts?.open_contract as KatmOpenContractItem | KatmOpenContractItem[] | undefined,
+    data?.open_contracts?.open_contract as
+      | KatmOpenContractItem
+      | KatmOpenContractItem[]
+      | undefined,
   );
 
   // contract_id -> contract, so open contracts can read their origination date & credit type.
@@ -327,7 +330,7 @@ export function deriveKatm2yInputs(raw: unknown, cutoff: Date): KatmWindowedInpu
   }
 
   // Historical event-counts -----------------------------------------------------------
-  const creditHistoryContracts = contracts.filter((c) => inWindow(c.contract_date)).length;
+  const creditHistoryContracts = contracts.length;
 
   // Claims = each contract's originating claim + standalone claims-without-contracts.
   const claimDates: (string | undefined)[] = [
@@ -340,7 +343,12 @@ export function deriveKatm2yInputs(raw: unknown, cutoff: Date): KatmWindowedInpu
 
   // Overdue episodes: filter individual overdue rows by overdue_date, then bucket each
   // contract by its worst (max-days) in-window overdue — matching computeOverdueBuckets.
-  const buckets = { overdue30Count: 0, overdue30to60Count: 0, overdue60to90Count: 0, overdue90Count: 0 };
+  const buckets = {
+    overdue30Count: 0,
+    overdue30to60Count: 0,
+    overdue60to90Count: 0,
+    overdue90Count: 0,
+  };
   for (const contract of contracts) {
     const items = toArray<KatmOverduePrincipalItem>(
       (contract.overdue_principals as KatmContractOverduePrincipals | undefined)?.overdue_principal,

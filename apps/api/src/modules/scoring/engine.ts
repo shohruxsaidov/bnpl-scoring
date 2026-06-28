@@ -69,6 +69,7 @@ export interface LimitCoefficient {
   Name?: string
   Description?: string
   Unit?: string
+  BaseLimit?: number   // base amount in soms, scaled by the resolved coefficient
   DefaultCoefficient: number
   Ranges: CoefficientBand[]
 }

@@ -46,6 +46,10 @@ async function load() {
       // Model without revisions: seed the editor from the Global Model.
       localParams.value = await store.fetchGlobalTemplateParams()
     }
+    // Legacy revisions predate BaseLimit; show the effective default so the
+    // admin always sees a concrete value rather than a blank field.
+    const lc = getLimitCoefficient()
+    if (lc && lc['BaseLimit'] === undefined) lc['BaseLimit'] = 5_000_000
   } catch {
     toast.add({ severity: 'error', summary: t('scoringModel.loadFailed'), life: 3000 })
   }
@@ -101,6 +105,11 @@ function openSaveDialog() {
 async function confirmSave() {
   if (!localParams.value || !saveName.value || !saveVersion.value) return
   saveError.value = ''
+  const baseLimit = getLimitCoefficient()?.['BaseLimit']
+  if (typeof baseLimit !== 'number' || baseLimit <= 0) {
+    saveError.value = t('scoringModel.baseLimitRequired')
+    return
+  }
   try {
     await store.save(modelId.value, saveName.value, saveVersion.value, localParams.value)
     showSaveDialog.value = false
@@ -392,6 +401,16 @@ function bandDescription(band: Record<string, unknown>): string {
           <div>
             <h2 class="section-title">{{ t('scoringModel.limitCoefficient') }}</h2>
             <p class="section-subtitle">{{ t('scoringModel.limitCoefficientSubtitle') }}</p>
+          </div>
+          <div class="default-coeff-wrap">
+            <span class="imp-label">{{ t('scoringModel.baseLimit') }}</span>
+            <InputNumber
+              v-model="(getLimitCoefficient() as Record<string, unknown>)['BaseLimit'] as number"
+              :min="0" :use-grouping="true" :max-fraction-digits="0"
+              :suffix="' ' + t('scoringModel.baseLimitHint')"
+              :disabled="readOnly"
+              input-class="imp-input"
+            />
           </div>
           <div class="default-coeff-wrap">
             <span class="imp-label">{{ t('scoringModel.defaultCoefficient') }}</span>

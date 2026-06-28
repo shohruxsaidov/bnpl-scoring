@@ -453,7 +453,7 @@
     "myidTimeout": "MyID 30 soniya ichida yuklanmadi",
     "myidReload": "Qayta yuklash",
     "myidNewSession": "Qayta sessiya yaratish",
-    "katmPendingWait": "KATM kredit hisobotini shakllantirmoqda — bu 15 daqiqagacha vaqt olishi mumkin. Sahifada qolishingiz yoki bitimga keyinroq qaytishingiz mumkin.",
+    "katmPendingWait": "Mijoz haqida ma'lumotlar yuklanmoqda.",
     "katmBanned": "Mijoz kreditlash taqiqi reestrida turibdi — rasmiylashtirish mumkin emas",
     "rejectedClientDataMissing": "Mijoz ma'lumotlari KATM so'rovi uchun yetarli emas. Ma'lumotlarni to'ldirish uchun operatorgaa murojaat qiling.",
     "oneIdLockedTitle": "One ID orqali ruxsat talab qilinadi",
