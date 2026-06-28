@@ -18,6 +18,7 @@ export async function createUserHandler({
   districtCode,
   docType,
   verifiedAt,
+  citizenShipId,
 }: CreateUserCommand) {
   const [row] = await db
     .insert(users)
@@ -37,6 +38,7 @@ export async function createUserHandler({
       districtCode,
       docType,
       verifiedAt,
+      citizenShipId
     })
     .returning();
   return row;

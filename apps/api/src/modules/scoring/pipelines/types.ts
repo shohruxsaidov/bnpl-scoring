@@ -20,7 +20,8 @@ export type ScoringStatus = 'in_progress' | 'passed' | 'scored' | 'rejected' | '
 export type RejectReasonCode =
   // myid — business knockouts + per-field missing-data knockouts
   | 'address_absent'
-  | 'age_below_21'
+  | 'age_below'
+  | 'age_above'
   | 'pinfl_absent'
   | 'passport_series_absent'
   | 'passport_number_absent'
@@ -59,7 +60,8 @@ export const REJECT_REASON_CATEGORY: Record<ScoringRejectReasonCode, RejectReaso
   district_absent: 'data_missing',
   phone_absent: 'data_missing',
   // myid — business knockout
-  age_below_21: 'ineligible',
+  age_below: 'ineligible',
+  age_above: 'ineligible',
   // katm_claim
   oneid_locked: 'access',
   // katm_mib

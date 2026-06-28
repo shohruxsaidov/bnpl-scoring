@@ -48,7 +48,7 @@ import { stampScoring } from './commands/stamp-scoring/stamp-scoring.handler';
 import { rejectSession } from './commands/reject-session/reject-session.handler';
 import type { CriteriaScores } from '../../scoring/criteria-scores';
 import { deriveKatm2yInputs } from '../../integrations/katm/service/shared';
-import type { InpsIncomeEntry } from '../../integrations/katm/service/shared';
+import type { GENDERS, InpsIncomeEntry } from '../../integrations/katm/service/shared';
 import { resolveScoringModel } from '../../scoring/resolve-model';
 import { computeScoringModel, type ScoringInputs, type ScoringResult } from '../../scoring/engine';
 import { createOtp, verifyOtp } from '../../auth/client/service/service.handler';
@@ -376,6 +376,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           address: client.address!,
           phone: client.phone,
           birthDate: client.birthDate,
+          gender: client.gender as GENDERS,
         },
         userId: client.id,
         sessionId: session.id,

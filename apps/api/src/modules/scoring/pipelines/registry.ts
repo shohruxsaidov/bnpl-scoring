@@ -7,6 +7,7 @@
 // orchestrator, only after myid passes).
 // ---------------------------------------------------------------------------
 import {
+  GENDERS,
   MIB_PASS_CODES,
   MIB_REJECT_CODES,
   type InpsResult,
@@ -15,7 +16,9 @@ import {
 } from '../../integrations/katm/service/shared';
 import type { PipelineEvaluation } from './types';
 
-const MIN_AGE = 21;
+const MIN_AGE = 18;
+const MAX_AGE_FOR_MALE = 64;
+const MAX_AGE_FOR_FEMALE = 59;
 
 /** Whole years between birthDate (ISO YYYY-MM-DD) and now. null if unparseable. */
 export function ageFromBirthDate(birthDate: string | null, now: Date): number | null {
@@ -45,6 +48,7 @@ export interface MyidSubject {
   regionCode: string | null;
   districtCode: string | null;
   phone: string | null;
+  gender: 1 | 2; // 1 => for male, 2 => for female
 }
 
 const present = (v: string | null | undefined) => !!v && v.trim().length > 0;
@@ -52,12 +56,8 @@ const present = (v: string | null | undefined) => !!v && v.trim().length > 0;
 // Ordered: address first (named business rule), then the rest. doc_type checked separately (number).
 const FIELD_CHECKS: Array<{ field: keyof MyidSubject; code: RejectReasonCode }> = [
   { field: 'address', code: 'address_absent' },
-  { field: 'pinfl', code: 'pinfl_absent' },
-  { field: 'passportSeries', code: 'passport_series_absent' },
-  { field: 'passportNumber', code: 'passport_number_absent' },
   { field: 'regionCode', code: 'region_absent' },
   { field: 'districtCode', code: 'district_absent' },
-  { field: 'phone', code: 'phone_absent' },
 ];
 
 export function evaluateMyid(subject: MyidSubject, now: Date): PipelineEvaluation {
@@ -82,8 +82,17 @@ export function evaluateMyid(subject: MyidSubject, now: Date): PipelineEvaluatio
     return { status: 'rejected', rejectReasonCode: 'doc_type_absent', summary, raw: subject };
   }
   if (age == null || age < MIN_AGE) {
-    return { status: 'rejected', rejectReasonCode: 'age_below_21', summary, raw: subject };
+    return { status: 'rejected', rejectReasonCode: 'age_below', summary, raw: subject };
   }
+
+  if (subject.gender === GENDERS.MALE && age > MAX_AGE_FOR_MALE) {
+    return { status: 'rejected', rejectReasonCode: 'age_above', summary, raw: subject };
+  }
+
+  if (subject.gender === GENDERS.FEMALE && age > MAX_AGE_FOR_FEMALE) {
+    return { status: 'rejected', rejectReasonCode: 'age_above', summary, raw: subject };
+  }
+
   return { status: 'passed', summary, raw: subject };
 }
 
@@ -105,7 +114,12 @@ export function evaluateKatmMib(result: MibResult): PipelineEvaluation {
     return { status: 'passed', summary, raw: result.raw };
   }
   if (MIB_REJECT_CODES.includes(result.resultCode)) {
-    return { status: 'rejected', rejectReasonCode: 'mib_enforcement_found', summary, raw: result.raw };
+    return {
+      status: 'rejected',
+      rejectReasonCode: 'mib_enforcement_found',
+      summary,
+      raw: result.raw,
+    };
   }
   // Unmapped code → needs-review (never an auto-reject).
   return { status: 'error', summary, raw: result.raw };

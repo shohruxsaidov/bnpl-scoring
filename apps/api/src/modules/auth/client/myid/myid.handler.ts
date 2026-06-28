@@ -18,7 +18,7 @@ export interface MyidUserData {
   lastName: string;
   birthDate: string;
   middleName: string | null;
-  gender: 'male' | 'female';
+  gender: string; //1 -> for male; 2 -> for female
   nationality: string;
   passportSerial: string;
   passportNumber: string;
@@ -30,6 +30,7 @@ export interface MyidUserData {
   regionCode: string; // KATM dict 016
   districtCode: string; // KATM dict 052
   docType: number | null; // 0 — ID card, 6 — biometric passport
+  citizenShipId: string;
 }
 
 export interface MyidSessionResult {

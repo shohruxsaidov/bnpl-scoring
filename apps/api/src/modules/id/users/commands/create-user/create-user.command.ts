@@ -14,4 +14,5 @@ export interface CreateUserCommand {
   regionCode: string;
   districtCode: string;
   docType: number;
+  citizenShipId: string; // for uzbekistan 182
 }

@@ -68,7 +68,7 @@ const isActive = computed(() => store.revision != null && store.history[0]?.id =
 async function makeGlobal() {
   if (!store.model) return
   const name = store.model.name
-  if (!store.models.length) await store.fetchModels().catch(() => {})
+  if (!store.models.length) await store.fetchModels().catch(() => { })
   const current = store.models.find((m) => m.isGlobal)
   confirm.require({
     message: t('scoringModel.makeGlobalConfirm', { name, current: current?.name ?? '—' }),
@@ -124,17 +124,7 @@ async function confirmSave() {
   }
 }
 
-// ── Section accessors ─────────────────────────────────────────────────────────
 
-function getStopFactors() {
-  if (!localParams.value) return []
-  const sf = (localParams.value as Record<string, unknown>)['StopFactors'] as Record<string, unknown> | undefined
-  if (!sf) return []
-  return Object.entries(sf).map(([key, data]) => ({
-    key,
-    data: data as Record<string, unknown>,
-  }))
-}
 
 function getCriteria() {
   if (!localParams.value) return []
@@ -191,11 +181,7 @@ function bandDescription(band: Record<string, unknown>): string {
     <!-- Page header -->
     <div class="page-header">
       <div class="header-left">
-        <button
-          v-if="readOnly"
-          class="back-btn"
-          @click="router.push(`/scoring-model/${modelId}`)"
-        >
+        <button v-if="readOnly" class="back-btn" @click="router.push(`/scoring-model/${modelId}`)">
           <i class="pi pi-arrow-left" /> {{ t('scoringModel.backToModel') }}
         </button>
         <button v-else class="back-btn" @click="router.push('/scoring-model')">
@@ -213,13 +199,9 @@ function bandDescription(band: Record<string, unknown>): string {
         </div>
       </div>
       <div class="header-actions">
-        <button
-          v-if="!readOnly && store.model && !store.model.isGlobal"
-          class="btn-secondary"
+        <button v-if="!readOnly && store.model && !store.model.isGlobal" class="btn-secondary"
           :disabled="!store.history.length"
-          :title="!store.history.length ? t('scoringModel.noRevisionsYet') : undefined"
-          @click="makeGlobal"
-        >
+          :title="!store.history.length ? t('scoringModel.noRevisionsYet') : undefined" @click="makeGlobal">
           <i class="pi pi-globe" /> {{ t('scoringModel.makeGlobal') }}
         </button>
         <button class="btn-primary" :disabled="store.saving || !localParams" @click="openSaveDialog">
@@ -235,39 +217,7 @@ function bandDescription(band: Record<string, unknown>): string {
 
     <template v-else-if="localParams">
 
-      <!-- ── Stop Factors ─────────────────────────────────────────────────── -->
-      <div v-if="getStopFactors().length" class="section-card">
-        <div class="section-header">
-          <div>
-            <h2 class="section-title">{{ t('scoringModel.stopFactors') }}</h2>
-            <p class="section-subtitle">{{ t('scoringModel.stopFactorsSubtitle') }}</p>
-          </div>
-        </div>
-        <table class="crit-table">
-          <thead>
-            <tr>
-              <th class="col-key">{{ t('scoringModel.stopFactorName') }}</th>
-              <th class="col-desc">{{ t('scoringModel.stopFactorCondition') }}</th>
-              <th class="col-reject">{{ t('scoringModel.score') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="{ key, data } in getStopFactors()" :key="key">
-              <td class="col-key">
-                <span class="crit-key-badge">{{ key }}</span>
-                <span class="sf-name">{{ data['Name'] as string }}</span>
-              </td>
-              <td class="col-desc">
-                <code class="sf-match">{{ data['Match'] as string }}</code>
-                <span v-if="data['Description']" class="sf-desc">{{ data['Description'] as string }}</span>
-              </td>
-              <td class="col-reject">
-                <span v-if="data['Reject']" class="reject-chip">{{ t('scoringTry.denied') }}</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+
 
       <!-- ── Scoring Parameters ──────────────────────────────────────────── -->
       <div class="section-card">
@@ -275,31 +225,23 @@ function bandDescription(band: Record<string, unknown>): string {
           <h2 class="section-title">{{ t('scoringModel.scoringParams') }}</h2>
         </div>
         <Accordion multiple>
-          <AccordionPanel
-            v-for="{ key, data } in getCriteria()"
-            :key="key"
-            :value="key"
-            :class="{ 'criterion-disabled': data['Enabled'] === false }"
-          >
+          <AccordionPanel v-for="{ key, data } in getCriteria()" :key="key" :value="key"
+            :class="{ 'criterion-disabled': data['Enabled'] === false }">
             <AccordionHeader>
               <div class="crit-header">
                 <div class="enabled-wrap" @click.stop>
-                  <ToggleSwitch
-                    :model-value="(data as Record<string, unknown>)['Enabled'] !== false"
+                  <ToggleSwitch :model-value="(data as Record<string, unknown>)['Enabled'] !== false"
                     :disabled="readOnly"
-                    @update:model-value="(v: boolean) => (data as Record<string, unknown>)['Enabled'] = v"
-                  />
+                    @update:model-value="(v: boolean) => (data as Record<string, unknown>)['Enabled'] = v" />
                 </div>
-                <span class="crit-name" :class="{ 'name-muted': data['Enabled'] === false }">{{ criterionName(key, data) }}</span>
+                <span class="crit-name" :class="{ 'name-muted': data['Enabled'] === false }">{{ criterionName(key, data)
+                }}</span>
                 <span class="crit-key">{{ key }}</span>
                 <div class="imp-wrap" @click.stop>
                   <span class="imp-label">{{ t('scoringModel.importantLevel') }}</span>
-                  <InputNumber
-                    v-model="(data as Record<string, unknown>)['ImportantLevel'] as number"
-                    :min="0" :max="1" :step="0.5" :max-fraction-digits="1"
-                    input-class="imp-input"
-                    :disabled="readOnly || data['Enabled'] === false"
-                  />
+                  <InputNumber v-model="(data as Record<string, unknown>)['ImportantLevel'] as number" :min="0" :max="1"
+                    :step="0.5" :max-fraction-digits="1" input-class="imp-input"
+                    :disabled="readOnly || data['Enabled'] === false" />
                 </div>
               </div>
             </AccordionHeader>
@@ -324,12 +266,8 @@ function bandDescription(band: Record<string, unknown>): string {
                         <span class="range-val">{{ bandTo(band) ?? '∞' }}</span>
                       </td>
                       <td class="col-score">
-                        <InputNumber
-                          v-model="(band as Record<string, unknown>)['Score'] as number"
-                          :use-grouping="false"
-                          :disabled="readOnly"
-                          input-class="score-input"
-                        />
+                        <InputNumber v-model="(band as Record<string, unknown>)['Score'] as number"
+                          :use-grouping="false" :disabled="readOnly" input-class="score-input" />
                       </td>
                     </tr>
                   </tbody>
@@ -346,18 +284,11 @@ function bandDescription(band: Record<string, unknown>): string {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr
-                      v-for="(_, catKey) in (data['Categories'] as Record<string, { Score: number }>)"
-                      :key="catKey"
-                    >
+                    <tr v-for="(_, catKey) in (data['Categories'] as Record<string, { Score: number }>)" :key="catKey">
                       <td class="col-desc enum-key-cell">{{ catKey }}</td>
                       <td class="col-score">
-                        <InputNumber
-                          v-model="(data['Categories'] as Record<string, { Score: number }>)[catKey].Score"
-                          :use-grouping="false"
-                          :disabled="readOnly"
-                          input-class="score-input"
-                        />
+                        <InputNumber v-model="(data['Categories'] as Record<string, { Score: number }>)[catKey].Score"
+                          :use-grouping="false" :disabled="readOnly" input-class="score-input" />
                       </td>
                     </tr>
                   </tbody>
@@ -379,12 +310,8 @@ function bandDescription(band: Record<string, unknown>): string {
                         {{ (data['ValidRegions'] as string[]).join(', ') }}
                       </td>
                       <td class="col-score">
-                        <InputNumber
-                          v-model="(data as Record<string, unknown>)['MatchScore'] as number"
-                          :use-grouping="false"
-                          :disabled="readOnly"
-                          input-class="score-input"
-                        />
+                        <InputNumber v-model="(data as Record<string, unknown>)['MatchScore'] as number"
+                          :use-grouping="false" :disabled="readOnly" input-class="score-input" />
                       </td>
                     </tr>
                   </tbody>
@@ -404,22 +331,14 @@ function bandDescription(band: Record<string, unknown>): string {
           </div>
           <div class="default-coeff-wrap">
             <span class="imp-label">{{ t('scoringModel.baseLimit') }}</span>
-            <InputNumber
-              v-model="(getLimitCoefficient() as Record<string, unknown>)['BaseLimit'] as number"
-              :min="0" :use-grouping="true" :max-fraction-digits="0"
-              :suffix="' ' + t('scoringModel.baseLimitHint')"
-              :disabled="readOnly"
-              input-class="imp-input"
-            />
+            <InputNumber v-model="(getLimitCoefficient() as Record<string, unknown>)['BaseLimit'] as number" :min="0"
+              :use-grouping="true" :max-fraction-digits="0" :suffix="' ' + t('scoringModel.baseLimitHint')"
+              :disabled="readOnly" input-class="imp-input" />
           </div>
           <div class="default-coeff-wrap">
             <span class="imp-label">{{ t('scoringModel.defaultCoefficient') }}</span>
-            <InputNumber
-              v-model="(getLimitCoefficient() as Record<string, unknown>)['DefaultCoefficient'] as number"
-              :min="0" :max="1" :step="0.1" :max-fraction-digits="2"
-              :disabled="readOnly"
-              input-class="imp-input"
-            />
+            <InputNumber v-model="(getLimitCoefficient() as Record<string, unknown>)['DefaultCoefficient'] as number"
+              :min="0" :max="1" :step="0.1" :max-fraction-digits="2" :disabled="readOnly" input-class="imp-input" />
           </div>
         </div>
         <table class="crit-table">
@@ -433,33 +352,19 @@ function bandDescription(band: Record<string, unknown>): string {
           <tbody>
             <tr
               v-for="(band, i) in ((getLimitCoefficient() as Record<string, unknown>)['Ranges'] as Record<string, unknown>[])"
-              :key="i"
-            >
+              :key="i">
               <td class="col-range">
-                <InputNumber
-                  v-model="(band as Record<string, unknown>)['From'] as number"
-                  :use-grouping="false" :max-fraction-digits="0"
-                  :disabled="readOnly"
-                  input-class="score-input"
-                />
+                <InputNumber v-model="(band as Record<string, unknown>)['From'] as number" :use-grouping="false"
+                  :max-fraction-digits="0" :disabled="readOnly" input-class="score-input" />
               </td>
               <td class="col-range">
                 <span v-if="band['To'] === null" class="range-val">∞</span>
-                <InputNumber
-                  v-else
-                  v-model="(band as Record<string, unknown>)['To'] as number"
-                  :use-grouping="false" :max-fraction-digits="0"
-                  :disabled="readOnly"
-                  input-class="score-input"
-                />
+                <InputNumber v-else v-model="(band as Record<string, unknown>)['To'] as number" :use-grouping="false"
+                  :max-fraction-digits="0" :disabled="readOnly" input-class="score-input" />
               </td>
               <td class="col-score">
-                <InputNumber
-                  v-model="(band as Record<string, unknown>)['Coefficient'] as number"
-                  :min="0" :max="1" :max-fraction-digits="2" :step="0.1"
-                  :disabled="readOnly"
-                  input-class="score-input"
-                />
+                <InputNumber v-model="(band as Record<string, unknown>)['Coefficient'] as number" :min="0" :max="1"
+                  :max-fraction-digits="2" :step="0.1" :disabled="readOnly" input-class="score-input" />
               </td>
             </tr>
           </tbody>
@@ -486,12 +391,8 @@ function bandDescription(band: Record<string, unknown>): string {
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="(rev, i) in store.history"
-            :key="rev.id"
-            class="hist-row"
-            @click="router.push(`/scoring-model/${modelId}/revisions/${rev.id}`)"
-          >
+          <tr v-for="(rev, i) in store.history" :key="rev.id" class="hist-row"
+            @click="router.push(`/scoring-model/${modelId}/revisions/${rev.id}`)">
             <td class="mono col-rev-id">{{ rev.id }}</td>
             <td class="col-desc">{{ rev.name }}</td>
             <td class="col-range"><span class="ver-chip">v{{ rev.version }}</span></td>
@@ -506,12 +407,7 @@ function bandDescription(band: Record<string, unknown>): string {
   </div>
 
   <!-- Save dialog -->
-  <Dialog
-    v-model:visible="showSaveDialog"
-    modal
-    :header="t('scoringModel.saveRevision')"
-    :style="{ width: '420px' }"
-  >
+  <Dialog v-model:visible="showSaveDialog" modal :header="t('scoringModel.saveRevision')" :style="{ width: '420px' }">
     <div class="save-form">
       <div class="field">
         <label class="field-label">{{ t('scoringModel.modelName') }}</label>
@@ -525,11 +421,7 @@ function bandDescription(band: Record<string, unknown>): string {
     </div>
     <template #footer>
       <button class="btn-secondary" @click="showSaveDialog = false">{{ t('common.cancel') }}</button>
-      <button
-        class="btn-primary"
-        :disabled="store.saving || !saveName || !saveVersion"
-        @click="confirmSave"
-      >
+      <button class="btn-primary" :disabled="store.saving || !saveName || !saveVersion" @click="confirmSave">
         {{ store.saving ? '…' : t('common.save') }}
       </button>
     </template>
@@ -572,7 +464,9 @@ function bandDescription(band: Record<string, unknown>): string {
   width: fit-content;
 }
 
-.back-btn:hover { color: var(--text-primary); }
+.back-btn:hover {
+  color: var(--text-primary);
+}
 
 .title-row {
   display: flex;
@@ -679,7 +573,9 @@ function bandDescription(band: Record<string, unknown>): string {
   box-shadow: var(--accent-glow);
 }
 
-.btn-primary:hover:not(:disabled) { opacity: 0.9; }
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.9;
+}
 
 .btn-primary:disabled {
   opacity: 0.45;
@@ -745,8 +641,14 @@ function bandDescription(band: Record<string, unknown>): string {
 }
 
 /* ── Stop factor cells ───────────────────────────────────────────────────────*/
-.col-key { width: 280px; }
-.col-reject { width: 90px; text-align: center; }
+.col-key {
+  width: 280px;
+}
+
+.col-reject {
+  width: 90px;
+  text-align: center;
+}
 
 .crit-key-badge {
   display: inline-block;
@@ -890,15 +792,22 @@ function bandDescription(band: Record<string, unknown>): string {
   transition: background 0.1s;
 }
 
-.crit-table tbody tr:last-child { border-bottom: none; }
-.crit-table tbody tr:hover { background: var(--bg-base); }
+.crit-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.crit-table tbody tr:hover {
+  background: var(--bg-base);
+}
 
 .crit-table td {
   padding: 0.45rem 1rem;
   vertical-align: middle;
 }
 
-.col-desc { width: 100%; }
+.col-desc {
+  width: 100%;
+}
 
 .col-range {
   white-space: nowrap;
@@ -922,8 +831,13 @@ function bandDescription(band: Record<string, unknown>): string {
   color: var(--text-secondary);
 }
 
-.mono { font-family: monospace; }
-.enum-key-cell { font-weight: 600; }
+.mono {
+  font-family: monospace;
+}
+
+.enum-key-cell {
+  font-weight: 600;
+}
 
 :deep(.score-input) {
   width: 90px !important;

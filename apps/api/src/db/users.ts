@@ -14,6 +14,7 @@ export const users = pgTable('users', {
   passportNumber: varchar('passport_number', { length: 7 }),
   photoUrl: text('photo_url'),
   verifiedAt: timestamp('verified_at', { withTimezone: true }),
+  citizenShipId: varchar('citizen_ship_id', { length: 5 }),
   address: varchar('address', { length: 100 }),
   regionCode: varchar('region_code', { length: 3 }), // dict 016
   districtCode: varchar('district_code', { length: 3 }), // dict 052

@@ -46,6 +46,7 @@ export interface KatmSubject {
   districtCode: string;
   address: string;
   phone: string;
+  gender: 1 | 2; // 1 => male, 2 => female (users.gender)
 }
 
 /**
@@ -166,6 +167,7 @@ export async function runScoringPipeline(input: {
     regionCode: input.subject.regionCode,
     districtCode: input.subject.districtCode,
     phone: input.subject.phone,
+    gender: input.subject.gender,
   };
   const myidEv = evaluateMyid(myidSubject, new Date());
   if (myidEv.status === 'rejected') {

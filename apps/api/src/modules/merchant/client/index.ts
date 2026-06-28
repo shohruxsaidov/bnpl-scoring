@@ -204,7 +204,8 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
         regionCode: myidUser.regionCode,
         districtCode: myidUser.districtCode,
         docType: myidUser.docType || 1,
-        gender: 1,
+        citizenShipId: myidUser.citizenShipId,
+        gender: +myidUser.gender,
       });
 
       return { client: toClientDto(client), isNew: true };

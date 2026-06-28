@@ -8,7 +8,7 @@ import { scorings } from './scorings';
 // The unique (scoring_id, type) index enforces one row per pipeline type.
 //
 // Each pipeline has hardcoded stop-factors (in the codebase, not configurable):
-//   myid      → address_absent, age_below_21
+//   myid      → address_absent, age_below, age_above
 //   katm_077  → credit_ban, has_defaults, …
 //   katm_inps → …
 // All stop-factors are hard knockouts — the first one trips, the pipeline is

@@ -552,6 +552,11 @@ export function parseInpsReportResponse(data: InpsReportResponse): InpsResult {
  *  pass (it is either a confirmed reject or an unmapped code → needs-review). */
 export const MIB_PASS_CODES = [204] as const;
 
+export enum GENDERS {
+  MALE = 1,
+  FEMALE = 2,
+}
+
 /** Inner resultCode(s) confirmed to mean "enforcement found" → REJECT. Empty
  *  until the KATM test env reveals real "data found" responses; until then every
  *  non-pass code falls through to needs-review (the evaluator's 'error' path)

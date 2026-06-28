@@ -287,7 +287,8 @@
     },
     "rejectReason": {
       "address_absent": "Manzil mavjud emas",
-      "age_below_21": "Yosh 21 dan kichik",
+      "age_below": "Yosh 18 dan kichik",
+      "age_above": "Yosh ruxsat etilgan chegaradan yuqori",
       "credit_ban": "Kreditlash taqiqi",
       "has_defaults": "Defoltlar mavjud",
       "model_stop_factor": "Model stop-faktori",
