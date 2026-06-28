@@ -23,7 +23,6 @@ const allNav = computed<NavItem[]>(() => [
   { label: t('nav.overview'), icon: 'pi pi-th-large', to: '/' },
   { label: t('nav.merchants'), icon: 'pi pi-building', to: '/merchants', feature: 'view_merchants' },
   { label: t('nav.clients'), icon: 'pi pi-users', to: '/clients', feature: 'view_clients' },
-  { label: t('nav.onboarding'), icon: 'pi pi-user-plus', to: '/onboarding/new', feature: 'onboard_merchants' },
   { label: t('nav.allDeals'), icon: 'pi pi-credit-card', to: '/deals', feature: 'view_deals' },
   { label: t('nav.tariffs'), icon: 'pi pi-percentage', to: '/tariffs', feature: 'view_tariffs' },
   { label: t('nav.employees'), icon: 'pi pi-users', to: '/employees', feature: 'manage_employees' },
@@ -35,7 +34,6 @@ const allNav = computed<NavItem[]>(() => [
   { label: t('nav.scoringModel'), icon: 'pi pi-sliders-h', to: '/scoring-model', feature: 'manage_scoring_model' },
   { label: t('nav.scorings'), icon: 'pi pi-list-check', to: '/scorings', feature: 'view_scorings' },
   { label: t('nav.payments'), icon: 'pi pi-credit-card', to: '/payments', feature: 'view_payments' },
-  { label: t('nav.integrationLogs'), icon: 'pi pi-history', to: '/integration-logs', feature: 'view_integration_logs' },
   { label: t('nav.permissions'), icon: 'pi pi-shield', to: '/permissions', feature: 'manage_roles' },
 ])
 

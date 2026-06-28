@@ -16,6 +16,7 @@ const props = defineProps<{
   sections: ReportSection[]
   labels: Record<string, string>
   cards?: ReportCard[]
+  tiyin?: boolean
 }>()
 
 const { t } = useI18n()
@@ -76,7 +77,7 @@ function setAll(open: boolean) {
         <div v-if="s.empty" class="note">— {{ t('jsonReport.none') }} —</div>
         <template v-else>
           <div v-if="s.note" class="note">{{ s.note }}</div>
-          <JsonNode :value="s.value" :labels="labels" :show-meta="showMeta" />
+          <JsonNode :value="s.value" :labels="labels" :show-meta="showMeta" :tiyin="tiyin" />
         </template>
       </div>
     </section>

@@ -17,6 +17,7 @@ const props = defineProps<{
   value: unknown
   labels: Record<string, string>
   showMeta: boolean
+  tiyin?: boolean
 }>()
 
 const isArr = computed(() => Array.isArray(props.value))
@@ -25,7 +26,7 @@ const isArr = computed(() => Array.isArray(props.value))
 const obj = computed<Json>(() => (isObject(props.value) && !isArr.value ? (props.value as Json) : {}))
 const parts = computed(() => partition(obj.value, props.showMeta))
 const leaves = computed(() =>
-  parts.value.leaves.map((k) => ({ key: k, label: labelFor(k, props.labels), leaf: formatLeaf(k, obj.value[k]) })),
+  parts.value.leaves.map((k) => ({ key: k, label: labelFor(k, props.labels), leaf: formatLeaf(k, obj.value[k], props.tiyin) })),
 )
 const branches = computed(() =>
   parts.value.branches.map((k) => ({
@@ -41,7 +42,7 @@ const branches = computed(() =>
 const arr = computed<unknown[]>(() => (isArr.value ? (props.value as unknown[]) : []))
 const itemsAreObjects = computed(() => arr.value.length > 0 && isObject(arr.value[0]))
 const items = computed(() =>
-  arr.value.map((it, i) => ({ i, raw: it, ...itemSummary(it as Json) })),
+  arr.value.map((it, i) => ({ i, raw: it, ...itemSummary(it as Json, props.tiyin) })),
 )
 const itemsOpen = computed(() => arr.value.length <= 12)
 // Arrays whose items are each a single-field object (e.g. phones → [{ phone_number }, …])
@@ -53,7 +54,7 @@ const singleLeafList = computed<string[] | null>(() => {
     if (!isObject(it)) return null
     const { leaves, branches } = partition(it as Json, props.showMeta)
     if (branches.length || leaves.length !== 1) return null
-    const leaf = formatLeaf(leaves[0], (it as Json)[leaves[0]])
+    const leaf = formatLeaf(leaves[0], (it as Json)[leaves[0]], props.tiyin)
     if (isEmpty(leaf.text)) continue
     out.push(leaf.text)
   }
@@ -102,7 +103,7 @@ function leafClass(kind: string): string {
         <span v-if="b.count != null" class="chip">{{ b.count }}</span>
       </summary>
       <div class="inner">
-        <JsonNode :value="b.value" :labels="labels" :show-meta="showMeta" />
+        <JsonNode :value="b.value" :labels="labels" :show-meta="showMeta" :tiyin="tiyin" />
       </div>
     </details>
   </template>
@@ -123,7 +124,7 @@ function leafClass(kind: string): string {
         <span v-if="it.meta" class="summeta">{{ it.meta }}</span>
       </summary>
       <div class="inner">
-        <JsonNode :value="it.raw" :labels="labels" :show-meta="showMeta" />
+        <JsonNode :value="it.raw" :labels="labels" :show-meta="showMeta" :tiyin="tiyin" />
       </div>
     </details>
   </template>

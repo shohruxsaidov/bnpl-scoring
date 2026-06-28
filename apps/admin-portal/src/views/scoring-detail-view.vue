@@ -123,10 +123,32 @@ function formatSummaryValue(value: unknown): string {
 function sections(keys: string[]) {
   return keys.map((key) => ({ key, title: sectionTitle(key) }))
 }
+// Turn a vendor date ("2025-03", "11.03.2025", "20250311") into a sortable
+// YYYYMMDD-ish string. A 4-digit leading group is treated as a year (Y-M-D
+// order); otherwise the groups are assumed D-M-Y and reversed.
+function dateSortKey(value: unknown): string {
+  const digits = String(value ?? '').match(/\d+/g)
+  if (!digits || !digits.length) return ''
+  const ymd = digits[0].length === 4 ? digits : [...digits].reverse()
+  return ymd.join('').padEnd(8, '0')
+}
+
 // INPS data is nested under `report`; KATM-077 is at the root.
 function inpsData(raw: Record<string, unknown> | null): Json {
   const report = raw && isObject(raw.report) ? raw.report : raw
-  return (report as Json) ?? {}
+  if (!isObject(report)) return {}
+  // Sort "Ежемесячный доход" (incomes.income) newest-first by date.
+  const incomes = report.incomes
+  if (isObject(incomes) && Array.isArray((incomes as Json).income)) {
+    const income = [...((incomes as Json).income as Json[])].sort(
+      (a, b) =>
+        dateSortKey(b.period || b.send_date || b.oper_date).localeCompare(
+          dateSortKey(a.period || a.send_date || a.oper_date),
+        ),
+    )
+    return { ...report, incomes: { ...(incomes as Json), income } }
+  }
+  return report as Json
 }
 
 // ---- model_score breakdown --------------------------------------------------
@@ -284,7 +306,7 @@ function goBack() {
 
         <!-- KATM-077 -->
         <JsonReport v-else-if="activePipeline.type === 'katm_077' && activePipeline.raw"
-          :data="activePipeline.raw as Json" :sections="sections(KATM_077_SECTION_KEYS)" :labels="VENDOR_LABELS" />
+          :data="activePipeline.raw as Json" :sections="sections(KATM_077_SECTION_KEYS)" :labels="VENDOR_LABELS" tiyin />
 
         <!-- KATM-INPS (nested under report) -->
         <JsonReport v-else-if="activePipeline.type === 'katm_inps' && activePipeline.raw"

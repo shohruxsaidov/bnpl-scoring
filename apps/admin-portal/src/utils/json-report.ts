@@ -57,15 +57,23 @@ function groupInt(intPart: string): string {
   return intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
 }
 
-export function formatMoney(v: unknown): string {
+// KATM 077 amounts arrive in tiyin (1/100 of a som). When `tiyin` is set we
+// divide by 100 and always render two decimal places: 500000000 -> "5 000 000.00".
+export function formatMoney(v: unknown, tiyin = false): string {
   const s = String(v)
   const m = s.match(/^(\d+)(\.\d+)?$/)
   if (!m) return s
+  if (tiyin) {
+    const som = Number(s) / 100
+    if (!Number.isFinite(som)) return s
+    const [intPart, frac] = som.toFixed(2).split('.')
+    return groupInt(intPart) + '.' + frac
+  }
   return groupInt(m[1]) + (m[2] ?? '')
 }
 
 function isMoneyKey(k: string): boolean {
-  return /(summa|income|remain|salary)/.test(k) && !/date|name|period_b|period_e/.test(k)
+  return /(summa|income|remain|salary|amount)/.test(k) && !/date|name|period_b|period_e/.test(k)
 }
 
 export type LeafKind = 'empty' | 'gender' | 'pill-good' | 'pill-bad' | 'money' | 'text'
@@ -75,7 +83,7 @@ export interface LeafValue {
   text: string
 }
 
-export function formatLeaf(key: string, value: unknown): LeafValue {
+export function formatLeaf(key: string, value: unknown, tiyin = false): LeafValue {
   if (isEmpty(value)) return { kind: 'empty', text: '—' }
   if (key === 'gender') return { kind: 'gender', text: GENDER[String(value)] ?? String(value) }
   if (key === 'scoring_katm' || key === 'credit_info') {
@@ -87,7 +95,7 @@ export function formatLeaf(key: string, value: unknown): LeafValue {
   }
   const sv = String(value)
   if (isMoneyKey(key) && /^\d+(\.\d+)?$/.test(sv) && sv.replace(/\..*/, '').length >= 4) {
-    return { kind: 'money', text: formatMoney(value) }
+    return { kind: 'money', text: formatMoney(value, tiyin) }
   }
   return { kind: 'text', text: sv }
 }
@@ -98,7 +106,7 @@ export function isTechnicalKey(key: string): boolean {
 }
 
 // A one-line digest for a list item (income record, contract, …).
-export function itemSummary(o: Json): { main: string; meta: string } {
+export function itemSummary(o: Json, tiyin = false): { main: string; meta: string } {
   const date = o.period || o.send_date || o.oper_date || o.consent_date || ''
   const who = o.orgname || o.org_name || o.report_name || o.name || ''
   const creditType = o.credit_type_name || o.credit_type || ''
@@ -107,7 +115,7 @@ export function itemSummary(o: Json): { main: string; meta: string } {
     [date, who, creditType].filter((x) => !isEmpty(x)).map(String).join(' · ') ||
     '#' + (o.num ?? '')
   const meta: string[] = []
-  if (!isEmpty(amt)) meta.push(formatMoney(amt))
+  if (!isEmpty(amt)) meta.push(formatMoney(amt, tiyin))
   if (o.presence) meta.push(String(o.presence))
   return { main, meta: meta.join(' · ') }
 }
