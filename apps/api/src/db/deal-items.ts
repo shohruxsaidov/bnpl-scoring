@@ -1,4 +1,4 @@
-import { integer, numeric, pgTable, serial, uuid, varchar } from 'drizzle-orm/pg-core';
+import { integer, jsonb, numeric, pgTable, serial, uuid, varchar } from 'drizzle-orm/pg-core';
 import { deals } from './deals';
 import { products } from './products';
 
@@ -22,4 +22,7 @@ export const dealItems = pgTable('deal_items', {
   packageCode: integer('package_code'),
   packageName: varchar('package_name', { length: 200 }),
   quantity: integer('quantity').notNull().default(1),
+  // Per-unit marking codes (markirovka) for labeled products; [] for unlabeled.
+  // labels.length === quantity when the snapshot product was labeled.
+  labels: jsonb('labels').$type<string[]>().notNull().default([]),
 });

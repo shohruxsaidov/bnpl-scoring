@@ -148,13 +148,18 @@ async function buildStepPayload(
         const line = l as Record<string, unknown>;
         const productId = str(line['productId']);
         const quantity = typeof line['quantity'] === 'number' ? Math.floor(line['quantity']) : 0;
+        const labels = Array.isArray(line['labels'])
+          ? (line['labels'] as unknown[]).map((x) => (typeof x === 'string' ? x.trim() : ''))
+          : [];
         console.log('[buildStepPayload:products] parsed line', { productId, quantity });
         if (!productId || !/^\d+$/.test(productId) || quantity < 1)
           throw err('invalid_step_payload');
-        return { productId, quantity };
+        return { productId, quantity, labels };
       });
 
       const resolved = [];
+      // Marking codes are physically unique — reject duplicates across the whole basket.
+      const seenLabels = new Set<string>();
       for (const line of lines) {
         const [p] = await db
           .select()
@@ -168,6 +173,19 @@ async function buildStepPayload(
           merchantMatch: p?.merchantId === session.merchantId,
         });
         if (!p || !p.active || p.merchantId !== session.merchantId) throw err('product_not_found');
+
+        // Labeled ⇒ one non-empty code per unit; unlabeled ⇒ no codes at all.
+        let labels: string[] = [];
+        if (p.isLabeled) {
+          if (line.labels.length !== line.quantity || line.labels.some((c) => !c))
+            throw err('invalid_step_payload');
+          for (const c of line.labels) {
+            if (seenLabels.has(c)) throw err('invalid_step_payload');
+            seenLabels.add(c);
+          }
+          labels = line.labels;
+        }
+
         resolved.push({
           productId: line.productId,
           productName: p.name,
@@ -176,6 +194,8 @@ async function buildStepPayload(
           packageCode: p.packageCode ?? null,
           packageName: p.packageName ?? null,
           quantity: line.quantity,
+          isLabeled: p.isLabeled,
+          labels,
         });
       }
       console.log('[buildStepPayload:products] returning', resolved);

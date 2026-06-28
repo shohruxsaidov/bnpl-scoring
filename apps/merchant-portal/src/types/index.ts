@@ -134,6 +134,7 @@ export interface Product {
   mxikCode: string | null;
   packageCode: number | null;
   packageName: string | null;
+  isLabeled: boolean;
   active: boolean;
   createdAt: string;
 }
@@ -141,6 +142,8 @@ export interface Product {
 export interface BasketItem {
   product: Product;
   quantity: number;
+  /** Per-unit marking codes for labeled products; [] for unlabeled. length === quantity when labeled. */
+  labels: string[];
 }
 
 /** Matches deal_payment_schedules table. Renamed from ScheduleRow. */

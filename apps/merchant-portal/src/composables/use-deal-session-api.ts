@@ -54,6 +54,8 @@ export interface SessionStepData {
       packageCode: number | null
       packageName: string | null
       quantity: number
+      isLabeled?: boolean
+      labels?: string[]
     }>
   }
   payment?: { paymentDay: number }

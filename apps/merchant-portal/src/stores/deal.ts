@@ -210,10 +210,12 @@ export const useDealStore = defineStore(
             mxikCode: line.mxikCode,
             packageCode: line.packageCode,
             packageName: line.packageName,
+            isLabeled: line.isLabeled ?? false,
             active: true,
             createdAt: '',
           },
           quantity: line.quantity,
+          labels: line.labels ?? [],
         }));
       }
 
@@ -308,8 +310,26 @@ export const useDealStore = defineStore(
     function addToBasket(product: Product) {
       const existing = sessionData.value.basket.find((i) => i.product.id === product.id);
       if (existing) existing.quantity++;
-      else sessionData.value.basket.push({ product, quantity: 1 });
+      else sessionData.value.basket.push({ product, quantity: 1, labels: [] });
       sessionData.value.prepaymentAmount = null;
+    }
+
+    /** Add one unit of a labeled product, carrying its unique marking code. */
+    function addLabeledUnit(product: Product, label: string) {
+      const existing = sessionData.value.basket.find((i) => i.product.id === product.id);
+      if (existing) {
+        existing.labels.push(label);
+        existing.quantity = existing.labels.length;
+      } else {
+        sessionData.value.basket.push({ product, quantity: 1, labels: [label] });
+      }
+      sessionData.value.prepaymentAmount = null;
+    }
+
+    /** True if a marking code is already used anywhere in the basket. */
+    function labelExistsInBasket(label: string): boolean {
+      const needle = label.trim();
+      return sessionData.value.basket.some((i) => i.labels.includes(needle));
     }
 
     function incrementItem(productId: string) {
@@ -320,8 +340,11 @@ export const useDealStore = defineStore(
 
     function decrementItem(productId: string) {
       const i = sessionData.value.basket.find((x) => x.product.id === productId);
-      if (i && i.quantity > 1) i.quantity--;
-      else removeFromBasket(productId);
+      if (i && i.quantity > 1) {
+        // Labeled lines drop their last marking code along with the unit.
+        if (i.product.isLabeled) i.labels.pop();
+        i.quantity--;
+      } else removeFromBasket(productId);
       sessionData.value.prepaymentAmount = null;
     }
 
@@ -368,6 +391,8 @@ export const useDealStore = defineStore(
       setPrepayment,
       clearPrepayment,
       addToBasket,
+      addLabeledUnit,
+      labelExistsInBasket,
       incrementItem,
       decrementItem,
       removeFromBasket,

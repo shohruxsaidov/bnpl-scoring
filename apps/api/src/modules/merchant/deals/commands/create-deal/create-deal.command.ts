@@ -13,6 +13,7 @@ export interface CreateDealInput {
     packageCode: number | null;
     packageName: string | null;
     quantity: number;
+    labels: string[];
   }>;
   paymentDay: number;
   amount: number;

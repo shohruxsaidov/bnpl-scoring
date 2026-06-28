@@ -5,6 +5,7 @@ import { useDealStore } from '@/stores/deal'
 import { useCatalogStore } from '@/stores/catalog'
 import { useClientScoringStore } from '@/stores/client-scoring'
 import { saveSessionStep, requestPrepayment, confirmPrepayment } from '@/composables/use-deal-session-api'
+import type { BasketItem, Product } from '@/types'
 import MonoAmount from '@/components/mono-amount.vue'
 
 const deal = useDealStore()
@@ -100,6 +101,7 @@ async function next() {
       lines: deal.sessionData.basket.map((item) => ({
         productId: item.product.id,
         quantity: item.quantity,
+        labels: item.labels,
       })),
     })
   } catch {
@@ -110,6 +112,66 @@ async function next() {
   }
 
   deal.complete('products')
+}
+
+/* ── Marking-code (label) dialog ─────────────────────────────────────────── */
+
+const showLabelDialog = ref(false)
+const labelInput = ref('')
+const labelError = ref('')
+const pendingProduct = ref<Product | null>(null)
+
+const LABEL_MAX = 255
+
+const labelValid = computed(() => {
+  const v = labelInput.value.trim()
+  return v.length > 0 && v.length <= LABEL_MAX && !deal.labelExistsInBasket(v)
+})
+
+/** Add button on a product card — labeled products prompt for a marking code first. */
+function onAddProduct(p: Product) {
+  if (p.isLabeled) openLabelDialog(p)
+  else deal.addToBasket(p)
+}
+
+/** Basket "+" stepper — labeled lines need a fresh code per unit. */
+function onIncrement(item: BasketItem) {
+  if (item.product.isLabeled) openLabelDialog(item.product)
+  else deal.incrementItem(item.product.id)
+}
+
+function openLabelDialog(p: Product) {
+  pendingProduct.value = p
+  labelInput.value = ''
+  labelError.value = ''
+  showLabelDialog.value = true
+}
+
+function closeLabelDialog() {
+  showLabelDialog.value = false
+  pendingProduct.value = null
+  labelInput.value = ''
+  labelError.value = ''
+}
+
+function confirmLabel() {
+  const p = pendingProduct.value
+  if (!p) return
+  const v = labelInput.value.trim()
+  if (!v) {
+    labelError.value = tr('stepProducts.labelRequired')
+    return
+  }
+  if (v.length > LABEL_MAX) {
+    labelError.value = tr('stepProducts.labelTooLong')
+    return
+  }
+  if (deal.labelExistsInBasket(v)) {
+    labelError.value = tr('stepProducts.labelDuplicate')
+    return
+  }
+  deal.addLabeledUnit(p, v)
+  closeLabelDialog()
 }
 
 /* ── Prepayment dialog ───────────────────────────────────────────────────── */
@@ -163,6 +225,7 @@ async function openPrepayDialog() {
       lines: deal.sessionData.basket.map((item) => ({
         productId: item.product.id,
         quantity: item.quantity,
+        labels: item.labels,
       })),
     })
   } catch {
@@ -274,7 +337,7 @@ async function submitPrepayment() {
                 <MonoAmount :value="basePrice(p.price)" size="sm" :gradient="false" />
               </span>
             </div>
-            <button class="add-btn" @click="deal.addToBasket(p)">
+            <button class="add-btn" @click="onAddProduct(p)">
               <i class="pi pi-plus" /> {{ $t('stepProducts.add') }}
             </button>
           </div>
@@ -316,12 +379,17 @@ async function submitPrepayment() {
                 <i class="pi pi-minus" />
               </button>
               <span class="font-mono">{{ item.quantity }}</span>
-              <button @click="deal.incrementItem(item.product.id)">
+              <button @click="onIncrement(item)">
                 <i class="pi pi-plus" />
               </button>
             </div>
             <MonoAmount :value="finalPrice(item.product.price) * item.quantity" size="sm" :gradient="false" />
           </div>
+          <ul v-if="item.product.isLabeled && item.labels.length" class="bi-labels">
+            <li v-for="(code, idx) in item.labels" :key="idx" class="font-mono">
+              <i class="pi pi-tag" /> {{ code }}
+            </li>
+          </ul>
         </div>
       </div>
 
@@ -371,6 +439,46 @@ async function submitPrepayment() {
       </div>
     </aside>
   </div>
+
+  <!-- Marking-code (label) dialog -->
+  <Teleport to="body">
+    <div v-if="showLabelDialog" class="dialog-overlay" @click.self="closeLabelDialog">
+      <div class="dialog-box surface-card">
+        <div class="dialog-head">
+          <h3>{{ $t('stepProducts.labelDialogTitle') }}</h3>
+          <button class="dialog-close" @click="closeLabelDialog">
+            <i class="pi pi-times" />
+          </button>
+        </div>
+
+        <p class="dialog-subtitle">
+          {{ $t('stepProducts.labelDialogSubtitle', { name: pendingProduct?.name ?? '' }) }}
+        </p>
+
+        <div class="dialog-fields">
+          <label>
+            <span>{{ $t('stepProducts.labelField') }}</span>
+            <input
+              v-model="labelInput"
+              type="text"
+              class="font-mono"
+              :maxlength="LABEL_MAX"
+              :placeholder="$t('stepProducts.labelPlaceholder')"
+              @keydown.enter.prevent="confirmLabel"
+            />
+          </label>
+        </div>
+
+        <p v-if="labelError" class="dialog-error">
+          <i class="pi pi-exclamation-triangle" /> {{ labelError }}
+        </p>
+
+        <button class="btn-gradient dialog-confirm" :disabled="!labelValid" @click="confirmLabel">
+          {{ $t('stepProducts.labelConfirm') }}
+        </button>
+      </div>
+    </div>
+  </Teleport>
 
   <!-- Prepayment dialog -->
   <Teleport to="body">
@@ -795,6 +903,29 @@ async function submitPrepayment() {
   justify-content: space-between;
   align-items: center;
   margin-top: 0.6rem;
+}
+
+.bi-labels {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.bi-labels li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  word-break: break-all;
+}
+
+.bi-labels .pi-tag {
+  font-size: 0.7rem;
+  opacity: 0.7;
 }
 
 .qty {

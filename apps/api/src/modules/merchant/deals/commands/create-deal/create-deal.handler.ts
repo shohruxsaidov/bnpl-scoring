@@ -70,6 +70,7 @@ export async function createDealFromSession(session: DealSessionRow) {
       packageCode: line.packageCode,
       packageName: line.packageName,
       quantity: line.quantity,
+      labels: line.labels ?? [],
     };
   });
 
@@ -153,6 +154,7 @@ export async function createDeal(input: CreateDealInput) {
           packageCode: item.packageCode,
           packageName: item.packageName,
           quantity: item.quantity,
+          labels: item.labels ?? [],
         })),
       );
     }
