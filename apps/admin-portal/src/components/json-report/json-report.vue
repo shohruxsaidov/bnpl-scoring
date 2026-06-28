@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { type Component, computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import JsonNode from './json-node.vue'
 import {
@@ -11,11 +11,20 @@ import {
   isObject,
 } from '@/utils/json-report'
 
+// A section may opt out of the generic JsonNode tree in favour of a bespoke
+// component, optionally pre-bound with config props. The component receives
+// `value` (the section value), `labels`, and `tiyin`.
+export interface SectionRenderer {
+  is: Component
+  props?: Record<string, unknown>
+}
+
 const props = defineProps<{
   data: Json
   sections: ReportSection[]
   labels: Record<string, string>
   cards?: ReportCard[]
+  renderers?: Record<string, SectionRenderer>
   tiyin?: boolean
 }>()
 
@@ -30,6 +39,7 @@ interface RenderedSection {
   empty: boolean
   note: string | null
   count: number | null
+  renderer: SectionRenderer | null
 }
 
 const sections = computed<RenderedSection[]>(() =>
@@ -41,7 +51,15 @@ const sections = computed<RenderedSection[]>(() =>
       const note = isObject(value)
         ? ((value as Json).notes as string) || ((value as Json).declaration as string) || null
         : null
-      return { key: s.key, title: s.title, value, empty, note, count: branchCount(value) }
+      return {
+        key: s.key,
+        title: s.title,
+        value,
+        empty,
+        note,
+        count: branchCount(value),
+        renderer: props.renderers?.[s.key] ?? null,
+      }
     })
     // Drop sections with no data (e.g. Условные обязательства) rather than show a placeholder.
     .filter((s) => !s.empty),
@@ -77,7 +95,15 @@ function setAll(open: boolean) {
         <div v-if="s.empty" class="note">— {{ t('jsonReport.none') }} —</div>
         <template v-else>
           <div v-if="s.note" class="note">{{ s.note }}</div>
-          <JsonNode :value="s.value" :labels="labels" :show-meta="showMeta" :tiyin="tiyin" />
+          <component
+            :is="s.renderer.is"
+            v-if="s.renderer"
+            v-bind="s.renderer.props"
+            :value="s.value"
+            :labels="labels"
+            :tiyin="tiyin"
+          />
+          <JsonNode v-else :value="s.value" :labels="labels" :show-meta="showMeta" :tiyin="tiyin" />
         </template>
       </div>
     </section>

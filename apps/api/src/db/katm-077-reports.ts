@@ -29,6 +29,10 @@ export const katm077Reports = pgTable('katm_077_reports', {
   overdue30to60Count: integer('overdue_30_to_60_count'),
   overdue60to90Count: integer('overdue_60_to_90_count'),
   overdue90Count: integer('overdue_90_count'),
+  // Max overdue principal days across the subject's contingent liabilities
+  // (loans where they are a third party). null = not a pledger. Feeds the
+  // engine's PledgerLiability criterion.
+  pledgerLiability: integer('pledger_liability'),
   raw: jsonb('raw'),
   status: varchar('status', { length: 20 }).notNull().default('created'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

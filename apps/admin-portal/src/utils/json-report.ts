@@ -152,3 +152,79 @@ export function branchCount(v: unknown): number | null {
   }
   return null
 }
+
+// Normalise a vendor date ("2025-03", "11.03.2025", "20250311") into a sortable
+// YYYYMMDD string. A 4-digit leading group is treated as a year (Y-M-D order);
+// otherwise the groups are assumed D-M-Y and reversed. Shared by the detail view
+// (INPS incomes) and the 077 report tables.
+export function dateSortKey(value: unknown): string {
+  const digits = String(value ?? '').match(/\d+/g)
+  if (!digits || !digits.length) return ''
+  const ymd = digits[0].length === 4 ? digits : [...digits].reverse()
+  return ymd.join('').padEnd(8, '0')
+}
+
+// --- report tables -----------------------------------------------------------
+
+export type CellFormat = 'money' | 'date' | 'percent' | 'text'
+
+export interface ColumnDef {
+  key: string
+  label?: string
+  format?: CellFormat
+  align?: 'left' | 'right'
+}
+
+export interface TableConfig {
+  // Inner array key for the section wrapper (e.g. `contract`, `open_contract`).
+  // When absent, the first array-valued property is used, or the value itself
+  // if it is already an array.
+  arrayKey?: string
+  // Explicit columns. When absent, columns are derived from the rows.
+  columns?: ColumnDef[]
+  // Sibling scalar keys (on the section wrapper) shown as a summary strip.
+  aggregates?: ColumnDef[]
+  // Candidate date keys; rows are sorted newest-first by the first present one.
+  sortKeys?: string[]
+  // Page size; when set and exceeded, the table paginates.
+  pageSize?: number
+}
+
+// Format a single cell honouring an explicit column format, falling back to the
+// key-based heuristics in formatLeaf (gender pills, money detection, …).
+export function formatCell(
+  key: string,
+  value: unknown,
+  format: CellFormat | undefined,
+  tiyin = false,
+): LeafValue {
+  if (isEmpty(value)) return { kind: 'empty', text: '—' }
+  switch (format) {
+    case 'money':
+      return { kind: 'money', text: formatMoney(value, tiyin) }
+    case 'percent':
+      return { kind: 'text', text: `${value}%` }
+    case 'date':
+      return { kind: 'text', text: String(value) }
+    case 'text':
+      return { kind: 'text', text: String(value) }
+    default:
+      // 077 money fields reliably end in `_sum` (immediate_principal_sum,
+      // reserve_bal_sum, …); day/qty counters end in `_days`/`_qty`.
+      if (/_sum$/.test(key) && /^\d+(\.\d+)?$/.test(String(value))) {
+        return { kind: 'money', text: formatMoney(value, tiyin) }
+      }
+      return formatLeaf(key, value, tiyin)
+  }
+}
+
+// Derive table columns from the first row, dropping bookkeeping (*_change) keys
+// and columns that are empty across every row. Used for mini-tables (contract
+// balances/schedules) and any section without an explicit column config.
+export function autoColumns(rows: Json[]): ColumnDef[] {
+  if (!rows.length) return []
+  const keys = Object.keys(rows[0]).filter((k) => !isTechnicalKey(k))
+  return keys
+    .filter((k) => rows.some((r) => !isEmpty(r[k]) && !isObject(r[k])))
+    .map((k) => ({ key: k, format: isMoneyKey(k) ? ('money' as const) : undefined }))
+}

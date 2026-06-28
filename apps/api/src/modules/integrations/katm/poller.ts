@@ -201,6 +201,7 @@ export async function saveKatmReport(claimId: string, result: KatmResult): Promi
       overdue30to60Count: result.overdue30to60Count,
       overdue60to90Count: result.overdue60to90Count,
       overdue90Count: result.overdue90Count,
+      pledgerLiability: result.pledgerLiability,
       raw: result.raw as Record<string, unknown>,
       status: 'completed',
       updatedAt: new Date(),

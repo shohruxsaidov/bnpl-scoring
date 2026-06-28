@@ -442,6 +442,7 @@ async function persist077Ready(claimId: string, r: KatmResult): Promise<void> {
       overdue30to60Count: r.overdue30to60Count,
       overdue60to90Count: r.overdue60to90Count,
       overdue90Count: r.overdue90Count,
+      pledgerLiability: r.pledgerLiability,
       raw: r.raw as Record<string, unknown>,
       status: 'completed',
     })

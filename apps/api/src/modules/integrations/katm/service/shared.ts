@@ -208,6 +208,17 @@ interface KatmOpenContractItem {
   monthly_average_payment?: string;
 }
 
+// A contingent liability = a contract on which the subject is a third party
+// (pledger / guarantor / co-borrower), not the primary borrower. max_overdue_principal
+// is a day count (the monetary figure lives in overdue_debt_sum).
+interface KatmContingentLiabilityItem {
+  max_overdue_principal?: string;
+}
+
+interface KatmContingentLiabilitiesBlock {
+  contingent_liability: KatmContingentLiabilityItem | KatmContingentLiabilityItem[];
+}
+
 export interface KatmResponse {
   sysinfo: KatmSysinfo;
   overview: KatmOverview;
@@ -216,6 +227,7 @@ export interface KatmResponse {
   credit_ban: KatmCreditBan;
   contracts?: KatmContractsBlock;
   claims_wo_contracts?: KatmClaimsWoContractsBlock;
+  contingent_liabilities?: KatmContingentLiabilitiesBlock;
 }
 
 export interface OverdueBuckets {
@@ -503,6 +515,10 @@ export interface KatmResult {
   overdue30to60Count: number;
   overdue60to90Count: number;
   overdue90Count: number;
+  /** Max overdue principal days across the subject's contingent liabilities
+   *  (loans where they are a third party). null = no contingent liabilities,
+   *  i.e. the subject is not a pledger. Feeds the engine's PledgerLiability. */
+  pledgerLiability: number | null;
   /** Full raw vendor payload — persisted on the session stamp */
   raw: unknown;
 }
@@ -556,6 +572,23 @@ function computeJudicialFlags(data: KatmResponse): {
   return { hasJuridical, hasDecommission };
 }
 
+// Max overdue principal days across the subject's contingent liabilities (loans
+// where they are a third party — pledger/guarantor/co-borrower). Returns null when
+// the subject carries no contingent liabilities, matching the engine's
+// pledgerMaxDays convention (null = not a pledger).
+function computePledgerLiability(data: KatmResponse): number | null {
+  const items = toArray<KatmContingentLiabilityItem>(
+    data?.contingent_liabilities?.contingent_liability,
+  );
+  if (items.length === 0) return null;
+  let maxDays = 0;
+  for (const item of items) {
+    const d = toInt(item.max_overdue_principal);
+    if (d > maxDays) maxDays = d;
+  }
+  return maxDays;
+}
+
 export function parseKatm077ReportResponse(data: KatmResponse): KatmResult {
   const { sysinfo, overview, scorring, open_contracts, credit_ban } = data;
   const score = toInt(scorring?.scoring_grade);
@@ -582,6 +615,7 @@ export function parseKatm077ReportResponse(data: KatmResponse): KatmResult {
     hasJuridical,
     hasDecommission,
     ...buckets,
+    pledgerLiability: computePledgerLiability(data),
     raw: data,
   };
 }

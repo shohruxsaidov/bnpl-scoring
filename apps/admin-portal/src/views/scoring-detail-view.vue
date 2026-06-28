@@ -3,14 +3,42 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useScoringsStore, type ScoringDetailPipeline } from '@/stores/scorings'
-import JsonReport from '@/components/json-report/json-report.vue'
+import JsonReport, { type SectionRenderer } from '@/components/json-report/json-report.vue'
 import JsonNode from '@/components/json-report/json-node.vue'
+import ReportTable from '@/components/json-report/report-table.vue'
+import ContractsTable from '@/components/json-report/contracts-table.vue'
+import ScoreTrendChart from '@/components/json-report/score-trend-chart.vue'
+import KvTable from '@/components/json-report/kv-table.vue'
 import {
+  CLAIMS_WO_CONTRACTS_TABLE,
+  CONTINGENT_LIABILITIES_TABLE,
+  CREDIT_REQUESTS_TABLE,
+  INPS_INCOMES_TABLE,
   KATM_077_SECTION_KEYS,
   KATM_INPS_SECTION_KEYS,
+  OPEN_CONTRACTS_TABLE,
+  OVERVIEW_FIELDS,
   VENDOR_LABELS,
 } from '@/components/json-report/scoring-report-config'
-import { type Json, formatMoney, humanize, isObject } from '@/utils/json-report'
+import { type Json, dateSortKey, formatMoney, humanize, isObject } from '@/utils/json-report'
+
+// Bespoke renderers for the deeply-nested KATM-077 sections; everything else
+// falls back to the generic JsonNode tree.
+const KATM_077_RENDERERS: Record<string, SectionRenderer> = {
+  scorring: { is: KvTable },
+  overview: { is: KvTable, props: { fields: OVERVIEW_FIELDS } },
+  contracts: { is: ContractsTable },
+  open_contracts: { is: ReportTable, props: { config: OPEN_CONTRACTS_TABLE } },
+  credit_requests: { is: ReportTable, props: { config: CREDIT_REQUESTS_TABLE } },
+  claims_wo_contracts: { is: ReportTable, props: { config: CLAIMS_WO_CONTRACTS_TABLE } },
+  contingent_liabilities: { is: ReportTable, props: { config: CONTINGENT_LIABILITIES_TABLE } },
+  dynamics_of_scoring_ball: { is: ScoreTrendChart },
+}
+
+// INPS: render the income list as a table; other sections stay on JsonNode.
+const KATM_INPS_RENDERERS: Record<string, SectionRenderer> = {
+  incomes: { is: ReportTable, props: { config: INPS_INCOMES_TABLE } },
+}
 
 const route = useRoute()
 const router = useRouter()
@@ -25,13 +53,34 @@ watch(
   () => load(),
 )
 
+// Pipeline types that are never shown as tabs.
+const HIDDEN_PIPELINE_TYPES = ['katm_claim', 'myid']
+
 async function load() {
   await store.fetchDetail(route.params.id as string)
-  activeType.value = store.detail?.pipelines[0]?.type ?? null
+  activeType.value =
+    store.detail?.pipelines.find((p) => !HIDDEN_PIPELINE_TYPES.includes(p.type))?.type ?? null
 }
 
 const detail = computed(() => store.detail)
-const pipelines = computed(() => detail.value?.pipelines ?? [])
+const pipelines = computed(() =>
+  (detail.value?.pipelines ?? []).filter((p) => !HIDDEN_PIPELINE_TYPES.includes(p.type)),
+)
+// MyID has no tab; its identity fields are surfaced in the overview card.
+const myidInfo = computed(() => {
+  const myid = detail.value?.pipelines.find((p) => p.type === 'myid')
+  const raw = (myid?.raw ?? {}) as Record<string, unknown>
+  const summary = (myid?.summary ?? {}) as Record<string, unknown>
+  const str = (v: unknown) => (v != null && v !== '' ? String(v) : null)
+  const passport = [str(raw.passportSeries), str(raw.passportNumber)].filter(Boolean).join(' ')
+  return {
+    pinfl: str(raw.pinfl),
+    passport: passport || null,
+    address: str(raw.address),
+    age: str(summary.age),
+  }
+})
+
 const activePipeline = computed(
   () => pipelines.value.find((p) => p.type === activeType.value) ?? null,
 )
@@ -104,10 +153,15 @@ function summaryCards(pipeline: { type: string; summary: Record<string, unknown>
           .filter((x) => x != null && x !== '')
           .map(String)
           .join(' ')
-        return { label: humanize(key), value: text || '—' }
+        return { label: summaryLabel(key), value: text || '—' }
       }
-      return { label: humanize(key), value: formatSummaryValue(value) }
+      return { label: summaryLabel(key), value: formatSummaryValue(value) }
     })
+}
+// Localized title for a summary-card key, falling back to a humanized key.
+function summaryLabel(key: string): string {
+  const k = `scoringReport.summary.${key}`
+  return te(k) ? t(k) : humanize(key)
 }
 function formatSummaryValue(value: unknown): string {
   if (value == null || value === '') return '—'
@@ -123,14 +177,11 @@ function formatSummaryValue(value: unknown): string {
 function sections(keys: string[]) {
   return keys.map((key) => ({ key, title: sectionTitle(key) }))
 }
-// Turn a vendor date ("2025-03", "11.03.2025", "20250311") into a sortable
-// YYYYMMDD-ish string. A 4-digit leading group is treated as a year (Y-M-D
-// order); otherwise the groups are assumed D-M-Y and reversed.
-function dateSortKey(value: unknown): string {
-  const digits = String(value ?? '').match(/\d+/g)
-  if (!digits || !digits.length) return ''
-  const ymd = digits[0].length === 4 ? digits : [...digits].reverse()
-  return ymd.join('').padEnd(8, '0')
+
+// MIB payload nests its fields under `report`.
+function mibData(raw: Record<string, unknown> | null): Json {
+  const report = raw && isObject(raw.report) ? raw.report : raw
+  return isObject(report) ? (report as Json) : {}
 }
 
 // INPS data is nested under `report`; KATM-077 is at the root.
@@ -235,6 +286,22 @@ function goBack() {
             <span class="ov-label">{{ t('scorings.updatedAt') }}</span>
             <span class="font-mono">{{ formatTimestamp(detail.updatedAt) }}</span>
           </div>
+          <div v-if="myidInfo.pinfl" class="ov-item">
+            <span class="ov-label">{{ t('scorings.pinfl') }}</span>
+            <span class="font-mono">{{ myidInfo.pinfl }}</span>
+          </div>
+          <div v-if="myidInfo.passport" class="ov-item">
+            <span class="ov-label">{{ t('scorings.passport') }}</span>
+            <span class="font-mono">{{ myidInfo.passport }}</span>
+          </div>
+          <div v-if="myidInfo.age" class="ov-item">
+            <span class="ov-label">{{ t('scorings.age') }}</span>
+            <span class="font-mono">{{ myidInfo.age }}</span>
+          </div>
+          <div v-if="myidInfo.address" class="ov-item ov-item-wide">
+            <span class="ov-label">{{ t('scorings.address') }}</span>
+            <span>{{ myidInfo.address }}</span>
+          </div>
         </div>
 
         <div v-if="detail.rejectReasonCode" class="callout callout-warn">
@@ -306,11 +373,18 @@ function goBack() {
 
         <!-- KATM-077 -->
         <JsonReport v-else-if="activePipeline.type === 'katm_077' && activePipeline.raw"
-          :data="activePipeline.raw as Json" :sections="sections(KATM_077_SECTION_KEYS)" :labels="VENDOR_LABELS" tiyin />
+          :data="activePipeline.raw as Json" :sections="sections(KATM_077_SECTION_KEYS)" :labels="VENDOR_LABELS"
+          :renderers="KATM_077_RENDERERS" tiyin />
 
         <!-- KATM-INPS (nested under report) -->
         <JsonReport v-else-if="activePipeline.type === 'katm_inps' && activePipeline.raw"
-          :data="inpsData(activePipeline.raw)" :sections="sections(KATM_INPS_SECTION_KEYS)" :labels="VENDOR_LABELS" />
+          :data="inpsData(activePipeline.raw)" :sections="sections(KATM_INPS_SECTION_KEYS)" :labels="VENDOR_LABELS"
+          :renderers="KATM_INPS_RENDERERS" />
+
+        <!-- KATM-MIB (enforcement check) -->
+        <div v-else-if="activePipeline.type === 'katm_mib' && activePipeline.raw" class="surface-card flat-card">
+          <KvTable :value="mibData(activePipeline.raw)" :labels="VENDOR_LABELS" />
+        </div>
 
         <!-- myid / katm_claim — flat payloads -->
         <div v-else-if="activePipeline.raw" class="surface-card flat-card">
@@ -378,6 +452,10 @@ function goBack() {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+
+.ov-item-wide {
+  grid-column: 1 / -1;
 }
 
 .ov-label {

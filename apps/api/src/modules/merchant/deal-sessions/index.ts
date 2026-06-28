@@ -829,6 +829,9 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         ...(katm && {
           hasJuridical: katm.hasJuridical ?? false,
           hasDecommission: katm.hasDecommission ?? false,
+          // Max overdue days as a third-party pledger (all-time). null = not a
+          // pledger → the model treats it as NotApplicable.
+          pledgerMaxDays: katm.pledgerLiability ?? null,
         }),
         ...(userRow && {
           age: ageYears(userRow.birthDate),
