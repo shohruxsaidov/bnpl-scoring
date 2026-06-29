@@ -10,7 +10,10 @@ import { katmInpsReports } from '@db/katm-inps-reports';
 import { dealSessions } from '../../deals/schema';
 import { isWizardStep, type DealSessionRow, type SessionStepData } from './types';
 import { getActiveSession } from './queries/get-active-session/get-active-session.handler';
-import { loadOwnedActiveSession } from './queries/load-owned-active-session/load-owned-active-session.handler';
+import {
+  loadOwnedActiveSession,
+  loadOwnedSession,
+} from './queries/load-owned-active-session/load-owned-active-session.handler';
 import { createSession } from './commands/create-session/create-session.handler';
 import { abandonSession } from './commands/abandon-session/abandon-session.handler';
 import { saveStep } from './commands/save-step/save-step.handler';
@@ -526,11 +529,12 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       const p = payload(request);
       let session;
       try {
-        session = await loadOwnedActiveSession(request.params.id, Number(p.sub));
+        // No active guard: a knockout (e.g. no_income) rejects the session, but
+        // the wizard is still polling and must receive the stamped failure
+        // rather than a 409 that the client would treat as transient.
+        session = await loadOwnedSession(request.params.id, Number(p.sub));
       } catch (err: any) {
         if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found');
-        if (err.code === 'session_not_active')
-          return reply.code(409).sendError('session_not_active');
         throw err;
       }
 
@@ -547,6 +551,19 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
             .where(eq(katmInpsReports.claimId, session.katmClaimId))
             .limit(1),
         ]);
+
+        const data = (session.stepData ?? {}) as SessionStepData;
+        if (data.katmPending) {
+          const error = data.katmPending.error ?? null;
+          return {
+            status: data.katmPending.status,
+            error,
+            reasonCategory: error
+              ? (REJECT_REASON_CATEGORY[error as ScoringRejectReasonCode] ?? null)
+              : null,
+          };
+        }
+
         if (report077[0]?.status === 'completed' && reportInps[0]?.status === 'completed') {
           const {
             claimId: _c,
@@ -559,19 +576,9 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           } = report077[0];
           return { status: 'completed' as const, ...summary };
         }
+
+        return { status: 'none' as const };
       }
-      const data = (session.stepData ?? {}) as SessionStepData;
-      if (data.katmPending) {
-        const error = data.katmPending.error ?? null;
-        return {
-          status: data.katmPending.status,
-          error,
-          reasonCategory: error
-            ? (REJECT_REASON_CATEGORY[error as ScoringRejectReasonCode] ?? null)
-            : null,
-        };
-      }
-      return { status: 'none' as const };
     },
   );
 

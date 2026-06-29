@@ -1,0 +1,1 @@
+ALTER TABLE "katm_077_reports" ADD COLUMN "pledger_liability" integer;

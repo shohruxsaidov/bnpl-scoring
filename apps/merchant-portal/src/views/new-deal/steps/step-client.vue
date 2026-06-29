@@ -169,8 +169,17 @@ async function checkKatmStatus() {
       // specific reason rather than a generic error.
       applyRejection(res.error, res.reasonCategory)
     }
-  } catch {
-    // transient — keep polling
+  } catch (e) {
+    // A terminal session state (rejected / gone) — stop polling and surface a
+    // rejection rather than retrying forever. apiFetch throws Error(code), so
+    // we match on the backend code. Anything else is transient: keep polling.
+    const code = (e as Error).message
+    if (code === 'session_not_active' || code === 'session_not_found') {
+      stopKatmPolling()
+      katmPending.value = false
+      deal.setKatmPending(false)
+      applyRejection()
+    }
   }
 }
 
