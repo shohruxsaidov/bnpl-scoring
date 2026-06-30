@@ -1,14 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { db } from '@db';
 import { redis } from '@redis';
-import { env } from '../../../../env';
+import { env } from '@env';
 import {
   createIntegrationClient,
   handleHttpError,
   IntegrationError,
-} from '../../../../lib/integrations';
-import { logIntegration } from '../../../integrations/log';
-import { parsePinflBirthDate, parsePinflGender } from '../pinfl';
+} from '../../../lib/integrations';
+import { logIntegration } from '../log';
+import { parsePinflBirthDate } from './pinfl';
 
 const MYID_TOKEN_KEY = 'myid:client_token';
 
