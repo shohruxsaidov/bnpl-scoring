@@ -20,6 +20,8 @@ export default async function adminPermissionsRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
   const preHandler = [app.verifyAdminJwt, app.requirePermission("manage_roles")]
 
+  const TAGS = ["Admin · Permissions"]
+
   async function requesterIsSuperadmin(request: { user: unknown }): Promise<boolean> {
     const roleId = (request.user as { roleId: string | null }).roleId
     if (!roleId) return false
@@ -34,7 +36,7 @@ export default async function adminPermissionsRoutes(app: FastifyInstance) {
     return resolved?.features ?? new Set()
   }
 
-  fastify.get("/catalog", { preHandler }, async () => {
+  fastify.get("/catalog", { schema: { tags: TAGS }, preHandler }, async () => {
     return { catalog: FEATURE_CATALOG }
   })
 
@@ -42,7 +44,7 @@ export default async function adminPermissionsRoutes(app: FastifyInstance) {
     platform: Type.Optional(Type.Union([Type.Literal("merchant"), Type.Literal("admin")])),
   })
 
-  fastify.get("/roles", { schema: { querystring: ListQuery }, preHandler }, async (request) => {
+  fastify.get("/roles", { schema: { tags: TAGS, querystring: ListQuery }, preHandler }, async (request) => {
     const rolesList = await listRoles(request.query.platform)
     return { roles: rolesList }
   })
@@ -53,7 +55,7 @@ export default async function adminPermissionsRoutes(app: FastifyInstance) {
     name: Type.String({ minLength: 1, maxLength: 100 }),
   })
 
-  fastify.post("/roles", { schema: { body: CreateRoleBody }, preHandler }, async (request, reply) => {
+  fastify.post("/roles", { schema: { tags: TAGS, body: CreateRoleBody }, preHandler }, async (request, reply) => {
     const { platform, key, name } = request.body
     if (key === "superadmin") {
       return reply.code(400).sendError("reserved_key")
@@ -80,7 +82,7 @@ export default async function adminPermissionsRoutes(app: FastifyInstance) {
 
   fastify.patch(
     "/roles/:id",
-    { schema: { params: IdParams, body: RenameBody }, preHandler },
+    { schema: { tags: TAGS, params: IdParams, body: RenameBody }, preHandler },
     async (request, reply) => {
       const role = await findRoleRow(Number(request.params.id))
       if (!role) return reply.code(404).sendError("not_found")
@@ -90,7 +92,7 @@ export default async function adminPermissionsRoutes(app: FastifyInstance) {
     },
   )
 
-  fastify.delete("/roles/:id", { schema: { params: IdParams }, preHandler }, async (request, reply) => {
+  fastify.delete("/roles/:id", { schema: { tags: TAGS, params: IdParams }, preHandler }, async (request, reply) => {
     const role = await findRoleRow(Number(request.params.id))
     if (!role) return reply.code(404).sendError("not_found")
     if (role.isSuperAdmin || role.isSystem) {
@@ -108,7 +110,7 @@ export default async function adminPermissionsRoutes(app: FastifyInstance) {
 
   fastify.put(
     "/roles/:id/permissions",
-    { schema: { params: IdParams, body: SetPermsBody }, preHandler },
+    { schema: { tags: TAGS, params: IdParams, body: SetPermsBody }, preHandler },
     async (request, reply) => {
       const role = await findRoleRow(Number(request.params.id))
       if (!role) return reply.code(404).sendError("not_found")

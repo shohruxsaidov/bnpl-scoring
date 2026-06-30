@@ -7,11 +7,13 @@ export default async function adminCollectionBoardRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
   const preHandler = app.verifyAdminJwt
 
+  const TAGS = ["Admin · Collection Board"]
+
   const ListQuery = Type.Object({
     merchantId: Type.Optional(Type.String()),
   })
 
-  fastify.get("/", { schema: { querystring: ListQuery }, preHandler }, async (request) => {
+  fastify.get("/", { schema: { tags: TAGS, querystring: ListQuery }, preHandler }, async (request) => {
     const { merchantId } = request.query
     const buckets = await getCollectionBoard({
       merchantId: merchantId ? Number(merchantId) : undefined,

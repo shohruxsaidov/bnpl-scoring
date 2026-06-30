@@ -29,6 +29,8 @@ import {
   serializeDocument,
 } from "./types"
 
+const TAGS = ["Admin · Merchants"]
+
 export default async function adminMerchantRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
 
@@ -88,14 +90,14 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
 
   /* ── Merchants ──────────────────────────────────────────────────────────── */
 
-  fastify.get("/", { preHandler }, async () => {
+  fastify.get("/", { schema: { tags: TAGS }, preHandler }, async () => {
     const rows = await listMerchants()
     return { merchants: rows.map(serializeMerchant) }
   })
 
   fastify.post(
     "/",
-    { schema: { body: CreateMerchantBody }, preHandler },
+    { schema: { tags: TAGS, body: CreateMerchantBody }, preHandler },
     async (request, reply) => {
       if (request.body.scoringModelId !== undefined) {
         const model = await getScoringModel(request.body.scoringModelId)
@@ -108,7 +110,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
 
   fastify.get(
     "/:id",
-    { schema: { params: IdParams }, preHandler },
+    { schema: { tags: TAGS, params: IdParams }, preHandler },
     async (request, reply) => {
       const merchant = await getMerchant(Number(request.params.id))
       if (!merchant) return reply.code(404).sendError("not_found")
@@ -118,7 +120,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
 
   fastify.patch(
     "/:id",
-    { schema: { params: IdParams, body: UpdateMerchantBody }, preHandler },
+    { schema: { tags: TAGS, params: IdParams, body: UpdateMerchantBody }, preHandler },
     async (request, reply) => {
       if (request.body.scoringModelId != null) {
         const model = await getScoringModel(request.body.scoringModelId)
@@ -134,7 +136,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
 
   fastify.get(
     "/:id/branches",
-    { schema: { params: IdParams }, preHandler },
+    { schema: { tags: TAGS, params: IdParams }, preHandler },
     async (request) => {
       const rows = await listBranches(Number(request.params.id))
       return { branches: rows.map(serializeBranch) }
@@ -143,7 +145,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
 
   fastify.post(
     "/:id/branches",
-    { schema: { params: IdParams, body: CreateBranchBody }, preHandler },
+    { schema: { tags: TAGS, params: IdParams, body: CreateBranchBody }, preHandler },
     async (request, reply) => {
       const merchant = await getMerchant(Number(request.params.id))
       if (!merchant) return reply.code(404).sendError("not_found")
@@ -158,7 +160,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
 
   fastify.get(
     "/:id/categories",
-    { schema: { params: IdParams }, preHandler },
+    { schema: { tags: TAGS, params: IdParams }, preHandler },
     async (request) => {
       const rows = await listEnabledCategories(Number(request.params.id))
       return { categories: rows.map(serializeCategory) }
@@ -167,7 +169,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
 
   fastify.post(
     "/:id/categories/:categoryId",
-    { schema: { params: CategoryIdParams }, preHandler },
+    { schema: { tags: TAGS, params: CategoryIdParams }, preHandler },
     async (request, reply) => {
       const category = await getCategory(Number(request.params.categoryId))
       if (!category) return reply.code(404).sendError("not_found")
@@ -178,7 +180,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
 
   fastify.delete(
     "/:id/categories/:categoryId",
-    { schema: { params: CategoryIdParams }, preHandler },
+    { schema: { tags: TAGS, params: CategoryIdParams }, preHandler },
     async (request, reply) => {
       await disableMerchantCategory(Number(request.params.categoryId), Number(request.params.id))
       return reply.code(204).send()
@@ -189,7 +191,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
 
   fastify.get(
     "/:id/products",
-    { schema: { params: IdParams }, preHandler },
+    { schema: { tags: TAGS, params: IdParams }, preHandler },
     async (request) => {
       const rows = await listProducts(Number(request.params.id))
       return { products: rows.map(serializeProduct) }
@@ -198,7 +200,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
 
   fastify.post(
     "/:id/products",
-    { schema: { params: IdParams, body: CreateProductBody }, preHandler },
+    { schema: { tags: TAGS, params: IdParams, body: CreateProductBody }, preHandler },
     async (request, reply) => {
       const merchant = await getMerchant(Number(request.params.id))
       if (!merchant) return reply.code(404).sendError("not_found")
@@ -225,7 +227,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
 
   fastify.get(
     "/:id/tariffs",
-    { schema: { params: IdParams }, preHandler },
+    { schema: { tags: TAGS, params: IdParams }, preHandler },
     async (request) => {
       const tariffList = await getMerchantTariffs(Number(request.params.id))
       return { tariffs: tariffList }
@@ -234,7 +236,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
 
   fastify.post(
     "/:id/tariffs/:tariffId",
-    { schema: { params: TariffIdParams }, preHandler },
+    { schema: { tags: TAGS, params: TariffIdParams }, preHandler },
     async (request, reply) => {
       await assignTariff(Number(request.params.id), Number(request.params.tariffId))
       return reply.code(204).send()
@@ -243,7 +245,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
 
   fastify.delete(
     "/:id/tariffs/:tariffId",
-    { schema: { params: TariffIdParams }, preHandler },
+    { schema: { tags: TAGS, params: TariffIdParams }, preHandler },
     async (request, reply) => {
       await removeTariff(Number(request.params.id), Number(request.params.tariffId))
       return reply.code(204).send()
@@ -254,7 +256,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
 
   fastify.get(
     "/:id/documents",
-    { schema: { params: IdParams }, preHandler },
+    { schema: { tags: TAGS, params: IdParams }, preHandler },
     async (request) => {
       const rows = await listDocuments(Number(request.params.id))
       return { documents: rows.map(serializeDocument) }
@@ -263,7 +265,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
 
   fastify.post(
     "/:id/documents/upload-url",
-    { schema: { params: IdParams }, preHandler },
+    { schema: { tags: TAGS, params: IdParams }, preHandler },
     async (request) => {
       const objectName = `merchants/${request.params.id}/${randomUUID()}`
       const uploadUrl = await app.minioPresignedPut(objectName)
@@ -273,7 +275,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
 
   fastify.post(
     "/:id/documents",
-    { schema: { params: IdParams, body: RecordDocumentBody }, preHandler },
+    { schema: { tags: TAGS, params: IdParams, body: RecordDocumentBody }, preHandler },
     async (request, reply) => {
       const adminId = Number((request.user as { sub: string }).sub)
       const doc = await recordDocument({

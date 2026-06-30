@@ -24,6 +24,8 @@ function serializeProduct(p: NonNullable<Awaited<ReturnType<typeof createProduct
   return { ...p, id: p.id.toString(), merchantId: p.merchantId.toString(), categoryId: p.categoryId.toString() }
 }
 
+const TAGS = ["Merchant · Catalog"]
+
 export default async function merchantCatalogRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
   const preHandler = app.verifyMerchantJwt
@@ -52,31 +54,31 @@ export default async function merchantCatalogRoutes(app: FastifyInstance) {
 
   /* ── Categories ─────────────────────────────────────────────────────────── */
 
-  fastify.get("/categories", { preHandler }, async (request) => {
+  fastify.get("/categories", { schema: { tags: TAGS }, preHandler }, async (request) => {
     const rows = await listCategories(merchantId(request))
     return { categories: rows.map(serializeCategory) }
   })
 
-  fastify.post("/categories/:id", { schema: { params: IdParams }, preHandler: manageCategories }, async (request, reply) => {
+  fastify.post("/categories/:id", { schema: { tags: TAGS, params: IdParams }, preHandler: manageCategories }, async (request, reply) => {
     const category = await getCategory(Number(request.params.id))
     if (!category) return reply.code(404).sendError("not_found")
     await enableMerchantCategory(category.id, merchantId(request))
     return reply.code(204).send()
   })
 
-  fastify.delete("/categories/:id", { schema: { params: IdParams }, preHandler: manageCategories }, async (request, reply) => {
+  fastify.delete("/categories/:id", { schema: { tags: TAGS, params: IdParams }, preHandler: manageCategories }, async (request, reply) => {
     await disableMerchantCategory(Number(request.params.id), merchantId(request))
     return reply.code(204).send()
   })
 
   /* ── Products ───────────────────────────────────────────────────────────── */
 
-  fastify.get("/products", { preHandler }, async (request) => {
+  fastify.get("/products", { schema: { tags: TAGS }, preHandler }, async (request) => {
     const rows = await listProducts(merchantId(request))
     return { products: rows.map(serializeProduct) }
   })
 
-  fastify.post("/products", { schema: { body: CreateProductBody }, preHandler: manageProducts }, async (request, reply) => {
+  fastify.post("/products", { schema: { tags: TAGS, body: CreateProductBody }, preHandler: manageProducts }, async (request, reply) => {
     const mId = merchantId(request)
     const categoryId = Number(request.body.categoryId)
     const enabled = await isCategoryEnabledForMerchant(categoryId, mId)
@@ -93,7 +95,7 @@ export default async function merchantCatalogRoutes(app: FastifyInstance) {
     return reply.code(201).send({ product: serializeProduct(product) })
   })
 
-  fastify.patch("/products/:id", { schema: { params: IdParams, body: UpdateProductBody }, preHandler: manageProducts }, async (request, reply) => {
+  fastify.patch("/products/:id", { schema: { tags: TAGS, params: IdParams, body: UpdateProductBody }, preHandler: manageProducts }, async (request, reply) => {
     const mId = merchantId(request)
     const categoryId = request.body.categoryId ? Number(request.body.categoryId) : undefined
     if (categoryId !== undefined) {

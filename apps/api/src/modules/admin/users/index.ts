@@ -25,9 +25,11 @@ function serialize(u: UserRow) {
 export default async function adminUsersRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
 
+  const TAGS = ["Admin · Users"]
+
   const IdParams = Type.Object({ id: Type.String() })
 
-  fastify.get("/", async () => {
+  fastify.get("/", { schema: { tags: TAGS } }, async () => {
     const rows = await listAdminUsers()
     return { users: rows.map(serialize) }
   })
@@ -39,7 +41,7 @@ export default async function adminUsersRoutes(app: FastifyInstance) {
     roleId: Type.String({ minLength: 1 }),
   })
 
-  fastify.post("/", { schema: { body: CreateBody } }, async (request, reply) => {
+  fastify.post("/", { schema: { tags: TAGS, body: CreateBody } }, async (request, reply) => {
     const createdById = Number((request.user as { sub: string }).sub)
     try {
       const created = await createAdminUser({
@@ -60,7 +62,7 @@ export default async function adminUsersRoutes(app: FastifyInstance) {
 
   const UpdateBody = Type.Partial(Type.Object({ active: Type.Boolean() }))
 
-  fastify.patch("/:id", { schema: { params: IdParams, body: UpdateBody } }, async (request, reply) => {
+  fastify.patch("/:id", { schema: { tags: TAGS, params: IdParams, body: UpdateBody } }, async (request, reply) => {
     const updated = await updateAdminUser({ id: Number(request.params.id), ...request.body })
     if (!updated) return reply.code(404).sendError("not_found")
     const user = await getAdminUser(updated.id)

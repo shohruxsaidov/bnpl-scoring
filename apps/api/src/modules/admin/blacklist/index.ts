@@ -26,6 +26,8 @@ function serialize(row: {
   };
 }
 
+const TAGS = ['Admin · Blacklist'];
+
 export default async function adminBlacklistRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
   const preHandler = app.verifyAdminJwt;
@@ -38,12 +40,12 @@ export default async function adminBlacklistRoutes(app: FastifyInstance) {
     reason: Type.Optional(Type.String()),
   });
 
-  fastify.get('/', { preHandler }, async () => {
+  fastify.get('/', { schema: { tags: TAGS }, preHandler }, async () => {
     const rows = await listBlacklist();
     return { entries: rows.map(serialize) };
   });
 
-  fastify.post('/', { schema: { body: CreateBody }, preHandler }, async (request, reply) => {
+  fastify.post('/', { schema: { tags: TAGS, body: CreateBody }, preHandler }, async (request, reply) => {
     const adminId = +(request.user as { sub: string }).sub as number;
     const entry = await addBlacklistEntry({
       type: request.body.type,
@@ -57,7 +59,7 @@ export default async function adminBlacklistRoutes(app: FastifyInstance) {
     });
   });
 
-  fastify.delete('/:id', { schema: { params: IdParams }, preHandler }, async (request, reply) => {
+  fastify.delete('/:id', { schema: { tags: TAGS, params: IdParams }, preHandler }, async (request, reply) => {
     const entry = await removeBlacklistEntry(+request.params.id);
     if (!entry) return reply.code(404).sendError('not_found');
     return reply.code(204).send();

@@ -10,11 +10,13 @@ function merchantId(request: { user: unknown }) {
   return +(request.user as MerchantPayload).merchantId;
 }
 
+const TAGS = ['Merchant · Tariffs'];
+
 export default async function merchantTariffRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
   const preHandler = app.verifyMerchantJwt;
 
-  fastify.get('/', { preHandler }, async (request) => {
+  fastify.get('/', { schema: { tags: TAGS }, preHandler }, async (request) => {
     const rows = await listTariffsForMerchant(merchantId(request));
     return {
       tariffs: rows.map((t) => ({
@@ -38,7 +40,7 @@ export default async function merchantTariffRoutes(app: FastifyInstance) {
   fastify.get(
     '/quote',
     {
-      schema: { querystring: QuoteQuery },
+      schema: { tags: TAGS, querystring: QuoteQuery },
       preHandler: [app.verifyMerchantJwt, app.requirePermission('create_deal')],
     },
     async (request) => {

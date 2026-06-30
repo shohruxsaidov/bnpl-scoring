@@ -22,6 +22,8 @@ function serialize(o: NonNullable<Awaited<ReturnType<typeof getOrganization>>>) 
 export default async function adminOrganizationRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
 
+  const TAGS = ["Admin · Organization"]
+
   const UpsertBody = Type.Object({
     name: Type.String({ minLength: 1, maxLength: 200 }),
     legalName: Type.String({ minLength: 1, maxLength: 200 }),
@@ -34,12 +36,12 @@ export default async function adminOrganizationRoutes(app: FastifyInstance) {
     bankName: Type.String({ minLength: 1, maxLength: 200 }),
   })
 
-  fastify.get("/", async () => {
+  fastify.get("/", { schema: { tags: TAGS } }, async () => {
     const row = await getOrganization()
     return { organization: row ? serialize(row) : null }
   })
 
-  fastify.put("/", { schema: { body: UpsertBody } }, async (request) => {
+  fastify.put("/", { schema: { tags: TAGS, body: UpsertBody } }, async (request) => {
     const row = await upsertOrganization({
       ...request.body,
       directorName: request.body.directorName?.trim() || null,

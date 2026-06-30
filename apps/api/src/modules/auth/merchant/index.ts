@@ -118,6 +118,8 @@ async function resolveRoleByKey(roleKey: string) {
 export default async function merchantAuthRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
 
+  const TAGS = ['Auth · Merchant'];
+
   const LoginBody = Type.Object({
     phone: Type.String({ minLength: 1 }),
     password: Type.String({ minLength: 1 }),
@@ -130,7 +132,7 @@ export default async function merchantAuthRoutes(app: FastifyInstance) {
 
   /* ── Login ──────────────────────────────────────────────────────────────── */
 
-  fastify.post('/login', { schema: { body: LoginBody } }, async (request, reply) => {
+  fastify.post('/login', { schema: { tags: TAGS, body: LoginBody } }, async (request, reply) => {
     const employee = await findMerchantUserByPhone(request.body.phone);
 
     if (!employee || !employee.active) {
@@ -180,7 +182,7 @@ export default async function merchantAuthRoutes(app: FastifyInstance) {
 
   /* ── Role picker ────────────────────────────────────────────────────────── */
 
-  fastify.post('/select-role', { schema: { body: SelectRoleBody } }, async (request, reply) => {
+  fastify.post('/select-role', { schema: { tags: TAGS, body: SelectRoleBody } }, async (request, reply) => {
     let payload: PickerToken;
     try {
       payload = app.jwt.verify<PickerToken>(request.body.pickerToken);
@@ -212,7 +214,7 @@ export default async function merchantAuthRoutes(app: FastifyInstance) {
 
   /* ── Session lifecycle ──────────────────────────────────────────────────── */
 
-  fastify.post('/refresh', async (request, reply) => {
+  fastify.post('/refresh', { schema: { tags: TAGS } }, async (request, reply) => {
     const sessionToken = request.cookies[SESSION_COOKIE];
     if (!sessionToken) return reply.code(401).sendError('unauthorized');
 
@@ -237,7 +239,7 @@ export default async function merchantAuthRoutes(app: FastifyInstance) {
     return { ok: true };
   });
 
-  fastify.get('/me', { preHandler: app.verifyMerchantJwt }, async (request, reply) => {
+  fastify.get('/me', { schema: { tags: TAGS }, preHandler: app.verifyMerchantJwt }, async (request, reply) => {
     const payload = request.user as {
       sub: string;
       type: 'merchant';
@@ -266,7 +268,7 @@ export default async function merchantAuthRoutes(app: FastifyInstance) {
 
   fastify.post(
     '/change-password',
-    { schema: { body: ChangePasswordBody }, preHandler: app.verifyMerchantJwt },
+    { schema: { tags: TAGS, body: ChangePasswordBody }, preHandler: app.verifyMerchantJwt },
     async (request, reply) => {
       const payload = request.user as { sub: string };
       const employee = await findMerchantUserById(+payload.sub);
@@ -282,7 +284,7 @@ export default async function merchantAuthRoutes(app: FastifyInstance) {
     },
   );
 
-  fastify.post('/logout', async (request, reply) => {
+  fastify.post('/logout', { schema: { tags: TAGS } }, async (request, reply) => {
     const sessionToken = request.cookies[SESSION_COOKIE];
     if (sessionToken) await revokeMerchantSession(sessionToken);
 

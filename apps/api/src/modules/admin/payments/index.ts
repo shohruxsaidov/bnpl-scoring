@@ -6,6 +6,8 @@ import { listManualPayments } from './queries/list-manual-payments/list-manual-p
 import { searchDealsForManualPayment } from './queries/search-deals/search-deals.handler';
 import { createManualPayment } from './commands/create-manual-payment/create-manual-payment.handler';
 
+const TAGS = ['Admin · Payments'];
+
 export default async function adminPaymentRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
   const preHandler = app.verifyAdminJwt;
@@ -14,7 +16,7 @@ export default async function adminPaymentRoutes(app: FastifyInstance) {
     merchantId: Type.Optional(Type.String()),
   });
 
-  fastify.get('/', { schema: { querystring: ListQuery }, preHandler }, async (request) => {
+  fastify.get('/', { schema: { tags: TAGS, querystring: ListQuery }, preHandler }, async (request) => {
     const { merchantId } = request.query;
     const payments = await listPayments({
       merchantId: merchantId ? Number(merchantId) : undefined,
@@ -24,14 +26,14 @@ export default async function adminPaymentRoutes(app: FastifyInstance) {
 
   fastify.get(
     '/manual/deals',
-    { schema: { querystring: Type.Object({ q: Type.String() }) }, preHandler },
+    { schema: { tags: TAGS, querystring: Type.Object({ q: Type.String() }) }, preHandler },
     async (request) => {
       const deals = await searchDealsForManualPayment(request.query.q);
       return { deals };
     },
   );
 
-  fastify.get('/manual', { preHandler }, async () => {
+  fastify.get('/manual', { schema: { tags: TAGS }, preHandler }, async () => {
     const payments = await listManualPayments();
     return { payments };
   });
@@ -43,7 +45,7 @@ export default async function adminPaymentRoutes(app: FastifyInstance) {
     note: Type.Optional(Type.String()),
   });
 
-  fastify.post('/manual', { schema: { body: CreateBody }, preHandler }, async (request, reply) => {
+  fastify.post('/manual', { schema: { tags: TAGS, body: CreateBody }, preHandler }, async (request, reply) => {
     const adminUserId = Number((request.user as { sub: string }).sub);
     try {
       const payment = await createManualPayment({ ...request.body, adminUserId });

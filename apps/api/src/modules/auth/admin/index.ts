@@ -98,6 +98,8 @@ async function serializeAdmin(admin: AdminRow) {
 export default async function adminAuthRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
 
+  const TAGS = ["Auth · Admin"];
+
   const LoginBody = Type.Object({
     email: Type.String({ minLength: 1 }),
     password: Type.String({ minLength: 1 }),
@@ -122,7 +124,7 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
 
   /* ── Login ──────────────────────────────────────────────────────────────── */
 
-  fastify.post("/login", { schema: { body: LoginBody } }, async (request, reply) => {
+  fastify.post("/login", { schema: { tags: TAGS, body: LoginBody } }, async (request, reply) => {
     const admin = await findAdminByEmail(request.body.email);
 
     if (!admin || !admin.active) {
@@ -142,7 +144,7 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
 
   /* ── Session lifecycle ──────────────────────────────────────────────────── */
 
-  fastify.get("/me", { preHandler: app.verifyAdminJwt }, async (request, reply) => {
+  fastify.get("/me", { schema: { tags: TAGS }, preHandler: app.verifyAdminJwt }, async (request, reply) => {
     const payload = request.user as { sub: string; type: "admin" };
     const admin = await findAdminById(Number(payload.sub));
     if (!admin || !admin.active) {
@@ -151,7 +153,7 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
     return { user: await serializeAdmin(admin) };
   });
 
-  fastify.post("/refresh", async (request, reply) => {
+  fastify.post("/refresh", { schema: { tags: TAGS } }, async (request, reply) => {
     const sessionToken = request.cookies[SESSION_COOKIE];
     if (!sessionToken) return reply.code(401).sendError("unauthorized");
 
@@ -178,7 +180,7 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
 
   fastify.post(
     "/change-password",
-    { schema: { body: ChangePasswordBody }, preHandler: app.verifyAdminJwt },
+    { schema: { tags: TAGS, body: ChangePasswordBody }, preHandler: app.verifyAdminJwt },
     async (request, reply) => {
       const payload = request.user as { sub: string };
       const admin = await findAdminById(Number(payload.sub));
@@ -194,7 +196,7 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
     },
   );
 
-  fastify.post("/logout", async (request, reply) => {
+  fastify.post("/logout", { schema: { tags: TAGS } }, async (request, reply) => {
     const sessionToken = request.cookies[SESSION_COOKIE];
     if (sessionToken) await revokeAdminSession(sessionToken);
 
@@ -206,7 +208,7 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
 
   fastify.get(
     "/users",
-    { preHandler: [app.verifyAdminJwt, app.requirePermission("manage_admins")] },
+    { schema: { tags: TAGS }, preHandler: [app.verifyAdminJwt, app.requirePermission("manage_admins")] },
     async () => {
       const admins = await listAdminUsers();
       return {
@@ -224,7 +226,7 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
   fastify.post(
     "/users",
     {
-      schema: { body: CreateAdminBody },
+      schema: { tags: TAGS, body: CreateAdminBody },
       preHandler: [app.verifyAdminJwt, app.requirePermission("manage_admins")],
     },
     async (request, reply) => {
@@ -257,7 +259,7 @@ export default async function adminAuthRoutes(app: FastifyInstance) {
   fastify.patch(
     "/users/:id/role",
     {
-      schema: { params: IdParams, body: SetRoleBody },
+      schema: { tags: TAGS, params: IdParams, body: SetRoleBody },
       preHandler: [app.verifyAdminJwt, app.requirePermission("manage_admins")],
     },
     async (request, reply) => {

@@ -7,6 +7,8 @@ import { getScoring } from "./queries/get-scoring/get-scoring.handler"
 export default async function adminScoringRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
 
+  const TAGS = ["Admin · Scorings"]
+
   const ListQuery = Type.Object({
     limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 200 })),
     offset: Type.Optional(Type.Integer({ minimum: 0 })),
@@ -14,7 +16,7 @@ export default async function adminScoringRoutes(app: FastifyInstance) {
 
   const IdParams = Type.Object({ id: Type.Integer({ minimum: 1 }) })
 
-  fastify.get("/", { schema: { querystring: ListQuery } }, async (request) => {
+  fastify.get("/", { schema: { tags: TAGS, querystring: ListQuery } }, async (request) => {
     const { limit, offset } = request.query
     const { scorings, total } = await listScorings({
       limit: limit ?? 25,
@@ -23,7 +25,7 @@ export default async function adminScoringRoutes(app: FastifyInstance) {
     return { scorings, total }
   })
 
-  fastify.get("/:id", { schema: { params: IdParams } }, async (request, reply) => {
+  fastify.get("/:id", { schema: { tags: TAGS, params: IdParams } }, async (request, reply) => {
     const scoring = await getScoring(request.params.id)
     if (!scoring) return reply.code(404).sendError("not_found")
     return { scoring }

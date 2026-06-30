@@ -22,6 +22,8 @@ function formatDealNumber(n: number | null | undefined): string {
   return n != null ? String(n) : '—';
 }
 
+const TAGS = ['Merchant · Deals'];
+
 export default async function merchantDealRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
 
@@ -49,7 +51,7 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
   fastify.post(
     '/',
     {
-      schema: { body: CreateDealBody },
+      schema: { tags: TAGS, body: CreateDealBody },
       preHandler: [app.verifyMerchantJwt, app.requirePermission('create_deal')],
     },
     async (request, reply) => {
@@ -98,7 +100,7 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
 
   fastify.get(
     '/',
-    { schema: { querystring: ListDealsQuery }, preHandler: app.verifyMerchantJwt },
+    { schema: { tags: TAGS, querystring: ListDealsQuery }, preHandler: app.verifyMerchantJwt },
     async (request) => {
       const p = payload(request);
       const merchantId = Number(p.merchantId);
@@ -113,7 +115,7 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
 
   fastify.get(
     '/:id',
-    { schema: { params: IdParams }, preHandler: app.verifyMerchantJwt },
+    { schema: { tags: TAGS, params: IdParams }, preHandler: app.verifyMerchantJwt },
     async (request, reply) => {
       const p = payload(request);
       const merchantId = Number(p.merchantId);
@@ -128,7 +130,7 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
 
   fastify.get(
     '/:id/contract-pdf',
-    { schema: { params: IdParams }, preHandler: app.verifyMerchantJwt },
+    { schema: { tags: TAGS, params: IdParams }, preHandler: app.verifyMerchantJwt },
     async (request, reply) => {
       const p = payload(request);
       const merchantId = Number(p.merchantId);

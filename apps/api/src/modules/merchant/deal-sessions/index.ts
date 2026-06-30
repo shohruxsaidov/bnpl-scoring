@@ -99,6 +99,8 @@ async function load077Summary(claimId: string) {
   };
 }
 
+const TAGS = ['Merchant · Deal Sessions'];
+
 export default async function merchantDealSessionRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
   const db = app.db;
@@ -143,7 +145,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
   /* ── GET /active — the agent's single active session, or null ─────────── */
 
-  fastify.get('/active', { preHandler: guards }, async (request) => {
+  fastify.get('/active', { schema: { tags: TAGS }, preHandler: guards }, async (request) => {
     const p = payload(request);
     const session = await getActiveSession(Number(p.sub));
     return { session: session ? await toSessionDto(session) : null };
@@ -151,7 +153,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
   /* ── POST / — open a new Wizard run (auto-supersedes the old one) ──────── */
 
-  fastify.post('/', { preHandler: guards }, async (request, reply) => {
+  fastify.post('/', { schema: { tags: TAGS }, preHandler: guards }, async (request, reply) => {
     const p = payload(request);
     const session = await createSession({
       merchantId: Number(p.merchantId),
@@ -169,7 +171,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
   fastify.put(
     '/:id/steps/:step',
-    { schema: { params: StepParams, body: StepBody }, preHandler: guards },
+    { schema: { tags: TAGS, params: StepParams, body: StepBody }, preHandler: guards },
     async (request, reply) => {
       const p = payload(request);
       const { id, step } = request.params;
@@ -219,7 +221,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
   fastify.post(
     '/:id/prepayment/request',
-    { schema: { params: IdParams, body: PrepayRequestBody }, preHandler: guards },
+    { schema: { tags: TAGS, params: IdParams, body: PrepayRequestBody }, preHandler: guards },
     async (request, reply) => {
       const p = payload(request);
       let session: DealSessionRow;
@@ -261,7 +263,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
   fastify.post(
     '/:id/prepayment/confirm',
-    { schema: { params: IdParams, body: PrepayConfirmBody }, preHandler: guards },
+    { schema: { tags: TAGS, params: IdParams, body: PrepayConfirmBody }, preHandler: guards },
     async (request, reply) => {
       const pending = pendingPrepayments.get(request.body.sessionId);
       if (!pending) return reply.code(409).sendError('prepayment_session_not_found');
@@ -296,7 +298,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
   fastify.post(
     '/:id/abandon',
-    { schema: { params: IdParams }, preHandler: guards },
+    { schema: { tags: TAGS, params: IdParams }, preHandler: guards },
     async (request, reply) => {
       const p = payload(request);
       try {
@@ -318,7 +320,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
   fastify.post(
     '/:id/start',
-    { schema: { params: IdParams, body: StartBody }, preHandler: guards },
+    { schema: { tags: TAGS, params: IdParams, body: StartBody }, preHandler: guards },
     async (request, reply) => {
       const p = payload(request);
       const { userId } = request.body;
@@ -448,7 +450,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
   fastify.post(
     '/:id/sign-otp',
-    { schema: { params: IdParams }, preHandler: guards },
+    { schema: { tags: TAGS, params: IdParams }, preHandler: guards },
     async (request, reply) => {
       const p = payload(request);
       let session;
@@ -487,7 +489,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
   fastify.post(
     '/:id/sign-otp/verify',
-    { schema: { params: IdParams, body: SignOtpVerifyBody }, preHandler: guards },
+    { schema: { tags: TAGS, params: IdParams, body: SignOtpVerifyBody }, preHandler: guards },
     async (request, reply) => {
       const p = payload(request);
       let session;
@@ -524,7 +526,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
   fastify.get(
     '/:id/katm-status',
-    { schema: { params: IdParams }, preHandler: guards },
+    { schema: { tags: TAGS, params: IdParams }, preHandler: guards },
     async (request, reply) => {
       const p = payload(request);
       let session;
@@ -586,7 +588,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
   fastify.get(
     '/:id/cards',
-    { schema: { params: IdParams }, preHandler: guards },
+    { schema: { tags: TAGS, params: IdParams }, preHandler: guards },
     async (request, reply) => {
       const p = payload(request);
       let session;
@@ -618,7 +620,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
   fastify.post(
     '/:id/cards/add',
-    { schema: { params: IdParams, body: AddCardBody }, preHandler: guards },
+    { schema: { tags: TAGS, params: IdParams, body: AddCardBody }, preHandler: guards },
     async (request, reply) => {
       const p = payload(request);
       let session;
@@ -660,7 +662,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
   fastify.post(
     '/:id/cards/confirm',
-    { schema: { params: IdParams, body: ConfirmCardBody }, preHandler: guards },
+    { schema: { tags: TAGS, params: IdParams, body: ConfirmCardBody }, preHandler: guards },
     async (request, reply) => {
       const p = payload(request);
       try {
@@ -727,7 +729,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
   fastify.post(
     '/:id/cards/score',
-    { schema: { params: IdParams, body: ScoreCardBody }, preHandler: guards },
+    { schema: { tags: TAGS, params: IdParams, body: ScoreCardBody }, preHandler: guards },
     async (request, reply) => {
       const p = payload(request);
       const { plumCardId, pcType, maskedPan, bank, holderName, expiry } = request.body;

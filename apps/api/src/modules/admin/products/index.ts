@@ -9,6 +9,8 @@ function serializeProduct(p: NonNullable<Awaited<ReturnType<typeof getProduct>>>
   return { ...p, id: p.id.toString(), merchantId: p.merchantId.toString(), categoryId: p.categoryId.toString() }
 }
 
+const TAGS = ["Admin · Products"]
+
 export default async function adminProductRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
 
@@ -31,7 +33,7 @@ export default async function adminProductRoutes(app: FastifyInstance) {
 
   fastify.get(
     "/:id",
-    { schema: { params: IdParams }, preHandler },
+    { schema: { tags: TAGS, params: IdParams }, preHandler },
     async (request, reply) => {
       const product = await getProduct(Number(request.params.id))
       if (!product) return reply.code(404).sendError("not_found")
@@ -41,7 +43,7 @@ export default async function adminProductRoutes(app: FastifyInstance) {
 
   fastify.patch(
     "/:id",
-    { schema: { params: IdParams, body: UpdateProductBody }, preHandler },
+    { schema: { tags: TAGS, params: IdParams, body: UpdateProductBody }, preHandler },
     async (request, reply) => {
       const product = await getProduct(Number(request.params.id))
       if (!product) return reply.code(404).sendError("not_found")

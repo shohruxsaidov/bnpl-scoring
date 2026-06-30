@@ -1,7 +1,9 @@
 import type { FastifyInstance } from "fastify";
 
 export default async function healthRoutes(app: FastifyInstance) {
-  app.get("/health", async () => {
+  const TAGS = ["Health"];
+
+  app.get("/health", { schema: { tags: TAGS } }, async () => {
     return { status: "ok" };
   });
 }

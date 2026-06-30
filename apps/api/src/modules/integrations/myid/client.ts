@@ -97,7 +97,7 @@ async function getClientToken(): Promise<string> {
 export async function createMyidSession(
   pinfl: string,
   ipAddress: string,
-  redirectUri: string,
+  redirectUri?: string,
 ): Promise<MyidSessionResult> {
   const birthDate = parsePinflBirthDate(pinfl);
   const token = await getClientToken();
@@ -132,7 +132,11 @@ export async function createMyidSession(
       responseTimestamp: new Date(),
     });
 
-    const redirectUrl = `${env.MYID_WEB_IFRAME_URL}?session_id=${data.session_id}&pinfl=${pinfl}&birth_date=${birthDate}&theme=dark&redirect_uri=${redirectUri}`;
+    // Native clients (mobile) drive the MyID SDK directly and have no browser
+    // iframe to land on, so they omit redirectUri and get a null redirectUrl.
+    const redirectUrl = redirectUri
+      ? `${env.MYID_WEB_IFRAME_URL}?session_id=${data.session_id}&pinfl=${pinfl}&birth_date=${birthDate}&theme=dark&redirect_uri=${redirectUri}`
+      : null;
 
     return {
       sessionId: data.session_id,

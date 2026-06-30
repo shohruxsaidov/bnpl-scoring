@@ -12,8 +12,15 @@ function merchantId(request: { user: unknown }) {
 }
 
 function serialize(b: NonNullable<Awaited<ReturnType<typeof createBranch>>>) {
-  return { ...b, id: b.id.toString(), merchantId: b.merchantId.toString() }
+  return { ...b, id: b.id.toString(), merchantId: b.merchantId.toString(), createdAt: b.createdAt.toISOString() }
 }
+
+// Reference docs metadata shared by every route in this module.
+// This is the exemplar pattern — copy it when annotating other modules.
+const TAGS = ["Merchant · Branches"]
+const SECURITY = [{ merchantAuth: [] }]
+const XLANG = [{ $ref: "#/components/parameters/xLang" }]
+const ERROR = { $ref: "ErrorResponse#" }
 
 export default async function merchantBranchRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
@@ -33,17 +40,62 @@ export default async function merchantBranchRoutes(app: FastifyInstance) {
     active: Type.Boolean(),
   }))
 
-  fastify.get("/", { preHandler }, async (request) => {
+  // Mirrors serialize(): bigint ids are emitted as strings.
+  const Branch = Type.Object({
+    id: Type.String(),
+    merchantId: Type.String(),
+    name: Type.String(),
+    address: Type.String(),
+    phone: Type.String(),
+    regionId: Type.Union([Type.Integer(), Type.Null()]),
+    active: Type.Boolean(),
+    createdAt: Type.String({ format: "date-time" }),
+  })
+
+  fastify.get("/", {
+    schema: {
+      tags: TAGS,
+      summary: "List branches",
+      description: "Returns all branches for the authenticated merchant.",
+      security: SECURITY,
+      parameters: XLANG,
+      response: { 200: Type.Object({ branches: Type.Array(Branch) }), 401: ERROR },
+    },
+    preHandler,
+  }, async (request) => {
     const rows = await listBranches(merchantId(request))
     return { branches: rows.map(serialize) }
   })
 
-  fastify.post("/", { schema: { body: CreateBody }, preHandler: manage }, async (request, reply) => {
+  fastify.post("/", {
+    schema: {
+      tags: TAGS,
+      summary: "Create branch",
+      description: "Creates a branch. Requires the `manage_branches` permission.",
+      security: SECURITY,
+      parameters: XLANG,
+      body: CreateBody,
+      response: { 201: Type.Object({ branch: Branch }), 401: ERROR, 403: ERROR },
+    },
+    preHandler: manage,
+  }, async (request, reply) => {
     const branch = await createBranch({ merchantId: merchantId(request), ...request.body })
     return reply.code(201).send({ branch: serialize(branch) })
   })
 
-  fastify.patch("/:id", { schema: { params: IdParams, body: UpdateBody }, preHandler: manage }, async (request, reply) => {
+  fastify.patch("/:id", {
+    schema: {
+      tags: TAGS,
+      summary: "Update branch",
+      description: "Partially updates a branch. Requires the `manage_branches` permission.",
+      security: SECURITY,
+      parameters: XLANG,
+      params: IdParams,
+      body: UpdateBody,
+      response: { 200: Type.Object({ branch: Branch }), 401: ERROR, 403: ERROR, 404: ERROR },
+    },
+    preHandler: manage,
+  }, async (request, reply) => {
     const branch = await updateBranch(Number(request.params.id), merchantId(request), request.body)
     if (!branch) return reply.code(404).sendError("not_found")
     return { branch: serialize(branch) }

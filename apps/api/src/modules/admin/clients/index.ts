@@ -6,7 +6,9 @@ import { listUserScoring } from "./queries/list-client-scoring/list-client-scori
 import { listUserPayments } from "./queries/list-client-payments/list-client-payments.handler"
 
 export default async function adminClientsRoutes(app: FastifyInstance) {
-  app.get("/", async () => {
+  const TAGS = ["Admin · Clients"]
+
+  app.get("/", { schema: { tags: TAGS } }, async () => {
     const rows = await listUniqueUsers()
     return {
       clients: rows.map((r) => ({
@@ -21,26 +23,26 @@ export default async function adminClientsRoutes(app: FastifyInstance) {
     }
   })
 
-  app.get<{ Params: { id: string } }>("/:id", async (req, reply) => {
+  app.get<{ Params: { id: string } }>("/:id", { schema: { tags: TAGS } }, async (req, reply) => {
     const id = Number(req.params.id)
     const user = await getUserOverview(id)
     if (!user) return reply.status(404).send({ error: "not_found" })
     return user
   })
 
-  app.get<{ Params: { id: string } }>("/:id/deals", async (req) => {
+  app.get<{ Params: { id: string } }>("/:id/deals", { schema: { tags: TAGS } }, async (req) => {
     const id = Number(req.params.id)
     const dealsData = await listUserDeals(id)
     return { deals: dealsData }
   })
 
-  app.get<{ Params: { id: string } }>("/:id/scoring", async (req) => {
+  app.get<{ Params: { id: string } }>("/:id/scoring", { schema: { tags: TAGS } }, async (req) => {
     const id = Number(req.params.id)
     const history = await listUserScoring(id)
     return { history }
   })
 
-  app.get<{ Params: { id: string } }>("/:id/payments", async (req) => {
+  app.get<{ Params: { id: string } }>("/:id/payments", { schema: { tags: TAGS } }, async (req) => {
     const id = Number(req.params.id)
     const payments = await listUserPayments(id)
     return { payments }

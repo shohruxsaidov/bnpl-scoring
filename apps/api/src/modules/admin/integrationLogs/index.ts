@@ -13,6 +13,8 @@ export default async function adminIntegrationLogRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
   const preHandler = app.verifyAdminJwt
 
+  const TAGS = ["Admin · Integration Logs"]
+
   const ListQuery = Type.Object({
     from: Type.Optional(Type.String({ format: "date-time" })),
     to: Type.Optional(Type.String({ format: "date-time" })),
@@ -26,7 +28,7 @@ export default async function adminIntegrationLogRoutes(app: FastifyInstance) {
 
   const IdParams = Type.Object({ id: Type.String() })
 
-  fastify.get("/", { schema: { querystring: ListQuery }, preHandler }, async (request) => {
+  fastify.get("/", { schema: { tags: TAGS, querystring: ListQuery }, preHandler }, async (request) => {
     const { from, to, integration, result, limit, offset } = request.query
     const { logs, total } = await listIntegrationLogs({
       from: from ? new Date(from) : undefined,
@@ -39,12 +41,12 @@ export default async function adminIntegrationLogRoutes(app: FastifyInstance) {
     return { logs, total }
   })
 
-  fastify.get("/integrations", { preHandler }, async () => {
+  fastify.get("/integrations", { schema: { tags: TAGS }, preHandler }, async () => {
     const integrations = await listIntegrationNames()
     return { integrations }
   })
 
-  fastify.get("/:id", { schema: { params: IdParams }, preHandler }, async (request, reply) => {
+  fastify.get("/:id", { schema: { tags: TAGS, params: IdParams }, preHandler }, async (request, reply) => {
     if (!UUID_RE.test(request.params.id)) return reply.code(400).sendError("invalid_id")
 
     const log = await getIntegrationLog(request.params.id)

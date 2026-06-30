@@ -19,6 +19,8 @@ function serializeEmployee(e: NonNullable<Awaited<ReturnType<typeof createEmploy
   };
 }
 
+const TAGS = ['Admin · Branches'];
+
 export default async function adminBranchRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
 
@@ -44,7 +46,7 @@ export default async function adminBranchRoutes(app: FastifyInstance) {
 
   const preHandler = app.verifyAdminJwt;
 
-  fastify.get('/:id', { schema: { params: IdParams }, preHandler }, async (request, reply) => {
+  fastify.get('/:id', { schema: { tags: TAGS, params: IdParams }, preHandler }, async (request, reply) => {
     const branch = await getBranch(+request.params.id);
     if (!branch) return reply.code(404).sendError('not_found');
     return { branch: serializeBranch(branch) };
@@ -52,7 +54,7 @@ export default async function adminBranchRoutes(app: FastifyInstance) {
 
   fastify.patch(
     '/:id',
-    { schema: { params: IdParams, body: UpdateBranchBody }, preHandler },
+    { schema: { tags: TAGS, params: IdParams, body: UpdateBranchBody }, preHandler },
     async (request, reply) => {
       const branch = await updateBranch({ id: +request.params.id, ...request.body });
       if (!branch) return reply.code(404).sendError('not_found');
@@ -60,14 +62,14 @@ export default async function adminBranchRoutes(app: FastifyInstance) {
     },
   );
 
-  fastify.get('/:id/employees', { schema: { params: IdParams }, preHandler }, async (request) => {
+  fastify.get('/:id/employees', { schema: { tags: TAGS, params: IdParams }, preHandler }, async (request) => {
     const rows = await listEmployees(Number(request.params.id));
     return { employees: rows.map(serializeEmployee) };
   });
 
   fastify.post(
     '/:id/employees',
-    { schema: { params: IdParams, body: CreateEmployeeBody }, preHandler },
+    { schema: { tags: TAGS, params: IdParams, body: CreateEmployeeBody }, preHandler },
     async (request, reply) => {
       const branch = await getBranch(+request.params.id);
       if (!branch) return reply.code(404).sendError('not_found');

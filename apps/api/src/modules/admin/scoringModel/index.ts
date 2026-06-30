@@ -33,11 +33,13 @@ function serializeScoringModel(row: NonNullable<Awaited<ReturnType<typeof getSco
 export default async function adminScoringModelRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
 
+  const TAGS = ["Admin · Scoring Model"]
+
   /* ── Scoring Models (ADR-0023) ──────────────────────────────────────────── */
 
   const ModelIdParams = Type.Object({ modelId: Type.String() })
 
-  fastify.get("/models", async () => {
+  fastify.get("/models", { schema: { tags: TAGS } }, async () => {
     const rows = await listScoringModels()
     return {
       models: rows.map((m) => ({
@@ -53,7 +55,7 @@ export default async function adminScoringModelRoutes(app: FastifyInstance) {
 
   fastify.post(
     "/models",
-    { schema: { body: Type.Object({ name: Type.String({ minLength: 1 }) }) } },
+    { schema: { tags: TAGS, body: Type.Object({ name: Type.String({ minLength: 1 }) }) } },
     async (request, reply) => {
       const model = await createScoringModel({ name: request.body.name })
       return reply.code(201).send({ model: serializeScoringModel(model) })
@@ -63,7 +65,7 @@ export default async function adminScoringModelRoutes(app: FastifyInstance) {
   // Model + its active (latest) revision, if any.
   fastify.get(
     "/models/:modelId",
-    { schema: { params: ModelIdParams } },
+    { schema: { tags: TAGS, params: ModelIdParams } },
     async (request, reply) => {
       const model = await getScoringModel(parseInt(request.params.modelId, 10))
       if (!model) return reply.code(404).sendError("not_found")
@@ -77,7 +79,7 @@ export default async function adminScoringModelRoutes(app: FastifyInstance) {
 
   fastify.get(
     "/models/:modelId/history",
-    { schema: { params: ModelIdParams } },
+    { schema: { tags: TAGS, params: ModelIdParams } },
     async (request, reply) => {
       const model = await getScoringModel(parseInt(request.params.modelId, 10))
       if (!model) return reply.code(404).sendError("not_found")
@@ -96,7 +98,7 @@ export default async function adminScoringModelRoutes(app: FastifyInstance) {
   // Atomic Global Model switch: marking this model unmarks the previous holder.
   fastify.post(
     "/models/:modelId/global",
-    { schema: { params: ModelIdParams } },
+    { schema: { tags: TAGS, params: ModelIdParams } },
     async (request, reply) => {
       const model = await getScoringModel(parseInt(request.params.modelId, 10))
       if (!model) return reply.code(404).sendError("not_found")
@@ -114,7 +116,7 @@ export default async function adminScoringModelRoutes(app: FastifyInstance) {
   // Save a new revision under a model; it becomes the model's active revision.
   fastify.put(
     "/models/:modelId",
-    { schema: { params: ModelIdParams, body: SaveBody } },
+    { schema: { tags: TAGS, params: ModelIdParams, body: SaveBody } },
     async (request, reply) => {
       const model = await getScoringModel(parseInt(request.params.modelId, 10))
       if (!model) return reply.code(404).sendError("not_found")
@@ -135,7 +137,7 @@ export default async function adminScoringModelRoutes(app: FastifyInstance) {
 
   fastify.get(
     "/:id",
-    { schema: { params: Type.Object({ id: Type.String() }) } },
+    { schema: { tags: TAGS, params: Type.Object({ id: Type.String() }) } },
     async (request, reply) => {
       const row = await getModelById(parseInt(request.params.id, 10))
       if (!row) return reply.code(404).sendError("not_found")

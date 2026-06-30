@@ -20,6 +20,8 @@ function serialize(e: NonNullable<Awaited<ReturnType<typeof createEmployee>>>) {
   };
 }
 
+const TAGS = ['Merchant · Employees'];
+
 export default async function merchantEmployeeRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
   const preHandler = app.verifyMerchantJwt;
@@ -46,14 +48,14 @@ export default async function merchantEmployeeRoutes(app: FastifyInstance) {
     }),
   );
 
-  fastify.get('/', { preHandler }, async (request) => {
+  fastify.get('/', { schema: { tags: TAGS }, preHandler }, async (request) => {
     const rows = await listEmployees(merchantId(request));
     return { employees: rows.map(serialize) };
   });
 
   fastify.post(
     '/',
-    { schema: { body: CreateBody }, preHandler: manage },
+    { schema: { tags: TAGS, body: CreateBody }, preHandler: manage },
     async (request, reply) => {
       const employee = await createEmployee({
         phone: request.body.phone,
@@ -69,7 +71,7 @@ export default async function merchantEmployeeRoutes(app: FastifyInstance) {
 
   fastify.patch(
     '/:id',
-    { schema: { params: IdParams, body: UpdateBody }, preHandler: manage },
+    { schema: { tags: TAGS, params: IdParams, body: UpdateBody }, preHandler: manage },
     async (request, reply) => {
       const input = {
         ...request.body,

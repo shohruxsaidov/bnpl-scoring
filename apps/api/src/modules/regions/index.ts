@@ -5,10 +5,12 @@ import { regions } from '@db/schema';
 export default async function regionRoutes(app: FastifyInstance) {
   const db = app.db;
 
+  const TAGS = ['Regions'];
+
   // GET /regions            → top-level Regions (oblasts)
   // GET /regions?upperId=N  → Districts under Region N
   // GET /regions?flat=true  → all rows (used for name lookups)
-  app.get('/', async (req) => {
+  app.get('/', { schema: { tags: TAGS } }, async (req) => {
     const { upperId, flat } = req.query as { upperId?: string; flat?: string };
 
     if (flat === 'true') {

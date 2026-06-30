@@ -10,6 +10,8 @@ function serializeEmployee(e: NonNullable<Awaited<ReturnType<typeof getEmployee>
   return { ...e, id: e.id.toString(), merchantId: e.merchantId.toString(), branchId: e.branchId.toString() }
 }
 
+const TAGS = ["Admin · Employees"]
+
 export default async function adminEmployeeRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
 
@@ -21,7 +23,7 @@ export default async function adminEmployeeRoutes(app: FastifyInstance) {
   /* ── GET /?merchantId=X — list employees for a merchant ──────────────────── */
   fastify.get(
     "/",
-    { schema: { querystring: MerchantQuery }, preHandler },
+    { schema: { tags: TAGS, querystring: MerchantQuery }, preHandler },
     async (request) => {
       const rows = await listEmployeesByMerchant(Number(request.query.merchantId))
       return { employees: rows.map((e) => ({ ...e, id: e.id.toString() })) }
@@ -44,7 +46,7 @@ export default async function adminEmployeeRoutes(app: FastifyInstance) {
 
   fastify.get(
     "/:id",
-    { schema: { params: IdParams }, preHandler },
+    { schema: { tags: TAGS, params: IdParams }, preHandler },
     async (request, reply) => {
       const employee = await getEmployee(Number(request.params.id))
       if (!employee) return reply.code(404).sendError("not_found")
@@ -54,7 +56,7 @@ export default async function adminEmployeeRoutes(app: FastifyInstance) {
 
   fastify.patch(
     "/:id",
-    { schema: { params: IdParams, body: UpdateEmployeeBody }, preHandler },
+    { schema: { tags: TAGS, params: IdParams, body: UpdateEmployeeBody }, preHandler },
     async (request, reply) => {
       const employee = await updateEmployee({ id: Number(request.params.id), ...request.body })
       if (!employee) return reply.code(404).sendError("not_found")
@@ -68,7 +70,7 @@ export default async function adminEmployeeRoutes(app: FastifyInstance) {
 
   fastify.post(
     "/:id/change-password",
-    { schema: { params: IdParams, body: ChangePasswordBody }, preHandler },
+    { schema: { tags: TAGS, params: IdParams, body: ChangePasswordBody }, preHandler },
     async (request, reply) => {
       const row = await changeEmployeePassword(Number(request.params.id), request.body.password)
       if (!row) return reply.code(404).sendError("not_found")
@@ -78,7 +80,7 @@ export default async function adminEmployeeRoutes(app: FastifyInstance) {
 
   fastify.delete(
     "/:id",
-    { schema: { params: IdParams }, preHandler },
+    { schema: { tags: TAGS, params: IdParams }, preHandler },
     async (request, reply) => {
       const employee = await updateEmployee({ id: Number(request.params.id), active: false })
       if (!employee) return reply.code(404).sendError("not_found")

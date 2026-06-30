@@ -51,6 +51,8 @@ interface RegTokenPhase2 {
   step: 'pinfl_verified';
 }
 
+const TAGS = ['Merchant · Client'];
+
 export default async function merchantClientRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
 
@@ -78,7 +80,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
 
   fastify.get(
     '/search',
-    { schema: { querystring: SearchQuery }, preHandler: app.verifyMerchantJwt },
+    { schema: { tags: TAGS, querystring: SearchQuery }, preHandler: app.verifyMerchantJwt },
     async (request) => {
       const results = await findUsersHandler({ query: request.query.q });
       return { clients: results.map(toClientDto) };
@@ -89,7 +91,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
   // merchant/client/otp
   fastify.post(
     '/otp',
-    { schema: { body: OtpBody }, preHandler: app.verifyMerchantJwt },
+    { schema: { tags: TAGS, body: OtpBody }, preHandler: app.verifyMerchantJwt },
     async (req, reply) => {
       const { phone } = req.body;
 
@@ -113,7 +115,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
 
   fastify.post(
     '/otp/verify',
-    { schema: { body: OtpVerifyBody }, preHandler: app.verifyMerchantJwt },
+    { schema: { tags: TAGS, body: OtpVerifyBody }, preHandler: app.verifyMerchantJwt },
     async (request, reply) => {
       const { phone } = request.body;
       const ok = await verifyOtp(phone, request.body.code, 'client_registration');
@@ -130,7 +132,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
 
   fastify.post(
     '/myid-session',
-    { schema: { body: MyidSessionBody }, preHandler: app.verifyMerchantJwt },
+    { schema: { tags: TAGS, body: MyidSessionBody }, preHandler: app.verifyMerchantJwt },
     async (request, reply) => {
       let phase1: RegTokenPhase1;
       try {
@@ -176,7 +178,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
 
   fastify.post(
     '/myid-complete',
-    { schema: { body: MyidCompleteBody }, preHandler: app.verifyMerchantJwt },
+    { schema: { tags: TAGS, body: MyidCompleteBody }, preHandler: app.verifyMerchantJwt },
     async (request, reply) => {
       let phase2: RegTokenPhase2;
       try {
@@ -255,7 +257,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
    */
   fastify.post(
     '/myid-sign-session',
-    { schema: { body: MyidSignSessionBody }, preHandler: app.verifyMerchantJwt },
+    { schema: { tags: TAGS, body: MyidSignSessionBody }, preHandler: app.verifyMerchantJwt },
     async (request) => {
       const { pinfl } = request.body;
       const redirectUrl = encodeURIComponent(
@@ -284,7 +286,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
    */
   fastify.post(
     '/myid-sign-complete',
-    { schema: { body: MyidSignCompleteBody }, preHandler: app.verifyMerchantJwt },
+    { schema: { tags: TAGS, body: MyidSignCompleteBody }, preHandler: app.verifyMerchantJwt },
     async (request, reply) => {
       const jwtPayload = request.user as {
         sub: string;

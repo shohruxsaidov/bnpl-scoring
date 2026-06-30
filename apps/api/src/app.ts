@@ -16,8 +16,9 @@ import redisPlugin from './plugins/redis';
 import queuePlugin from './plugins/queue';
 import bullBoardPlugin from './plugins/bull-board';
 import i18nPlugin from './plugins/i18n';
+import swaggerPlugin from './plugins/swagger';
 import healthRoutes from './routes/health.js';
-import { authModule, merchantModule, adminModule } from './modules/index.js';
+import { authModule, merchantModule, adminModule, clientModule } from './modules/index.js';
 import { env } from './env.js';
 
 const isDev = env.NODE_ENV !== 'production';
@@ -106,11 +107,15 @@ export async function buildApp() {
   await app.register(queuePlugin);
   await app.register(bullBoardPlugin);
 
+  // swagger must register before routes so it can introspect their schemas
+  await app.register(swaggerPlugin);
+
   // domain modules register here as encapsulated plugins
   await app.register(healthRoutes);
   await app.register(authModule, { prefix: '/api/v1' });
   await app.register(merchantModule, { prefix: '/api/v1' });
   await app.register(adminModule, { prefix: '/api/v1' });
+  await app.register(clientModule, { prefix: '/api/v1' });
 
   return app;
 }

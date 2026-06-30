@@ -7,6 +7,8 @@ import { markBuyoutPaid } from "./commands/mark-buyout-paid/mark-buyout-paid.han
 export default async function adminBuyoutRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
 
+  const TAGS = ["Admin · Buyouts"]
+
   const ListQuery = Type.Object({
     merchantId: Type.Optional(Type.String()),
     status: Type.Optional(Type.String()),
@@ -14,7 +16,7 @@ export default async function adminBuyoutRoutes(app: FastifyInstance) {
 
   const IdParams = Type.Object({ id: Type.String() })
 
-  fastify.get("/", { schema: { querystring: ListQuery } }, async (request) => {
+  fastify.get("/", { schema: { tags: TAGS, querystring: ListQuery } }, async (request) => {
     const { merchantId, status } = request.query
     const buyouts = await listBuyouts({
       merchantId: merchantId ? Number(merchantId) : undefined,
@@ -23,7 +25,7 @@ export default async function adminBuyoutRoutes(app: FastifyInstance) {
     return { buyouts }
   })
 
-  fastify.patch("/:id/pay", { schema: { params: IdParams } }, async (request, reply) => {
+  fastify.patch("/:id/pay", { schema: { tags: TAGS, params: IdParams } }, async (request, reply) => {
     const buyout = await markBuyoutPaid(Number(request.params.id))
     if (!buyout) return reply.code(404).sendError("not_found")
     return { buyout }

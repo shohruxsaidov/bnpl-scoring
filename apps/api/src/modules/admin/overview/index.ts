@@ -1,8 +1,10 @@
 import type { FastifyInstance } from "fastify"
 import { getMerchantHealth, getKybStats } from "./queries/get-dashboard-stats/get-dashboard-stats.handler"
 
+const TAGS = ["Admin · Overview"]
+
 export default async function adminOverviewRoutes(app: FastifyInstance) {
-  app.get("/", async () => {
+  app.get("/", { schema: { tags: TAGS } }, async () => {
     const [merchantHealth, kybStats] = await Promise.all([
       getMerchantHealth(),
       getKybStats(),

@@ -6,6 +6,8 @@ import { getAdminDeal } from "./queries/get-deal/get-deal.handler"
 import { listDealComments } from "./queries/list-deal-comments/list-deal-comments.handler"
 import { createDealComment } from "./commands/create-deal-comment/create-deal-comment.handler"
 
+const TAGS = ["Admin · Deals"]
+
 export default async function adminDealRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
   const preHandler = app.verifyAdminJwt
@@ -21,7 +23,7 @@ export default async function adminDealRoutes(app: FastifyInstance) {
     text: Type.String({ minLength: 1, maxLength: 2000 }),
   })
 
-  fastify.get("/", { schema: { querystring: ListQuery }, preHandler }, async (request) => {
+  fastify.get("/", { schema: { tags: TAGS, querystring: ListQuery }, preHandler }, async (request) => {
     const { status, merchantId } = request.query
     const deals = await listAdminDeals({
       status: status || undefined,
@@ -30,20 +32,20 @@ export default async function adminDealRoutes(app: FastifyInstance) {
     return { deals }
   })
 
-  fastify.get("/:id", { schema: { params: IdParams }, preHandler }, async (request, reply) => {
+  fastify.get("/:id", { schema: { tags: TAGS, params: IdParams }, preHandler }, async (request, reply) => {
     const deal = await getAdminDeal(request.params.id)
     if (!deal) return reply.code(404).sendError("not_found")
     return { deal }
   })
 
-  fastify.get("/:id/comments", { schema: { params: IdParams }, preHandler }, async (request) => {
+  fastify.get("/:id/comments", { schema: { tags: TAGS, params: IdParams }, preHandler }, async (request) => {
     const comments = await listDealComments(request.params.id)
     return { comments }
   })
 
   fastify.post(
     "/:id/comments",
-    { schema: { params: IdParams, body: CreateCommentBody }, preHandler },
+    { schema: { tags: TAGS, params: IdParams, body: CreateCommentBody }, preHandler },
     async (request, reply) => {
       const adminUserId = Number((request.user as { sub: string }).sub)
       const comment = await createDealComment({
