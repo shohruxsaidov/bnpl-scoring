@@ -73,6 +73,12 @@ export async function mockConfirmCard(params: {
   return card;
 }
 
+export async function mockDeleteCard(params: { id: number }): Promise<void> {
+  await delay(300);
+  const idx = MOCK_CARDS.findIndex((c) => c.id === params.id);
+  if (idx !== -1) MOCK_CARDS.splice(idx, 1);
+}
+
 export async function mockScoreCard(params: {
   plumCardId: string;
   pcType: 'uzcard' | 'humo';

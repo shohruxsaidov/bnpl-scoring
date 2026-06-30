@@ -6,6 +6,7 @@ export * from './blacklist';
 export * from './branches';
 export * from './buyouts';
 export * from './categories';
+export * from './user-cards';
 export * from './user-devices';
 export * from './user-sessions';
 export * from './deal-comments';

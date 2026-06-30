@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import clientRegistrationRoutes from './registration/index';
+import clientCardsRoutes from './cards/index';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -33,4 +34,5 @@ export default async function clientModule(app: FastifyInstance) {
   });
 
   await app.register(clientRegistrationRoutes, { prefix: '/client/registration' });
+  await app.register(clientCardsRoutes, { prefix: '/client/cards' });
 }
