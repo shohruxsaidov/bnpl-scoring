@@ -174,7 +174,7 @@ export function computeScoringModel(model: ScoringModelData, inputs: ScoringInpu
   };
 
   const incomeRatio = calculatePaymentBurdenPercent(
-    inputs.incomeSum ?? 0,
+    inputs.incomeSum ? inputs.incomeSum * 100 : 0,
     inputs.monthlyPayment ?? 0,
   );
 

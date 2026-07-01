@@ -853,6 +853,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           incomeSumInBrv: (inps.incomesAllSumma ?? 0) / 12 / BRV_UZS,
           workExperienceMonths: monthsBetween(inps.periodBegin ?? '', inps.periodEnd ?? ''),
         }),
+        allDebts: 0,
       };
 
       const engineResult = computeScoringModel(resolvedModel.params, scoringInputs);
