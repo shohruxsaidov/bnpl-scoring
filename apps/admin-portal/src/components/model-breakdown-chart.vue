@@ -111,7 +111,7 @@ const dataLabelPlugin: Plugin<'bar'> = {
         ctx.fillText(String(item.weightedScore), x, y - 6)
         ctx.font = '10px system-ui, sans-serif'
         ctx.fillStyle = 'rgba(144,144,176,0.85)'
-        ctx.fillText(item.inputValue, x, y + 6)
+        ctx.fillText(String(item.inputValue), x, y + 6)
       } else {
         ctx.font = 'bold 11px system-ui, sans-serif'
         ctx.fillStyle = 'rgba(167,150,255,0.95)'
