@@ -611,7 +611,7 @@ export function parseKatm077ReportResponse(data: KatmResponse): KatmResult {
     totalClaims: toInt(overview?.claims_qty),
     avgMonthlyPayment: toFloat(overview?.actual_average_monthly_payment),
     hasDefaults: overdueMaxDays > 0 || toFloat(open_contracts?.all_overdue_debt_sum) > 0,
-    hasCreditBan: credit_ban?.credit_ban_status !== '0',
+    hasCreditBan: credit_ban?.credit_ban_status ? credit_ban?.credit_ban_status !== '0' : false,
     hasJuridical,
     hasDecommission,
     ...buckets,

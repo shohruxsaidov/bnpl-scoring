@@ -378,31 +378,7 @@ async function queryKatm(): Promise<boolean> {
 }
 
 function resetSearch() {
-  phase.value = 'search'
-  query.value = ''
-  searchResults.value = []
-  confirmedClient.value = null
-  isNewClient.value = false
-  otpPhone.value = ''
-  otpPhoneError.value = ''
-  otpCode.value = ''
-  otpError.value = ''
-  regToken.value = ''
-  devOtp.value = null
-  stopResendTimer()
-  resendCooldown.value = 0
-  pinfl.value = ''
-  pinflError.value = ''
-  katmDone.value = false
-  katmError.value = ''
-  katmBanned.value = false
-  katmOneIdLocked.value = false
-  rejected.value = false
-  rejectReason.value = null
-  stopKatmPolling()
-  katmPending.value = false
-  deal.setKatmPending(false)
-  myidError.value = ''
+  window.location.reload();
 }
 
 // "New session" from a rejection: clear the store + local state and open a fresh
@@ -527,7 +503,7 @@ const clientFullName = computed(() =>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.passport') }}</span>
           <span class="cf-value font-mono">{{ confirmedClient!.passportSeries }}{{ confirmedClient?.passportNumber
-          }}</span>
+            }}</span>
         </div>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.birthDate') }}</span>
@@ -648,7 +624,7 @@ const clientFullName = computed(() =>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.passport') }}</span>
           <span class="cf-value font-mono">{{ confirmedClient!.passportSeries }}{{ confirmedClient?.passportNumber
-            }}</span>
+          }}</span>
         </div>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.birthDate') }}</span>

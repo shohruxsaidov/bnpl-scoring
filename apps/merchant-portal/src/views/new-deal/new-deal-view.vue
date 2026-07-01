@@ -445,6 +445,7 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
   border-color: transparent;
   color: #fff;
   box-shadow: var(--accent-glow);
+  border: none;
 }
 
 .step.done .step-icon {

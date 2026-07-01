@@ -40,7 +40,7 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
   const worker = new Worker<KatmPollJobData>(
     KATM_POLL_QUEUE,
     async (job) => processKatmPollJob(job.data, queue),
-    { connection, concurrency: 5 },
+    { connection, concurrency: 5, maxStalledCount: 3 },
   );
 
   worker.on('failed', (job, err) => {
