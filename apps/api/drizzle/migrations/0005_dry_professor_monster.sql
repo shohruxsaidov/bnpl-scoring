@@ -1,1 +1,0 @@
-ALTER TABLE "users" ADD COLUMN "citizen_ship_id" varchar(5);

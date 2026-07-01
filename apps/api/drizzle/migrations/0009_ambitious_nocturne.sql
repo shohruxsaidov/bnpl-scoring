@@ -1,1 +1,0 @@
-ALTER TABLE "deal_items" ADD COLUMN "labels" jsonb DEFAULT '[]'::jsonb NOT NULL;

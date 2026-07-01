@@ -1,1 +1,0 @@
-ALTER TABLE "scorings" ADD COLUMN "reject_reason_code" varchar(40);

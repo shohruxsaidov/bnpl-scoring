@@ -1,4 +1,4 @@
-CREATE SEQUENCE "public"."katm_claim_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1000 CACHE 1;--> statement-breakpoint
+CREATE SEQUENCE "public"."katm_claim_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 START WITH 1010 CACHE 1;--> statement-breakpoint
 CREATE TABLE "admin_sessions" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"admin_user_id" integer NOT NULL,
@@ -72,6 +72,17 @@ CREATE TABLE "categories" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "user_cards" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"user_id" integer NOT NULL,
+	"plum_id" integer NOT NULL,
+	"masked_pan" varchar(25) NOT NULL,
+	"holder_name" varchar(100),
+	"expiry" varchar(5) NOT NULL,
+	"pc_type" varchar(10) NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "user_devices" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" integer NOT NULL,
@@ -119,7 +130,8 @@ CREATE TABLE "deal_items" (
 	"mxik_code" varchar(50),
 	"package_code" integer,
 	"package_name" varchar(200),
-	"quantity" integer DEFAULT 1 NOT NULL
+	"quantity" integer DEFAULT 1 NOT NULL,
+	"labels" jsonb DEFAULT '[]'::jsonb NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "deal_payment_schedules" (
@@ -230,10 +242,27 @@ CREATE TABLE "katm_077_reports" (
 	"avg_monthly_payment" double precision,
 	"has_defaults" boolean,
 	"has_credit_ban" boolean,
+	"has_juridical" boolean,
+	"has_decommission" boolean,
 	"overdue_30_count" integer,
 	"overdue_30_to_60_count" integer,
 	"overdue_60_to_90_count" integer,
 	"overdue_90_count" integer,
+	"pledger_liability" integer,
+	"raw" jsonb,
+	"status" varchar(20) DEFAULT 'created' NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "katm_mib_reports" (
+	"claim_id" varchar(20) PRIMARY KEY NOT NULL,
+	"token" varchar,
+	"demand_id" varchar,
+	"consent_id" varchar,
+	"result_code" integer,
+	"result_message" varchar,
+	"passed" boolean,
 	"raw" jsonb,
 	"status" varchar(20) DEFAULT 'created' NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -388,6 +417,7 @@ CREATE TABLE "products" (
 	"mxik_code" varchar(50),
 	"package_code" integer,
 	"package_name" varchar(200),
+	"is_labeled" boolean DEFAULT false NOT NULL,
 	"active" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -417,25 +447,6 @@ CREATE TABLE "roles" (
 	CONSTRAINT "roles_platform_key_unique" UNIQUE("platform","key")
 );
 --> statement-breakpoint
-CREATE TABLE "scoring_histories" (
-	"id" serial PRIMARY KEY NOT NULL,
-	"client_id" integer,
-	"first_name" varchar(100),
-	"last_name" varchar(100),
-	"middle_name" varchar(100),
-	"passport_number" varchar(10),
-	"passport_series" varchar(5),
-	"pinfl" varchar(14),
-	"phone_number" varchar(20),
-	"criteria_scores" jsonb,
-	"score_sum" numeric(10, 2),
-	"coefficient" numeric(5, 4),
-	"decision" varchar(20) NOT NULL,
-	"model_revision_id" integer,
-	"platform_credit_limit" integer NOT NULL,
-	"scored_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
 CREATE TABLE "scoring_model_revisions" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"scoring_model_id" integer,
@@ -453,6 +464,33 @@ CREATE TABLE "scoring_models" (
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "scoring_pipelines" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"scoring_id" integer NOT NULL,
+	"type" varchar(20) NOT NULL,
+	"status" varchar(20) NOT NULL,
+	"reject_reason_code" varchar(40),
+	"summary" jsonb,
+	"raw" jsonb,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "scorings" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"deal_session_id" uuid NOT NULL,
+	"user_id" integer,
+	"status" varchar(20) DEFAULT 'in_progress' NOT NULL,
+	"current_pipeline" varchar(20),
+	"reject_reason_code" varchar(40),
+	"katm_claim_id" varchar(20),
+	"score" integer,
+	"credit_limit" double precision,
+	"criteria_scores" jsonb,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "users" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"phone" varchar(20) NOT NULL,
@@ -467,9 +505,10 @@ CREATE TABLE "users" (
 	"passport_number" varchar(7),
 	"photo_url" text,
 	"verified_at" timestamp with time zone,
+	"citizen_ship_id" varchar(5),
 	"address" varchar(100),
-	"region_code" varchar(3),
-	"district_code" varchar(3),
+	"region_code" varchar(5),
+	"district_code" varchar(10),
 	"doc_type" integer,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"hash_password" varchar,
@@ -486,6 +525,7 @@ ALTER TABLE "branches" ADD CONSTRAINT "branches_region_id_regions_id_fk" FOREIGN
 ALTER TABLE "buyouts" ADD CONSTRAINT "buyouts_deal_id_deals_id_fk" FOREIGN KEY ("deal_id") REFERENCES "public"."deals"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "buyouts" ADD CONSTRAINT "buyouts_merchant_id_merchants_id_fk" FOREIGN KEY ("merchant_id") REFERENCES "public"."merchants"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "buyouts" ADD CONSTRAINT "buyouts_branch_id_branches_id_fk" FOREIGN KEY ("branch_id") REFERENCES "public"."branches"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_cards" ADD CONSTRAINT "user_cards_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_devices" ADD CONSTRAINT "user_devices_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_sessions" ADD CONSTRAINT "user_sessions_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "deal_comments" ADD CONSTRAINT "deal_comments_deal_id_deals_id_fk" FOREIGN KEY ("deal_id") REFERENCES "public"."deals"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -508,6 +548,7 @@ ALTER TABLE "deals" ADD CONSTRAINT "deals_tariff_id_tariffs_id_fk" FOREIGN KEY (
 ALTER TABLE "deals" ADD CONSTRAINT "deals_deal_session_id_deal_sessions_id_fk" FOREIGN KEY ("deal_session_id") REFERENCES "public"."deal_sessions"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "katm_claims" ADD CONSTRAINT "katm_claims_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "katm_077_reports" ADD CONSTRAINT "katm_077_reports_claim_id_katm_claims_claim_id_fk" FOREIGN KEY ("claim_id") REFERENCES "public"."katm_claims"("claim_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "katm_mib_reports" ADD CONSTRAINT "katm_mib_reports_claim_id_katm_claims_claim_id_fk" FOREIGN KEY ("claim_id") REFERENCES "public"."katm_claims"("claim_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "katm_inps_reports" ADD CONSTRAINT "katm_inps_reports_claim_id_katm_claims_claim_id_fk" FOREIGN KEY ("claim_id") REFERENCES "public"."katm_claims"("claim_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "manual_payments" ADD CONSTRAINT "manual_payments_deal_id_deals_id_fk" FOREIGN KEY ("deal_id") REFERENCES "public"."deals"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "manual_payments" ADD CONSTRAINT "manual_payments_admin_user_id_admin_users_id_fk" FOREIGN KEY ("admin_user_id") REFERENCES "public"."admin_users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -526,10 +567,14 @@ ALTER TABLE "products" ADD CONSTRAINT "products_merchant_id_merchants_id_fk" FOR
 ALTER TABLE "products" ADD CONSTRAINT "products_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "regions" ADD CONSTRAINT "regions_upper_id_regions_id_fk" FOREIGN KEY ("upper_id") REFERENCES "public"."regions"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "role_permissions" ADD CONSTRAINT "role_permissions_role_id_roles_id_fk" FOREIGN KEY ("role_id") REFERENCES "public"."roles"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "scoring_histories" ADD CONSTRAINT "scoring_histories_client_id_users_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "scoring_histories" ADD CONSTRAINT "scoring_histories_model_revision_id_scoring_model_revisions_id_fk" FOREIGN KEY ("model_revision_id") REFERENCES "public"."scoring_model_revisions"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scoring_model_revisions" ADD CONSTRAINT "scoring_model_revisions_scoring_model_id_scoring_models_id_fk" FOREIGN KEY ("scoring_model_id") REFERENCES "public"."scoring_models"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scoring_model_revisions" ADD CONSTRAINT "scoring_model_revisions_created_by_admin_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."admin_users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "scoring_pipelines" ADD CONSTRAINT "scoring_pipelines_scoring_id_scorings_id_fk" FOREIGN KEY ("scoring_id") REFERENCES "public"."scorings"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "scorings" ADD CONSTRAINT "scorings_deal_session_id_deal_sessions_id_fk" FOREIGN KEY ("deal_session_id") REFERENCES "public"."deal_sessions"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "scorings" ADD CONSTRAINT "scorings_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "user_cards_user_plum_uq" ON "user_cards" USING btree ("user_id","plum_id");--> statement-breakpoint
 CREATE INDEX "integration_logs_request_timestamp_idx" ON "integration_logs" USING btree ("request_timestamp");--> statement-breakpoint
 CREATE INDEX "integration_logs_integration_idx" ON "integration_logs" USING btree ("integration");--> statement-breakpoint
-CREATE UNIQUE INDEX "scoring_models_single_global_idx" ON "scoring_models" USING btree ("is_global") WHERE "scoring_models"."is_global";
+CREATE UNIQUE INDEX "scoring_models_single_global_idx" ON "scoring_models" USING btree ("is_global") WHERE "scoring_models"."is_global";--> statement-breakpoint
+CREATE UNIQUE INDEX "scoring_pipelines_scoring_type_idx" ON "scoring_pipelines" USING btree ("scoring_id","type");--> statement-breakpoint
+CREATE UNIQUE INDEX "scorings_deal_session_idx" ON "scorings" USING btree ("deal_session_id");
