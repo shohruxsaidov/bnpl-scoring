@@ -156,7 +156,9 @@ export async function runScoringPipeline(input: {
   userId: number;
   sessionId: string;
 }): Promise<PipelineStepResult> {
+  console.log('[PIPELINE] runScoringPipeline START scoringId=', input.scoringId, 'claimId=', input.claimId, 'userId=', input.userId, 'sessionId=', input.sessionId);
   // --- Pipeline 1: myid — validate the MyID-sourced fields already on hand ---
+  console.log('[PIPELINE:myid] setCurrentPipeline → myid');
   await setCurrentPipeline(input.scoringId, 'myid');
   const myidSubject: MyidSubject = {
     birthDate: input.subject.birthDate,
@@ -171,7 +173,9 @@ export async function runScoringPipeline(input: {
     gender: input.subject.gender,
     citizenShipId: input.subject.citizenShipId,
   };
+  console.log('[PIPELINE:myid] subject:', JSON.stringify(myidSubject));
   const myidEv = evaluateMyid(myidSubject, new Date());
+  console.log('[PIPELINE:myid] evaluateMyid →', myidEv.status, myidEv.status === 'rejected' ? `reasonCode=${myidEv.rejectReasonCode}` : '');
   if (myidEv.status === 'rejected') {
     const summary = myidEv.summary as MyidSummary;
     await recordPipeline(input.scoringId, 'myid', {
@@ -181,6 +185,7 @@ export async function runScoringPipeline(input: {
       raw: myidEv.raw,
     });
     await markRejected(input.scoringId, myidEv.rejectReasonCode);
+    console.log('[PIPELINE:myid] REJECTED reasonCode=', myidEv.rejectReasonCode, 'missingFields=', summary.missingFields);
     return {
       kind: 'rejected',
       reasonCode: myidEv.rejectReasonCode,
@@ -192,8 +197,10 @@ export async function runScoringPipeline(input: {
     summary: myidEv.status === 'passed' ? myidEv.summary : null,
     raw: myidEv.status === 'passed' ? myidEv.raw : null,
   });
+  console.log('[PIPELINE:myid] PASSED');
 
   // --- Pipeline 2: katm_claim — register the shared claim (free, idempotent) ---
+  console.log('[PIPELINE:katm_claim] setCurrentPipeline → katm_claim; checking for existing claim claimId=', input.claimId);
   await setCurrentPipeline(input.scoringId, 'katm_claim');
   const [existing] = await db
     .select({ katmSir: katmClaims.katmSir })
@@ -202,11 +209,13 @@ export async function runScoringPipeline(input: {
     .limit(1);
 
   if (existing) {
+    console.log('[PIPELINE:katm_claim] existing claim found katmSir=', existing.katmSir, '— skipping registerClaim');
     await recordPipeline(input.scoringId, 'katm_claim', {
       status: 'passed',
       summary: { claimId: input.claimId, katmSir: existing.katmSir },
     });
   } else {
+    console.log('[PIPELINE:katm_claim] no existing claim → registerClaim(...)');
     let claim;
     try {
       claim = await registerClaim({
@@ -223,8 +232,10 @@ export async function runScoringPipeline(input: {
         phone: input.subject.phone,
         amount: CREDIT_AMOUNT_TIYIN,
       });
+      console.log('[PIPELINE:katm_claim] registerClaim ← katmSir=', claim.katmSir, 'verified=', claim.verified);
     } catch (err) {
       if (err instanceof KatmOneIdLockedError) {
+        console.error('[PIPELINE:katm_claim] KatmOneIdLockedError:', err.message);
         await recordPipeline(input.scoringId, 'katm_claim', {
           status: 'rejected',
           rejectReasonCode: 'oneid_locked',
@@ -233,6 +244,7 @@ export async function runScoringPipeline(input: {
         await markRejected(input.scoringId, 'oneid_locked');
         return { kind: 'rejected', reasonCode: 'oneid_locked' };
       }
+      console.error('[PIPELINE:katm_claim] registerClaim ERROR:', err instanceof Error ? err.message : String(err));
       await recordPipeline(input.scoringId, 'katm_claim', {
         status: 'error',
         raw: { message: err instanceof Error ? err.message : String(err) },
@@ -253,7 +265,9 @@ export async function runScoringPipeline(input: {
       summary: { claimId: input.claimId, katmSir: claim.katmSir },
       raw: claim.verified,
     });
+    console.log('[PIPELINE:katm_claim] PASSED (registered)');
   }
+  console.log('[PIPELINE:katm_claim] → requestMib(...)');
   return requestMib({ scoringId: input.scoringId, claimId: input.claimId });
 }
 
@@ -262,10 +276,13 @@ export async function requestMib(input: {
   scoringId: number;
   claimId: string;
 }): Promise<PipelineStepResult> {
+  console.log('[PIPELINE:katm_mib] requestMib START claimId=', input.claimId);
   await setCurrentPipeline(input.scoringId, 'katm_mib');
   const report = await requestMibReport({ claimId: input.claimId });
+  console.log('[PIPELINE:katm_mib] requestMibReport ← status=', report.status);
 
   if (report.status === 'pending') {
+    console.log('[PIPELINE:katm_mib] PENDING token=', report.token, '→ enqueue_poll');
     await db
       .insert(katmMibReports)
       .values({ claimId: input.claimId, token: report.token, status: 'created' })
@@ -274,6 +291,7 @@ export async function requestMib(input: {
     return { kind: 'enqueue_poll', reportType: 'mib', token: report.token };
   }
 
+  console.log('[PIPELINE:katm_mib] READY → persist + evaluate');
   await persistMibReady(input.claimId, report.result);
   return evaluateMib(input.scoringId, input.claimId, report.result);
 }
@@ -289,8 +307,11 @@ export async function evaluateMib(
   claimId: string,
   result: MibResult,
 ): Promise<PipelineStepResult> {
+  console.log('[PIPELINE:katm_mib] evaluateMib START claimId=', claimId, 'resultCode=', result.resultCode);
   const ev = evaluateKatmMib(result);
+  console.log('[PIPELINE:katm_mib] evaluateKatmMib →', ev.status);
   if (ev.status === 'rejected') {
+    console.log('[PIPELINE:katm_mib] REJECTED reasonCode=', ev.rejectReasonCode);
     await recordPipeline(scoringId, 'katm_mib', {
       status: 'rejected',
       rejectReasonCode: ev.rejectReasonCode,
@@ -301,6 +322,7 @@ export async function evaluateMib(
     return { kind: 'rejected', reasonCode: ev.rejectReasonCode };
   }
   if (ev.status === 'error') {
+    console.error('[PIPELINE:katm_mib] ERROR unmapped resultCode=', result.resultCode);
     await recordPipeline(scoringId, 'katm_mib', {
       status: 'error',
       summary: ev.summary ?? null,
@@ -310,6 +332,7 @@ export async function evaluateMib(
     return { kind: 'failed', reason: `mib_unmapped_code:${result.resultCode}` };
   }
   // passed (clean) → only now do we pay for 077
+  console.log('[PIPELINE:katm_mib] PASSED → request077(...)');
   await recordPipeline(scoringId, 'katm_mib', {
     status: 'passed',
     summary: ev.status === 'passed' ? ev.summary : null,
@@ -323,10 +346,13 @@ export async function request077(input: {
   scoringId: number;
   claimId: string;
 }): Promise<PipelineStepResult> {
+  console.log('[PIPELINE:katm_077] request077 START claimId=', input.claimId);
   await setCurrentPipeline(input.scoringId, 'katm_077');
   const report = await request077Report({ claimId: input.claimId });
+  console.log('[PIPELINE:katm_077] request077Report ← status=', report.status);
 
   if (report.status === 'pending') {
+    console.log('[PIPELINE:katm_077] PENDING token=', report.token, '→ enqueue_poll');
     await db
       .insert(katm077Reports)
       .values({ claimId: input.claimId, token: report.token, status: 'created' })
@@ -335,6 +361,7 @@ export async function request077(input: {
     return { kind: 'enqueue_poll', reportType: '077', token: report.token };
   }
 
+  console.log('[PIPELINE:katm_077] READY → persist + evaluate');
   await persist077Ready(input.claimId, report.result);
   return evaluate077(input.scoringId, input.claimId, report.result);
 }
@@ -348,8 +375,11 @@ export async function evaluate077(
   claimId: string,
   result: KatmResult,
 ): Promise<PipelineStepResult> {
+  console.log('[PIPELINE:katm_077] evaluate077 START claimId=', claimId);
   const ev = evaluateKatm077(result);
+  console.log('[PIPELINE:katm_077] evaluateKatm077 →', ev.status, ev.status === 'rejected' ? `reasonCode=${ev.rejectReasonCode}` : '');
   if (ev.status === 'rejected') {
+    console.log('[PIPELINE:katm_077] REJECTED reasonCode=', ev.rejectReasonCode, 'summary=', JSON.stringify(ev.summary));
     await recordPipeline(scoringId, 'katm_077', {
       status: 'rejected',
       rejectReasonCode: ev.rejectReasonCode,
@@ -360,6 +390,7 @@ export async function evaluate077(
     return { kind: 'rejected', reasonCode: ev.rejectReasonCode };
   }
   // passed → only now do we pay for INPS
+  console.log('[PIPELINE:katm_077] PASSED → requestInps(...)');
   await recordPipeline(scoringId, 'katm_077', {
     status: 'passed',
     summary: ev.status === 'passed' ? ev.summary : null,
@@ -370,10 +401,13 @@ export async function evaluate077(
 
 /** Pipeline 3 — request the chargeable INPS report, then evaluate it. */
 export async function requestInps(scoringId: number, claimId: string): Promise<PipelineStepResult> {
+  console.log('[PIPELINE:katm_inps] requestInps START claimId=', claimId);
   await setCurrentPipeline(scoringId, 'katm_inps');
   const report = await requestINPSReport({ claimId });
+  console.log('[PIPELINE:katm_inps] requestINPSReport ← status=', report.status);
 
   if (report.status === 'pending') {
+    console.log('[PIPELINE:katm_inps] PENDING token=', report.token, '→ enqueue_poll');
     await db
       .insert(katmInpsReports)
       .values({ claimId, token: report.token, status: 'created' })
@@ -382,6 +416,7 @@ export async function requestInps(scoringId: number, claimId: string): Promise<P
     return { kind: 'enqueue_poll', reportType: 'inps', token: report.token };
   }
 
+  console.log('[PIPELINE:katm_inps] READY → persist + evaluate');
   await persistInpsReady(claimId, report.result);
   return evaluateInps(scoringId, report.result);
 }
@@ -394,8 +429,11 @@ export async function evaluateInps(
   scoringId: number,
   result: InpsResult,
 ): Promise<PipelineStepResult> {
+  console.log('[PIPELINE:katm_inps] evaluateInps START');
   const ev = evaluateKatmInps(result);
+  console.log('[PIPELINE:katm_inps] evaluateKatmInps →', ev.status, ev.status === 'rejected' ? `reasonCode=${ev.rejectReasonCode}` : '');
   if (ev.status === 'rejected') {
+    console.log('[PIPELINE:katm_inps] REJECTED reasonCode=', ev.rejectReasonCode);
     await recordPipeline(scoringId, 'katm_inps', {
       status: 'rejected',
       rejectReasonCode: ev.rejectReasonCode,
@@ -411,6 +449,7 @@ export async function evaluateInps(
     raw: ev.status === 'passed' ? ev.raw : null,
   });
   await markGatesPassed(scoringId);
+  console.log('[PIPELINE:katm_inps] PASSED → markGatesPassed → gates_passed');
   return { kind: 'gates_passed' };
 }
 

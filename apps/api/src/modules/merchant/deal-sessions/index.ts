@@ -325,39 +325,90 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       const p = payload(request);
       const { userId } = request.body;
 
+      console.log('\n========================================================');
+      console.log('[START] POST /:id/start invoked');
+      console.log('[START] params.id (sessionId):', request.params.id);
+      console.log('[START] body.userId:', userId);
+      console.log('[START] jwt payload:', {
+        sub: p.sub,
+        merchantId: p.merchantId,
+        branchId: p.branchId,
+        role: p.role,
+      });
+      console.log('========================================================');
+
       let session;
       try {
+        console.log('[START] → loadOwnedActiveSession(', request.params.id, ',', Number(p.sub), ')');
         session = await loadOwnedActiveSession(request.params.id, Number(p.sub));
+        console.log('[START] ← session loaded:', {
+          id: session.id,
+          status: session.status,
+          currentStep: session.currentStep,
+          userId: session.userId,
+          katmClaimId: session.katmClaimId,
+        });
       } catch (err: any) {
+        console.error('[START] ✖ loadOwnedActiveSession failed. code=', err?.code, 'msg=', err?.message);
         if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found');
         if (err.code === 'session_not_active')
           return reply.code(409).sendError('session_not_active');
         throw err;
       }
 
+      console.log('[START] → fetching user row for userId=', Number(userId));
       const [client] = await db
         .select()
         .from(users)
         .where(eq(users.id, Number(userId)))
         .limit(1);
 
-      if (!client) return reply.code(404).sendError('user_not_found');
+      if (!client) {
+        console.error('[START] ✖ user_not_found for userId=', userId);
+        return reply.code(404).sendError('user_not_found');
+      }
+      console.log('[START] ← client row:', {
+        id: client.id,
+        pinfl: client.pinfl,
+        passportSeries: client.passportSeries,
+        passportNumber: client.passportNumber,
+        docType: client.docType,
+        regionCode: client.regionCode,
+        districtCode: client.districtCode,
+        address: client.address,
+        phone: client.phone,
+        birthDate: client.birthDate,
+        gender: client.gender,
+        citizenShipId: client.citizenShipId,
+      });
 
+      console.log('[START] → setSessionUserId(session,', client.id, ')');
       await setSessionUserId(session, client.id);
 
+      console.log('[START] → createKatmConsent({ userId:', client.id, ', sessionId:', session.id, '})');
       const consent = await createKatmConsent({
         userId: client.id,
         sessionId: session.id,
       });
+      console.log('[START] ← consent:', {
+        agreementId: consent.agreementId,
+        agreementDate: consent.agreementDate,
+      });
 
       const claimId = session.katmClaimId ?? (await allocateKatmClaimId());
       if (!session.katmClaimId) {
+        console.log('[START] no existing katmClaimId — allocated new claimId=', claimId);
         await setKatmClaimId(session, claimId);
         session = { ...session, katmClaimId: claimId };
+      } else {
+        console.log('[START] reusing existing katmClaimId=', claimId);
       }
 
       // Open (or reset) the scoring run for this session and pin its KATM claim.
+      console.log('[START] → startScoringRun(', session.id, ',', client.id, ')');
       const scoring = await startScoringRun(session.id, client.id);
+      console.log('[START] ← scoring run id=', scoring.id);
+      console.log('[START] → setKatmClaimIdOnScoring(', scoring.id, ',', claimId, ')');
       await setKatmClaimIdOnScoring(scoring.id, claimId);
 
       const consentDate = consent.agreementDate.toISOString();
@@ -367,6 +418,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       // the same PipelineStepResult when a report resolves asynchronously.
       // myid and katm_claim knockouts (incl. OneID-locked) come back as
       // kind:'rejected' — they are recorded scoring rejections, not throws.
+      console.log('[START] → runScoringPipeline(...) scoringId=', scoring.id, 'claimId=', claimId);
       const step: PipelineStepResult = await runScoringPipeline({
         scoringId: scoring.id,
         claimId,
@@ -387,10 +439,12 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         userId: client.id,
         sessionId: session.id,
       });
+      console.log('[START] ← runScoringPipeline returned step:', JSON.stringify(step));
 
       // A chargeable report went async — mark the wizard pending and enqueue the
       // follow-up poll, which will resume the chain when the report resolves.
       if (step.kind === 'enqueue_poll') {
+        console.log('[START] step.kind=enqueue_poll → marking pending + enqueue poll. reportType=', step.reportType);
         await stampKatmPending(session, {
           status: 'pending',
           startedAt: new Date().toISOString(),
@@ -403,6 +457,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           token: step.token,
           reportType: step.reportType,
         });
+        console.log('[START] ✓ responding status=pending');
         return { status: 'pending' as const };
       }
 
@@ -412,12 +467,14 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       // the specific reasonCode + category so the client can show why and which
       // fields (if any) to fix. Mirrors /cards/score's 200 reject responses.
       if (step.kind === 'rejected') {
+        console.log('[START] step.kind=rejected → reasonCode=', step.reasonCode, 'missingFields=', step.missingFields);
         await stampKatmPending(session, {
           status: 'failed',
           startedAt: new Date().toISOString(),
           error: step.reasonCode,
         });
         await rejectSession(session);
+        console.log('[START] ✓ responding status=rejected reasonCode=', step.reasonCode);
         return {
           status: 'rejected' as const,
           reasonCode: step.reasonCode,
@@ -430,18 +487,22 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       // business reject: fail the KATM step but leave the session open so the run
       // can be retried once the integration gap is resolved.
       if (step.kind === 'failed') {
+        console.log('[START] step.kind=failed → reason=', step.reason);
         await stampKatmPending(session, {
           status: 'failed',
           startedAt: new Date().toISOString(),
           error: step.reason,
         });
+        console.log('[START] ✓ responding status=failed reason=', step.reason);
         return { status: 'failed' as const, reason: step.reason };
       }
 
       // gates_passed — every KATM gate cleared synchronously. Advance the wizard
       // and hand the 077 summary back to the client.
+      console.log('[START] step.kind=gates_passed → stampKatm + load077Summary');
       await stampKatm(session);
       const summary = await load077Summary(claimId);
+      console.log('[START] ✓ responding status=completed summary=', JSON.stringify(summary));
       return { status: 'completed' as const, ...summary };
     },
   );
