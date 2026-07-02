@@ -156,7 +156,16 @@ export async function runScoringPipeline(input: {
   userId: number;
   sessionId: string;
 }): Promise<PipelineStepResult> {
-  console.log('[PIPELINE] runScoringPipeline START scoringId=', input.scoringId, 'claimId=', input.claimId, 'userId=', input.userId, 'sessionId=', input.sessionId);
+  console.log(
+    '[PIPELINE] runScoringPipeline START scoringId=',
+    input.scoringId,
+    'claimId=',
+    input.claimId,
+    'userId=',
+    input.userId,
+    'sessionId=',
+    input.sessionId,
+  );
   // --- Pipeline 1: myid — validate the MyID-sourced fields already on hand ---
   console.log('[PIPELINE:myid] setCurrentPipeline → myid');
   await setCurrentPipeline(input.scoringId, 'myid');
@@ -175,7 +184,11 @@ export async function runScoringPipeline(input: {
   };
   console.log('[PIPELINE:myid] subject:', JSON.stringify(myidSubject));
   const myidEv = evaluateMyid(myidSubject, new Date());
-  console.log('[PIPELINE:myid] evaluateMyid →', myidEv.status, myidEv.status === 'rejected' ? `reasonCode=${myidEv.rejectReasonCode}` : '');
+  console.log(
+    '[PIPELINE:myid] evaluateMyid →',
+    myidEv.status,
+    myidEv.status === 'rejected' ? `reasonCode=${myidEv.rejectReasonCode}` : '',
+  );
   if (myidEv.status === 'rejected') {
     const summary = myidEv.summary as MyidSummary;
     await recordPipeline(input.scoringId, 'myid', {
@@ -185,7 +198,12 @@ export async function runScoringPipeline(input: {
       raw: myidEv.raw,
     });
     await markRejected(input.scoringId, myidEv.rejectReasonCode);
-    console.log('[PIPELINE:myid] REJECTED reasonCode=', myidEv.rejectReasonCode, 'missingFields=', summary.missingFields);
+    console.log(
+      '[PIPELINE:myid] REJECTED reasonCode=',
+      myidEv.rejectReasonCode,
+      'missingFields=',
+      summary.missingFields,
+    );
     return {
       kind: 'rejected',
       reasonCode: myidEv.rejectReasonCode,
@@ -200,7 +218,10 @@ export async function runScoringPipeline(input: {
   console.log('[PIPELINE:myid] PASSED');
 
   // --- Pipeline 2: katm_claim — register the shared claim (free, idempotent) ---
-  console.log('[PIPELINE:katm_claim] setCurrentPipeline → katm_claim; checking for existing claim claimId=', input.claimId);
+  console.log(
+    '[PIPELINE:katm_claim] setCurrentPipeline → katm_claim; checking for existing claim claimId=',
+    input.claimId,
+  );
   await setCurrentPipeline(input.scoringId, 'katm_claim');
   const [existing] = await db
     .select({ katmSir: katmClaims.katmSir })
@@ -209,7 +230,11 @@ export async function runScoringPipeline(input: {
     .limit(1);
 
   if (existing) {
-    console.log('[PIPELINE:katm_claim] existing claim found katmSir=', existing.katmSir, '— skipping registerClaim');
+    console.log(
+      '[PIPELINE:katm_claim] existing claim found katmSir=',
+      existing.katmSir,
+      '— skipping registerClaim',
+    );
     await recordPipeline(input.scoringId, 'katm_claim', {
       status: 'passed',
       summary: { claimId: input.claimId, katmSir: existing.katmSir },
@@ -232,7 +257,12 @@ export async function runScoringPipeline(input: {
         phone: input.subject.phone,
         amount: CREDIT_AMOUNT_TIYIN,
       });
-      console.log('[PIPELINE:katm_claim] registerClaim ← katmSir=', claim.katmSir, 'verified=', claim.verified);
+      console.log(
+        '[PIPELINE:katm_claim] registerClaim ← katmSir=',
+        claim.katmSir,
+        'verified=',
+        claim.verified,
+      );
     } catch (err) {
       if (err instanceof KatmOneIdLockedError) {
         console.error('[PIPELINE:katm_claim] KatmOneIdLockedError:', err.message);
@@ -244,7 +274,10 @@ export async function runScoringPipeline(input: {
         await markRejected(input.scoringId, 'oneid_locked');
         return { kind: 'rejected', reasonCode: 'oneid_locked' };
       }
-      console.error('[PIPELINE:katm_claim] registerClaim ERROR:', err instanceof Error ? err.message : String(err));
+      console.error(
+        '[PIPELINE:katm_claim] registerClaim ERROR:',
+        err instanceof Error ? err.message : String(err),
+      );
       await recordPipeline(input.scoringId, 'katm_claim', {
         status: 'error',
         raw: { message: err instanceof Error ? err.message : String(err) },
@@ -268,7 +301,8 @@ export async function runScoringPipeline(input: {
     console.log('[PIPELINE:katm_claim] PASSED (registered)');
   }
   console.log('[PIPELINE:katm_claim] → requestMib(...)');
-  return requestMib({ scoringId: input.scoringId, claimId: input.claimId });
+  // return requestMib({ scoringId: input.scoringId, claimId: input.claimId });
+  return request077({ scoringId: input.scoringId, claimId: input.claimId });
 }
 
 /** Pipeline (flag-gated) — request the chargeable MIB (315) report, then evaluate. */
@@ -309,7 +343,12 @@ export async function evaluateMib(
   claimId: string,
   result: MibResult,
 ): Promise<PipelineStepResult> {
-  console.log('[PIPELINE:katm_mib] evaluateMib START claimId=', claimId, 'resultCode=', result.resultCode);
+  console.log(
+    '[PIPELINE:katm_mib] evaluateMib START claimId=',
+    claimId,
+    'resultCode=',
+    result.resultCode,
+  );
   const ev = evaluateKatmMib(result);
   console.log('[PIPELINE:katm_mib] evaluateKatmMib →', ev.status);
   if (ev.status === 'rejected') {
@@ -380,9 +419,18 @@ export async function evaluate077(
 ): Promise<PipelineStepResult> {
   console.log('[PIPELINE:katm_077] evaluate077 START claimId=', claimId);
   const ev = evaluateKatm077(result);
-  console.log('[PIPELINE:katm_077] evaluateKatm077 →', ev.status, ev.status === 'rejected' ? `reasonCode=${ev.rejectReasonCode}` : '');
+  console.log(
+    '[PIPELINE:katm_077] evaluateKatm077 →',
+    ev.status,
+    ev.status === 'rejected' ? `reasonCode=${ev.rejectReasonCode}` : '',
+  );
   if (ev.status === 'rejected') {
-    console.log('[PIPELINE:katm_077] REJECTED reasonCode=', ev.rejectReasonCode, 'summary=', JSON.stringify(ev.summary));
+    console.log(
+      '[PIPELINE:katm_077] REJECTED reasonCode=',
+      ev.rejectReasonCode,
+      'summary=',
+      JSON.stringify(ev.summary),
+    );
     await recordPipeline(scoringId, 'katm_077', {
       status: 'rejected',
       rejectReasonCode: ev.rejectReasonCode,
@@ -434,7 +482,11 @@ export async function evaluateInps(
 ): Promise<PipelineStepResult> {
   console.log('[PIPELINE:katm_inps] evaluateInps START');
   const ev = evaluateKatmInps(result);
-  console.log('[PIPELINE:katm_inps] evaluateKatmInps →', ev.status, ev.status === 'rejected' ? `reasonCode=${ev.rejectReasonCode}` : '');
+  console.log(
+    '[PIPELINE:katm_inps] evaluateKatmInps →',
+    ev.status,
+    ev.status === 'rejected' ? `reasonCode=${ev.rejectReasonCode}` : '',
+  );
   if (ev.status === 'rejected') {
     console.log('[PIPELINE:katm_inps] REJECTED reasonCode=', ev.rejectReasonCode);
     await recordPipeline(scoringId, 'katm_inps', {
