@@ -55,6 +55,7 @@ function audienceDocs(
   routePrefix: string,
   title: string,
   include: (path: string) => boolean,
+  authScheme: string,
   injectParam?: unknown,
 ) {
   return async function (scope: FastifyInstance) {
@@ -70,7 +71,18 @@ function audienceDocs(
           const inject = injectParam && path.startsWith('/api/v1/client')
           paths[path] = inject ? withParam(item as Record<string, any>, injectParam) : item
         }
-        return { ...spec, info: { ...spec.info, title }, paths }
+        // Show only this audience's auth scheme in the Authorize dialog, so the
+        // client doc offers clientAuth alone (not merchantAuth/adminAuth too).
+        const allSchemes = spec.components?.securitySchemes ?? {}
+        const securitySchemes = allSchemes[authScheme]
+          ? { [authScheme]: allSchemes[authScheme] }
+          : {}
+        return {
+          ...spec,
+          info: { ...spec.info, title },
+          paths,
+          components: { ...spec.components, securitySchemes },
+        }
       },
     })
   }
@@ -151,7 +163,9 @@ export default fp(async function swaggerPlugin(app: FastifyInstance) {
     p.startsWith('/api/v1/merchant') || p.startsWith('/api/v1/auth/merchant') || p === '/health'
   const isClient = (p: string) => p.startsWith('/api/v1/client') || p === '/health'
 
-  await app.register(audienceDocs('/docs/admin', 'Scoring API — Admin', isAdmin))
-  await app.register(audienceDocs('/docs/merchant', 'Scoring API — Merchant', isMerchant))
-  await app.register(audienceDocs('/docs/client', 'Scoring API — Client', isClient, DEVICE_ID_PARAM))
+  await app.register(audienceDocs('/docs/admin', 'Scoring API — Admin', isAdmin, 'adminAuth'))
+  await app.register(audienceDocs('/docs/merchant', 'Scoring API — Merchant', isMerchant, 'merchantAuth'))
+  await app.register(
+    audienceDocs('/docs/client', 'Scoring API — Client', isClient, 'clientAuth', DEVICE_ID_PARAM),
+  )
 }, { name: 'swagger', dependencies: [] })

@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useDealStore } from '@/stores/deal'
 import { useClientApi } from '@/composables/use-client-api'
 import { useCreateDealMutation } from '@/composables/use-deals-api'
 import { saveSessionStep } from '@/composables/use-deal-session-api'
 import MonoAmount from '@/components/mono-amount.vue'
 
+const { locale } = useI18n()
 const deal = useDealStore()
 const {
   sendSigningOtpMutation,
@@ -159,9 +161,9 @@ async function startMyidSigning() {
 
 // ── Deal creation ──────────────────────────────────────────────────────────
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('uz-UZ', {
+  return new Date(iso).toLocaleDateString(locale.value === 'ru' ? 'ru-RU' : 'uz-UZ', {
     day: '2-digit',
-    month: 'short',
+    month: 'long',
   })
 }
 
@@ -269,12 +271,24 @@ async function signSubmit() {
 
     <section class="sched-block">
       <h4><i class="pi pi-calendar" /> {{ $t('stepVerification.schedulePreview') }}</h4>
-      <div class="sched-strip">
-        <div v-for="row in sd.schedule" :key="row.index" class="sched-chip">
-          <span class="font-mono sc-date">{{ fmtDate(row.dueDate) }}</span>
-          <MonoAmount :value="row.amount" size="sm" :gradient="false" />
-        </div>
-      </div>
+      <table class="sched-table">
+        <thead>
+          <tr>
+            <th class="sc-num">№</th>
+            <th>{{ $t('common.date') }}</th>
+            <th class="sc-amt">{{ $t('common.amount') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in sd.schedule" :key="row.index">
+            <td class="sc-num font-mono">{{ row.index }}</td>
+            <td class="font-mono sc-date">{{ fmtDate(row.dueDate) }}</td>
+            <td class="sc-amt">
+              <MonoAmount :value="row.amount" size="sm" :gradient="false" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </section>
 
     <!-- Contract language selector -->
@@ -499,27 +513,43 @@ async function signSubmit() {
   text-align: right;
 }
 
-.sched-strip {
-  display: flex;
-  gap: 0.7rem;
-  overflow-x: auto;
-  padding-bottom: 0.4rem;
+.sched-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
 }
 
-.sched-chip {
-  flex-shrink: 0;
+.sched-table th {
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sched-table td {
+  padding: 0.5rem 0.7rem;
+  color: var(--text-primary);
+}
+
+.sched-table tbody tr:nth-child(odd) {
   background: var(--bg-base);
-  border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  padding: 0.7rem 0.9rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  align-items: center;
+}
+
+.sched-table .sc-num {
+  width: 3rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.sched-table .sc-amt {
+  text-align: right;
 }
 
 .sc-date {
-  font-size: 0.72rem;
   color: var(--text-secondary);
   font-weight: 700;
 }

@@ -844,7 +844,8 @@ async function assignScoringModel(radioValue: number) {
           </Column>
           <Column style="width: 48px">
             <template #body="{ data }">
-              <button class="icon-btn danger" :title="$t('merchantDetail.deleteEmployee')" @click="openDeleteEmployee(data)">
+              <button class="icon-btn danger" :title="$t('merchantDetail.deleteEmployee')"
+                @click="openDeleteEmployee(data)">
                 <i class="pi pi-trash" />
               </button>
             </template>
@@ -1005,8 +1006,8 @@ async function assignScoringModel(radioValue: number) {
                 <RouterLink class="doc-link t-name-sm" :to="`/scoring-model/${data.model.id}`">
                   {{ data.model.name }}
                 </RouterLink>
-                <Tag v-if="data.model.isGlobal" class="model-tag"
-                  :value="$t('merchantDetail.scoringModelGlobalTag')" severity="info" />
+                <Tag v-if="data.model.isGlobal" class="model-tag" :value="$t('merchantDetail.scoringModelGlobalTag')"
+                  severity="info" />
                 <Tag v-if="data.model.revisionCount === 0" class="model-tag"
                   :value="$t('merchantDetail.scoringModelNoRevisions')" severity="warn" />
               </template>
@@ -1107,15 +1108,13 @@ async function assignScoringModel(radioValue: number) {
     </Dialog>
 
     <!-- Enable category dialog -->
-    <Dialog v-model:visible="showEnableCategory" modal :header="$t('merchantDetail.addCategory')" :style="{ width: '460px' }">
+    <Dialog v-model:visible="showEnableCategory" modal :header="$t('merchantDetail.addCategory')"
+      :style="{ width: '460px' }">
       <div class="category-checklist">
         <div v-for="c in merchants.globalCategories" :key="c.id" class="category-check-row">
           <span class="cat-check-name">{{ c.name }}</span>
-          <button
-            v-if="!enabledCategoryIds.has(c.id)"
-            class="btn-gradient btn-sm"
-            @click="merchants.enableCategory(merchantId, c.id)"
-          >
+          <button v-if="!enabledCategoryIds.has(c.id)" class="btn-gradient btn-sm"
+            @click="merchants.enableCategory(merchantId, c.id)">
             <i class="pi pi-plus" />
           </button>
           <span v-else class="enabled-badge"><i class="pi pi-check" /></span>
@@ -1179,9 +1178,9 @@ async function assignScoringModel(radioValue: number) {
             </div>
             <div v-if="mxikData.packages?.length" class="field" style="margin-top: 0.75rem; margin-bottom: 0">
               <label class="field-label">{{ $t('merchantDetail.packageCode') }}</label>
-              <Select :model-value="productForm.packageCode" :options="mxikData.packages" option-label="name"
-                option-value="code" :placeholder="$t('merchantDetail.selectPackage')"
-                @update:model-value="onPackageSelectAdmin" />
+              <Select :model-value="productForm.packageCode" :options="mxikData.packages"
+                :option-label="({ name, code }) => `${name} (${code})`" option-value="code"
+                :placeholder="$t('merchantDetail.selectPackage')" @update:model-value="onPackageSelectAdmin" />
             </div>
           </div>
 
@@ -1203,21 +1202,25 @@ async function assignScoringModel(radioValue: number) {
     </Dialog>
 
     <!-- Change employee role dialog -->
-    <Dialog v-model:visible="showChangeRole" modal :header="$t('merchantDetail.changeRoleTitle')" :style="{ width: '400px' }">
+    <Dialog v-model:visible="showChangeRole" modal :header="$t('merchantDetail.changeRoleTitle')"
+      :style="{ width: '400px' }">
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.roles') }}</label>
-        <MultiSelect v-model="changeRoleValue" :options="ROLE_OPTIONS" :placeholder="$t('merchantDetail.selectRoles')" display="chip" />
+        <MultiSelect v-model="changeRoleValue" :options="ROLE_OPTIONS" :placeholder="$t('merchantDetail.selectRoles')"
+          display="chip" />
       </div>
       <template #footer>
         <button class="btn-ghost" @click="showChangeRole = false">{{ $t('common.cancel') }}</button>
-        <button class="btn-gradient" :disabled="changeRoleSaving || changeRoleValue.length === 0" @click="submitChangeRole">
+        <button class="btn-gradient" :disabled="changeRoleSaving || changeRoleValue.length === 0"
+          @click="submitChangeRole">
           {{ $t('common.save') }}
         </button>
       </template>
     </Dialog>
 
     <!-- Delete employee confirm dialog -->
-    <Dialog v-model:visible="showDeleteEmployee" modal :header="$t('merchantDetail.deleteEmployeeTitle')" :style="{ width: '400px' }">
+    <Dialog v-model:visible="showDeleteEmployee" modal :header="$t('merchantDetail.deleteEmployeeTitle')"
+      :style="{ width: '400px' }">
       <p class="delete-confirm-text">
         {{ $t('merchantDetail.deleteEmployeeConfirm', { name: deleteEmployeeTarget?.fullName }) }}
       </p>

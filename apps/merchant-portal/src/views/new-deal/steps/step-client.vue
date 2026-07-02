@@ -235,10 +235,6 @@ function selectClient(client: Client) {
   phase.value = 'found'
 }
 
-function useFoundClient() {
-  phase.value = 'katm'
-}
-
 async function sendOtp() {
   const phone = normalizePhone(otpPhone.value)
   if (phone.length < 12) {
@@ -323,10 +319,6 @@ async function completeMyid(myidCode?: string) {
   }
 }
 
-function confirmNewClient() {
-  phase.value = 'katm'
-}
-
 async function queryKatm(): Promise<boolean> {
   if (!confirmedClient.value || !deal.dealSessionId) return false
   katmLoading.value = true
@@ -397,6 +389,8 @@ const saveError = ref('')
 async function onNext() {
   if (!confirmedClient.value || katmLoading.value || saving.value) return
   if (katmPending.value || katmBanned.value) return
+  // Collapse the detail card to the compact banner and reveal the KATM feedback surface
+  if (phase.value === 'found' || phase.value === 'myid_done') phase.value = 'katm'
   if (!katmDone.value && !(await queryKatm())) return
 
   // Blocking step save — the wizard advances only once the server has it (ADR-0024)
@@ -425,7 +419,9 @@ async function onNext() {
 
 const canContinue = computed(
   () =>
-    phase.value === 'katm' &&
+    (phase.value === 'katm' ||
+      phase.value === 'found' ||
+      phase.value === 'myid_done') &&
     !!confirmedClient.value &&
     !katmPending.value &&
     !katmBanned.value &&
@@ -509,10 +505,11 @@ const clientFullName = computed(() =>
           <span class="cf-label">{{ $t('stepClient.birthDate') }}</span>
           <span class="cf-value">{{ confirmedClient!.birthDate }}</span>
         </div>
+        <div v-if="confirmedClient!.address" class="client-field client-field--full">
+          <span class="cf-label">{{ $t('stepClient.address') }}</span>
+          <span class="cf-value">{{ confirmedClient!.address }}</span>
+        </div>
       </div>
-      <button class="btn-gradient mt-1" @click="useFoundClient">
-        {{ $t('stepClient.useClient') }} <i class="pi pi-arrow-right" />
-      </button>
     </div>
 
     <!-- ── PHASE: not_found ──────────────────────────────────────────────── -->
@@ -630,10 +627,11 @@ const clientFullName = computed(() =>
           <span class="cf-label">{{ $t('stepClient.birthDate') }}</span>
           <span class="cf-value">{{ confirmedClient!.birthDate }}</span>
         </div>
+        <div v-if="confirmedClient!.address" class="client-field client-field--full">
+          <span class="cf-label">{{ $t('stepClient.address') }}</span>
+          <span class="cf-value">{{ confirmedClient!.address }}</span>
+        </div>
       </div>
-      <button class="btn-gradient mt-1" @click="confirmNewClient">
-        {{ $t('stepClient.confirmContinue') }} <i class="pi pi-arrow-right" />
-      </button>
     </div>
 
     <!-- ── PHASE: katm (KATM consent + query) ───────────────────────────── -->
@@ -881,6 +879,10 @@ const clientFullName = computed(() =>
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
+}
+
+.client-field--full {
+  grid-column: 1 / -1;
 }
 
 .cf-label {
