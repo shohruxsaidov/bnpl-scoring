@@ -37,6 +37,8 @@ export const uz: Record<string, string> = {
   pinfl_taken: "Bu JSHSHIR allaqachon ro'yxatdan o'tgan",
   pinfl_mismatch: "JSHSHIR mos kelmaydi",
   phone_pinfl_mismatch: "Bu JSHSHIR boshqa telefon raqamga ro'yxatdan o'tgan",
+  offer_rules_not_found: "Ro'yxatdan o'tish shartlari topilmadi",
+  offer_rules_stale: "Ro'yxatdan o'tish shartlari yangilangan, iltimos, dolzarb versiyasini qabul qiling",
   otp_cooldown: "Iltimos, yangi kod so'rashdan oldin biroz kuting",
   otp_daily_limit: "Tasdiqlash kodlari uchun kunlik chegaraga yetdingiz",
   missing_device_id: "x-device-id sarlavhasi talab qilinadi",

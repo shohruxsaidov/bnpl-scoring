@@ -23,6 +23,34 @@ function toCardDto(c: typeof userCards.$inferSelect) {
   };
 }
 
+const SECURITY = [{ clientAuth: [] }];
+const ERROR = { $ref: 'ErrorResponse#' };
+
+// Mirrors toCardDto(): bigint id is emitted as a string. The full-object
+// `examples` entry is what Swagger UI renders as the sample response body.
+const Card = Type.Object(
+  {
+    id: Type.String(),
+    maskedPan: Type.String(),
+    holderName: Type.Union([Type.String(), Type.Null()]),
+    expiry: Type.String(),
+    pcType: Type.String(),
+    bank: Type.String(),
+  },
+  {
+    examples: [
+      {
+        id: '77',
+        maskedPan: '8600 **** **** 1234',
+        holderName: 'ALISHER KARIMOV',
+        expiry: '08/27',
+        pcType: 'uzcard',
+        bank: 'Uzcard',
+      },
+    ],
+  },
+);
+
 export default async function clientCardsRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
   const TAGS = ['Client · Cards'];
@@ -38,23 +66,54 @@ export default async function clientCardsRoutes(app: FastifyInstance) {
   });
   const IdParams = Type.Object({ id: Type.String({ pattern: '^\\d+$' }) });
 
+  const AddCardResponse = Type.Object(
+    { sessionId: Type.String(), maskedPhone: Type.String() },
+    { examples: [{ sessionId: 'ps_9f3a1c2b', maskedPhone: '998 ** *** 45 67' }] },
+  );
+  const OkResponse = Type.Object({ ok: Type.Boolean() }, { examples: [{ ok: true }] });
+
   /* ── GET /client/cards — list the user's saved cards ──────────────────── */
 
-  fastify.get('/', { schema: { tags: TAGS }, preHandler: guards }, async (request) => {
-    const userId = Number(request.user.sub);
-    const rows = await db
-      .select()
-      .from(userCards)
-      .where(eq(userCards.userId, userId))
-      .orderBy(desc(userCards.createdAt));
-    return { cards: rows.map(toCardDto) };
-  });
+  fastify.get(
+    '/',
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'List cards',
+        description: "Returns the authenticated client's saved cards, newest first.",
+        security: SECURITY,
+        response: { 200: Type.Object({ cards: Type.Array(Card) }), 401: ERROR },
+      },
+      preHandler: guards,
+    },
+    async (request) => {
+      const userId = Number(request.user.sub);
+      const rows = await db
+        .select()
+        .from(userCards)
+        .where(eq(userCards.userId, userId))
+        .orderBy(desc(userCards.createdAt));
+      return { cards: rows.map(toCardDto) };
+    },
+  );
 
   /* ── POST /client/cards — initiate add (sends Plumgate OTP) ───────────── */
 
   fastify.post(
     '/',
-    { schema: { tags: TAGS, body: AddCardBody }, preHandler: guards },
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Add card (initiate)',
+        description:
+          'Registers the card at Plumgate and triggers an OTP SMS. Returns the ' +
+          'session id to pass to POST /confirm along with the code.',
+        security: SECURITY,
+        body: AddCardBody,
+        response: { 200: AddCardResponse, 401: ERROR, 404: ERROR },
+      },
+      preHandler: guards,
+    },
     async (request, reply) => {
       const userId = Number(request.user.sub);
       const [user] = await db
@@ -79,7 +138,17 @@ export default async function clientCardsRoutes(app: FastifyInstance) {
 
   fastify.post(
     '/confirm',
-    { schema: { tags: TAGS, body: ConfirmCardBody }, preHandler: guards },
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Confirm card (verify OTP)',
+        description: 'Verifies the Plumgate OTP and persists the card. Idempotent per card.',
+        security: SECURITY,
+        body: ConfirmCardBody,
+        response: { 200: Type.Object({ card: Card }), 401: ERROR, 500: ERROR },
+      },
+      preHandler: guards,
+    },
     async (request, reply) => {
       const userId = Number(request.user.sub);
       const { sessionId, otp } = request.body;
@@ -114,7 +183,18 @@ export default async function clientCardsRoutes(app: FastifyInstance) {
 
   fastify.delete(
     '/:id',
-    { schema: { tags: TAGS, params: IdParams }, preHandler: guards },
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Delete card',
+        description:
+          'Removes the card at Plumgate, then locally. A remote 404 is treated as already-removed.',
+        security: SECURITY,
+        params: IdParams,
+        response: { 200: OkResponse, 401: ERROR, 404: ERROR },
+      },
+      preHandler: guards,
+    },
     async (request, reply) => {
       const userId = Number(request.user.sub);
       const id = Number(request.params.id);

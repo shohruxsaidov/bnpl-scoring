@@ -31,6 +31,9 @@ export default fp(async function jwtPlugin(app: FastifyInstance) {
     async function (request: FastifyRequest, reply: FastifyReply) {
       try {
         await request.jwtVerify();
+        // Reject admin/merchant tokens signed with the same secret — a cross-actor
+        // token must never resolve a client identity.
+        if (request.user.type !== "client") throw new Error("wrong type");
       } catch {
         await reply.code(401).send({ code: "unauthorized" });
       }

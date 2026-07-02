@@ -8,6 +8,13 @@
       "when": 1782910774353,
       "tag": "0000_conscious_hannibal_king",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1783009222905,
+      "tag": "0001_faulty_stephen_strange",
+      "breakpoints": true
     }
   ]
 }

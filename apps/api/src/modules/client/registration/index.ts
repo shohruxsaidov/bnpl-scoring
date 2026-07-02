@@ -3,7 +3,9 @@ import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { redis } from '@redis';
 import { env } from '@env';
+import { db } from '@db';
 import { users } from '@db/schema';
+import { userOfferRuleAcceptances } from '@db/user-offer-rule-acceptances';
 import {
   createOtp,
   verifyOtp,
@@ -13,10 +15,17 @@ import {
 import { createMyidSession, exchangeMyidCode } from '../../integrations/myid/client';
 import { createUserHandler } from '../../id/users';
 import { sendOtpSms } from '../../../lib/sms';
+import {
+  REGISTRATION_OFFER_TYPE,
+  getCurrentOfferRule,
+  findCurrentOfferRuleById,
+} from './offer-rules';
 
 // Self-service client registration (mobile app). Public endpoints — no JWT.
 // Mirrors merchant/client otp→myid flow, but anonymous: no merchantId/branchId,
 // and myid-complete mints a client session instead of returning a DTO.
+
+const ERROR = { $ref: 'ErrorResponse#' };
 
 const OTP_COOLDOWN_SECONDS = 60;
 const OTP_DAILY_LIMIT = 10;
@@ -80,37 +89,194 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
   const MyidCompleteBody = Type.Object({
     regToken: Type.String({ minLength: 1, examples: ['ey..'] }),
     myidCode: Type.String({ minLength: 1, examples: ['jfkdjfkd'] }),
+    // Id of the offer_rules version the client accepted (the row returned by
+    // GET /offer-rules). Required for new accounts; must be the current version.
+    offerRulesId: Type.Integer({ minimum: 1, examples: [1] }),
   });
+
+  /* ── Response schemas (examples power the Swagger UI sample bodies) ──────── */
+
+  const OfferRulesResponse = Type.Object(
+    {
+      id: Type.Integer(),
+      type: Type.String(),
+      version: Type.Integer(),
+      titleUz: Type.String(),
+      titleRu: Type.String(),
+      bodyUz: Type.String(),
+      bodyRu: Type.String(),
+    },
+    {
+      examples: [
+        {
+          id: 1,
+          type: 'registration',
+          version: 3,
+          titleUz: 'Ommaviy oferta',
+          titleRu: 'Публичная оферта',
+          bodyUz: 'Ushbu shartnoma ...',
+          bodyRu: 'Настоящее соглашение ...',
+        },
+      ],
+    },
+  );
+
+  const OtpResponse = Type.Object(
+    {
+      ok: Type.Boolean(),
+      // Present only outside production, to ease manual testing.
+      devOtp: Type.Optional(Type.String()),
+    },
+    { examples: [{ ok: true, devOtp: '1234' }] },
+  );
+
+  const OtpVerifyResponse = Type.Object(
+    { regToken: Type.String() },
+    { examples: [{ regToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' }] },
+  );
+
+  const MyidSessionResponse = Type.Object(
+    { regToken: Type.String(), sessionId: Type.String() },
+    {
+      examples: [
+        {
+          regToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+          sessionId: 'myid_9f3a1c2b7e',
+        },
+      ],
+    },
+  );
+
+  // Mirrors toClientDto(): bigint id is emitted as a string.
+  const ClientDto = Type.Object({
+    id: Type.String(),
+    pinfl: Type.String(),
+    firstName: Type.String(),
+    lastName: Type.String(),
+    phone: Type.String(),
+    birthDate: Type.Union([Type.String(), Type.Null()]),
+    gender: Type.Union([Type.Integer(), Type.Null()]),
+    nationality: Type.Union([Type.String(), Type.Null()]),
+    passportSeries: Type.Union([Type.String(), Type.Null()]),
+    passportNumber: Type.Union([Type.String(), Type.Null()]),
+    photoUrl: Type.Union([Type.String(), Type.Null()]),
+    address: Type.Union([Type.String(), Type.Null()]),
+    regionCode: Type.Union([Type.String(), Type.Null()]),
+    districtCode: Type.Union([Type.String(), Type.Null()]),
+    docType: Type.Union([Type.Integer(), Type.Null()]),
+  });
+
+  const MyidCompleteResponse = Type.Object(
+    {
+      accessToken: Type.String(),
+      sessionToken: Type.String(),
+      client: ClientDto,
+    },
+    {
+      examples: [
+        {
+          accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+          sessionToken: 'sess_4b8e1d0a9c',
+          client: {
+            id: '1042',
+            pinfl: '12345678901234',
+            firstName: 'ALISHER',
+            lastName: 'KARIMOV',
+            phone: '998991234567',
+            birthDate: '1990-05-14',
+            gender: 1,
+            nationality: 'UZB',
+            passportSeries: 'AA',
+            passportNumber: '1234567',
+            photoUrl: 'https://cdn.example.com/photos/1042.jpg',
+            address: 'Toshkent sh., Chilonzor tumani',
+            regionCode: '10',
+            districtCode: '1027',
+            docType: 1,
+          },
+        },
+      ],
+    },
+  );
+
+  /* ── Current offer rules (public, for the accept screen) ─────────────────── */
+
+  fastify.get(
+    '/offer-rules',
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Current offer rules',
+        description: 'Returns the current registration terms for the accept screen.',
+        response: { 200: OfferRulesResponse, 404: ERROR },
+      },
+    },
+    async (_req, reply) => {
+      const rule = await getCurrentOfferRule(REGISTRATION_OFFER_TYPE);
+      if (!rule) return reply.code(404).sendError('offer_rules_not_found');
+      return {
+        id: rule.id,
+        type: rule.type,
+        version: rule.version,
+        titleUz: rule.titleUz,
+        titleRu: rule.titleRu,
+        bodyUz: rule.bodyUz,
+        bodyRu: rule.bodyRu,
+      };
+    },
+  );
 
   /* ── OTP issue ──────────────────────────────────────────────────────────── */
 
-  fastify.post('/otp', { schema: { tags: TAGS, body: OtpBody } }, async (req, reply) => {
-    const { phone } = req.body;
+  fastify.post(
+    '/otp',
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Issue registration OTP',
+        description:
+          'Sends an OTP SMS to the phone. Rate-limited per phone (cooldown + daily cap). ' +
+          '`devOtp` is returned only outside production.',
+        body: OtpBody,
+        response: { 200: OtpResponse, 429: ERROR },
+      },
+    },
+    async (req, reply) => {
+      const { phone } = req.body;
 
-    // Per-phone cooldown: at most one code every OTP_COOLDOWN_SECONDS.
-    const cooldownKey = `client:otp:cooldown:${phone}`;
-    const onCooldown = await redis.get(cooldownKey).catch(() => null);
-    if (onCooldown) return reply.code(429).sendError('otp_cooldown');
+      // Per-phone cooldown: at most one code every OTP_COOLDOWN_SECONDS.
+      const cooldownKey = `client:otp:cooldown:${phone}`;
+      const onCooldown = await redis.get(cooldownKey).catch(() => null);
+      if (onCooldown) return reply.code(429).sendError('otp_cooldown');
 
-    // Per-phone daily cap.
-    const dailyKey = `client:otp:daily:${phone}`;
-    const count = await redis.incr(dailyKey).catch(() => 0);
-    if (count === 1) await redis.expire(dailyKey, OTP_DAILY_TTL).catch(() => undefined);
-    if (count > OTP_DAILY_LIMIT) return reply.code(429).sendError('otp_daily_limit');
+      // Per-phone daily cap.
+      const dailyKey = `client:otp:daily:${phone}`;
+      const count = await redis.incr(dailyKey).catch(() => 0);
+      if (count === 1) await redis.expire(dailyKey, OTP_DAILY_TTL).catch(() => undefined);
+      if (count > OTP_DAILY_LIMIT) return reply.code(429).sendError('otp_daily_limit');
 
-    const code = await createOtp(phone, 'register');
-    await redis.set(cooldownKey, '1', 'EX', OTP_COOLDOWN_SECONDS).catch(() => undefined);
-    await sendOtpSms(phone, code);
+      const code = await createOtp(phone, 'register');
+      await redis.set(cooldownKey, '1', 'EX', OTP_COOLDOWN_SECONDS).catch(() => undefined);
+      await sendOtpSms(phone, code);
 
-    if (!isProd) req.log.info({ phone, code }, 'client register OTP issued');
-    return { ok: true, ...(isProd ? {} : { devOtp: code }) };
-  });
+      if (!isProd) req.log.info({ phone, code }, 'client register OTP issued');
+      return { ok: true, ...(isProd ? {} : { devOtp: code }) };
+    },
+  );
 
   /* ── OTP verify ─────────────────────────────────────────────────────────── */
 
   fastify.post(
     '/otp/verify',
-    { schema: { tags: TAGS, body: OtpVerifyBody } },
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Verify registration OTP',
+        description: 'Verifies the OTP and returns a phone-verified registration token.',
+        body: OtpVerifyBody,
+        response: { 200: OtpVerifyResponse, 400: ERROR },
+      },
+    },
     async (req, reply) => {
       const { phone } = req.body;
       const ok = await verifyOtp(phone, req.body.code, 'register');
@@ -127,7 +293,17 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
 
   fastify.post(
     '/myid-session',
-    { schema: { tags: TAGS, body: MyidSessionBody } },
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Start MyID session',
+        description:
+          'Opens a MyID liveness session for the PINFL. Returns a pinfl-verified ' +
+          'registration token and the MyID session id.',
+        body: MyidSessionBody,
+        response: { 200: MyidSessionResponse, 400: ERROR },
+      },
+    },
     async (req, reply) => {
       let payload: RegTokenPhase1 | RegTokenPhase2;
       try {
@@ -157,7 +333,17 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
 
   fastify.post(
     '/myid-complete',
-    { schema: { tags: TAGS, body: MyidCompleteBody } },
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Complete registration',
+        description:
+          'Exchanges the MyID code, creates the account on first registration ' +
+          '(recording offer-rules acceptance), and mints a client session.',
+        body: MyidCompleteBody,
+        response: { 200: MyidCompleteResponse, 400: ERROR, 409: ERROR },
+      },
+    },
     async (req, reply) => {
       let phase2: RegTokenPhase2;
       try {
@@ -182,25 +368,42 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
         if (existing.phone !== phase2.phone) {
           return reply.code(409).sendError('phone_pinfl_mismatch');
         }
+        // Existing users already accepted the terms at their original signup;
+        // re-verification does not re-record acceptance.
         client = existing;
       } else {
-        client = await createUserHandler({
-          phone: phase2.phone,
-          pinfl: myidUser.pinfl,
-          firstName: myidUser.firstName,
-          lastName: myidUser.lastName,
-          middleName: myidUser.middleName || '',
-          birthDate: myidUser.birthDate,
-          nationality: myidUser.nationality,
-          passportSeries: myidUser.passportSerial,
-          passportNumber: myidUser.passportNumber,
-          address: myidUser.address || undefined,
-          regionCode: myidUser.regionCode ?? '',
-          districtCode: myidUser.districtCode ?? '',
-          docType: myidUser.docType || 1,
-          citizenShipId: myidUser.citizenShipId,
-          gender: +myidUser.gender,
-          verifiedAt: new Date(),
+        // New account: the submitted offer_rules version must still be current.
+        const rule = await findCurrentOfferRuleById(req.body.offerRulesId, REGISTRATION_OFFER_TYPE);
+        if (!rule) return reply.code(400).sendError('offer_rules_stale');
+
+        // Create the user and record the terms acceptance atomically, so a new
+        // account can never exist without its registration consent row.
+        client = await db.transaction(async (tx) => {
+          const created = await createUserHandler(
+            {
+              phone: phase2.phone,
+              pinfl: myidUser.pinfl,
+              firstName: myidUser.firstName,
+              lastName: myidUser.lastName,
+              middleName: myidUser.middleName || '',
+              birthDate: myidUser.birthDate,
+              nationality: myidUser.nationality,
+              passportSeries: myidUser.passportSerial,
+              passportNumber: myidUser.passportNumber,
+              address: myidUser.address || undefined,
+              regionCode: myidUser.regionCode ?? '',
+              districtCode: myidUser.districtCode ?? '',
+              docType: myidUser.docType || 1,
+              citizenShipId: myidUser.citizenShipId,
+              gender: +myidUser.gender,
+              verifiedAt: new Date(),
+            },
+            tx,
+          );
+          await tx
+            .insert(userOfferRuleAcceptances)
+            .values({ userId: created!.id, offerRulesId: rule.id });
+          return created!;
         });
       }
 
