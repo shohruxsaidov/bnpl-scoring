@@ -70,6 +70,22 @@ export async function callKatm<T>(
   const requestTimestamp = new Date();
   try {
     const envelope = await client.post(methodName, { json: body }).json<KatmEnvelope<T>>();
+    const claimId = (body as any).data?.pClaimId ?? (body as any).pClaimId ?? null;
+    const reportId = (body as any).data?.pReportId ?? (body as any).pReportId ?? null;
+    if (claimId) {
+      methodName = `${methodName} (claimId=${claimId})`;
+    }
+    if (reportId) {
+      if (reportId === '077') {
+        methodName = `${methodName} (infoScore report)`;
+      } else if (reportId === '025') {
+        methodName = `${methodName} (INPS report)`;
+      } else if (reportId === '315') {
+        methodName = `${methodName} (MIB report)`;
+      } else {
+        methodName = `${methodName} (reportId=${reportId})`;
+      }
+    }
 
     logIntegration(db, {
       integration: 'katm',
