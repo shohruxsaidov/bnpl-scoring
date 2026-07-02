@@ -18,10 +18,14 @@ import { env } from '../env'
  * themselves. Success-response bodies are largely undocumented for now and are
  * backfilled per-module; the shared error envelope is registered here once.
  *
- * Auth is cookie-based (httpOnly), so Swagger UI's Authorize dialog cannot set
- * credentials directly. The working flow: call an auth `login` route from the
- * UI — the browser stores the cookie — then "Try it out" on protected routes
- * sends it automatically (docs are same-origin and CORS uses credentials).
+ * Admin/merchant auth is cookie-based (httpOnly), so Swagger UI's Authorize
+ * dialog cannot set those credentials directly. The working flow: call an auth
+ * `login` route from the UI — the browser stores the cookie — then "Try it out"
+ * on protected routes sends it automatically (docs are same-origin and CORS uses
+ * credentials).
+ *
+ * Client auth is a Bearer token (`Authorization: Bearer <token>`), so for the
+ * client doc paste the token into the Authorize dialog directly.
  */
 
 // Header parameter documented on every client operation. Enforcement lives in
@@ -115,10 +119,11 @@ export default fp(async function swaggerPlugin(app: FastifyInstance) {
             description: 'Set by POST /api/v1/auth/merchant/login.',
           },
           clientAuth: {
-            type: 'apiKey',
-            in: 'cookie',
-            name: 'client_access_token',
-            description: 'Set by the client portal login.',
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+            description:
+              'Bearer token from the client portal login. Sent as `Authorization: Bearer <token>`.',
           },
           adminAuth: {
             type: 'apiKey',

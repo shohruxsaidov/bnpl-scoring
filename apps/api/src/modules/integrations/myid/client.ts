@@ -174,7 +174,7 @@ export async function exchangeMyidCode(code: string): Promise<MyidUserData> {
   const tokenRequestTimestamp = new Date();
   try {
     const tokenData = await client
-      .post('api/v1/oauth2//access-token', {
+      .post('api/v1/oauth2/access-token', {
         headers: { Authorization: `Bearer ${token}` },
         body: new URLSearchParams(tokenReqBody),
       })

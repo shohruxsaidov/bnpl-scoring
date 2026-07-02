@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import clientRegistrationRoutes from './registration/index';
+import clientAuthRoutes from './auth/index';
 import clientCardsRoutes from './cards/index';
 import clientMeRoutes from './me/index';
 
@@ -35,6 +36,7 @@ export default async function clientModule(app: FastifyInstance) {
   });
 
   await app.register(clientRegistrationRoutes, { prefix: '/client/registration' });
+  await app.register(clientAuthRoutes, { prefix: '/client/auth' });
   await app.register(clientCardsRoutes, { prefix: '/client/cards' });
   await app.register(clientMeRoutes, { prefix: '/client/me' });
 }

@@ -10,6 +10,9 @@ export const userDevices = pgTable('user_devices', {
   fcmToken: text('fcm_token'),
   platform: varchar('platform', { length: 10 }).notNull().$type<'ios' | 'android'>(),
   appVersion: varchar('app_version', { length: 10 }).notNull(),
+  // Set when the device completes /setup (full OTP + MyID onboarding). Marks the
+  // device as trusted for PIN/biometric login; null means merely known.
+  activatedAt: timestamp('activated_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });

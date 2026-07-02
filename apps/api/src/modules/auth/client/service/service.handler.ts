@@ -1,4 +1,5 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import argon2 from 'argon2';
 import { and, eq, gt, ilike, isNull, or } from 'drizzle-orm';
 import { db } from '@db';
 import { userDevices, userSessions, otpVerifications, users } from '@db/schema';
@@ -97,11 +98,13 @@ export async function findUserByPinfl(pinfl: string) {
 }
 
 /**
- * Create a session for a user. Generates a random opaque token, stores only
- * its hash, and returns the raw token to be set as the `session_id` cookie.
+ * Create a device-bound session for a user. Generates a random opaque token,
+ * stores only its hash, and returns the raw token to be kept by the client.
+ * `deviceId` is the owning user_devices.id (uuid).
  */
 export async function createSession(
   userId: number,
+  deviceId: string,
 ): Promise<{ sessionId: string; sessionToken: string }> {
   const sessionToken = randomUUID() + randomBytes(16).toString('hex');
   const sessionTokenHash = hashToken(sessionToken);
@@ -109,7 +112,7 @@ export async function createSession(
 
   const [row] = await db
     .insert(userSessions)
-    .values({ userId, sessionTokenHash, expiresAt })
+    .values({ userId, deviceId, sessionTokenHash, expiresAt })
     .returning({ id: userSessions.id });
 
   return { sessionId: row!.id, sessionToken };
@@ -164,6 +167,68 @@ export async function upsertDevice(input: {
     });
 }
 
+/**
+ * Register (upsert) a device and mark it trusted for PIN/biometric login by
+ * stamping `activatedAt`. Called from /setup after a full OTP + MyID onboarding.
+ * Re-running for the same raw deviceId re-assigns it to `userId` (a device that
+ * changes hands) — callers revoke that device's prior sessions. Returns the
+ * user_devices.id (uuid) to bind the session to.
+ */
+export async function activateDevice(input: {
+  userId: number;
+  deviceId: string;
+  platform: 'ios' | 'android';
+  appVersion: string;
+}): Promise<string> {
+  const now = new Date();
+  const [row] = await db
+    .insert(userDevices)
+    .values({
+      userId: input.userId,
+      deviceId: input.deviceId,
+      platform: input.platform,
+      appVersion: input.appVersion,
+      activatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: userDevices.deviceId,
+      set: {
+        userId: input.userId,
+        platform: input.platform,
+        appVersion: input.appVersion,
+        activatedAt: now,
+        updatedAt: now,
+      },
+    })
+    .returning({ id: userDevices.id });
+
+  return row!.id;
+}
+
+/** Look up a device by its raw client identifier (the x-device-id header). */
+export async function findDeviceByDeviceId(deviceId: string) {
+  const [row] = await db
+    .select()
+    .from(userDevices)
+    .where(eq(userDevices.deviceId, deviceId))
+    .limit(1);
+  return row;
+}
+
+/** Look up a device by its primary key (user_devices.id). */
+export async function findDeviceById(id: string) {
+  const [row] = await db.select().from(userDevices).where(eq(userDevices.id, id)).limit(1);
+  return row;
+}
+
+/** Revoke every active session bound to a device (user_devices.id). */
+export async function revokeDeviceSessions(deviceId: string): Promise<void> {
+  await db
+    .update(userSessions)
+    .set({ revokedAt: new Date() })
+    .where(and(eq(userSessions.deviceId, deviceId), isNull(userSessions.revokedAt)));
+}
+
 export async function clearDeviceFcmToken(deviceId: string): Promise<void> {
   await db
     .update(userDevices)
@@ -178,4 +243,46 @@ export async function revokeSession(sessionToken: string): Promise<void> {
     .update(userSessions)
     .set({ revokedAt: new Date() })
     .where(eq(userSessions.sessionTokenHash, sessionTokenHash));
+}
+
+/**
+ * Exchange a durable session token for a freshly-minted one: validate the old
+ * token, verify it belongs to the requesting device, revoke it, and issue a new
+ * session bound to the same device. Backs both biometric login and the silent
+ * access-token refresh. `expectedDeviceId` is the caller's raw x-device-id; the
+ * new token is pinned to it so a leaked token cannot be replayed elsewhere.
+ * Returns undefined when the token is invalid/expired/revoked or the device
+ * does not match.
+ */
+export async function rotateSession(
+  oldToken: string,
+  expectedDeviceId: string,
+): Promise<{ user: typeof users.$inferSelect; sessionToken: string } | undefined> {
+  const current = await verifySession(oldToken);
+  if (!current) return undefined;
+
+  const device = await findDeviceById(current.session.deviceId);
+  if (!device || device.deviceId !== expectedDeviceId) return undefined;
+
+  await revokeSession(oldToken);
+  const { sessionToken } = await createSession(current.user.id, current.session.deviceId);
+  return { user: current.user, sessionToken };
+}
+
+/**
+ * Set (or change) a user's app PIN. Stores an argon2 hash of the 4-digit code;
+ * the raw PIN is never persisted.
+ */
+export async function setUserPin(userId: number, pin: string): Promise<void> {
+  const pinHash = await argon2.hash(pin);
+  await db.update(users).set({ pinHash, pinSetAt: new Date() }).where(eq(users.id, userId));
+}
+
+/** Verify a candidate PIN against the user's stored hash. */
+export async function verifyUserPin(
+  user: typeof users.$inferSelect,
+  pin: string,
+): Promise<boolean> {
+  if (!user.pinHash) return false;
+  return argon2.verify(user.pinHash, pin);
 }

@@ -290,7 +290,7 @@ export async function runScoringPipeline(input: {
       claimId: input.claimId,
       userId: input.userId,
       sessionId: input.sessionId,
-      katmSir: claim.katmSir,
+      katmSir: claim.katmSir, 
       verified: claim.verified,
     });
     await recordPipeline(input.scoringId, 'katm_claim', {

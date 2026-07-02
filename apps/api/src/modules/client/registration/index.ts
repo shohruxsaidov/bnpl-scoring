@@ -6,12 +6,7 @@ import { env } from '@env';
 import { db } from '@db';
 import { users } from '@db/schema';
 import { userOfferRuleAcceptances } from '@db/user-offer-rule-acceptances';
-import {
-  createOtp,
-  verifyOtp,
-  createSession,
-  findUserByPinfl,
-} from '../../auth/client/service/service.handler';
+import { createOtp, verifyOtp, findUserByPinfl } from '../../auth/client/service/service.handler';
 import { createMyidSession, exchangeMyidCode } from '../../integrations/myid/client';
 import { createUserHandler } from '../../id/users';
 import { sendOtpSms } from '../../../lib/sms';
@@ -20,6 +15,7 @@ import {
   getCurrentOfferRule,
   findCurrentOfferRuleById,
 } from './offer-rules';
+import { pinFailKey } from '../auth/index';
 
 // Self-service client registration (mobile app). Public endpoints — no JWT.
 // Mirrors merchant/client otp→myid flow, but anonymous: no merchantId/branchId,
@@ -30,7 +26,6 @@ const ERROR = { $ref: 'ErrorResponse#' };
 const OTP_COOLDOWN_SECONDS = 60;
 const OTP_DAILY_LIMIT = 10;
 const OTP_DAILY_TTL = 24 * 60 * 60;
-const ACCESS_TOKEN_TTL = '15m';
 const REG_TOKEN_TTL = '15m';
 
 interface RegTokenPhase1 {
@@ -168,15 +163,16 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
 
   const MyidCompleteResponse = Type.Object(
     {
-      accessToken: Type.String(),
-      sessionToken: Type.String(),
+      // Short-lived onboarding token that authorizes POST /client/auth/setup.
+      // No session is created here — the client sets a PIN and activates the
+      // device at /setup, which is where the active session is minted.
+      regToken: Type.String(),
       client: ClientDto,
     },
     {
       examples: [
         {
-          accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-          sessionToken: 'sess_4b8e1d0a9c',
+          regToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
           client: {
             id: '1042',
             pinfl: '12345678901234',
@@ -338,8 +334,9 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
         tags: TAGS,
         summary: 'Complete registration',
         description:
-          'Exchanges the MyID code, creates the account on first registration ' +
-          '(recording offer-rules acceptance), and mints a client session.',
+          'Exchanges the MyID code and creates the account on first registration ' +
+          '(recording offer-rules acceptance). Returns a short-lived regToken that ' +
+          'authorizes POST /client/auth/setup — no session is created here.',
         body: MyidCompleteBody,
         response: { 200: MyidCompleteResponse, 400: ERROR, 409: ERROR },
       },
@@ -407,13 +404,18 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
         });
       }
 
-      const accessToken = app.jwt.sign(
-        { sub: client.id.toString(), type: 'client' },
-        { expiresIn: ACCESS_TOKEN_TTL },
-      );
-      const { sessionToken } = await createSession(client.id);
+      // A completed OTP + MyID re-auth is the recovery path for a PIN lockout —
+      // clear any accumulated failed-PIN counter for this phone.
+      await redis.del(pinFailKey(phase2.phone)).catch(() => undefined);
 
-      return { accessToken, sessionToken, client: toClientDto(client) };
+      // Onboarding token consumed only by POST /client/auth/setup. It carries no
+      // `type` field, so it can never satisfy verifyClientJwt as an access token.
+      const regToken = app.jwt.sign(
+        { sub: client.id.toString(), step: 'identity_verified' },
+        { expiresIn: REG_TOKEN_TTL },
+      );
+
+      return { regToken, client: toClientDto(client) };
     },
   );
 }

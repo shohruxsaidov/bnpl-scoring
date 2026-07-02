@@ -15,6 +15,20 @@
       "when": 1783009222905,
       "tag": "0001_faulty_stephen_strange",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1783012937340,
+      "tag": "0002_parallel_gertrude_yorkes",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1783018973080,
+      "tag": "0003_warm_stone_men",
+      "breakpoints": true
     }
   ]
 }
