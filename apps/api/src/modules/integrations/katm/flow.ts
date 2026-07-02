@@ -296,6 +296,8 @@ export async function requestMib(input: {
   return evaluateMib(input.scoringId, input.claimId, report.result);
 }
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 /**
  * Evaluate a resolved MIB report. On a clean (204) result, chains forward to the
  * chargeable 077 request. A confirmed "enforcement found" code rejects; an
@@ -338,6 +340,7 @@ export async function evaluateMib(
     summary: ev.status === 'passed' ? ev.summary : null,
     raw: ev.status === 'passed' ? ev.raw : null,
   });
+  await sleep(1000 * 35); // avoid KATM 429 if MIB and 077 are requested in the same second
   return request077({ scoringId, claimId });
 }
 
