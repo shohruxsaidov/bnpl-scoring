@@ -217,6 +217,7 @@ interface BreakdownRow {
   rawScore: number
   weightedScore: number
   importantLevel: number
+  description: string | null
 }
 function breakdownOf(p: ScoringDetailPipeline): BreakdownRow[] {
   const raw = p.raw as Json | null
@@ -346,9 +347,8 @@ function goBack() {
               <tr>
                 <th>{{ t('scoringReport.model.criterion') }}</th>
                 <th class="num">{{ t('scoringReport.model.inputValue') }}</th>
-                <th class="num">{{ t('scoringReport.model.rawScore') }}</th>
                 <th class="num">{{ t('scoringReport.model.weightedScore') }}</th>
-                <th class="num">{{ t('scoringReport.model.importance') }}</th>
+                <th>{{ t('scoringReport.model.comment') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -358,9 +358,8 @@ function goBack() {
                   <span v-if="row.skipped" class="skip-badge">{{ t('scoringReport.model.skipped') }}</span>
                 </td>
                 <td class="num font-mono">{{ row.skipped ? '—' : formatInputValue(row.inputValue) }}</td>
-                <td class="num font-mono">{{ row.skipped ? '—' : row.rawScore }}</td>
                 <td class="num font-mono">{{ row.skipped ? '—' : row.weightedScore }}</td>
-                <td class="num font-mono">{{ row.importantLevel }}</td>
+                <td class="comment">{{ row.skipped ? '—' : (row.description ?? '—') }}</td>
               </tr>
             </tbody>
           </table>
@@ -580,6 +579,11 @@ table.breakdown th.num,
 table.breakdown td.num {
   text-align: right;
   white-space: nowrap;
+}
+
+table.breakdown td.comment {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
 }
 
 tr.skipped td {

@@ -371,9 +371,10 @@
       "criterion": "Критерий",
       "inputValue": "Значение",
       "rawScore": "Исходный балл",
-      "weightedScore": "Взвешенный балл",
+      "weightedScore": "Балл",
       "importance": "Важность",
-      "skipped": "Пропущен"
+      "skipped": "Пропущен",
+      "comment": "Комментарий"
     },
     "decision": {
       "approve": "Одобрено",

@@ -124,6 +124,8 @@ export interface CriterionResult {
   importantLevel: number;
   weightedScore: number;
   skipped: boolean;
+  /** Authored explanation of the matched band/category (why this score). null when nothing matched or the param type carries no description. */
+  description: string | null;
 }
 
 export type ScoringResult =
@@ -134,19 +136,31 @@ export type ScoringResult =
 // Helpers
 // ---------------------------------------------------------------------------
 
-// Half-open [From, To): From inclusive, To exclusive. To=null means unbounded.
-function matchRange(bands: RangeBand[], value: number): number | null {
-  for (const band of bands) {
-    if (value >= band.From && (band.To === null || value < band.To)) {
-      return band.Score;
-    }
-  }
-  return null;
+// Scored outcome plus the authored explanation of the matched band/category.
+// score === null means nothing matched (row is skipped); description is the
+// matched entry's `Description`, or null when the entry carries none.
+interface ScoreHit {
+  score: number | null;
+  description: string | null;
 }
 
-function scoreRangeParam(param: RangeParam, value: number | null | undefined): number | null {
-  if (value === undefined) return null;
-  if (value === null) return param.NotApplicable?.Score ?? null;
+// Half-open [From, To): From inclusive, To exclusive. To=null means unbounded.
+function matchRange(bands: RangeBand[], value: number): ScoreHit {
+  for (const band of bands) {
+    if (value >= band.From && (band.To === null || value < band.To)) {
+      return { score: band.Score, description: band.Description ?? null };
+    }
+  }
+  return { score: null, description: null };
+}
+
+function scoreRangeParam(param: RangeParam, value: number | null | undefined): ScoreHit {
+  if (value === undefined) return { score: null, description: null };
+  if (value === null) {
+    return param.NotApplicable
+      ? { score: param.NotApplicable.Score, description: param.NotApplicable.Description ?? null }
+      : { score: null, description: null };
+  }
   return matchRange(param.Ranges, value);
 }
 
@@ -247,14 +261,20 @@ export function computeScoringModel(model: ScoringModelData, inputs: ScoringInpu
 
   for (const [key, param] of Object.entries(model.ScoringParams)) {
     let rawScore: number | null = null;
+    let description: string | null = null;
 
     if (param.Type === 'range') {
-      rawScore = scoreRangeParam(param, rangeInputs[key]);
+      const hit = scoreRangeParam(param, rangeInputs[key]);
+      rawScore = hit.score;
+      description = hit.description;
     } else if (param.Type === 'categorical') {
       const catKey = categoricalInputs[key];
-      rawScore = catKey !== undefined ? (param.Categories[catKey]?.Score ?? null) : null;
+      const category = catKey !== undefined ? param.Categories[catKey] : undefined;
+      rawScore = category?.Score ?? null;
+      description = category?.Description ?? null;
     } else if (param.Type === 'regionMatch') {
       const region = regionInputs[key];
+      // regionMatch carries no authored per-outcome description.
       rawScore =
         region !== undefined ? (param.ValidRegions.includes(region) ? param.MatchScore : 0) : null;
     }
@@ -268,6 +288,7 @@ export function computeScoringModel(model: ScoringModelData, inputs: ScoringInpu
       importantLevel: param.ImportantLevel,
       weightedScore: skipped ? 0 : rawScore! * param.ImportantLevel,
       skipped,
+      description: skipped ? null : description,
     });
   }
 

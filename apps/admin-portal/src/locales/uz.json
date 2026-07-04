@@ -365,7 +365,8 @@
       "rawScore": "Boshlang'ich ball",
       "weightedScore": "Tortilgan ball",
       "importance": "Muhimlik",
-      "skipped": "O'tkazib yuborildi"
+      "skipped": "O'tkazib yuborildi",
+      "comment": "Izoh"
     },
     "decision": {
       "approve": "Tasdiqlandi",

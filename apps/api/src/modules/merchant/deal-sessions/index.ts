@@ -46,7 +46,6 @@ import {
 import { listCards } from '../../integrations/plumgate/queries/list-cards/list-cards.handler';
 import { addCard } from '../../integrations/plumgate/commands/add-card/add-card.handler';
 import { confirmCard } from '../../integrations/plumgate/commands/confirm-card/confirm-card.handler';
-import { scoreCard } from '../../integrations/plumgate/queries/score-card/score-card.handler';
 import { stampScoring } from './commands/stamp-scoring/stamp-scoring.handler';
 import { rejectSession } from './commands/reject-session/reject-session.handler';
 import type { CriteriaScores } from '../../scoring/criteria-scores';
