@@ -15,6 +15,9 @@ interface RegionEntry {
   id: number;
   regionType: string;
   upperId: number | null;
+  codes: {
+    code: string;
+  }[];
   locales: RegionLocale[];
 }
 
@@ -26,10 +29,7 @@ function locale(entry: RegionEntry, key: 'ru' | 'uz' | 'uzc'): string {
 }
 
 async function main() {
-  const raw = readFileSync(
-    join(import.meta.dirname, '../references/regions.json'),
-    'utf-8',
-  );
+  const raw = readFileSync(join(import.meta.dirname, '../references/regions.json'), 'utf-8');
   const data: RegionEntry[] = JSON.parse(raw);
 
   // Skip country row (id: -2) and unknown sentinel (id: -1)
@@ -51,6 +51,7 @@ async function main() {
           nameRu: locale(r, 'ru'),
           nameUz: locale(r, 'uz'),
           nameUzc: locale(r, 'uzc'),
+          code: r.codes[0]?.code ?? null,
         })),
       )
       .onConflictDoUpdate({

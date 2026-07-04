@@ -9,4 +9,5 @@ export const regions = pgTable('regions', {
   nameRu: varchar('name_ru', { length: 200 }).notNull(),
   nameUz: varchar('name_uz', { length: 200 }).notNull(),
   nameUzc: varchar('name_uzc', { length: 200 }).notNull(),
+  code: varchar('code', { length: 10 }),
 });
