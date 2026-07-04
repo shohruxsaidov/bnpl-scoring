@@ -212,6 +212,8 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
         passportSeries: myidUser.passportSerial,
         passportNumber: myidUser.passportNumber,
         address: myidUser.address || undefined,
+        temporaryRegistration: myidUser.temporaryRegistration,
+        permanentRegistration: myidUser.permanentRegistration,
         regionCode: myidUser.regionCode,
         districtCode: myidUser.districtCode,
         docType: myidUser.docType || 1,

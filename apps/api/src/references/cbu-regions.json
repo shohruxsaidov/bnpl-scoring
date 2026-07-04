@@ -1,0 +1,2192 @@
+[
+  {
+    "id": 1703,
+    "level": "region",
+    "cbuCode": "3",
+    "upperId": null,
+    "parentCbuCode": null,
+    "nameRu": "Андижанская область",
+    "nameUz": "Андижанская область",
+    "nameUzc": "Андижанская область"
+  },
+  {
+    "id": 1706,
+    "level": "region",
+    "cbuCode": "6",
+    "upperId": null,
+    "parentCbuCode": null,
+    "nameRu": "Бухарская область",
+    "nameUz": "Бухарская область",
+    "nameUzc": "Бухарская область"
+  },
+  {
+    "id": 1708,
+    "level": "region",
+    "cbuCode": "8",
+    "upperId": null,
+    "parentCbuCode": null,
+    "nameRu": "Джизакская область",
+    "nameUz": "Джизакская область",
+    "nameUzc": "Джизакская область"
+  },
+  {
+    "id": 1710,
+    "level": "region",
+    "cbuCode": "10",
+    "upperId": null,
+    "parentCbuCode": null,
+    "nameRu": "Кашкадарьинская область",
+    "nameUz": "Кашкадарьинская область",
+    "nameUzc": "Кашкадарьинская область"
+  },
+  {
+    "id": 1712,
+    "level": "region",
+    "cbuCode": "12",
+    "upperId": null,
+    "parentCbuCode": null,
+    "nameRu": "Навоийская область",
+    "nameUz": "Навоийская область",
+    "nameUzc": "Навоийская область"
+  },
+  {
+    "id": 1714,
+    "level": "region",
+    "cbuCode": "14",
+    "upperId": null,
+    "parentCbuCode": null,
+    "nameRu": "Наманганская область",
+    "nameUz": "Наманганская область",
+    "nameUzc": "Наманганская область"
+  },
+  {
+    "id": 1718,
+    "level": "region",
+    "cbuCode": "18",
+    "upperId": null,
+    "parentCbuCode": null,
+    "nameRu": "Самаркандская область",
+    "nameUz": "Самаркандская область",
+    "nameUzc": "Самаркандская область"
+  },
+  {
+    "id": 1722,
+    "level": "region",
+    "cbuCode": "22",
+    "upperId": null,
+    "parentCbuCode": null,
+    "nameRu": "Сурхандарьинская область",
+    "nameUz": "Сурхандарьинская область",
+    "nameUzc": "Сурхандарьинская область"
+  },
+  {
+    "id": 1724,
+    "level": "region",
+    "cbuCode": "24",
+    "upperId": null,
+    "parentCbuCode": null,
+    "nameRu": "Сырдарьинская область",
+    "nameUz": "Сырдарьинская область",
+    "nameUzc": "Сырдарьинская область"
+  },
+  {
+    "id": 1726,
+    "level": "region",
+    "cbuCode": "26",
+    "upperId": null,
+    "parentCbuCode": null,
+    "nameRu": "г. Ташкент",
+    "nameUz": "г. Ташкент",
+    "nameUzc": "г. Ташкент"
+  },
+  {
+    "id": 1727,
+    "level": "region",
+    "cbuCode": "27",
+    "upperId": null,
+    "parentCbuCode": null,
+    "nameRu": "Ташкентская область",
+    "nameUz": "Ташкентская область",
+    "nameUzc": "Ташкентская область"
+  },
+  {
+    "id": 1730,
+    "level": "region",
+    "cbuCode": "30",
+    "upperId": null,
+    "parentCbuCode": null,
+    "nameRu": "Ферганская область",
+    "nameUz": "Ферганская область",
+    "nameUzc": "Ферганская область"
+  },
+  {
+    "id": 1733,
+    "level": "region",
+    "cbuCode": "33",
+    "upperId": null,
+    "parentCbuCode": null,
+    "nameRu": "Хорезмская область",
+    "nameUz": "Хорезмская область",
+    "nameUzc": "Хорезмская область"
+  },
+  {
+    "id": 1735,
+    "level": "region",
+    "cbuCode": "35",
+    "upperId": null,
+    "parentCbuCode": null,
+    "nameRu": "Республика Каракалпакстан",
+    "nameUz": "Республика Каракалпакстан",
+    "nameUzc": "Республика Каракалпакстан"
+  },
+  {
+    "id": 1703202,
+    "level": "district",
+    "cbuCode": "16",
+    "upperId": 1703,
+    "parentCbuCode": "3",
+    "nameRu": "Алтынкульский район",
+    "nameUz": "Алтынкульский район",
+    "nameUzc": "Алтынкульский район"
+  },
+  {
+    "id": 1703203,
+    "level": "district",
+    "cbuCode": "6",
+    "upperId": 1703,
+    "parentCbuCode": "3",
+    "nameRu": "Андижанский район",
+    "nameUz": "Андижанский район",
+    "nameUzc": "Андижанский район"
+  },
+  {
+    "id": 1703206,
+    "level": "district",
+    "cbuCode": null,
+    "upperId": 1703,
+    "parentCbuCode": "3",
+    "nameRu": "Балыкчинский район",
+    "nameUz": "Балыкчинский район",
+    "nameUzc": "Балыкчинский район"
+  },
+  {
+    "id": 1703209,
+    "level": "district",
+    "cbuCode": null,
+    "upperId": 1703,
+    "parentCbuCode": "3",
+    "nameRu": "Бозский район",
+    "nameUz": "Бозский район",
+    "nameUzc": "Бозский район"
+  },
+  {
+    "id": 1703210,
+    "level": "district",
+    "cbuCode": "10",
+    "upperId": 1703,
+    "parentCbuCode": "3",
+    "nameRu": "Булакбашинский район",
+    "nameUz": "Булакбашинский район",
+    "nameUzc": "Булакбашинский район"
+  },
+  {
+    "id": 1703211,
+    "level": "district",
+    "cbuCode": "11",
+    "upperId": 1703,
+    "parentCbuCode": "3",
+    "nameRu": "Жалакудукский район",
+    "nameUz": "Жалакудукский район",
+    "nameUzc": "Жалакудукский район"
+  },
+  {
+    "id": 1703214,
+    "level": "district",
+    "cbuCode": "12",
+    "upperId": 1703,
+    "parentCbuCode": "3",
+    "nameRu": "Избасканский район",
+    "nameUz": "Избасканский район",
+    "nameUzc": "Избасканский район"
+  },
+  {
+    "id": 1703217,
+    "level": "district",
+    "cbuCode": "210",
+    "upperId": 1703,
+    "parentCbuCode": "3",
+    "nameRu": "Улугнорский район",
+    "nameUz": "Улугнорский район",
+    "nameUzc": "Улугнорский район"
+  },
+  {
+    "id": 1703220,
+    "level": "district",
+    "cbuCode": "14",
+    "upperId": 1703,
+    "parentCbuCode": "3",
+    "nameRu": "Кургантепинский район",
+    "nameUz": "Кургантепинский район",
+    "nameUzc": "Кургантепинский район"
+  },
+  {
+    "id": 1703224,
+    "level": "district",
+    "cbuCode": "7",
+    "upperId": 1703,
+    "parentCbuCode": "3",
+    "nameRu": "Асакинский район",
+    "nameUz": "Асакинский район",
+    "nameUzc": "Асакинский район"
+  },
+  {
+    "id": 1703227,
+    "level": "district",
+    "cbuCode": "15",
+    "upperId": 1703,
+    "parentCbuCode": "3",
+    "nameRu": "Мархаматский район",
+    "nameUz": "Мархаматский район",
+    "nameUzc": "Мархаматский район"
+  },
+  {
+    "id": 1703230,
+    "level": "district",
+    "cbuCode": "214",
+    "upperId": 1703,
+    "parentCbuCode": "3",
+    "nameRu": "Шахриханский район",
+    "nameUz": "Шахриханский район",
+    "nameUzc": "Шахриханский район"
+  },
+  {
+    "id": 1703232,
+    "level": "district",
+    "cbuCode": "17",
+    "upperId": 1703,
+    "parentCbuCode": "3",
+    "nameRu": "Пахтаабадский район",
+    "nameUz": "Пахтаабадский район",
+    "nameUzc": "Пахтаабадский район"
+  },
+  {
+    "id": 1703236,
+    "level": "district",
+    "cbuCode": "18",
+    "upperId": 1703,
+    "parentCbuCode": "3",
+    "nameRu": "Ходжаабадский район",
+    "nameUz": "Ходжаабадский район",
+    "nameUzc": "Ходжаабадский район"
+  },
+  {
+    "id": 1703401,
+    "level": "district",
+    "cbuCode": "1",
+    "upperId": 1703,
+    "parentCbuCode": "3",
+    "nameRu": "город Андижан",
+    "nameUz": "город Андижан",
+    "nameUzc": "город Андижан"
+  },
+  {
+    "id": 1703408,
+    "level": "district",
+    "cbuCode": "3",
+    "upperId": 1703,
+    "parentCbuCode": "3",
+    "nameRu": "город Ханабад",
+    "nameUz": "город Ханабад",
+    "nameUzc": "город Ханабад"
+  },
+  {
+    "id": 1706204,
+    "level": "district",
+    "cbuCode": "19",
+    "upperId": 1706,
+    "parentCbuCode": "6",
+    "nameRu": "Алатский район",
+    "nameUz": "Алатский район",
+    "nameUzc": "Алатский район"
+  },
+  {
+    "id": 1706207,
+    "level": "district",
+    "cbuCode": "22",
+    "upperId": 1706,
+    "parentCbuCode": "6",
+    "nameRu": "Бухарский район",
+    "nameUz": "Бухарский район",
+    "nameUzc": "Бухарский район"
+  },
+  {
+    "id": 1706212,
+    "level": "district",
+    "cbuCode": "20",
+    "upperId": 1706,
+    "parentCbuCode": "6",
+    "nameRu": "Вабкентский район",
+    "nameUz": "Вабкентский район",
+    "nameUzc": "Вабкентский район"
+  },
+  {
+    "id": 1706215,
+    "level": "district",
+    "cbuCode": "21",
+    "upperId": 1706,
+    "parentCbuCode": "6",
+    "nameRu": "Гиждуванский район",
+    "nameUz": "Гиждуванский район",
+    "nameUzc": "Гиждуванский район"
+  },
+  {
+    "id": 1706219,
+    "level": "district",
+    "cbuCode": "29",
+    "upperId": 1706,
+    "parentCbuCode": "6",
+    "nameRu": "Каганский район",
+    "nameUz": "Каганский район",
+    "nameUzc": "Каганский район"
+  },
+  {
+    "id": 1706230,
+    "level": "district",
+    "cbuCode": "23",
+    "upperId": 1706,
+    "parentCbuCode": "6",
+    "nameRu": "Каракульский район",
+    "nameUz": "Каракульский район",
+    "nameUzc": "Каракульский район"
+  },
+  {
+    "id": 1706232,
+    "level": "district",
+    "cbuCode": "28",
+    "upperId": 1706,
+    "parentCbuCode": "6",
+    "nameRu": "Караулбазарский район",
+    "nameUz": "Караулбазарский район",
+    "nameUzc": "Караулбазарский район"
+  },
+  {
+    "id": 1706240,
+    "level": "district",
+    "cbuCode": "27",
+    "upperId": 1706,
+    "parentCbuCode": "6",
+    "nameRu": "Пешкунский район",
+    "nameUz": "Пешкунский район",
+    "nameUzc": "Пешкунский район"
+  },
+  {
+    "id": 1706242,
+    "level": "district",
+    "cbuCode": "24",
+    "upperId": 1706,
+    "parentCbuCode": "6",
+    "nameRu": "Ромитанский район",
+    "nameUz": "Ромитанский район",
+    "nameUzc": "Ромитанский район"
+  },
+  {
+    "id": 1706246,
+    "level": "district",
+    "cbuCode": "25",
+    "upperId": 1706,
+    "parentCbuCode": "6",
+    "nameRu": "Жондорский район",
+    "nameUz": "Жондорский район",
+    "nameUzc": "Жондорский район"
+  },
+  {
+    "id": 1706258,
+    "level": "district",
+    "cbuCode": "26",
+    "upperId": 1706,
+    "parentCbuCode": "6",
+    "nameRu": "Шафирканский район",
+    "nameUz": "Шафирканский район",
+    "nameUzc": "Шафирканский район"
+  },
+  {
+    "id": 1706401,
+    "level": "district",
+    "cbuCode": "30",
+    "upperId": 1706,
+    "parentCbuCode": "6",
+    "nameRu": "город Бухара",
+    "nameUz": "город Бухара",
+    "nameUzc": "город Бухара"
+  },
+  {
+    "id": 1706403,
+    "level": "district",
+    "cbuCode": "220",
+    "upperId": 1706,
+    "parentCbuCode": "6",
+    "nameRu": "город Каган",
+    "nameUz": "город Каган",
+    "nameUzc": "город Каган"
+  },
+  {
+    "id": 1708201,
+    "level": "district",
+    "cbuCode": "41",
+    "upperId": 1708,
+    "parentCbuCode": "8",
+    "nameRu": "Арнасайский район",
+    "nameUz": "Арнасайский район",
+    "nameUzc": "Арнасайский район"
+  },
+  {
+    "id": 1708204,
+    "level": "district",
+    "cbuCode": "37",
+    "upperId": 1708,
+    "parentCbuCode": "8",
+    "nameRu": "Бахмальский район",
+    "nameUz": "Бахмальский район",
+    "nameUzc": "Бахмальский район"
+  },
+  {
+    "id": 1708209,
+    "level": "district",
+    "cbuCode": "33",
+    "upperId": 1708,
+    "parentCbuCode": "8",
+    "nameRu": "Галляаральский район",
+    "nameUz": "Галляаральский район",
+    "nameUzc": "Галляаральский район"
+  },
+  {
+    "id": 1708212,
+    "level": "district",
+    "cbuCode": "40",
+    "upperId": 1708,
+    "parentCbuCode": "8",
+    "nameRu": "Шароф Рашидовский район",
+    "nameUz": "Шароф Рашидовский район",
+    "nameUzc": "Шароф Рашидовский район"
+  },
+  {
+    "id": 1708215,
+    "level": "district",
+    "cbuCode": "34",
+    "upperId": 1708,
+    "parentCbuCode": "8",
+    "nameRu": "Дустликский район",
+    "nameUz": "Дустликский район",
+    "nameUzc": "Дустликский район"
+  },
+  {
+    "id": 1708218,
+    "level": "district",
+    "cbuCode": "36",
+    "upperId": 1708,
+    "parentCbuCode": "8",
+    "nameRu": "Заминский район",
+    "nameUz": "Заминский район",
+    "nameUzc": "Заминский район"
+  },
+  {
+    "id": 1708220,
+    "level": "district",
+    "cbuCode": "42",
+    "upperId": 1708,
+    "parentCbuCode": "8",
+    "nameRu": "Зарбдорский район",
+    "nameUz": "Зарбдорский район",
+    "nameUzc": "Зарбдорский район"
+  },
+  {
+    "id": 1708223,
+    "level": "district",
+    "cbuCode": "35",
+    "upperId": 1708,
+    "parentCbuCode": "8",
+    "nameRu": "Мирзачульский район",
+    "nameUz": "Мирзачульский район",
+    "nameUzc": "Мирзачульский район"
+  },
+  {
+    "id": 1708225,
+    "level": "district",
+    "cbuCode": "39",
+    "upperId": 1708,
+    "parentCbuCode": "8",
+    "nameRu": "Зафарабадский район",
+    "nameUz": "Зафарабадский район",
+    "nameUzc": "Зафарабадский район"
+  },
+  {
+    "id": 1708228,
+    "level": "district",
+    "cbuCode": "32",
+    "upperId": 1708,
+    "parentCbuCode": "8",
+    "nameRu": "Пахтакорский район",
+    "nameUz": "Пахтакорский район",
+    "nameUzc": "Пахтакорский район"
+  },
+  {
+    "id": 1708235,
+    "level": "district",
+    "cbuCode": "38",
+    "upperId": 1708,
+    "parentCbuCode": "8",
+    "nameRu": "Фаришский район",
+    "nameUz": "Фаришский район",
+    "nameUzc": "Фаришский район"
+  },
+  {
+    "id": 1708237,
+    "level": "district",
+    "cbuCode": "217",
+    "upperId": 1708,
+    "parentCbuCode": "8",
+    "nameRu": "Янгиабадский район",
+    "nameUz": "Янгиабадский район",
+    "nameUzc": "Янгиабадский район"
+  },
+  {
+    "id": 1708401,
+    "level": "district",
+    "cbuCode": "31",
+    "upperId": 1708,
+    "parentCbuCode": "8",
+    "nameRu": "город Джизак",
+    "nameUz": "город Джизак",
+    "nameUzc": "город Джизак"
+  },
+  {
+    "id": 1710207,
+    "level": "district",
+    "cbuCode": "45",
+    "upperId": 1710,
+    "parentCbuCode": "10",
+    "nameRu": "Гузарский район",
+    "nameUz": "Гузарский район",
+    "nameUzc": "Гузарский район"
+  },
+  {
+    "id": 1710212,
+    "level": "district",
+    "cbuCode": "46",
+    "upperId": 1710,
+    "parentCbuCode": "10",
+    "nameRu": "Дехканабадский район",
+    "nameUz": "Дехканабадский район",
+    "nameUzc": "Дехканабадский район"
+  },
+  {
+    "id": 1710220,
+    "level": "district",
+    "cbuCode": "47",
+    "upperId": 1710,
+    "parentCbuCode": "10",
+    "nameRu": "Камашинский район",
+    "nameUz": "Камашинский район",
+    "nameUzc": "Камашинский район"
+  },
+  {
+    "id": 1710224,
+    "level": "district",
+    "cbuCode": "44",
+    "upperId": 1710,
+    "parentCbuCode": "10",
+    "nameRu": "Каршинский район",
+    "nameUz": "Каршинский район",
+    "nameUzc": "Каршинский район"
+  },
+  {
+    "id": 1710229,
+    "level": "district",
+    "cbuCode": "48",
+    "upperId": 1710,
+    "parentCbuCode": "10",
+    "nameRu": "Касанский район",
+    "nameUz": "Касанский район",
+    "nameUzc": "Касанский район"
+  },
+  {
+    "id": 1710232,
+    "level": "district",
+    "cbuCode": "52",
+    "upperId": 1710,
+    "parentCbuCode": "10",
+    "nameRu": "Китабский район",
+    "nameUz": "Китабский район",
+    "nameUzc": "Китабский район"
+  },
+  {
+    "id": 1710233,
+    "level": "district",
+    "cbuCode": "221",
+    "upperId": 1710,
+    "parentCbuCode": "10",
+    "nameRu": "Миришкорский район",
+    "nameUz": "Миришкорский район",
+    "nameUzc": "Миришкорский район"
+  },
+  {
+    "id": 1710234,
+    "level": "district",
+    "cbuCode": "56",
+    "upperId": 1710,
+    "parentCbuCode": "10",
+    "nameRu": "Мубарекский район",
+    "nameUz": "Мубарекский район",
+    "nameUzc": "Мубарекский район"
+  },
+  {
+    "id": 1710235,
+    "level": "district",
+    "cbuCode": "54",
+    "upperId": 1710,
+    "parentCbuCode": "10",
+    "nameRu": "Нишанский район",
+    "nameUz": "Нишанский район",
+    "nameUzc": "Нишанский район"
+  },
+  {
+    "id": 1710237,
+    "level": "district",
+    "cbuCode": "53",
+    "upperId": 1710,
+    "parentCbuCode": "10",
+    "nameRu": "Касбинский район",
+    "nameUz": "Касбинский район",
+    "nameUzc": "Касбинский район"
+  },
+  {
+    "id": 1710242,
+    "level": "district",
+    "cbuCode": "50",
+    "upperId": 1710,
+    "parentCbuCode": "10",
+    "nameRu": "Чиракчинский район",
+    "nameUz": "Чиракчинский район",
+    "nameUzc": "Чиракчинский район"
+  },
+  {
+    "id": 1710245,
+    "level": "district",
+    "cbuCode": "213",
+    "upperId": 1710,
+    "parentCbuCode": "10",
+    "nameRu": "Шахрисабзский район",
+    "nameUz": "Шахрисабзский район",
+    "nameUzc": "Шахрисабзский район"
+  },
+  {
+    "id": 1710250,
+    "level": "district",
+    "cbuCode": "51",
+    "upperId": 1710,
+    "parentCbuCode": "10",
+    "nameRu": "Яккабагский район",
+    "nameUz": "Яккабагский район",
+    "nameUzc": "Яккабагский район"
+  },
+  {
+    "id": 1710401,
+    "level": "district",
+    "cbuCode": "43",
+    "upperId": 1710,
+    "parentCbuCode": "10",
+    "nameRu": "город Карши",
+    "nameUz": "город Карши",
+    "nameUzc": "город Карши"
+  },
+  {
+    "id": 1710405,
+    "level": "district",
+    "cbuCode": "49",
+    "upperId": 1710,
+    "parentCbuCode": "10",
+    "nameRu": "город Шахрисабз",
+    "nameUz": "город Шахрисабз",
+    "nameUzc": "город Шахрисабз"
+  },
+  {
+    "id": 1712211,
+    "level": "district",
+    "cbuCode": "62",
+    "upperId": 1712,
+    "parentCbuCode": "12",
+    "nameRu": "Канимехский район",
+    "nameUz": "Канимехский район",
+    "nameUzc": "Канимехский район"
+  },
+  {
+    "id": 1712216,
+    "level": "district",
+    "cbuCode": "63",
+    "upperId": 1712,
+    "parentCbuCode": "12",
+    "nameRu": "Кызылтепинский район",
+    "nameUz": "Кызылтепинский район",
+    "nameUzc": "Кызылтепинский район"
+  },
+  {
+    "id": 1712230,
+    "level": "district",
+    "cbuCode": "64",
+    "upperId": 1712,
+    "parentCbuCode": "12",
+    "nameRu": "Навбахорский район",
+    "nameUz": "Навбахорский район",
+    "nameUzc": "Навбахорский район"
+  },
+  {
+    "id": 1712234,
+    "level": "district",
+    "cbuCode": "61",
+    "upperId": 1712,
+    "parentCbuCode": "12",
+    "nameRu": "Карманинский район",
+    "nameUz": "Карманинский район",
+    "nameUzc": "Карманинский район"
+  },
+  {
+    "id": 1712238,
+    "level": "district",
+    "cbuCode": "65",
+    "upperId": 1712,
+    "parentCbuCode": "12",
+    "nameRu": "Нуратинский район",
+    "nameUz": "Нуратинский район",
+    "nameUzc": "Нуратинский район"
+  },
+  {
+    "id": 1712244,
+    "level": "district",
+    "cbuCode": "67",
+    "upperId": 1712,
+    "parentCbuCode": "12",
+    "nameRu": "Тамдынский район",
+    "nameUz": "Тамдынский район",
+    "nameUzc": "Тамдынский район"
+  },
+  {
+    "id": 1712248,
+    "level": "district",
+    "cbuCode": "211",
+    "upperId": 1712,
+    "parentCbuCode": "12",
+    "nameRu": "Учкудукский район",
+    "nameUz": "Учкудукский район",
+    "nameUzc": "Учкудукский район"
+  },
+  {
+    "id": 1712251,
+    "level": "district",
+    "cbuCode": "66",
+    "upperId": 1712,
+    "parentCbuCode": "12",
+    "nameRu": "Хатырчинский район",
+    "nameUz": "Хатырчинский район",
+    "nameUzc": "Хатырчинский район"
+  },
+  {
+    "id": 1712401,
+    "level": "district",
+    "cbuCode": "58",
+    "upperId": 1712,
+    "parentCbuCode": "12",
+    "nameRu": "город Навои",
+    "nameUz": "город Навои",
+    "nameUzc": "город Навои"
+  },
+  {
+    "id": 1712408,
+    "level": "district",
+    "cbuCode": "59",
+    "upperId": 1712,
+    "parentCbuCode": "12",
+    "nameRu": "город Зарафшан",
+    "nameUz": "город Зарафшан",
+    "nameUzc": "город Зарафшан"
+  },
+  {
+    "id": 1712412,
+    "level": "district",
+    "cbuCode": "224",
+    "upperId": 1712,
+    "parentCbuCode": "12",
+    "nameRu": "город Газган",
+    "nameUz": "город Газган",
+    "nameUzc": "город Газган"
+  },
+  {
+    "id": 1714204,
+    "level": "district",
+    "cbuCode": "69",
+    "upperId": 1714,
+    "parentCbuCode": "14",
+    "nameRu": "Мингбулакский район",
+    "nameUz": "Мингбулакский район",
+    "nameUzc": "Мингбулакский район"
+  },
+  {
+    "id": 1714207,
+    "level": "district",
+    "cbuCode": "70",
+    "upperId": 1714,
+    "parentCbuCode": "14",
+    "nameRu": "Касансайский район",
+    "nameUz": "Касансайский район",
+    "nameUzc": "Касансайский район"
+  },
+  {
+    "id": 1714212,
+    "level": "district",
+    "cbuCode": "78",
+    "upperId": 1714,
+    "parentCbuCode": "14",
+    "nameRu": "Наманганский район",
+    "nameUz": "Наманганский район",
+    "nameUzc": "Наманганский район"
+  },
+  {
+    "id": 1714216,
+    "level": "district",
+    "cbuCode": "71",
+    "upperId": 1714,
+    "parentCbuCode": "14",
+    "nameRu": "Нарынский район",
+    "nameUz": "Нарынский район",
+    "nameUzc": "Нарынский район"
+  },
+  {
+    "id": 1714219,
+    "level": "district",
+    "cbuCode": "72",
+    "upperId": 1714,
+    "parentCbuCode": "14",
+    "nameRu": "Папский район",
+    "nameUz": "Папский район",
+    "nameUzc": "Папский район"
+  },
+  {
+    "id": 1714224,
+    "level": "district",
+    "cbuCode": "73",
+    "upperId": 1714,
+    "parentCbuCode": "14",
+    "nameRu": "Туракурганский район",
+    "nameUz": "Туракурганский район",
+    "nameUzc": "Туракурганский район"
+  },
+  {
+    "id": 1714229,
+    "level": "district",
+    "cbuCode": "74",
+    "upperId": 1714,
+    "parentCbuCode": "14",
+    "nameRu": "Уйчинский район",
+    "nameUz": "Уйчинский район",
+    "nameUzc": "Уйчинский район"
+  },
+  {
+    "id": 1714234,
+    "level": "district",
+    "cbuCode": "75",
+    "upperId": 1714,
+    "parentCbuCode": "14",
+    "nameRu": "Учкурганский район",
+    "nameUz": "Учкурганский район",
+    "nameUzc": "Учкурганский район"
+  },
+  {
+    "id": 1714236,
+    "level": "district",
+    "cbuCode": "79",
+    "upperId": 1714,
+    "parentCbuCode": "14",
+    "nameRu": "Чартакский район",
+    "nameUz": "Чартакский район",
+    "nameUzc": "Чартакский район"
+  },
+  {
+    "id": 1714237,
+    "level": "district",
+    "cbuCode": "76",
+    "upperId": 1714,
+    "parentCbuCode": "14",
+    "nameRu": "Чустский район",
+    "nameUz": "Чустский район",
+    "nameUzc": "Чустский район"
+  },
+  {
+    "id": 1714242,
+    "level": "district",
+    "cbuCode": "77",
+    "upperId": 1714,
+    "parentCbuCode": "14",
+    "nameRu": "Янгикурганский район",
+    "nameUz": "Янгикурганский район",
+    "nameUzc": "Янгикурганский район"
+  },
+  {
+    "id": 1714401,
+    "level": "district",
+    "cbuCode": "68",
+    "upperId": 1714,
+    "parentCbuCode": "14",
+    "nameRu": "город Наманган",
+    "nameUz": "город Наманган",
+    "nameUzc": "город Наманган"
+  },
+  {
+    "id": 1718203,
+    "level": "district",
+    "cbuCode": "80",
+    "upperId": 1718,
+    "parentCbuCode": "18",
+    "nameRu": "Акдарьинский район",
+    "nameUz": "Акдарьинский район",
+    "nameUzc": "Акдарьинский район"
+  },
+  {
+    "id": 1718206,
+    "level": "district",
+    "cbuCode": "81",
+    "upperId": 1718,
+    "parentCbuCode": "18",
+    "nameRu": "Булунгурский район",
+    "nameUz": "Булунгурский район",
+    "nameUzc": "Булунгурский район"
+  },
+  {
+    "id": 1718209,
+    "level": "district",
+    "cbuCode": "83",
+    "upperId": 1718,
+    "parentCbuCode": "18",
+    "nameRu": "Джамбайский район",
+    "nameUz": "Джамбайский район",
+    "nameUzc": "Джамбайский район"
+  },
+  {
+    "id": 1718212,
+    "level": "district",
+    "cbuCode": "84",
+    "upperId": 1718,
+    "parentCbuCode": "18",
+    "nameRu": "Иштыханский район",
+    "nameUz": "Иштыханский район",
+    "nameUzc": "Иштыханский район"
+  },
+  {
+    "id": 1718215,
+    "level": "district",
+    "cbuCode": "85",
+    "upperId": 1718,
+    "parentCbuCode": "18",
+    "nameRu": "Каттакурганский район",
+    "nameUz": "Каттакурганский район",
+    "nameUzc": "Каттакурганский район"
+  },
+  {
+    "id": 1718216,
+    "level": "district",
+    "cbuCode": "86",
+    "upperId": 1718,
+    "parentCbuCode": "18",
+    "nameRu": "Кошрабадский район",
+    "nameUz": "Кошрабадский район",
+    "nameUzc": "Кошрабадский район"
+  },
+  {
+    "id": 1718218,
+    "level": "district",
+    "cbuCode": "87",
+    "upperId": 1718,
+    "parentCbuCode": "18",
+    "nameRu": "Нарпайский район",
+    "nameUz": "Нарпайский район",
+    "nameUzc": "Нарпайский район"
+  },
+  {
+    "id": 1718224,
+    "level": "district",
+    "cbuCode": "91",
+    "upperId": 1718,
+    "parentCbuCode": "18",
+    "nameRu": "Пайарыкский район",
+    "nameUz": "Пайарыкский район",
+    "nameUzc": "Пайарыкский район"
+  },
+  {
+    "id": 1718227,
+    "level": "district",
+    "cbuCode": "89",
+    "upperId": 1718,
+    "parentCbuCode": "18",
+    "nameRu": "Пастдаргомский район",
+    "nameUz": "Пастдаргомский район",
+    "nameUzc": "Пастдаргомский район"
+  },
+  {
+    "id": 1718230,
+    "level": "district",
+    "cbuCode": "90",
+    "upperId": 1718,
+    "parentCbuCode": "18",
+    "nameRu": "Пахтачийский район",
+    "nameUz": "Пахтачийский район",
+    "nameUzc": "Пахтачийский район"
+  },
+  {
+    "id": 1718233,
+    "level": "district",
+    "cbuCode": "92",
+    "upperId": 1718,
+    "parentCbuCode": "18",
+    "nameRu": "Самаркандский район",
+    "nameUz": "Самаркандский район",
+    "nameUzc": "Самаркандский район"
+  },
+  {
+    "id": 1718235,
+    "level": "district",
+    "cbuCode": "88",
+    "upperId": 1718,
+    "parentCbuCode": "18",
+    "nameRu": "Нурабадский район",
+    "nameUz": "Нурабадский район",
+    "nameUzc": "Нурабадский район"
+  },
+  {
+    "id": 1718236,
+    "level": "district",
+    "cbuCode": "94",
+    "upperId": 1718,
+    "parentCbuCode": "18",
+    "nameRu": "Ургутский район",
+    "nameUz": "Ургутский район",
+    "nameUzc": "Ургутский район"
+  },
+  {
+    "id": 1718238,
+    "level": "district",
+    "cbuCode": "93",
+    "upperId": 1718,
+    "parentCbuCode": "18",
+    "nameRu": "Тайлакский район",
+    "nameUz": "Тайлакский район",
+    "nameUzc": "Тайлакский район"
+  },
+  {
+    "id": 1718401,
+    "level": "district",
+    "cbuCode": "96",
+    "upperId": 1718,
+    "parentCbuCode": "18",
+    "nameRu": "город Самарканд",
+    "nameUz": "город Самарканд",
+    "nameUzc": "город Самарканд"
+  },
+  {
+    "id": 1718406,
+    "level": "district",
+    "cbuCode": "97",
+    "upperId": 1718,
+    "parentCbuCode": "18",
+    "nameRu": "город Каттакурган",
+    "nameUz": "город Каттакурган",
+    "nameUzc": "город Каттакурган"
+  },
+  {
+    "id": 1722201,
+    "level": "district",
+    "cbuCode": "111",
+    "upperId": 1722,
+    "parentCbuCode": "22",
+    "nameRu": "Алтынсайский район",
+    "nameUz": "Алтынсайский район",
+    "nameUzc": "Алтынсайский район"
+  },
+  {
+    "id": 1722202,
+    "level": "district",
+    "cbuCode": "107",
+    "upperId": 1722,
+    "parentCbuCode": "22",
+    "nameRu": "Ангорский район",
+    "nameUz": "Ангорский район",
+    "nameUzc": "Ангорский район"
+  },
+  {
+    "id": 1722203,
+    "level": "district",
+    "cbuCode": "112",
+    "upperId": 1722,
+    "parentCbuCode": "22",
+    "nameRu": "Бандиханский район",
+    "nameUz": "Бандиханский район",
+    "nameUzc": "Бандиханский район"
+  },
+  {
+    "id": 1722204,
+    "level": "district",
+    "cbuCode": "99",
+    "upperId": 1722,
+    "parentCbuCode": "22",
+    "nameRu": "Байсунский район",
+    "nameUz": "Байсунский район",
+    "nameUzc": "Байсунский район"
+  },
+  {
+    "id": 1722207,
+    "level": "district",
+    "cbuCode": "102",
+    "upperId": 1722,
+    "parentCbuCode": "22",
+    "nameRu": "Музрабадский район",
+    "nameUz": "Музрабадский район",
+    "nameUzc": "Музрабадский район"
+  },
+  {
+    "id": 1722210,
+    "level": "district",
+    "cbuCode": "100",
+    "upperId": 1722,
+    "parentCbuCode": "22",
+    "nameRu": "Денауский район",
+    "nameUz": "Денауский район",
+    "nameUzc": "Денауский район"
+  },
+  {
+    "id": 1722212,
+    "level": "district",
+    "cbuCode": "101",
+    "upperId": 1722,
+    "parentCbuCode": "22",
+    "nameRu": "Джаркурганский район",
+    "nameUz": "Джаркурганский район",
+    "nameUzc": "Джаркурганский район"
+  },
+  {
+    "id": 1722214,
+    "level": "district",
+    "cbuCode": "109",
+    "upperId": 1722,
+    "parentCbuCode": "22",
+    "nameRu": "Кумкурганский район",
+    "nameUz": "Кумкурганский район",
+    "nameUzc": "Кумкурганский район"
+  },
+  {
+    "id": 1722215,
+    "level": "district",
+    "cbuCode": "108",
+    "upperId": 1722,
+    "parentCbuCode": "22",
+    "nameRu": "Кизирикский район",
+    "nameUz": "Кизирикский район",
+    "nameUzc": "Кизирикский район"
+  },
+  {
+    "id": 1722217,
+    "level": "district",
+    "cbuCode": "106",
+    "upperId": 1722,
+    "parentCbuCode": "22",
+    "nameRu": "Сариасийский район",
+    "nameUz": "Сариасийский район",
+    "nameUzc": "Сариасийский район"
+  },
+  {
+    "id": 1722220,
+    "level": "district",
+    "cbuCode": "110",
+    "upperId": 1722,
+    "parentCbuCode": "22",
+    "nameRu": "Термезский район",
+    "nameUz": "Термезский район",
+    "nameUzc": "Термезский район"
+  },
+  {
+    "id": 1722221,
+    "level": "district",
+    "cbuCode": "105",
+    "upperId": 1722,
+    "parentCbuCode": "22",
+    "nameRu": "Узунский район",
+    "nameUz": "Узунский район",
+    "nameUzc": "Узунский район"
+  },
+  {
+    "id": 1722223,
+    "level": "district",
+    "cbuCode": "103",
+    "upperId": 1722,
+    "parentCbuCode": "22",
+    "nameRu": "Шерабадский район",
+    "nameUz": "Шерабадский район",
+    "nameUzc": "Шерабадский район"
+  },
+  {
+    "id": 1722226,
+    "level": "district",
+    "cbuCode": "104",
+    "upperId": 1722,
+    "parentCbuCode": "22",
+    "nameRu": "Шурчинский район",
+    "nameUz": "Шурчинский район",
+    "nameUzc": "Шурчинский район"
+  },
+  {
+    "id": 1722401,
+    "level": "district",
+    "cbuCode": "98",
+    "upperId": 1722,
+    "parentCbuCode": "22",
+    "nameRu": "город Термез",
+    "nameUz": "город Термез",
+    "nameUzc": "город Термез"
+  },
+  {
+    "id": 1724206,
+    "level": "district",
+    "cbuCode": "118",
+    "upperId": 1724,
+    "parentCbuCode": "24",
+    "nameRu": "Акалтынский район",
+    "nameUz": "Акалтынский район",
+    "nameUzc": "Акалтынский район"
+  },
+  {
+    "id": 1724212,
+    "level": "district",
+    "cbuCode": "119",
+    "upperId": 1724,
+    "parentCbuCode": "24",
+    "nameRu": "Баяутский район",
+    "nameUz": "Баяутский район",
+    "nameUzc": "Баяутский район"
+  },
+  {
+    "id": 1724216,
+    "level": "district",
+    "cbuCode": "123",
+    "upperId": 1724,
+    "parentCbuCode": "24",
+    "nameRu": "Сайхунабадский район",
+    "nameUz": "Сайхунабадский район",
+    "nameUzc": "Сайхунабадский район"
+  },
+  {
+    "id": 1724220,
+    "level": "district",
+    "cbuCode": "120",
+    "upperId": 1724,
+    "parentCbuCode": "24",
+    "nameRu": "Гулистанский район",
+    "nameUz": "Гулистанский район",
+    "nameUzc": "Гулистанский район"
+  },
+  {
+    "id": 1724226,
+    "level": "district",
+    "cbuCode": "121",
+    "upperId": 1724,
+    "parentCbuCode": "24",
+    "nameRu": "Сардобинский район",
+    "nameUz": "Сардобинский район",
+    "nameUzc": "Сардобинский район"
+  },
+  {
+    "id": 1724228,
+    "level": "district",
+    "cbuCode": "126",
+    "upperId": 1724,
+    "parentCbuCode": "24",
+    "nameRu": "Мирзаабадский район",
+    "nameUz": "Мирзаабадский район",
+    "nameUzc": "Мирзаабадский район"
+  },
+  {
+    "id": 1724231,
+    "level": "district",
+    "cbuCode": "122",
+    "upperId": 1724,
+    "parentCbuCode": "24",
+    "nameRu": "Сырдарьинский район",
+    "nameUz": "Сырдарьинский район",
+    "nameUzc": "Сырдарьинский район"
+  },
+  {
+    "id": 1724235,
+    "level": "district",
+    "cbuCode": "124",
+    "upperId": 1724,
+    "parentCbuCode": "24",
+    "nameRu": "Хавастский район",
+    "nameUz": "Хавастский район",
+    "nameUzc": "Хавастский район"
+  },
+  {
+    "id": 1724401,
+    "level": "district",
+    "cbuCode": "114",
+    "upperId": 1724,
+    "parentCbuCode": "24",
+    "nameRu": "город Гулистан",
+    "nameUz": "город Гулистан",
+    "nameUzc": "город Гулистан"
+  },
+  {
+    "id": 1724410,
+    "level": "district",
+    "cbuCode": "116",
+    "upperId": 1724,
+    "parentCbuCode": "24",
+    "nameRu": "город Ширин",
+    "nameUz": "город Ширин",
+    "nameUzc": "город Ширин"
+  },
+  {
+    "id": 1724413,
+    "level": "district",
+    "cbuCode": "115",
+    "upperId": 1724,
+    "parentCbuCode": "24",
+    "nameRu": "город Янгиер",
+    "nameUz": "город Янгиер",
+    "nameUzc": "город Янгиер"
+  },
+  {
+    "id": 1726262,
+    "level": "district",
+    "cbuCode": "198",
+    "upperId": 1726,
+    "parentCbuCode": "26",
+    "nameRu": "Учтепинский район",
+    "nameUz": "Учтепинский район",
+    "nameUzc": "Учтепинский район"
+  },
+  {
+    "id": 1726264,
+    "level": "district",
+    "cbuCode": "199",
+    "upperId": 1726,
+    "parentCbuCode": "26",
+    "nameRu": "Бектемирский район",
+    "nameUz": "Бектемирский район",
+    "nameUzc": "Бектемирский район"
+  },
+  {
+    "id": 1726266,
+    "level": "district",
+    "cbuCode": "200",
+    "upperId": 1726,
+    "parentCbuCode": "26",
+    "nameRu": "Юнусабадский район",
+    "nameUz": "Юнусабадский район",
+    "nameUzc": "Юнусабадский район"
+  },
+  {
+    "id": 1726269,
+    "level": "district",
+    "cbuCode": "201",
+    "upperId": 1726,
+    "parentCbuCode": "26",
+    "nameRu": "Мирзо Улугбекский район",
+    "nameUz": "Мирзо Улугбекский район",
+    "nameUzc": "Мирзо Улугбекский район"
+  },
+  {
+    "id": 1726273,
+    "level": "district",
+    "cbuCode": "202",
+    "upperId": 1726,
+    "parentCbuCode": "26",
+    "nameRu": "Мирабадский район",
+    "nameUz": "Мирабадский район",
+    "nameUzc": "Мирабадский район"
+  },
+  {
+    "id": 1726277,
+    "level": "district",
+    "cbuCode": "203",
+    "upperId": 1726,
+    "parentCbuCode": "26",
+    "nameRu": "Шайхантахурский район",
+    "nameUz": "Шайхантахурский район",
+    "nameUzc": "Шайхантахурский район"
+  },
+  {
+    "id": 1726280,
+    "level": "district",
+    "cbuCode": "204",
+    "upperId": 1726,
+    "parentCbuCode": "26",
+    "nameRu": "Алмазарский район",
+    "nameUz": "Алмазарский район",
+    "nameUzc": "Алмазарский район"
+  },
+  {
+    "id": 1726283,
+    "level": "district",
+    "cbuCode": "205",
+    "upperId": 1726,
+    "parentCbuCode": "26",
+    "nameRu": "Сергелийский район",
+    "nameUz": "Сергелийский район",
+    "nameUzc": "Сергелийский район"
+  },
+  {
+    "id": 1726287,
+    "level": "district",
+    "cbuCode": "206",
+    "upperId": 1726,
+    "parentCbuCode": "26",
+    "nameRu": "Яккасарайский район",
+    "nameUz": "Яккасарайский район",
+    "nameUzc": "Яккасарайский район"
+  },
+  {
+    "id": 1726290,
+    "level": "district",
+    "cbuCode": "207",
+    "upperId": 1726,
+    "parentCbuCode": "26",
+    "nameRu": "Яшнабадский район",
+    "nameUz": "Яшнабадский район",
+    "nameUzc": "Яшнабадский район"
+  },
+  {
+    "id": 1726292,
+    "level": "district",
+    "cbuCode": "227",
+    "upperId": 1726,
+    "parentCbuCode": "26",
+    "nameRu": "Янгихаётский район",
+    "nameUz": "Янгихаётский район",
+    "nameUzc": "Янгихаётский район"
+  },
+  {
+    "id": 1726294,
+    "level": "district",
+    "cbuCode": "208",
+    "upperId": 1726,
+    "parentCbuCode": "26",
+    "nameRu": "Чиланзарский район",
+    "nameUz": "Чиланзарский район",
+    "nameUzc": "Чиланзарский район"
+  },
+  {
+    "id": 1727206,
+    "level": "district",
+    "cbuCode": "132",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "Аккурганский район",
+    "nameUz": "Аккурганский район",
+    "nameUzc": "Аккурганский район"
+  },
+  {
+    "id": 1727212,
+    "level": "district",
+    "cbuCode": "133",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "Ахангаранский район",
+    "nameUz": "Ахангаранский район",
+    "nameUzc": "Ахангаранский район"
+  },
+  {
+    "id": 1727220,
+    "level": "district",
+    "cbuCode": "137",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "Бекабадский район",
+    "nameUz": "Бекабадский район",
+    "nameUzc": "Бекабадский район"
+  },
+  {
+    "id": 1727224,
+    "level": "district",
+    "cbuCode": "134",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "Бостанлыкский район",
+    "nameUz": "Бостанлыкский район",
+    "nameUzc": "Бостанлыкский район"
+  },
+  {
+    "id": 1727228,
+    "level": "district",
+    "cbuCode": "135",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "Букинский район",
+    "nameUz": "Букинский район",
+    "nameUzc": "Букинский район"
+  },
+  {
+    "id": 1727233,
+    "level": "district",
+    "cbuCode": "140",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "Куйичирчикский район",
+    "nameUz": "Куйичирчикский район",
+    "nameUzc": "Куйичирчикский район"
+  },
+  {
+    "id": 1727237,
+    "level": "district",
+    "cbuCode": "136",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "Зангиатинский район",
+    "nameUz": "Зангиатинский район",
+    "nameUzc": "Зангиатинский район"
+  },
+  {
+    "id": 1727239,
+    "level": "district",
+    "cbuCode": "145",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "Юкоричирчикский район",
+    "nameUz": "Юкоричирчикский район",
+    "nameUzc": "Юкоричирчикский район"
+  },
+  {
+    "id": 1727248,
+    "level": "district",
+    "cbuCode": "138",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "Кибрайский район",
+    "nameUz": "Кибрайский район",
+    "nameUzc": "Кибрайский район"
+  },
+  {
+    "id": 1727249,
+    "level": "district",
+    "cbuCode": "139",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "Паркентский район",
+    "nameUz": "Паркентский район",
+    "nameUzc": "Паркентский район"
+  },
+  {
+    "id": 1727250,
+    "level": "district",
+    "cbuCode": "141",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "Пскентский район",
+    "nameUz": "Пскентский район",
+    "nameUzc": "Пскентский район"
+  },
+  {
+    "id": 1727253,
+    "level": "district",
+    "cbuCode": "143",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "Уртачирчикский район",
+    "nameUz": "Уртачирчикский район",
+    "nameUzc": "Уртачирчикский район"
+  },
+  {
+    "id": 1727256,
+    "level": "district",
+    "cbuCode": "144",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "Чиназский район",
+    "nameUz": "Чиназский район",
+    "nameUzc": "Чиназский район"
+  },
+  {
+    "id": 1727259,
+    "level": "district",
+    "cbuCode": "146",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "Янгиюльский район",
+    "nameUz": "Янгиюльский район",
+    "nameUzc": "Янгиюльский район"
+  },
+  {
+    "id": 1727265,
+    "level": "district",
+    "cbuCode": "142",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "Ташкентский район",
+    "nameUz": "Ташкентский район",
+    "nameUzc": "Ташкентский район"
+  },
+  {
+    "id": 1727401,
+    "level": "district",
+    "cbuCode": "223",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "город Нурафшон",
+    "nameUz": "город Нурафшон",
+    "nameUzc": "город Нурафшон"
+  },
+  {
+    "id": 1727404,
+    "level": "district",
+    "cbuCode": "128",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "город Алмалык",
+    "nameUz": "город Алмалык",
+    "nameUzc": "город Алмалык"
+  },
+  {
+    "id": 1727407,
+    "level": "district",
+    "cbuCode": "129",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "город Ангрен",
+    "nameUz": "город Ангрен",
+    "nameUzc": "город Ангрен"
+  },
+  {
+    "id": 1727413,
+    "level": "district",
+    "cbuCode": "130",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "город Бекабад",
+    "nameUz": "город Бекабад",
+    "nameUzc": "город Бекабад"
+  },
+  {
+    "id": 1727415,
+    "level": "district",
+    "cbuCode": "127",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "город Ахангаран",
+    "nameUz": "город Ахангаран",
+    "nameUzc": "город Ахангаран"
+  },
+  {
+    "id": 1727419,
+    "level": "district",
+    "cbuCode": "131",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "город Чирчик",
+    "nameUz": "город Чирчик",
+    "nameUzc": "город Чирчик"
+  },
+  {
+    "id": 1727424,
+    "level": "district",
+    "cbuCode": "147",
+    "upperId": 1727,
+    "parentCbuCode": "27",
+    "nameRu": "город Янгиюль",
+    "nameUz": "город Янгиюль",
+    "nameUzc": "город Янгиюль"
+  },
+  {
+    "id": 1730203,
+    "level": "district",
+    "cbuCode": "158",
+    "upperId": 1730,
+    "parentCbuCode": "30",
+    "nameRu": "Алтыарыкский район",
+    "nameUz": "Алтыарыкский район",
+    "nameUzc": "Алтыарыкский район"
+  },
+  {
+    "id": 1730206,
+    "level": "district",
+    "cbuCode": "159",
+    "upperId": 1730,
+    "parentCbuCode": "30",
+    "nameRu": "Куштепинский район",
+    "nameUz": "Куштепинский район",
+    "nameUzc": "Куштепинский район"
+  },
+  {
+    "id": 1730209,
+    "level": "district",
+    "cbuCode": "153",
+    "upperId": 1730,
+    "parentCbuCode": "30",
+    "nameRu": "Багдадский район",
+    "nameUz": "Багдадский район",
+    "nameUzc": "Багдадский район"
+  },
+  {
+    "id": 1730212,
+    "level": "district",
+    "cbuCode": "154",
+    "upperId": 1730,
+    "parentCbuCode": "30",
+    "nameRu": "Бувайдинский район",
+    "nameUz": "Бувайдинский район",
+    "nameUzc": "Бувайдинский район"
+  },
+  {
+    "id": 1730215,
+    "level": "district",
+    "cbuCode": "152",
+    "upperId": 1730,
+    "parentCbuCode": "30",
+    "nameRu": "Бешарыкский район",
+    "nameUz": "Бешарыкский район",
+    "nameUzc": "Бешарыкский район"
+  },
+  {
+    "id": 1730218,
+    "level": "district",
+    "cbuCode": "157",
+    "upperId": 1730,
+    "parentCbuCode": "30",
+    "nameRu": "Кувинский район",
+    "nameUz": "Кувинский район",
+    "nameUzc": "Кувинский район"
+  },
+  {
+    "id": 1730221,
+    "level": "district",
+    "cbuCode": "164",
+    "upperId": 1730,
+    "parentCbuCode": "30",
+    "nameRu": "Учкуприкский район",
+    "nameUz": "Учкуприкский район",
+    "nameUzc": "Учкуприкский район"
+  },
+  {
+    "id": 1730224,
+    "level": "district",
+    "cbuCode": "160",
+    "upperId": 1730,
+    "parentCbuCode": "30",
+    "nameRu": "Риштанский район",
+    "nameUz": "Риштанский район",
+    "nameUzc": "Риштанский район"
+  },
+  {
+    "id": 1730226,
+    "level": "district",
+    "cbuCode": "161",
+    "upperId": 1730,
+    "parentCbuCode": "30",
+    "nameRu": "Сохский район",
+    "nameUz": "Сохский район",
+    "nameUzc": "Сохский район"
+  },
+  {
+    "id": 1730227,
+    "level": "district",
+    "cbuCode": "162",
+    "upperId": 1730,
+    "parentCbuCode": "30",
+    "nameRu": "Ташлакский район",
+    "nameUz": "Ташлакский район",
+    "nameUzc": "Ташлакский район"
+  },
+  {
+    "id": 1730230,
+    "level": "district",
+    "cbuCode": "163",
+    "upperId": 1730,
+    "parentCbuCode": "30",
+    "nameRu": "Узбекистанский район",
+    "nameUz": "Узбекистанский район",
+    "nameUzc": "Узбекистанский район"
+  },
+  {
+    "id": 1730233,
+    "level": "district",
+    "cbuCode": "165",
+    "upperId": 1730,
+    "parentCbuCode": "30",
+    "nameRu": "Ферганский район",
+    "nameUz": "Ферганский район",
+    "nameUzc": "Ферганский район"
+  },
+  {
+    "id": 1730236,
+    "level": "district",
+    "cbuCode": "155",
+    "upperId": 1730,
+    "parentCbuCode": "30",
+    "nameRu": "Дангаринский район",
+    "nameUz": "Дангаринский район",
+    "nameUzc": "Дангаринский район"
+  },
+  {
+    "id": 1730238,
+    "level": "district",
+    "cbuCode": "166",
+    "upperId": 1730,
+    "parentCbuCode": "30",
+    "nameRu": "Фуркатский район",
+    "nameUz": "Фуркатский район",
+    "nameUzc": "Фуркатский район"
+  },
+  {
+    "id": 1730242,
+    "level": "district",
+    "cbuCode": "156",
+    "upperId": 1730,
+    "parentCbuCode": "30",
+    "nameRu": "Язъяванский район",
+    "nameUz": "Язъяванский район",
+    "nameUzc": "Язъяванский район"
+  },
+  {
+    "id": 1730401,
+    "level": "district",
+    "cbuCode": "150",
+    "upperId": 1730,
+    "parentCbuCode": "30",
+    "nameRu": "город Фергана",
+    "nameUz": "город Фергана",
+    "nameUzc": "город Фергана"
+  },
+  {
+    "id": 1730405,
+    "level": "district",
+    "cbuCode": "148",
+    "upperId": 1730,
+    "parentCbuCode": "30",
+    "nameRu": "город Коканд",
+    "nameUz": "город Коканд",
+    "nameUzc": "город Коканд"
+  },
+  {
+    "id": 1730408,
+    "level": "district",
+    "cbuCode": "151",
+    "upperId": 1730,
+    "parentCbuCode": "30",
+    "nameRu": "город Кувасай",
+    "nameUz": "город Кувасай",
+    "nameUzc": "город Кувасай"
+  },
+  {
+    "id": 1730412,
+    "level": "district",
+    "cbuCode": "149",
+    "upperId": 1730,
+    "parentCbuCode": "30",
+    "nameRu": "город Маргилан",
+    "nameUz": "город Маргилан",
+    "nameUzc": "город Маргилан"
+  },
+  {
+    "id": 1733204,
+    "level": "district",
+    "cbuCode": "172",
+    "upperId": 1733,
+    "parentCbuCode": "33",
+    "nameRu": "Багатский район",
+    "nameUz": "Багатский район",
+    "nameUzc": "Багатский район"
+  },
+  {
+    "id": 1733208,
+    "level": "district",
+    "cbuCode": "171",
+    "upperId": 1733,
+    "parentCbuCode": "33",
+    "nameRu": "Гурленский район",
+    "nameUz": "Гурленский район",
+    "nameUzc": "Гурленский район"
+  },
+  {
+    "id": 1733212,
+    "level": "district",
+    "cbuCode": "176",
+    "upperId": 1733,
+    "parentCbuCode": "33",
+    "nameRu": "Кошкупырский район",
+    "nameUz": "Кошкупырский район",
+    "nameUzc": "Кошкупырский район"
+  },
+  {
+    "id": 1733217,
+    "level": "district",
+    "cbuCode": "178",
+    "upperId": 1733,
+    "parentCbuCode": "33",
+    "nameRu": "Ургенчский район",
+    "nameUz": "Ургенчский район",
+    "nameUzc": "Ургенчский район"
+  },
+  {
+    "id": 1733220,
+    "level": "district",
+    "cbuCode": "173",
+    "upperId": 1733,
+    "parentCbuCode": "33",
+    "nameRu": "Хазараспский район",
+    "nameUz": "Хазараспский район",
+    "nameUzc": "Хазараспский район"
+  },
+  {
+    "id": 1733221,
+    "level": "district",
+    "cbuCode": "226",
+    "upperId": 1733,
+    "parentCbuCode": "33",
+    "nameRu": "Тупроккалинский район",
+    "nameUz": "Тупроккалинский район",
+    "nameUzc": "Тупроккалинский район"
+  },
+  {
+    "id": 1733223,
+    "level": "district",
+    "cbuCode": "174",
+    "upperId": 1733,
+    "parentCbuCode": "33",
+    "nameRu": "Ханкинский район",
+    "nameUz": "Ханкинский район",
+    "nameUzc": "Ханкинский район"
+  },
+  {
+    "id": 1733226,
+    "level": "district",
+    "cbuCode": "212",
+    "upperId": 1733,
+    "parentCbuCode": "33",
+    "nameRu": "Хивинский район",
+    "nameUz": "Хивинский район",
+    "nameUzc": "Хивинский район"
+  },
+  {
+    "id": 1733230,
+    "level": "district",
+    "cbuCode": "177",
+    "upperId": 1733,
+    "parentCbuCode": "33",
+    "nameRu": "Шаватский район",
+    "nameUz": "Шаватский район",
+    "nameUzc": "Шаватский район"
+  },
+  {
+    "id": 1733233,
+    "level": "district",
+    "cbuCode": "175",
+    "upperId": 1733,
+    "parentCbuCode": "33",
+    "nameRu": "Янгиарыкский район",
+    "nameUz": "Янгиарыкский район",
+    "nameUzc": "Янгиарыкский район"
+  },
+  {
+    "id": 1733236,
+    "level": "district",
+    "cbuCode": "179",
+    "upperId": 1733,
+    "parentCbuCode": "33",
+    "nameRu": "Янгибазарский район",
+    "nameUz": "Янгибазарский район",
+    "nameUzc": "Янгибазарский район"
+  },
+  {
+    "id": 1733401,
+    "level": "district",
+    "cbuCode": "168",
+    "upperId": 1733,
+    "parentCbuCode": "33",
+    "nameRu": "город Ургенч",
+    "nameUz": "город Ургенч",
+    "nameUzc": "город Ургенч"
+  },
+  {
+    "id": 1733406,
+    "level": "district",
+    "cbuCode": "169",
+    "upperId": 1733,
+    "parentCbuCode": "33",
+    "nameRu": "город Хива",
+    "nameUz": "город Хива",
+    "nameUzc": "город Хива"
+  },
+  {
+    "id": 1735204,
+    "level": "district",
+    "cbuCode": "209",
+    "upperId": 1735,
+    "parentCbuCode": "35",
+    "nameRu": "Амударьинский район",
+    "nameUz": "Амударьинский район",
+    "nameUzc": "Амударьинский район"
+  },
+  {
+    "id": 1735207,
+    "level": "district",
+    "cbuCode": "191",
+    "upperId": 1735,
+    "parentCbuCode": "35",
+    "nameRu": "Берунийский район",
+    "nameUz": "Берунийский район",
+    "nameUzc": "Берунийский район"
+  },
+  {
+    "id": 1735209,
+    "level": "district",
+    "cbuCode": "225",
+    "upperId": 1735,
+    "parentCbuCode": "35",
+    "nameRu": "Бузатауский район",
+    "nameUz": "Бузатауский район",
+    "nameUzc": "Бузатауский район"
+  },
+  {
+    "id": 1735211,
+    "level": "district",
+    "cbuCode": "193",
+    "upperId": 1735,
+    "parentCbuCode": "35",
+    "nameRu": "Караузякский район",
+    "nameUz": "Караузякский район",
+    "nameUzc": "Караузякский район"
+  },
+  {
+    "id": 1735212,
+    "level": "district",
+    "cbuCode": "182",
+    "upperId": 1735,
+    "parentCbuCode": "35",
+    "nameRu": "Кегейлийский район",
+    "nameUz": "Кегейлийский район",
+    "nameUzc": "Кегейлийский район"
+  },
+  {
+    "id": 1735215,
+    "level": "district",
+    "cbuCode": "184",
+    "upperId": 1735,
+    "parentCbuCode": "35",
+    "nameRu": "Кунградский район",
+    "nameUz": "Кунградский район",
+    "nameUzc": "Кунградский район"
+  },
+  {
+    "id": 1735218,
+    "level": "district",
+    "cbuCode": "192",
+    "upperId": 1735,
+    "parentCbuCode": "35",
+    "nameRu": "Канлыкульский район",
+    "nameUz": "Канлыкульский район",
+    "nameUzc": "Канлыкульский район"
+  },
+  {
+    "id": 1735222,
+    "level": "district",
+    "cbuCode": "185",
+    "upperId": 1735,
+    "parentCbuCode": "35",
+    "nameRu": "Муйнакский район",
+    "nameUz": "Муйнакский район",
+    "nameUzc": "Муйнакский район"
+  },
+  {
+    "id": 1735225,
+    "level": "district",
+    "cbuCode": "216",
+    "upperId": 1735,
+    "parentCbuCode": "35",
+    "nameRu": "Нукусский район",
+    "nameUz": "Нукусский район",
+    "nameUzc": "Нукусский район"
+  },
+  {
+    "id": 1735228,
+    "level": "district",
+    "cbuCode": "222",
+    "upperId": 1735,
+    "parentCbuCode": "35",
+    "nameRu": "Тахиаташский район",
+    "nameUz": "Тахиаташский район",
+    "nameUzc": "Тахиаташский район"
+  },
+  {
+    "id": 1735230,
+    "level": "district",
+    "cbuCode": "187",
+    "upperId": 1735,
+    "parentCbuCode": "35",
+    "nameRu": "Тахтакупырский район",
+    "nameUz": "Тахтакупырский район",
+    "nameUzc": "Тахтакупырский район"
+  },
+  {
+    "id": 1735233,
+    "level": "district",
+    "cbuCode": "188",
+    "upperId": 1735,
+    "parentCbuCode": "35",
+    "nameRu": "Турткульский район",
+    "nameUz": "Турткульский район",
+    "nameUzc": "Турткульский район"
+  },
+  {
+    "id": 1735236,
+    "level": "district",
+    "cbuCode": "189",
+    "upperId": 1735,
+    "parentCbuCode": "35",
+    "nameRu": "Ходжейлийский район",
+    "nameUz": "Ходжейлийский район",
+    "nameUzc": "Ходжейлийский район"
+  },
+  {
+    "id": 1735240,
+    "level": "district",
+    "cbuCode": "190",
+    "upperId": 1735,
+    "parentCbuCode": "35",
+    "nameRu": "Чимбайский район",
+    "nameUz": "Чимбайский район",
+    "nameUzc": "Чимбайский район"
+  },
+  {
+    "id": 1735243,
+    "level": "district",
+    "cbuCode": "183",
+    "upperId": 1735,
+    "parentCbuCode": "35",
+    "nameRu": "Шуманайский район",
+    "nameUz": "Шуманайский район",
+    "nameUzc": "Шуманайский район"
+  },
+  {
+    "id": 1735250,
+    "level": "district",
+    "cbuCode": "194",
+    "upperId": 1735,
+    "parentCbuCode": "35",
+    "nameRu": "Элликкалинский район",
+    "nameUz": "Элликкалинский район",
+    "nameUzc": "Элликкалинский район"
+  },
+  {
+    "id": 1735401,
+    "level": "district",
+    "cbuCode": "180",
+    "upperId": 1735,
+    "parentCbuCode": "35",
+    "nameRu": "город Нукус",
+    "nameUz": "город Нукус",
+    "nameUzc": "город Нукус"
+  }
+]

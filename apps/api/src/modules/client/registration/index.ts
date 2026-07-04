@@ -392,6 +392,8 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
               districtCode: myidUser.districtCode ?? '',
               docType: myidUser.docType || 1,
               citizenShipId: myidUser.citizenShipId,
+              temporaryRegistration: myidUser.temporaryRegistration,
+              permanentRegistration: myidUser.permanentRegistration,
               gender: +myidUser.gender,
               verifiedAt: new Date(),
             },

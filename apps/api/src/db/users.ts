@@ -1,4 +1,13 @@
-import { date, integer, pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import {
+  date,
+  integer,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  varchar,
+  jsonb,
+} from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
@@ -26,4 +35,6 @@ export const users = pgTable('users', {
   // per-phone lockout; recovery is a full OTP + MyID re-auth.
   pinHash: varchar('pin_hash', { length: 255 }),
   pinSetAt: timestamp('pin_set_at', { withTimezone: true }),
+  temporaryRegistration: jsonb('temporary_registration'), // for temporary registration
+  permanentRegistration: jsonb('permanent_registration'), // for permanent registration
 });

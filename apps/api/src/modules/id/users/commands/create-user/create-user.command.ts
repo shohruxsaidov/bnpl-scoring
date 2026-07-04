@@ -11,8 +11,10 @@ export interface CreateUserCommand {
   passportNumber: string;
   verifiedAt?: Date;
   address?: string;
-  regionCode: string;
-  districtCode: string;
+  regionCode: string | null;
+  districtCode: string | null;
   docType: number;
   citizenShipId: string; // for uzbekistan 182
+  permanentRegistration?: unknown; // for permanent registration
+  temporaryRegistration?: unknown; // for temporary registration
 }

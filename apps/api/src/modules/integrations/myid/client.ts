@@ -31,6 +31,28 @@ export interface MyidUserData {
   districtCode: string | null; // KATM dict 052
   docType: number | null; // 0 — ID card, 6 — biometric passport
   citizenShipId: string;
+  permanentRegistration?: {
+    region?: string | null;
+    country_id_cbu: string;
+    country_id?: string;
+    region_id?: number | string | null;
+    region_id_cbu: string;
+    district?: string | null;
+    district_id?: number | string | null;
+    district_id_cbu?: string;
+    address?: string | null;
+  };
+  temporaryRegistration?: {
+    region?: string | null;
+    country_id_cbu: string;
+    country_id?: string;
+    region_id?: number | string | null;
+    region_id_cbu: string;
+    district?: string | null;
+    district_id?: number | string | null;
+    district_id_cbu?: string;
+    address?: string | null;
+  };
 }
 
 export interface MyidSessionResult {
@@ -234,9 +256,24 @@ export async function exchangeMyidCode(code: string): Promise<MyidUserData> {
           address?: {
             permanent_registration?: {
               region?: string | null;
+              country_id_cbu: string;
+              country_id?: string;
               region_id?: number | string | null;
+              region_id_cbu: string;
               district?: string | null;
               district_id?: number | string | null;
+              district_id_cbu?: string;
+              address?: string | null;
+            } | null;
+            temporary_registration?: {
+              region?: string | null;
+              country_id_cbu: string;
+              country_id?: string;
+              region_id?: number | string | null;
+              region_id_cbu: string;
+              district?: string | null;
+              district_id?: number | string | null;
+              district_id_cbu?: string;
               address?: string | null;
             } | null;
           } | null;
