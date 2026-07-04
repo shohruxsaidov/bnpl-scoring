@@ -228,11 +228,6 @@ function formatInputValue(value: BreakdownRow['inputValue']): string {
   if (typeof value === 'boolean') return value ? t('common.yes') : t('common.no')
   return String(value)
 }
-function decisionLabel(decision: unknown): string {
-  const key = `scoringReport.decision.${decision}`
-  return te(key) ? t(key) : String(decision ?? '—')
-}
-
 function goBack() {
   router.push({ name: 'scorings' })
 }
@@ -346,12 +341,6 @@ function goBack() {
 
         <!-- model_score: breakdown table -->
         <div v-if="activePipeline.type === 'model_score'" class="surface-card table-card">
-          <div class="model-meta">
-            <span>{{ t('scoringReport.model.decision') }}:
-              <strong>{{ decisionLabel((activePipeline.summary as any)?.decision) }}</strong></span>
-            <span>{{ t('scoringReport.model.coefficient') }}:
-              <strong>{{ (activePipeline.summary as any)?.coefficient ?? '—' }}</strong></span>
-          </div>
           <table class="breakdown">
             <thead>
               <tr>
@@ -564,15 +553,6 @@ function goBack() {
 
 .flat-card {
   padding: 1rem 1.2rem;
-}
-
-.model-meta {
-  display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  margin-bottom: 0.9rem;
-  font-size: 0.88rem;
-  color: var(--text-secondary);
 }
 
 table.breakdown {

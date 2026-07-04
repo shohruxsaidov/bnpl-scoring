@@ -7,7 +7,14 @@
 
 // Ordered cost-ascending: cheap/free checks first so a knockout short-circuits
 // before any chargeable bureau call.
-export const PIPELINE_ORDER = ['myid', 'katm_claim', 'katm_mib', 'katm_077', 'katm_inps', 'model_score'] as const;
+export const PIPELINE_ORDER = [
+  'myid',
+  'katm_claim',
+  'katm_mib',
+  'katm_077',
+  'katm_inps',
+  'model_score',
+] as const;
 export type PipelineType = (typeof PIPELINE_ORDER)[number];
 
 // scoring_pipelines.status
@@ -133,10 +140,6 @@ export interface KatmInpsSummary {
 
 export interface ModelScoreSummary {
   score: number;
-  coefficient: number;
-  /** 'approve' | 'reject' — the run decision (lives on scorings, mirrored here). */
-  decision: string;
-  /** Platform credit limit in tiyin. */
   platformCreditLimit: number;
 }
 
@@ -152,6 +155,11 @@ export type PipelineSummary =
 
 export type PipelineEvaluation =
   | { status: 'passed'; summary: PipelineSummary; raw: unknown }
-  | { status: 'rejected'; rejectReasonCode: RejectReasonCode; summary: PipelineSummary; raw: unknown }
+  | {
+      status: 'rejected';
+      rejectReasonCode: RejectReasonCode;
+      summary: PipelineSummary;
+      raw: unknown;
+    }
   | { status: 'pending'; summary: PipelineSummary | null; raw: unknown }
   | { status: 'error'; summary?: PipelineSummary | null; raw: unknown };

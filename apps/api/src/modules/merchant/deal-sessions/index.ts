@@ -1053,9 +1053,10 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       // model ran (approve, zero-limit, or stop-factor alike). The approve/reject
       // decision lives on the scorings rollup, not on this pipeline row.
       if (scoringRun) {
+        const limit = platformCreditLimit / 100;
         await recordPipeline(scoringRun.id, 'model_score', {
           status: 'passed',
-          summary: { score: scoreSum, coefficient, decision: finalDecision, platformCreditLimit },
+          summary: { score: scoreSum, platformCreditLimit: limit },
           raw: engineResult,
         });
         if (finalDecision === 'approve') {
