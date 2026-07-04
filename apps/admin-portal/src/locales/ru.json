@@ -281,6 +281,7 @@
     "score": "Балл",
     "creditLimit": "Кредитный лимит",
     "pipeline": "Этап",
+    "claimId": "ID заявки KATM",
     "createdAt": "Дата",
     "updatedAt": "Обновлён",
     "pinfl": "ПИНФЛ",
@@ -412,6 +413,13 @@
     "title": "Модель скоринга",
     "subtitle": "История ревизий скоринговой модели",
     "importantLevel": "Важность",
+    "dataSource": "Источник данных",
+    "source": {
+      "myid": "MyID",
+      "katm_inps": "КАТМ · ИНПС",
+      "katm_077": "КАТМ · 077",
+      "katm_mib": "КАТМ · МИБ"
+    },
     "description": "Описание",
     "range": "Диапазон",
     "score": "Балл",

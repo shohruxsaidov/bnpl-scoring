@@ -273,6 +273,7 @@
     "score": "Ball",
     "creditLimit": "Kredit limiti",
     "pipeline": "Bosqich",
+    "claimId": "KATM ariza ID",
     "createdAt": "Sana",
     "updatedAt": "Yangilangan",
     "pinfl": "PINFL",
@@ -404,6 +405,13 @@
     "title": "Skoring modeli",
     "subtitle": "Skoring modeli reviziyalari tarixi",
     "importantLevel": "Muhimlik",
+    "dataSource": "Ma'lumot manbasi",
+    "source": {
+      "myid": "MyID",
+      "katm_inps": "KATM · INPS",
+      "katm_077": "KATM · 077",
+      "katm_mib": "KATM · MIB"
+    },
     "description": "Tavsif",
     "range": "Oraliq",
     "score": "Ball",

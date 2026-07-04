@@ -13,6 +13,7 @@ import Dialog from 'primevue/dialog'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
 import { useScoringModelStore } from '@/stores/scoring-model'
+import { sourceCode } from '@/utils/criterion-source'
 
 const store = useScoringModelStore()
 const confirm = useConfirm()
@@ -147,6 +148,11 @@ function criterionName(key: string, data: Record<string, unknown>): string {
   return (data['Name'] as string | undefined) ?? key
 }
 
+function sourceLabel(key: string): string | null {
+  const code = sourceCode(key)
+  return code ? t(`scoringModel.source.${code}`) : null
+}
+
 function isRangeBased(data: Record<string, unknown>): boolean {
   return Array.isArray(data['Ranges'])
 }
@@ -237,6 +243,8 @@ function bandDescription(band: Record<string, unknown>): string {
                 <span class="crit-name" :class="{ 'name-muted': data['Enabled'] === false }">{{ criterionName(key, data)
                 }}</span>
                 <span class="crit-key">{{ key }}</span>
+                <span v-if="sourceLabel(key)" class="crit-source" :title="t('scoringModel.dataSource')">{{
+                  sourceLabel(key) }}</span>
                 <div class="imp-wrap" @click.stop>
                   <span class="imp-label">{{ t('scoringModel.importantLevel') }}</span>
                   <InputNumber v-model="(data as Record<string, unknown>)['ImportantLevel'] as number" :min="0" :max="1"
@@ -738,6 +746,18 @@ function bandDescription(band: Record<string, unknown>): string {
   color: var(--text-secondary);
   background: var(--bg-base);
   border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  padding: 0.12rem 0.35rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.crit-source {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent-1);
+  background: color-mix(in srgb, var(--accent-1) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-1) 30%, transparent);
   border-radius: 5px;
   padding: 0.12rem 0.35rem;
   white-space: nowrap;

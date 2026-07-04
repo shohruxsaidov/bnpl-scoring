@@ -49,6 +49,7 @@ export interface RegionMatchParam {
   DefaultScore: number;
   ValidRegions: string[];
   MatchScore: number;
+  Description?: string;
 }
 
 export type ScoringParam = RangeParam | CategoricalParam | RegionMatchParam;
@@ -109,6 +110,7 @@ export interface ScoringInputs {
   hasMortgage?: boolean;
   passportRegion?: string;
   allDebts?: number; // UZS
+  address: string
 }
 
 // ---------------------------------------------------------------------------
@@ -236,7 +238,7 @@ export function computeScoringModel(model: ScoringModelData, inputs: ScoringInpu
   // each breakdown entry. Decoupled from the scoring maps above so Mortgage keeps
   // its original boolean instead of the mapped 'WithMortgage'/'WithoutMortgage' key.
   const valueByKey: Record<string, number | string | boolean | null | undefined> = {
-    IncomeSum: inputs.incomeSumInBrv,
+    IncomeSum: inputs.incomeSum,
     WorkExperience: inputs.workExperienceMonths,
     Age: inputs.age,
     MonthlyAveragePayment: incomeRatio,
@@ -254,7 +256,7 @@ export function computeScoringModel(model: ScoringModelData, inputs: ScoringInpu
     Citizenship: inputs.citizenship === '182' ? 'Uzbekistan' : 'NonResident',
     Gender: inputs.gender === GENDERS.MALE ? 'Male' : 'Female',
     Mortgage: inputs.hasMortgage,
-    PassportData: inputs.passportRegion,
+    PassportData: inputs.address,
   };
 
   const breakdown: CriterionResult[] = [];
@@ -273,6 +275,7 @@ export function computeScoringModel(model: ScoringModelData, inputs: ScoringInpu
       rawScore = category?.Score ?? null;
       description = category?.Description ?? null;
     } else if (param.Type === 'regionMatch') {
+      description = param.Description ?? null;
       const region = regionInputs[key];
       // regionMatch carries no authored per-outcome description.
       rawScore =

@@ -5,13 +5,18 @@ import { redis } from '@redis';
 import { users } from '@db/schema';
 import {
   activateDevice,
+  clearDeviceKey,
+  consumeBiometricChallenge,
+  createBiometricChallenge,
   createSession,
   findDeviceByDeviceId,
   findUserById,
   refreshAccessToken,
+  registerDeviceKey,
   revokeDeviceSessions,
   revokeSession,
   setUserPin,
+  verifyBiometricSignature,
   verifyUserPin,
 } from '../../auth/client/service/service.handler';
 
@@ -247,6 +252,169 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
 
       // Correct PIN: clear the counter and mint a fresh device-bound session.
       await redis.del(failKey).catch(() => undefined);
+      // One active session per device: drop any stale session before the new one.
+      await revokeDeviceSessions(device.id);
+
+      const accessToken = app.jwt.sign(
+        { sub: user.id.toString(), type: 'client' },
+        { expiresIn: ACCESS_TOKEN_TTL },
+      );
+      const { sessionToken } = await createSession(user.id, device.id);
+
+      return { accessToken, sessionToken, client: toClientDto(user) };
+    },
+  );
+
+  /* ── Biometric enrolment (register / disable the device keypair) ─────────── */
+
+  fastify.post(
+    '/register-device',
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Enrol biometric key',
+        description:
+          'Registers the device (x-device-id) biometric public key for a logged-in ' +
+          'user. The device must already be trusted (completed /setup) and owned by ' +
+          'the caller. The key is a base64 SPKI-DER ES256 (P-256) public key whose ' +
+          'private half lives in the Secure Enclave / Keystore. Re-enrolling ' +
+          'overwrites the prior key. Enables biometric login via /challenge + /biometric.',
+        security: SECURITY,
+        body: Type.Object({
+          publicKey: Type.String({ minLength: 1, examples: ['MFkwEwYHKoZIzj0CAQYI...'] }),
+        }),
+        response: { 200: Ok, 400: ERROR, 401: ERROR },
+      },
+      preHandler: [app.verifyClientJwt],
+    },
+    async (request, reply) => {
+      if (!request.deviceId) return reply.code(400).sendError('missing_device_id');
+
+      const device = await findDeviceByDeviceId(request.deviceId);
+      if (!device || !device.activatedAt) return reply.code(400).sendError('device_not_trusted');
+      // The key may only be enrolled for the device's own owner — never let one
+      // user's access token attach a key to another user's device.
+      if (device.userId !== Number(request.user.sub)) {
+        return reply.code(400).sendError('device_not_trusted');
+      }
+
+      const ok = await registerDeviceKey(device.id, request.body.publicKey);
+      if (!ok) return reply.code(400).sendError('invalid_public_key');
+
+      return { ok: true };
+    },
+  );
+
+  fastify.delete(
+    '/register-device',
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Disable biometric key',
+        description:
+          'Removes this device (x-device-id) biometric public key, disabling ' +
+          'biometric login. PIN login is unaffected. Idempotent.',
+        security: SECURITY,
+        response: { 200: Ok, 400: ERROR, 401: ERROR },
+      },
+      preHandler: [app.verifyClientJwt],
+    },
+    async (request, reply) => {
+      if (!request.deviceId) return reply.code(400).sendError('missing_device_id');
+
+      const device = await findDeviceByDeviceId(request.deviceId);
+      if (!device || device.userId !== Number(request.user.sub)) {
+        return reply.code(400).sendError('device_not_trusted');
+      }
+
+      await clearDeviceKey(device.id);
+      return { ok: true };
+    },
+  );
+
+  /* ── Biometric challenge (one-time nonce to sign) ────────────────────────── */
+
+  fastify.post(
+    '/challenge',
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Request biometric challenge',
+        description:
+          'Mints a single-use challenge for this device (x-device-id) to sign with ' +
+          'its biometric private key. Unauthenticated by design — the signature IS ' +
+          'the credential. The challenge is bound to this device and expires within ' +
+          '120 seconds; each is valid for exactly one /biometric attempt.',
+        response: {
+          200: Type.Object({
+            challengeId: Type.String(),
+            challenge: Type.String(),
+          }),
+          400: ERROR,
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!request.deviceId) return reply.code(400).sendError('missing_device_id');
+      return createBiometricChallenge(request.deviceId);
+    },
+  );
+
+  /* ── Biometric login (prove key possession → session) ────────────────────── */
+
+  fastify.post(
+    '/biometric',
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Log in with biometric',
+        description:
+          'Re-establishes a session on a trusted device by proving possession of the ' +
+          'biometric private key: the client signs the challenge from /challenge and ' +
+          'submits the DER (X9.62) ECDSA signature, base64-encoded. The challenge is ' +
+          'consumed on use (single-use). On success, mirrors /login — mints a fresh ' +
+          'access + durable session token. A 401 means the challenge is spent/expired, ' +
+          'the device is not enrolled, or the signature does not verify; the client ' +
+          'falls back to PIN login.',
+        body: Type.Object({
+          challengeId: Type.String({ minLength: 1, examples: ['uuid'] }),
+          signature: Type.String({ minLength: 1, examples: ['MEUCIQ...'] }),
+        }),
+        response: {
+          200: Type.Object({
+            accessToken: Type.String(),
+            sessionToken: Type.String(),
+            client: ClientDto,
+          }),
+          401: ERROR,
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!request.deviceId) return reply.code(401).sendError('invalid_challenge');
+
+      // Single-use: spend the challenge up front, so a bad signature cannot be
+      // retried against the same nonce.
+      const pending = await consumeBiometricChallenge(request.body.challengeId);
+      if (!pending || pending.deviceId !== request.deviceId) {
+        return reply.code(401).sendError('invalid_challenge');
+      }
+
+      const device = await findDeviceByDeviceId(request.deviceId);
+      if (!device || !device.activatedAt || !device.publicKey) {
+        return reply.code(401).sendError('device_not_enrolled');
+      }
+
+      const user = await findUserById(device.userId);
+      if (!user) return reply.code(401).sendError('device_not_enrolled');
+
+      const ok = verifyBiometricSignature(
+        device.publicKey,
+        pending.challenge,
+        request.body.signature,
+      );
+      if (!ok) return reply.code(401).sendError('invalid_signature');
+
       // One active session per device: drop any stale session before the new one.
       await revokeDeviceSessions(device.id);
 

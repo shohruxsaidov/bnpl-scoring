@@ -34,6 +34,7 @@ export interface ScoringDetail {
   score: number | null;
   creditLimit: number | null;
   currentPipeline: string | null;
+  katmClaimId: string | null;
   rejectReasonCode: string | null;
   createdAt: string;
   updatedAt: string;
@@ -52,6 +53,7 @@ export async function getScoring(id: number): Promise<ScoringDetail | null> {
       score: scorings.score,
       creditLimit: scorings.creditLimit,
       currentPipeline: scorings.currentPipeline,
+      katmClaimId: scorings.katmClaimId,
       rejectReasonCode: scorings.rejectReasonCode,
       createdAt: scorings.createdAt,
       updatedAt: scorings.updatedAt,
@@ -104,6 +106,7 @@ export async function getScoring(id: number): Promise<ScoringDetail | null> {
     score: row.score,
     creditLimit: row.creditLimit,
     currentPipeline: row.currentPipeline,
+    katmClaimId: row.katmClaimId,
     rejectReasonCode: row.rejectReasonCode,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),

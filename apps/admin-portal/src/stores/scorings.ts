@@ -39,6 +39,7 @@ export interface ScoringDetail {
   score: number | null
   creditLimit: number | null
   currentPipeline: string | null
+  katmClaimId: string | null
   rejectReasonCode: string | null
   createdAt: string
   updatedAt: string

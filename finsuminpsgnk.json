@@ -40,12 +40,12 @@
         "AmountUnit": "UZS"
       },
       "Ranges": [
-        { "From": 0,  "To": 10,   "Score": 0,   "Description": "до 10 БРВ" },
-        { "From": 10, "To": 20,   "Score": 60,  "Description": "от 10 до 20 БРВ" },
-        { "From": 20, "To": 30,   "Score": 70,  "Description": "от 20 до 30 БРВ" },
-        { "From": 30, "To": 40,   "Score": 80,  "Description": "от 30 до 40 БРВ" },
-        { "From": 40, "To": 50,   "Score": 90,  "Description": "от 40 до 50 БРВ" },
-        { "From": 50, "To": 70,   "Score": 100, "Description": "от 50 до 70 БРВ" },
+        { "From": 0, "To": 10, "Score": 0, "Description": "до 10 БРВ" },
+        { "From": 10, "To": 20, "Score": 60, "Description": "от 10 до 20 БРВ" },
+        { "From": 20, "To": 30, "Score": 70, "Description": "от 20 до 30 БРВ" },
+        { "From": 30, "To": 40, "Score": 80, "Description": "от 30 до 40 БРВ" },
+        { "From": 40, "To": 50, "Score": 90, "Description": "от 40 до 50 БРВ" },
+        { "From": 50, "To": 70, "Score": 100, "Description": "от 50 до 70 БРВ" },
         { "From": 70, "To": null, "Score": 150, "Description": "от 70 БРВ и выше" }
       ]
     },
@@ -57,8 +57,8 @@
       "Type": "categorical",
       "DefaultScore": 0,
       "Categories": {
-        "Uzbekistan":  { "Score": 100, "Description": "Гражданин Узбекистана" },
-        "NonResident": { "Score": 0,   "Description": "Нерезидент" }
+        "Uzbekistan": { "Score": 100, "Description": "Гражданин Узбекистана" },
+        "NonResident": { "Score": 0, "Description": "Нерезидент" }
       }
     },
 
@@ -70,9 +70,9 @@
       "Unit": "months",
       "DefaultScore": 0,
       "Ranges": [
-        { "From": 0,  "To": 6,    "Score": 0,   "Description": "от 0 до 6 месяцев" },
-        { "From": 6,  "To": 12,   "Score": 75,  "Description": "от 6 до 12 месяцев" },
-        { "From": 12, "To": 18,   "Score": 100, "Description": "от 12 до 18 месяцев" },
+        { "From": 0, "To": 6, "Score": 0, "Description": "от 0 до 6 месяцев" },
+        { "From": 6, "To": 12, "Score": 75, "Description": "от 6 до 12 месяцев" },
+        { "From": 12, "To": 18, "Score": 100, "Description": "от 12 до 18 месяцев" },
         { "From": 18, "To": null, "Score": 150, "Description": "от 18 месяцев" }
       ]
     },
@@ -85,11 +85,11 @@
       "Unit": "years",
       "DefaultScore": 0,
       "Ranges": [
-        { "From": 0,  "To": 21,   "Score": -350, "Description": "до 21 года" },
-        { "From": 21, "To": 31,   "Score": 25,   "Description": "от 21 до 31 года" },
-        { "From": 31, "To": 41,   "Score": 75,   "Description": "от 31 до 41 года" },
-        { "From": 41, "To": 55,   "Score": 100,  "Description": "от 41 до 55 лет" },
-        { "From": 55, "To": 65,   "Score": 50,   "Description": "от 55 до 65 лет" },
+        { "From": 0, "To": 21, "Score": -350, "Description": "до 21 года" },
+        { "From": 21, "To": 31, "Score": 25, "Description": "от 21 до 31 года" },
+        { "From": 31, "To": 41, "Score": 75, "Description": "от 31 до 41 года" },
+        { "From": 41, "To": 55, "Score": 100, "Description": "от 41 до 55 лет" },
+        { "From": 55, "To": 65, "Score": 50, "Description": "от 55 до 65 лет" },
         { "From": 65, "To": null, "Score": -350, "Description": "65 лет и старше" }
       ]
     },
@@ -102,16 +102,16 @@
       "Unit": "percent",
       "DefaultScore": 0,
       "Ranges": [
-        { "From": 0,    "To": 0.01, "Score": 100,  "Description": "нет выплаты по кредиту" },
-        { "From": 0.01, "To": 5,    "Score": 85,   "Description": "от 0.01% до 5% от дохода" },
-        { "From": 5,    "To": 10,   "Score": 70,   "Description": "от 5% до 10% от дохода" },
-        { "From": 10,   "To": 20,   "Score": 55,   "Description": "от 10% до 20% от дохода" },
-        { "From": 20,   "To": 30,   "Score": 40,   "Description": "от 20% до 30% от дохода" },
-        { "From": 30,   "To": 40,   "Score": 25,   "Description": "от 30% до 40% от дохода" },
-        { "From": 40,   "To": 50,   "Score": 10,   "Description": "от 40% до 50% от дохода" },
-        { "From": 50,   "To": 60,   "Score": 0,    "Description": "от 50% до 60% от дохода" },
-        { "From": 60,   "To": 80,   "Score": -200, "Description": "от 60% до 80% от дохода" },
-        { "From": 80,   "To": null, "Score": -500, "Description": "81% и выше" }
+        { "From": 0, "To": 0.01, "Score": 100, "Description": "нет выплаты по кредиту" },
+        { "From": 0.01, "To": 5, "Score": 85, "Description": "от 0.01% до 5% от дохода" },
+        { "From": 5, "To": 10, "Score": 70, "Description": "от 5% до 10% от дохода" },
+        { "From": 10, "To": 20, "Score": 55, "Description": "от 10% до 20% от дохода" },
+        { "From": 20, "To": 30, "Score": 40, "Description": "от 20% до 30% от дохода" },
+        { "From": 30, "To": 40, "Score": 25, "Description": "от 30% до 40% от дохода" },
+        { "From": 40, "To": 50, "Score": 10, "Description": "от 40% до 50% от дохода" },
+        { "From": 50, "To": 60, "Score": 0, "Description": "от 50% до 60% от дохода" },
+        { "From": 60, "To": 80, "Score": -200, "Description": "от 60% до 80% от дохода" },
+        { "From": 80, "To": null, "Score": -500, "Description": "81% и выше" }
       ]
     },
 
@@ -123,9 +123,9 @@
       "Unit": "count",
       "DefaultScore": 0,
       "Ranges": [
-        { "From": 0, "To": 1,    "Score": -500, "Description": "Без кредитной истории" },
-        { "From": 1, "To": 2,    "Score": 150,  "Description": "Нет просрочек по договорам" },
-        { "From": 2, "To": null, "Score": 75,   "Description": "Есть просрочка по договорам" }
+        { "From": 0, "To": 1, "Score": -500, "Description": "Без кредитной истории" },
+        { "From": 1, "To": 2, "Score": 150, "Description": "Нет просрочек по договорам" },
+        { "From": 2, "To": null, "Score": 75, "Description": "Есть просрочка по договорам" }
       ]
     },
 
@@ -137,10 +137,10 @@
       "Unit": "count",
       "DefaultScore": 0,
       "Ranges": [
-        { "From": 0, "To": 1,    "Score": 100, "Description": "Нет обязательств" },
-        { "From": 1, "To": 4,    "Score": 75,  "Description": "Не более 3" },
-        { "From": 4, "To": 5,    "Score": 50,  "Description": "4 обязательства" },
-        { "From": 5, "To": null, "Score": 0,   "Description": "5 и более" }
+        { "From": 0, "To": 1, "Score": 100, "Description": "Нет обязательств" },
+        { "From": 1, "To": 4, "Score": 75, "Description": "Не более 3" },
+        { "From": 4, "To": 5, "Score": 50, "Description": "4 обязательства" },
+        { "From": 5, "To": null, "Score": 0, "Description": "5 и более" }
       ]
     },
 
@@ -153,9 +153,9 @@
       "DefaultScore": 0,
       "Note": "Все баллы 0 — параметр сейчас нейтрален. Проверить, нужны ли реальные веса.",
       "Ranges": [
-        { "From": 0, "To": 1,    "Score": 0, "Description": "Без просрочки" },
-        { "From": 1, "To": 3,    "Score": 0, "Description": "1-2 просрочки до 30 дней" },
-        { "From": 3, "To": 4,    "Score": 0, "Description": "3 просрочки до 30 дней" },
+        { "From": 0, "To": 1, "Score": 0, "Description": "Без просрочки" },
+        { "From": 1, "To": 3, "Score": 0, "Description": "1-2 просрочки до 30 дней" },
+        { "From": 3, "To": 4, "Score": 0, "Description": "3 просрочки до 30 дней" },
         { "From": 4, "To": null, "Score": 0, "Description": "более 3 просрочек до 30 дней" }
       ]
     },
@@ -168,9 +168,9 @@
       "Unit": "count",
       "DefaultScore": 0,
       "Ranges": [
-        { "From": 0, "To": 1,    "Score": 0,   "Description": "Без просрочки от 30 до 60 дней" },
-        { "From": 1, "To": 2,    "Score": -10, "Description": "1 просрочка от 30 до 60 дней" },
-        { "From": 2, "To": 3,    "Score": -30, "Description": "2 просрочки от 30 до 60 дней" },
+        { "From": 0, "To": 1, "Score": 0, "Description": "Без просрочки от 30 до 60 дней" },
+        { "From": 1, "To": 2, "Score": -10, "Description": "1 просрочка от 30 до 60 дней" },
+        { "From": 2, "To": 3, "Score": -30, "Description": "2 просрочки от 30 до 60 дней" },
         { "From": 3, "To": null, "Score": -50, "Description": "более 2 просрочек от 30 до 60 дней" }
       ]
     },
@@ -183,8 +183,8 @@
       "Unit": "count",
       "DefaultScore": 0,
       "Ranges": [
-        { "From": 0, "To": 1,    "Score": 0,   "Description": "Без просрочки от 60 до 90 дней" },
-        { "From": 1, "To": 2,    "Score": -30, "Description": "1 просрочка от 60 до 90 дней" },
+        { "From": 0, "To": 1, "Score": 0, "Description": "Без просрочки от 60 до 90 дней" },
+        { "From": 1, "To": 2, "Score": -30, "Description": "1 просрочка от 60 до 90 дней" },
         { "From": 2, "To": null, "Score": -50, "Description": "более 1 просрочки от 60 до 90 дней" }
       ]
     },
@@ -197,7 +197,7 @@
       "Unit": "count",
       "DefaultScore": 0,
       "Ranges": [
-        { "From": 0, "To": 1,    "Score": 0,    "Description": "Нет просрочки от 90 дней и более" },
+        { "From": 0, "To": 1, "Score": 0, "Description": "Нет просрочки от 90 дней и более" },
         { "From": 1, "To": null, "Score": -100, "Description": "Есть просрочка от 90 дней и более" }
       ]
     },
@@ -220,9 +220,19 @@
         { "Code": "11", "Description": "ЗАПОЛНИТЬ: причина отказа 11" }
       ],
       "Ranges": [
-        { "From": 0, "To": 1,    "Score": 50, "Description": "Заявок не было" },
-        { "From": 1, "To": 2,    "Score": 0,  "Description": "Есть заявка, ожидающая решения в другой организации" },
-        { "From": 2, "To": null, "Score": 0,  "Description": "Обращался за разными кредитами в последнее время" }
+        { "From": 0, "To": 1, "Score": 50, "Description": "Заявок не было" },
+        {
+          "From": 1,
+          "To": 2,
+          "Score": 0,
+          "Description": "Есть заявка, ожидающая решения в другой организации"
+        },
+        {
+          "From": 2,
+          "To": null,
+          "Score": 0,
+          "Description": "Обращался за разными кредитами в последнее время"
+        }
       ]
     },
 
@@ -234,7 +244,7 @@
       "DefaultScore": 0,
       "Categories": {
         "Female": { "Score": 100, "Description": "Женский" },
-        "Male":   { "Score": 90,  "Description": "Мужской" }
+        "Male": { "Score": 90, "Description": "Мужской" }
       }
     },
 
@@ -247,10 +257,10 @@
       "DefaultScore": 0,
       "NotApplicable": { "Score": 50, "Description": "Созаёмщиком не является" },
       "Ranges": [
-        { "From": 0,  "To": 1,    "Score": 0,   "Description": "Есть, без просрочки" },
-        { "From": 1,  "To": 30,   "Score": 0,   "Description": "Просрочка до 30 дней" },
-        { "From": 30, "To": 60,   "Score": -20, "Description": "Просрочка от 30 до 60 дней" },
-        { "From": 60, "To": 90,   "Score": -30, "Description": "Просрочка от 60 до 90 дней" },
+        { "From": 0, "To": 1, "Score": 0, "Description": "Есть, без просрочки" },
+        { "From": 1, "To": 30, "Score": 0, "Description": "Просрочка до 30 дней" },
+        { "From": 30, "To": 60, "Score": -20, "Description": "Просрочка от 30 до 60 дней" },
+        { "From": 60, "To": 90, "Score": -30, "Description": "Просрочка от 60 до 90 дней" },
         { "From": 90, "To": null, "Score": -40, "Description": "Просрочка от 90 дней и более" }
       ]
     },
@@ -264,10 +274,10 @@
       "DefaultScore": 0,
       "NotApplicable": { "Score": 50, "Description": "Поручителем не является" },
       "Ranges": [
-        { "From": 0,  "To": 1,    "Score": 0,   "Description": "Есть, без просрочки" },
-        { "From": 1,  "To": 30,   "Score": 0,   "Description": "Просрочка до 30 дней" },
-        { "From": 30, "To": 60,   "Score": 0,   "Description": "Просрочка от 30 до 60 дней" },
-        { "From": 60, "To": 90,   "Score": 0,   "Description": "Просрочка от 60 до 90 дней" },
+        { "From": 0, "To": 1, "Score": 0, "Description": "Есть, без просрочки" },
+        { "From": 1, "To": 30, "Score": 0, "Description": "Просрочка до 30 дней" },
+        { "From": 30, "To": 60, "Score": 0, "Description": "Просрочка от 30 до 60 дней" },
+        { "From": 60, "To": 90, "Score": 0, "Description": "Просрочка от 60 до 90 дней" },
         { "From": 90, "To": null, "Score": -40, "Description": "Просрочка от 90 дней и более" }
       ]
     },
@@ -281,10 +291,10 @@
       "DefaultScore": 0,
       "NotApplicable": { "Score": 50, "Description": "Залогодателем не является" },
       "Ranges": [
-        { "From": 0,  "To": 1,    "Score": 0,   "Description": "Есть, без просрочки" },
-        { "From": 1,  "To": 30,   "Score": 0,   "Description": "Просрочка до 30 дней" },
-        { "From": 30, "To": 60,   "Score": 0,   "Description": "Просрочка от 30 до 60 дней" },
-        { "From": 60, "To": 90,   "Score": 0,   "Description": "Просрочка от 60 до 90 дней" },
+        { "From": 0, "To": 1, "Score": 0, "Description": "Есть, без просрочки" },
+        { "From": 1, "To": 30, "Score": 0, "Description": "Просрочка до 30 дней" },
+        { "From": 30, "To": 60, "Score": 0, "Description": "Просрочка от 30 до 60 дней" },
+        { "From": 60, "To": 90, "Score": 0, "Description": "Просрочка от 60 до 90 дней" },
         { "From": 90, "To": null, "Score": -40, "Description": "Просрочка от 90 дней и более" }
       ]
     },
@@ -296,8 +306,8 @@
       "Type": "categorical",
       "DefaultScore": 0,
       "Categories": {
-        "WithMortgage":    { "Score": 50, "Description": "Есть ипотека" },
-        "WithoutMortgage": { "Score": 0,  "Description": "Нет ипотеки" }
+        "WithMortgage": { "Score": 50, "Description": "Есть ипотека" },
+        "WithoutMortgage": { "Score": 0, "Description": "Нет ипотеки" }
       }
     },
 
@@ -307,7 +317,7 @@
       "ImportantLevel": 1,
       "Type": "regionMatch",
       "DefaultScore": 0,
-      "ValidRegions": ["1726", "1727"],
+      "ValidRegions": ["26", "142"],
       "MatchScore": 50,
       "Description": "Если регион прописки в списке ValidRegions — начисляется MatchScore."
     },
@@ -320,11 +330,16 @@
       "Unit": "UZS",
       "DefaultScore": 0,
       "Ranges": [
-        { "From": 0,       "To": 1,        "Score": 100,  "Description": "Не имеется" },
-        { "From": 1,       "To": 2000001,  "Score": 50,   "Description": "от 1 до 2 000 000" },
-        { "From": 2000001, "To": 4000001,  "Score": 0,    "Description": "от 2 000 001 до 4 000 000" },
-        { "From": 4000001, "To": 6000001,  "Score": -200, "Description": "от 4 000 001 до 6 000 000" },
-        { "From": 6000001, "To": null,     "Score": -500, "Description": "6 000 001 и больше" }
+        { "From": 0, "To": 1, "Score": 100, "Description": "Не имеется" },
+        { "From": 1, "To": 2000001, "Score": 50, "Description": "от 1 до 2 000 000" },
+        { "From": 2000001, "To": 4000001, "Score": 0, "Description": "от 2 000 001 до 4 000 000" },
+        {
+          "From": 4000001,
+          "To": 6000001,
+          "Score": -200,
+          "Description": "от 4 000 001 до 6 000 000"
+        },
+        { "From": 6000001, "To": null, "Score": -500, "Description": "6 000 001 и больше" }
       ]
     }
   },
@@ -336,9 +351,9 @@
     "BaseLimit": 5000000,
     "DefaultCoefficient": 0,
     "Ranges": [
-      { "From": -2205, "To": 500,  "Coefficient": 0 },
-      { "From": 500,   "To": 750,  "Coefficient": 0.8 },
-      { "From": 750,   "To": null, "Coefficient": 1 }
+      { "From": -2205, "To": 500, "Coefficient": 0 },
+      { "From": 500, "To": 750, "Coefficient": 0.8 },
+      { "From": 750, "To": null, "Coefficient": 1 }
     ]
   }
 }

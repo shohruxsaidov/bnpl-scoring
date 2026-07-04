@@ -21,6 +21,7 @@ import {
   VENDOR_LABELS,
 } from '@/components/json-report/scoring-report-config'
 import { type Json, dateSortKey, formatMoney, humanize, isObject } from '@/utils/json-report'
+import { sourceCode, sourceRank } from '@/utils/criterion-source'
 
 // Bespoke renderers for the deeply-nested KATM-077 sections; everything else
 // falls back to the generic JsonNode tree.
@@ -222,12 +223,18 @@ interface BreakdownRow {
 function breakdownOf(p: ScoringDetailPipeline): BreakdownRow[] {
   const raw = p.raw as Json | null
   const list = raw && Array.isArray(raw.breakdown) ? (raw.breakdown as BreakdownRow[]) : []
-  return list
+  // Group rows by data source: myid → katm_mib → katm_077 → katm_inps, unmapped
+  // last. Stable sort preserves the engine's original order within each group.
+  return [...list].sort((a, b) => sourceRank(a.key) - sourceRank(b.key))
 }
 function formatInputValue(value: BreakdownRow['inputValue']): string {
   if (value === null || value === undefined) return '—'
   if (typeof value === 'boolean') return value ? t('common.yes') : t('common.no')
   return String(value)
+}
+function sourceLabel(key: string): string | null {
+  const code = sourceCode(key)
+  return code ? t(`scoringModel.source.${code}`) : null
 }
 function goBack() {
   router.push({ name: 'scorings' })
@@ -276,9 +283,9 @@ function goBack() {
             <span class="ov-label">{{ t('scorings.creditLimit') }}</span>
             <span class="font-mono">{{ formatLimit(detail.creditLimit) }}</span>
           </div>
-          <div class="ov-item">
-            <span class="ov-label">{{ t('scorings.pipeline') }}</span>
-            <span class="font-mono">{{ detail.currentPipeline ?? '—' }}</span>
+          <div v-if="detail.katmClaimId" class="ov-item">
+            <span class="ov-label">{{ t('scorings.claimId') }}</span>
+            <span class="font-mono">{{ detail.katmClaimId }}</span>
           </div>
           <div class="ov-item">
             <span class="ov-label">{{ t('scorings.createdAt') }}</span>
@@ -355,6 +362,8 @@ function goBack() {
               <tr v-for="row in breakdownOf(activePipeline)" :key="row.key" :class="{ skipped: row.skipped }">
                 <td>
                   {{ row.name }}
+                  <span v-if="sourceLabel(row.key)" class="source-badge" :title="t('scoringModel.dataSource')">{{
+                    sourceLabel(row.key) }}</span>
                   <span v-if="row.skipped" class="skip-badge">{{ t('scoringReport.model.skipped') }}</span>
                 </td>
                 <td class="num font-mono">{{ row.skipped ? '—' : formatInputValue(row.inputValue) }}</td>
@@ -601,6 +610,18 @@ tr.skipped td {
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   color: var(--text-secondary);
+}
+
+.source-badge {
+  margin-left: 0.5rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  padding: 0.1rem 0.4rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  color: var(--accent-1);
+  background: color-mix(in srgb, var(--accent-1) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-1) 30%, transparent);
 }
 
 .pill {

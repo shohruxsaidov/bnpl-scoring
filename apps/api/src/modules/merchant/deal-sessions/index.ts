@@ -921,6 +921,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           nationality: users.nationality,
           citizenship: users.citizenShipId,
           region: users.regionCode,
+          address: users.address,
         })
         .from(users)
         .where(eq(users.id, session.userId))
@@ -951,6 +952,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           gender: userRow.gender as GENDERS,
           citizenship: userRow.citizenship || '',
           passportRegion: userRow.region || '',
+          address: userRow.address || '',
         }),
         ...(inps && {
           incomeSum: (inps.incomesAllSumma ?? 0) / 12,

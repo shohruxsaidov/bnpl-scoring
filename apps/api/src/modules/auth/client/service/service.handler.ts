@@ -1,7 +1,9 @@
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { createHash, createPublicKey, createVerify, randomBytes, randomUUID } from 'node:crypto';
+import type { KeyObject } from 'node:crypto';
 import argon2 from 'argon2';
 import { and, eq, gt, ilike, isNull, or } from 'drizzle-orm';
 import { db } from '@db';
+import { redis } from '@redis';
 import { userDevices, userSessions, otpVerifications, users } from '@db/schema';
 import { env } from '../../../../env';
 
@@ -171,8 +173,11 @@ export async function upsertDevice(input: {
  * Register (upsert) a device and mark it trusted for PIN/biometric login by
  * stamping `activatedAt`. Called from /setup after a full OTP + MyID onboarding.
  * Re-running for the same raw deviceId re-assigns it to `userId` (a device that
- * changes hands) — callers revoke that device's prior sessions. Returns the
- * user_devices.id (uuid) to bind the session to.
+ * changes hands) — callers revoke that device's prior sessions. Any previously
+ * enrolled biometric key is cleared here: on re-activation the row may now point
+ * at a different user, so the old owner's public key must never survive. The new
+ * owner re-enrols via register-device (their Secure Enclave holds a fresh key).
+ * Returns the user_devices.id (uuid) to bind the session to.
  */
 export async function activateDevice(input: {
   userId: number;
@@ -197,6 +202,8 @@ export async function activateDevice(input: {
         platform: input.platform,
         appVersion: input.appVersion,
         activatedAt: now,
+        publicKey: null,
+        keyRegisteredAt: null,
         updatedAt: now,
       },
     })
@@ -309,4 +316,127 @@ export async function verifyUserPin(
 ): Promise<boolean> {
   if (!user.pinHash) return false;
   return argon2.verify(user.pinHash, pin);
+}
+
+/* ── Biometric (hardware-backed keypair) auth ────────────────────────────────
+ *
+ * The device generates an ES256 (P-256) keypair in its Secure Enclave / Android
+ * Keystore; the private key never leaves the hardware. We store only the public
+ * key (base64 SPKI-DER). Login proves possession of the private key by signing a
+ * single-use server nonce — no secret ever crosses the wire. */
+
+/** How long a biometric challenge stays valid (seconds); single-use besides. */
+const BIOMETRIC_CHALLENGE_TTL_SECONDS = 120;
+
+/** Redis key holding a pending biometric challenge by its id. */
+function biometricChallengeKey(challengeId: string): string {
+  return `client:biometric:challenge:${challengeId}`;
+}
+
+/**
+ * Parse a base64 SPKI-DER public key and assert it is an EC key on the P-256
+ * (prime256v1) curve — the only curve iOS Secure Enclave supports and the one we
+ * verify ES256 signatures against. Returns the KeyObject, or undefined if the
+ * bytes are not a well-formed P-256 SPKI key.
+ */
+function parseP256PublicKey(publicKeyB64: string): KeyObject | undefined {
+  try {
+    const key = createPublicKey({
+      key: Buffer.from(publicKeyB64, 'base64'),
+      format: 'der',
+      type: 'spki',
+    });
+    if (key.asymmetricKeyType !== 'ec') return undefined;
+    if (key.asymmetricKeyDetails?.namedCurve !== 'prime256v1') return undefined;
+    return key;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Store (or replace) a device's biometric public key. `publicKeyB64` must be a
+ * base64 SPKI-DER P-256 key; returns false if it fails to parse. `deviceRowId`
+ * is the user_devices.id. Re-enrolment simply overwrites the prior key.
+ */
+export async function registerDeviceKey(
+  deviceRowId: string,
+  publicKeyB64: string,
+): Promise<boolean> {
+  if (!parseP256PublicKey(publicKeyB64)) return false;
+  await db
+    .update(userDevices)
+    .set({ publicKey: publicKeyB64, keyRegisteredAt: new Date(), updatedAt: new Date() })
+    .where(eq(userDevices.id, deviceRowId));
+  return true;
+}
+
+/** Remove a device's biometric public key (disables biometric login). */
+export async function clearDeviceKey(deviceRowId: string): Promise<void> {
+  await db
+    .update(userDevices)
+    .set({ publicKey: null, keyRegisteredAt: null, updatedAt: new Date() })
+    .where(eq(userDevices.id, deviceRowId));
+}
+
+/**
+ * Mint a single-use biometric challenge for the requesting device. Stores 32
+ * random bytes (base64) in Redis under a fresh challengeId, bound to `deviceId`
+ * (the raw x-device-id) so it can only be spent by that same device, expiring
+ * after BIOMETRIC_CHALLENGE_TTL_SECONDS. Returns the id + challenge for the
+ * client to sign.
+ */
+export async function createBiometricChallenge(
+  deviceId: string,
+): Promise<{ challengeId: string; challenge: string }> {
+  const challengeId = randomUUID();
+  const challenge = randomBytes(32).toString('base64');
+  await redis.set(
+    biometricChallengeKey(challengeId),
+    JSON.stringify({ challenge, deviceId }),
+    'EX',
+    BIOMETRIC_CHALLENGE_TTL_SECONDS,
+  );
+  return { challengeId, challenge };
+}
+
+/**
+ * Atomically fetch-and-delete a pending challenge (GETDEL) so it is strictly
+ * single-use: a failed verification still consumes it, leaving no fixed nonce to
+ * hammer. Returns the stored challenge + bound deviceId, or undefined if the id
+ * is unknown, already spent, or expired.
+ */
+export async function consumeBiometricChallenge(
+  challengeId: string,
+): Promise<{ challenge: string; deviceId: string } | undefined> {
+  const raw = await redis.getdel(biometricChallengeKey(challengeId)).catch(() => null);
+  if (!raw) return undefined;
+  try {
+    return JSON.parse(raw) as { challenge: string; deviceId: string };
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Verify an ES256 signature over the raw (base64-decoded) challenge bytes
+ * against a stored base64 SPKI-DER P-256 public key. `signatureB64` is a
+ * base64 DER-encoded (X9.62) ECDSA signature. Returns false on any malformed
+ * input rather than throwing.
+ */
+export function verifyBiometricSignature(
+  publicKeyB64: string,
+  challengeB64: string,
+  signatureB64: string,
+): boolean {
+  const key = parseP256PublicKey(publicKeyB64);
+  if (!key) return false;
+  try {
+    const verifier = createVerify('SHA256');
+    verifier.update(Buffer.from(challengeB64, 'base64'));
+    verifier.end();
+    return verifier.verify({ key, dsaEncoding: 'der' }, Buffer.from(signatureB64, 'base64'));
+  } catch {
+    return false;
+  }
 }
