@@ -501,7 +501,7 @@
     "expiry": "Amal muddati",
     "cancel": "Bekor qilish",
     "add": "Qo'shish",
-    "sendOtp": "Kodni yuborish",
+    "sendOtp": "Karta qo'shish",
     "otpSentTo": "Kod {phone} raqamiga yuborildi",
     "otpCode": "SMS kod",
     "confirm": "Tasdiqlash",
@@ -526,11 +526,11 @@
     "rejectedStopFactor": "To'xtash omili: {factor}.",
     "newSession": "Yangi sessiya",
     "contacts": {
-      "title": "Kafil shaxslar",
-      "add": "Kafil qo'shish",
+      "title": "Kontaktlar",
+      "add": "Kontakt qo'shish",
       "relation": "Qarindoshlik darajasi",
       "relationPlaceholder": "Tanlang",
-      "phone": "Kafil telefoni",
+      "phone": "Telefon",
       "relations": {
         "father": "Ota",
         "mother": "Ona",

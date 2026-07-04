@@ -453,9 +453,7 @@ async function next() {
             @input="handleExpiryInput" />
         </div>
         <div class="add-actions">
-          <button class="btn-ghost" :disabled="addLoading" @click="cancelAdd">
-            {{ $t('stepCard.cancel') }}
-          </button>
+  
           <button class="btn-gradient" :disabled="addLoading" @click="requestAddCard">
             <i v-if="addLoading" class="pi pi-spin pi-spinner" />
             {{ $t('stepCard.sendOtp') }}
