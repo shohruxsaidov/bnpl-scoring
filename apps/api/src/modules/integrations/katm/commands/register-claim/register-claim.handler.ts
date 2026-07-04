@@ -14,7 +14,7 @@ export async function registerClaim(params: RegisterClaimCommand): Promise<Regis
   const now = new Date();
   const creditEndDate = new Date(now);
   creditEndDate.setMonth(creditEndDate.getMonth() + TERM_MONTH);
-
+//TODO need to region codes replace 
   const data = await callKatm<Record<string, unknown> & { clientId?: string }>(
     'v1/claim/registration',
     {
@@ -29,8 +29,8 @@ export async function registerClaim(params: RegisterClaimCommand): Promise<Regis
         pDocSeries: params.passportSeries,
         pDocNumber: params.passportNumber,
         pDocType: params.passportType,
-        pRegion: params.regionCode,
-        pLocalRegion: params.districtCode,
+        pRegion: 10,
+        pLocalRegion: 103,
         pAddress: params.address,
         pPhone: params.phone,
         pCreditAmount: params.amount,

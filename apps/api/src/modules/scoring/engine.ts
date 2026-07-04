@@ -204,7 +204,7 @@ export function computeScoringModel(model: ScoringModelData, inputs: ScoringInpu
   };
 
   const categoricalInputs: Record<string, string | undefined> = {
-    Citizenship: inputs.citizenship === '181' ? 'Uzbekistan' : 'NonResident',
+    Citizenship: inputs.citizenship === '182' ? 'Uzbekistan' : 'NonResident',
     Gender: inputs.gender === GENDERS.MALE ? 'Male' : 'Female',
     Mortgage:
       inputs.hasMortgage !== undefined

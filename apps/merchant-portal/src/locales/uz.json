@@ -390,7 +390,6 @@
   },
   "stepClient": {
     "title": "Mijoz",
-    "subtitle": "Mavjud mijozni qidiring yoki MyID identifikatsiyasi orqali yangisini yarating.",
     "newSearch": "Yangi qidiruv",
     "searchLabel": "Ism, familiya yoki PINFL",
     "searchPlaceholder": "Masalan: Alisher yoki 31203016740099",

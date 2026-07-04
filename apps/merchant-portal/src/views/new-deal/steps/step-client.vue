@@ -438,7 +438,6 @@ const clientFullName = computed(() =>
     <header class="sc-head">
       <div>
         <h2>{{ $t('stepClient.title') }}</h2>
-        <p>{{ $t('stepClient.subtitle') }}</p>
       </div>
       <button v-if="phase !== 'search' && phase !== 'searching'" class="btn-link" @click="resetSearch">
         <i class="pi pi-refresh" /> {{ $t('stepClient.newSearch') }}
@@ -500,7 +499,7 @@ const clientFullName = computed(() =>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.passport') }}</span>
           <span class="cf-value font-mono">{{ confirmedClient!.passportSeries }}{{ confirmedClient?.passportNumber
-            }}</span>
+          }}</span>
         </div>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.birthDate') }}</span>
@@ -623,7 +622,7 @@ const clientFullName = computed(() =>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.passport') }}</span>
           <span class="cf-value font-mono">{{ confirmedClient!.passportSeries }}{{ confirmedClient?.passportNumber
-          }}</span>
+            }}</span>
         </div>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.birthDate') }}</span>

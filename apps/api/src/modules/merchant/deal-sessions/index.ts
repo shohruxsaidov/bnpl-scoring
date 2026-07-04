@@ -356,7 +356,13 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
       let session;
       try {
-        console.log('[START] → loadOwnedActiveSession(', request.params.id, ',', Number(p.sub), ')');
+        console.log(
+          '[START] → loadOwnedActiveSession(',
+          request.params.id,
+          ',',
+          Number(p.sub),
+          ')',
+        );
         session = await loadOwnedActiveSession(request.params.id, Number(p.sub));
         console.log('[START] ← session loaded:', {
           id: session.id,
@@ -366,7 +372,12 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           katmClaimId: session.katmClaimId,
         });
       } catch (err: any) {
-        console.error('[START] ✖ loadOwnedActiveSession failed. code=', err?.code, 'msg=', err?.message);
+        console.error(
+          '[START] ✖ loadOwnedActiveSession failed. code=',
+          err?.code,
+          'msg=',
+          err?.message,
+        );
         if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found');
         if (err.code === 'session_not_active')
           return reply.code(409).sendError('session_not_active');
@@ -402,7 +413,13 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       console.log('[START] → setSessionUserId(session,', client.id, ')');
       await setSessionUserId(session, client.id);
 
-      console.log('[START] → createKatmConsent({ userId:', client.id, ', sessionId:', session.id, '})');
+      console.log(
+        '[START] → createKatmConsent({ userId:',
+        client.id,
+        ', sessionId:',
+        session.id,
+        '})',
+      );
       const consent = await createKatmConsent({
         userId: client.id,
         sessionId: session.id,
@@ -461,7 +478,10 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       // A chargeable report went async — mark the wizard pending and enqueue the
       // follow-up poll, which will resume the chain when the report resolves.
       if (step.kind === 'enqueue_poll') {
-        console.log('[START] step.kind=enqueue_poll → marking pending + enqueue poll. reportType=', step.reportType);
+        console.log(
+          '[START] step.kind=enqueue_poll → marking pending + enqueue poll. reportType=',
+          step.reportType,
+        );
         await stampKatmPending(session, {
           status: 'pending',
           startedAt: new Date().toISOString(),
@@ -484,7 +504,12 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       // the specific reasonCode + category so the client can show why and which
       // fields (if any) to fix. Mirrors /cards/score's 200 reject responses.
       if (step.kind === 'rejected') {
-        console.log('[START] step.kind=rejected → reasonCode=', step.reasonCode, 'missingFields=', step.missingFields);
+        console.log(
+          '[START] step.kind=rejected → reasonCode=',
+          step.reasonCode,
+          'missingFields=',
+          step.missingFields,
+        );
         await stampKatmPending(session, {
           status: 'failed',
           startedAt: new Date().toISOString(),
@@ -919,6 +944,8 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           // Max overdue days as a third-party pledger (all-time). null = not a
           // pledger → the model treats it as NotApplicable.
           pledgerMaxDays: katm.pledgerLiability ?? null,
+          guarantorMaxDays: 0,
+          coBorrowerMaxDays: 0,
         }),
         ...(userRow && {
           age: ageYears(userRow.birthDate),
@@ -963,7 +990,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       // Negative disposable (obligations exceed half income) or index 0 → clamped to
       // 0, which flows through the existing zero_limit reject path.
       const incomeMonthly = (inps?.incomesAllSumma ?? 0) / 12;
-      const monthlyPayment = katm?.avgMonthlyPayment ?? 0;
+      const monthlyPayment = katm?.avgMonthlyPayment ? +katm?.avgMonthlyPayment / 100 : 0;
       const limitIndex = creditLimitIndexForScore(scoreSum);
       const disposableMonthly = incomeMonthly * 0.5 - monthlyPayment;
       const platformCreditLimit = Math.max(0, Math.round(disposableMonthly * limitIndex) * 100);
