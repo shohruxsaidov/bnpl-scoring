@@ -58,6 +58,23 @@ import { createOtp, verifyOtp } from '../../auth/client/service/service.handler'
 
 const BRV_UZS = 340_000;
 
+// Credit-limit index by total scoring score (Балл). Half-open [From, To): From
+// inclusive, To exclusive. The index scales the applicant's monthly disposable
+// income (Income*50% − existing monthly payments) into a per-month credit limit.
+// Hardcoded for now — the score→index mapping is not yet model-configurable.
+const CREDIT_LIMIT_INDEX_BANDS: ReadonlyArray<{ from: number; to: number; index: number }> = [
+  { from: -847, to: 490, index: 0 },
+  { from: 490, to: 556, index: 0.25 },
+  { from: 556, to: 621, index: 0.5 },
+  { from: 621, to: 687, index: 0.75 },
+  { from: 687, to: 1000, index: 1 },
+];
+
+function creditLimitIndexForScore(score: number): number {
+  const band = CREDIT_LIMIT_INDEX_BANDS.find((b) => score >= b.from && score < b.to);
+  return band?.index ?? 0;
+}
+
 type JwtPayload = {
   sub: string;
   merchantId: string;
@@ -940,14 +957,16 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           breakdown: r.breakdown,
         };
       }
-      const baseLimit = resolvedModel.params.LimitCoefficient.BaseLimit;
-      if (baseLimit === undefined) {
-        request.log.warn(
-          { scoringModelId: resolvedModel.model.id, revisionId: resolvedModel.revision.id },
-          'scoring model revision has no LimitCoefficient.BaseLimit; falling back to 5_000_000',
-        );
-      }
-      const platformCreditLimit = Math.round((baseLimit ?? 5_000_000) * coefficient) * 100;
+      // Credit limit = monthly disposable income scaled by the score-based index.
+      // incomeSum and avgMonthlyPayment are monthly soms; the result is a per-month
+      // figure in tiyin (×100), later multiplied by termMonths for the total limit.
+      // Negative disposable (obligations exceed half income) or index 0 → clamped to
+      // 0, which flows through the existing zero_limit reject path.
+      const incomeMonthly = (inps?.incomesAllSumma ?? 0) / 12;
+      const monthlyPayment = katm?.avgMonthlyPayment ?? 0;
+      const limitIndex = creditLimitIndexForScore(scoreSum);
+      const disposableMonthly = incomeMonthly * 0.5 - monthlyPayment;
+      const platformCreditLimit = Math.max(0, Math.round(disposableMonthly * limitIndex) * 100);
       const finalDecision =
         engineResult.rejected || platformCreditLimit === 0 ? 'reject' : 'approve';
 

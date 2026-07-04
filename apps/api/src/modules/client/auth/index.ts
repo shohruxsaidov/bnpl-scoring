@@ -2,16 +2,14 @@ import { Type } from '@sinclair/typebox';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { redis } from '@redis';
-import { env } from '@env';
 import { users } from '@db/schema';
 import {
   activateDevice,
   createSession,
   findDeviceByDeviceId,
   findUserById,
-  findUserByPhone,
+  refreshAccessToken,
   revokeDeviceSessions,
-  rotateSession,
   revokeSession,
   setUserPin,
   verifyUserPin,
@@ -25,21 +23,17 @@ interface RegTokenSetup {
   step: 'identity_verified';
 }
 
-// Client app re-auth: PIN login, biometric/refresh via durable session exchange,
-// and logout. Identity on PIN login comes from the phone (account-bound PIN);
-// biometric never reaches the server — it only unlocks the Keychain-stored
-// session token, which /session exchanges for a fresh access token.
+// Client app re-auth: finish onboarding (/setup) and logout.
 
 const ERROR = { $ref: 'ErrorResponse#' };
 const SECURITY = [{ clientAuth: [] }];
 
 const ACCESS_TOKEN_TTL = '15m';
 
-// 5 wrong PINs (per phone) lock PIN login until a full OTP + MyID re-auth clears
-// the counter (see registration/myid-complete). The TTL is a safety backstop so
-// an abandoned counter cannot lock an account forever.
-const PIN_MAX_ATTEMPTS = 5;
-const PIN_LOCK_TTL = env.SESSION_EXPIRES_DAYS * 24 * 60 * 60;
+// Consecutive failed PIN attempts (keyed by phone/account, not device, so an
+// attacker can't reset the counter by hopping devices) before the account is
+// locked. Recovery is a full OTP + MyID re-auth, which clears the counter.
+const MAX_PIN_FAILS = 5;
 
 /** Redis key holding the consecutive failed-PIN count for a phone. */
 export function pinFailKey(phone: string): string {
@@ -93,11 +87,6 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
     regionCode: Type.Union([Type.String(), Type.Null()]),
     districtCode: Type.Union([Type.String(), Type.Null()]),
     docType: Type.Union([Type.Integer(), Type.Null()]),
-  });
-
-  const SessionTokens = Type.Object({
-    accessToken: Type.String(),
-    sessionToken: Type.String(),
   });
 
   const Ok = Type.Object({ ok: Type.Boolean() }, { examples: [{ ok: true }] });
@@ -169,46 +158,62 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
     },
   );
 
-  /* ── Set / change PIN ────────────────────────────────────────────────────── */
+  /* ── Session refresh (backs silent refresh + biometric login) ────────────── */
 
   fastify.post(
-    '/pin',
+    '/session',
     {
       schema: {
         tags: TAGS,
-        summary: 'Set or change PIN',
+        summary: 'Refresh access token',
         description:
-          'Sets (or changes) the authenticated client’s 4-digit app PIN. Called ' +
-          'right after registration onboarding, and again to change the PIN later.',
-        security: SECURITY,
-        body: Type.Object({ pin: Pin }),
-        response: { 200: Ok, 401: ERROR },
+          'Exchanges a still-valid durable session token for a fresh 15-minute ' +
+          'access token. Unauthenticated by design — the session token IS the ' +
+          'credential (the access token has expired). The durable token is left ' +
+          'unchanged and must match this device (x-device-id). Backs both the ' +
+          'silent access-token refresh and biometric login (the same call, gated ' +
+          'client-side behind a fingerprint prompt). A 401 means the token is ' +
+          'dead (logged out / expired / device changed) — the client wipes it and ' +
+          'falls back to PIN login.',
+        body: Type.Object({
+          sessionToken: Type.String({ minLength: 1, examples: ['sess_4b8e1d0a9c'] }),
+        }),
+        response: {
+          200: Type.Object({ accessToken: Type.String() }),
+          401: ERROR,
+        },
       },
-      preHandler: [app.verifyClientJwt],
     },
-    async (request) => {
-      await setUserPin(Number(request.user.sub), request.body.pin);
-      return { ok: true };
+    async (request, reply) => {
+      if (!request.deviceId) return reply.code(401).sendError('invalid_session');
+
+      const result = await refreshAccessToken(request.body.sessionToken, request.deviceId);
+      if (!result) return reply.code(401).sendError('invalid_session');
+
+      const accessToken = app.jwt.sign(
+        { sub: result.user.id.toString(), type: 'client' },
+        { expiresIn: ACCESS_TOKEN_TTL },
+      );
+      return { accessToken };
     },
   );
 
-  /* ── PIN login ───────────────────────────────────────────────────────────── */
+  /* ── PIN login (re-establish a session on a trusted device) ──────────────── */
 
   fastify.post(
-    '/login/pin',
+    '/login',
     {
       schema: {
         tags: TAGS,
         summary: 'Log in with PIN',
         description:
-          'Verifies the account PIN for the given phone on an already-trusted ' +
-          'device (activated via /setup) and mints a fresh access + session token. ' +
-          'An unknown device is rejected — it must complete OTP + MyID + /setup. ' +
-          `Locks after ${PIN_MAX_ATTEMPTS} consecutive wrong PINs until a full re-auth.`,
-        body: Type.Object({
-          phone: Type.String({ minLength: 12, maxLength: 12, examples: ['998991234567'] }),
-          pin: Pin,
-        }),
+          'Re-establishes a session on a trusted device (one that completed ' +
+          '/setup) using the account PIN. Identity is resolved from x-device-id, ' +
+          'so no phone entry is needed. Backs the fallback path when the durable ' +
+          'session token is gone (post-logout or expired) and biometric can no ' +
+          'longer help. After MAX_PIN_FAILS consecutive wrong PINs the account is ' +
+          'locked; recovery is a full OTP + MyID re-auth.',
+        body: Type.Object({ pin: Pin }),
         response: {
           200: Type.Object({
             accessToken: Type.String(),
@@ -216,42 +221,33 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
             client: ClientDto,
           }),
           400: ERROR,
-          409: ERROR,
-          423: ERROR,
+          401: ERROR,
+          403: ERROR,
         },
       },
     },
     async (request, reply) => {
-      const { phone, pin } = request.body;
       if (!request.deviceId) return reply.code(400).sendError('missing_device_id');
 
-      const failKey = pinFailKey(phone);
-      const fails = Number((await redis.get(failKey).catch(() => null)) ?? 0);
-      if (fails >= PIN_MAX_ATTEMPTS) return reply.code(423).sendError('pin_locked');
-
-      const user = await findUserByPhone(phone);
-      if (!user) return reply.code(400).sendError('no_account');
-      if (!user.pinHash) return reply.code(400).sendError('pin_not_set');
-
-      // Trusted-device gate: this device must have been activated for THIS user.
       const device = await findDeviceByDeviceId(request.deviceId);
-      if (!device || device.userId !== user.id || !device.activatedAt) {
-        return reply.code(409).sendError('device_not_registered');
-      }
+      if (!device || !device.activatedAt) return reply.code(400).sendError('device_not_trusted');
 
-      const ok = await verifyUserPin(user, pin);
+      const user = await findUserById(device.userId);
+      if (!user) return reply.code(400).sendError('device_not_trusted');
+
+      const failKey = pinFailKey(user.phone);
+      const fails = Number((await redis.get(failKey).catch(() => null)) ?? 0);
+      if (fails >= MAX_PIN_FAILS) return reply.code(403).sendError('account_locked');
+
+      const ok = await verifyUserPin(user, request.body.pin);
       if (!ok) {
-        // Atomic increment; stamp the backstop TTL on the first failure only.
-        const count = await redis.incr(failKey).catch(() => 0);
-        if (count === 1) await redis.expire(failKey, PIN_LOCK_TTL).catch(() => undefined);
-        if (count >= PIN_MAX_ATTEMPTS) return reply.code(423).sendError('pin_locked');
-        return reply.code(400).sendError('invalid_pin');
+        await redis.incr(failKey).catch(() => undefined);
+        return reply.code(401).sendError('invalid_pin');
       }
 
-      // Success clears the failure counter.
+      // Correct PIN: clear the counter and mint a fresh device-bound session.
       await redis.del(failKey).catch(() => undefined);
-
-      // One active session per device — supersede the device's prior session.
+      // One active session per device: drop any stale session before the new one.
       await revokeDeviceSessions(device.id);
 
       const accessToken = app.jwt.sign(
@@ -261,38 +257,6 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       const { sessionToken } = await createSession(user.id, device.id);
 
       return { accessToken, sessionToken, client: toClientDto(user) };
-    },
-  );
-
-  /* ── Session exchange (biometric login + silent refresh) ─────────────────── */
-
-  fastify.post(
-    '/session',
-    {
-      schema: {
-        tags: TAGS,
-        summary: 'Exchange session token',
-        description:
-          'Exchanges a durable session token for a fresh access token, rotating the ' +
-          'session token. Backs both biometric login (unlock Keychain → call this) ' +
-          'and the silent access-token refresh. Pinned to the session’s device: the ' +
-          'x-device-id must match, so a leaked token cannot be replayed elsewhere.',
-        body: Type.Object({
-          sessionToken: Type.String({ minLength: 1, examples: ['sess_4b8e1d0a9c'] }),
-        }),
-        response: { 200: SessionTokens, 401: ERROR },
-      },
-    },
-    async (request, reply) => {
-      if (!request.deviceId) return reply.code(401).sendError('invalid_session');
-      const rotated = await rotateSession(request.body.sessionToken, request.deviceId);
-      if (!rotated) return reply.code(401).sendError('invalid_session');
-
-      const accessToken = app.jwt.sign(
-        { sub: rotated.user.id.toString(), type: 'client' },
-        { expiresIn: ACCESS_TOKEN_TTL },
-      );
-      return { accessToken, sessionToken: rotated.sessionToken };
     },
   );
 

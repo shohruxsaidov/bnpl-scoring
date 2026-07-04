@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import InputText from 'primevue/inputtext'
+import InputMask from 'primevue/inputmask'
 import { useDealStore } from '@/stores/deal'
 import type { KatmSummary } from '@/stores/deal'
 import { useClientApi } from '@/composables/use-client-api'
@@ -536,8 +537,9 @@ const clientFullName = computed(() =>
         <label class="field-label">{{ $t('stepClient.clientPhone') }}</label>
         <div class="phone-row">
           <span class="phone-prefix">+998</span>
-          <InputText v-model="otpPhone" inputmode="numeric" placeholder="00 000 00 00" class="phone-field-input"
-            :invalid="!!otpPhoneError" :disabled="otpLoading" @keydown.enter="sendOtp" @input="otpPhoneError = ''" />
+          <InputMask v-model="otpPhone" mask="99 999 99 99" placeholder="00 000 00 00" class="phone-field-input"
+            :invalid="!!otpPhoneError" :disabled="otpLoading" @keydown.enter="sendOtp"
+            @update:model-value="otpPhoneError = ''" />
         </div>
         <span v-if="otpPhoneError" class="field-error">{{ otpPhoneError }}</span>
       </div>

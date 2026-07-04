@@ -47,10 +47,8 @@ async function logout() {
   <aside class="sidebar"
     :class="{ collapsed: props.collapsed, 'mobile-open': props.mobileOpen, 'is-mobile': props.isMobile }">
     <div class="brand">
-      <div class="logo-mark">S</div>
       <div v-if="!props.collapsed" class="brand-text">
-        <span class="text-gradient brand-name">Scoring</span>
-        <span class="tenant">{{ auth.roleLabel }}</span>
+        <img src="/logo.png" alt="">
       </div>
       <button class="collapse-btn" :title="$t('nav.toggleSidebar')" @click="emit('toggle')">
         <i :class="props.collapsed ? 'pi pi-angle-right' : 'pi pi-angle-left'" />
@@ -59,7 +57,8 @@ async function logout() {
 
     <nav class="nav">
       <template v-for="item in mainNav" :key="item.to">
-        <RouterLink v-if="item.show" :to="item.to" class="nav-link" exact-active-class="active" :title="item.label" @click="props.isMobile && emit('close')">
+        <RouterLink v-if="item.show" :to="item.to" class="nav-link" exact-active-class="active" :title="item.label"
+          @click="props.isMobile && emit('close')">
           <i :class="item.icon" />
           <span v-if="!props.collapsed">{{ item.label }}</span>
         </RouterLink>
@@ -72,7 +71,8 @@ async function logout() {
 
       <template v-if="canAdminSection">
         <template v-for="item in adminNav" :key="item.to">
-          <RouterLink v-if="item.show" :to="item.to" class="nav-link" exact-active-class="active" :title="item.label" @click="props.isMobile && emit('close')">
+          <RouterLink v-if="item.show" :to="item.to" class="nav-link" exact-active-class="active" :title="item.label"
+            @click="props.isMobile && emit('close')">
             <i :class="item.icon" />
             <span v-if="!props.collapsed">{{ item.label }}</span>
           </RouterLink>
@@ -157,6 +157,11 @@ async function logout() {
   display: flex;
   flex-direction: column;
   line-height: 1.1;
+}
+
+.brand-text img {
+  width: 50px;
+  height: auto;
 }
 
 .brand-name {
