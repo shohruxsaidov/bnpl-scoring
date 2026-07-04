@@ -307,7 +307,7 @@ export async function exchangeMyidCode(code: string): Promise<MyidUserData> {
 
     const reg = me.profile.address?.permanent_registration;
     const addressText =
-      reg?.address ?? [reg?.region, reg?.district].filter(Boolean).join(', ') ?? null;
+      reg?.address ?? [reg?.region, reg?.district, reg?.address].filter(Boolean).join(', ') ?? null;
     const regionCode = reg?.region_id != null ? String(reg.region_id_cbu).padStart(2, '0') : null;
     const districtCode =
       reg?.district_id != null ? String(reg.district_id_cbu).padStart(3, '0') : null;
