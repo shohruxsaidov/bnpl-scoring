@@ -191,7 +191,8 @@ async function initSession() {
     return
   }
 
-  if (active && active.stepData.client) {
+
+  if (active && active.client) {
     // In-progress run — ask the agent whether to continue or start fresh.
     pendingSession.value = active
     showResumeDialog.value = true

@@ -563,9 +563,6 @@ async function next() {
     </transition>
 
     <footer v-if="!rejected" class="sc-foot">
-      <button class="btn-ghost" @click="deal.back()">
-        <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
-      </button>
       <button class="btn-gradient" :disabled="!selectedId || scoring || !bailsmenValid" @click="next">
         <i v-if="scoring" class="pi pi-spin pi-spinner" />
         {{ $t('common.continue') }} <i v-if="!scoring" class="pi pi-arrow-right" />
@@ -952,7 +949,7 @@ async function next() {
 .sc-foot {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin-top: 2rem;
   padding-top: 1.4rem;
   border-top: 1px solid var(--border-subtle);
