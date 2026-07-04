@@ -126,7 +126,10 @@ function formatScore(v: number | null): string {
   return v != null ? String(v) : '—'
 }
 function formatLimit(v: number | null): string {
-  return v != null ? new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(v) + " so'm" : '—'
+  // creditLimit is stored in tiyin (1 so'm = 100 tiyin); convert to so'm for display.
+  return v != null
+    ? new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(Math.round(v / 100)) + " so'm"
+    : '—'
 }
 function formatTimestamp(iso: string): string {
   const d = new Date(iso)
