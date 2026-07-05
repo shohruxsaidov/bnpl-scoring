@@ -104,7 +104,7 @@ const STRINGS = {
     durationUnit: 'oy',
     downPayment: "Bosh to'lov miqdori:",
     maxMonthly: "Eng katta oylik to'lov:",
-    monthlyPayment: 'Oylik to\'lov:',
+    monthlyPayment: "Oylik to'lov:",
     paymentDayLabel: "Har oydagi to'lov kuni:",
     currency: "so'm",
     section3: "3. To'lov grafigi",
@@ -555,7 +555,7 @@ export async function generateContract(data: ContractData, lang: 'ru' | 'uz'): P
     remaining -= row.amount;
     return [
       String(row.index),
-      fmtDate(row.dueDate),
+      row.dueDate,
       `${fmt(row.amount)} ${t.currency}`,
       `${fmt(remaining)} ${t.currency}`,
     ];
