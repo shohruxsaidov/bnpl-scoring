@@ -11,6 +11,17 @@
       <i class="pi pi-chevron-right hub-arrow" />
     </router-link>
 
+    <router-link class="surface-card hub-card" :to="{ name: 'settings-public-offer' }">
+      <div class="hub-icon">
+        <i class="pi pi-file-pdf" />
+      </div>
+      <div class="hub-text">
+        <span class="hub-title">{{ $t('settings.publicOffer') }}</span>
+        <span class="hub-desc">{{ $t('settings.publicOfferDesc') }}</span>
+      </div>
+      <i class="pi pi-chevron-right hub-arrow" />
+    </router-link>
+
     <router-link class="surface-card hub-card" :to="{ name: 'settings-interface' }">
       <div class="hub-icon">
         <i class="pi pi-palette" />

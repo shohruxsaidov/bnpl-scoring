@@ -15,7 +15,6 @@
     "seed:banks": "tsx src/scripts/seed-bank-mfo.ts",
     "seed:regions": "tsx src/scripts/seed-regions.ts",
     "seed:scoring-model": "tsx src/scripts/seed-scoring-model.ts",
-    "seed:offer-rules": "tsx src/scripts/seed-offer-rules.ts",
     "seed:users": "tsx src/scripts/seed-users.ts",
     "backfill:scoring-models": "tsx src/scripts/backfill-scoring-models.ts"
   },

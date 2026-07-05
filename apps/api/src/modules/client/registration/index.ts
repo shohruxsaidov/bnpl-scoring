@@ -5,16 +5,13 @@ import { redis } from '@redis';
 import { env } from '@env';
 import { db } from '@db';
 import { users } from '@db/schema';
-import { userOfferRuleAcceptances } from '@db/user-offer-rule-acceptances';
+import { userPublicOfferAcceptances } from '@db/user-public-offer-acceptances';
 import { createOtp, verifyOtp, findUserByPinfl } from '../../auth/client/service/service.handler';
 import { createMyidSession, exchangeMyidCode } from '../../integrations/myid/client';
 import { createUserHandler } from '../../id/users';
 import { sendOtpSms } from '../../../lib/sms';
-import {
-  REGISTRATION_OFFER_TYPE,
-  getCurrentOfferRule,
-  findCurrentOfferRuleById,
-} from './offer-rules';
+import { getDownloadUrl } from '../../../lib/file-storage';
+import { getCurrentPublicOffer, findCurrentPublicOfferById } from './public-offers';
 import { pinFailKey } from '../auth/index';
 
 // Self-service client registration (mobile app). Public endpoints — no JWT.
@@ -84,33 +81,29 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
   const MyidCompleteBody = Type.Object({
     regToken: Type.String({ minLength: 1, examples: ['ey..'] }),
     myidCode: Type.String({ minLength: 1, examples: ['jfkdjfkd'] }),
-    // Id of the offer_rules version the client accepted (the row returned by
-    // GET /offer-rules). Required for new accounts; must be the current version.
-    offerRulesId: Type.Integer({ minimum: 1, examples: [1] }),
+    // Id of the public_offers version the client accepted (the row returned by
+    // GET /public-offer). Required for new accounts; must be the current version.
+    publicOfferId: Type.Integer({ minimum: 1, examples: [1] }),
   });
 
   /* ── Response schemas (examples power the Swagger UI sample bodies) ──────── */
 
-  const OfferRulesResponse = Type.Object(
+  const PublicOfferResponse = Type.Object(
     {
       id: Type.Integer(),
-      type: Type.String(),
       version: Type.Integer(),
-      titleUz: Type.String(),
-      titleRu: Type.String(),
-      bodyUz: Type.String(),
-      bodyRu: Type.String(),
+      // Freshly-generated presigned download URLs (24h) for the two PDFs of the
+      // current version. Accepting the version covers both languages.
+      downloadUrlUz: Type.String(),
+      downloadUrlRu: Type.String(),
     },
     {
       examples: [
         {
           id: 1,
-          type: 'registration',
           version: 3,
-          titleUz: 'Ommaviy oferta',
-          titleRu: 'Публичная оферта',
-          bodyUz: 'Ushbu shartnoma ...',
-          bodyRu: 'Настоящее соглашение ...',
+          downloadUrlUz: 'https://minio.example.com/bucket/public-offers/....pdf?X-Amz-...',
+          downloadUrlRu: 'https://minio.example.com/bucket/public-offers/....pdf?X-Amz-...',
         },
       ],
     },
@@ -195,30 +188,28 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
     },
   );
 
-  /* ── Current offer rules (public, for the accept screen) ─────────────────── */
+  /* ── Current public offer (public, for the accept screen) ────────────────── */
 
   fastify.get(
-    '/offer-rules',
+    '/public-offer',
     {
       schema: {
         tags: TAGS,
-        summary: 'Current offer rules',
-        description: 'Returns the current registration terms for the accept screen.',
-        response: { 200: OfferRulesResponse, 404: ERROR },
+        summary: 'Current public offer',
+        description:
+          'Returns the current public-offer version with presigned download URLs ' +
+          'for the uz and ru PDFs, for the accept screen.',
+        response: { 200: PublicOfferResponse, 404: ERROR },
       },
     },
     async (_req, reply) => {
-      const rule = await getCurrentOfferRule(REGISTRATION_OFFER_TYPE);
-      if (!rule) return reply.code(404).sendError('offer_rules_not_found');
-      return {
-        id: rule.id,
-        type: rule.type,
-        version: rule.version,
-        titleUz: rule.titleUz,
-        titleRu: rule.titleRu,
-        bodyUz: rule.bodyUz,
-        bodyRu: rule.bodyRu,
-      };
+      const offer = await getCurrentPublicOffer();
+      if (!offer) return reply.code(404).sendError('public_offer_not_found');
+      const [downloadUrlUz, downloadUrlRu] = await Promise.all([
+        getDownloadUrl(db, offer.fileUzId),
+        getDownloadUrl(db, offer.fileRuId),
+      ]);
+      return { id: offer.id, version: offer.version, downloadUrlUz, downloadUrlRu };
     },
   );
 
@@ -335,7 +326,7 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
         summary: 'Complete registration',
         description:
           'Exchanges the MyID code and creates the account on first registration ' +
-          '(recording offer-rules acceptance). Returns a short-lived regToken that ' +
+          '(recording public-offer acceptance). Returns a short-lived regToken that ' +
           'authorizes POST /client/auth/setup — no session is created here.',
         body: MyidCompleteBody,
         response: { 200: MyidCompleteResponse, 400: ERROR, 409: ERROR },
@@ -369,9 +360,9 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
         // re-verification does not re-record acceptance.
         client = existing;
       } else {
-        // New account: the submitted offer_rules version must still be current.
-        const rule = await findCurrentOfferRuleById(req.body.offerRulesId, REGISTRATION_OFFER_TYPE);
-        if (!rule) return reply.code(400).sendError('offer_rules_stale');
+        // New account: the submitted public_offer version must still be current.
+        const offer = await findCurrentPublicOfferById(req.body.publicOfferId);
+        if (!offer) return reply.code(400).sendError('public_offer_stale');
 
         // Create the user and record the terms acceptance atomically, so a new
         // account can never exist without its registration consent row.
@@ -400,8 +391,8 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
             tx,
           );
           await tx
-            .insert(userOfferRuleAcceptances)
-            .values({ userId: created!.id, offerRulesId: rule.id });
+            .insert(userPublicOfferAcceptances)
+            .values({ userId: created!.id, publicOfferId: offer.id });
           return created!;
         });
       }

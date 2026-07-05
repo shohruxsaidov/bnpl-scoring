@@ -253,29 +253,6 @@ export async function revokeSession(sessionToken: string): Promise<void> {
 }
 
 /**
- * Validate a durable session token against the calling device without touching
- * it: the token is confirmed unexpired/unrevoked and pinned to `expectedDeviceId`
- * (the raw x-device-id), then the owning user is returned so the caller can mint
- * a fresh access token. Backs POST /session — both the silent access-token
- * refresh and biometric login (which is that same refresh, gated client-side
- * behind a fingerprint prompt). The durable token is left unchanged; it lives
- * until logout or SESSION_EXPIRES_DAYS. Returns undefined when the token is
- * invalid/expired/revoked or the device does not match.
- */
-export async function refreshAccessToken(
-  sessionToken: string,
-  expectedDeviceId: string,
-): Promise<{ user: typeof users.$inferSelect } | undefined> {
-  const current = await verifySession(sessionToken);
-  if (!current) return undefined;
-
-  const device = await findDeviceById(current.session.deviceId);
-  if (!device || device.deviceId !== expectedDeviceId) return undefined;
-
-  return { user: current.user };
-}
-
-/**
  * Exchange a durable session token for a freshly-minted one: validate the old
  * token, verify it belongs to the requesting device, revoke it, and issue a new
  * session bound to the same device. Reserved for boundary events that should

@@ -40,7 +40,7 @@ export default fp(async function jwtPlugin(app: FastifyInstance) {
       // token must never resolve a client identity.
       if (request.user.type !== 'client') throw new Error('wrong type');
     } catch (err) {
-      await reply.code(401).send({ code: 'unauthorized' });
+      return await reply.code(401).sendError('unauthorized');
     }
   });
 
@@ -52,7 +52,7 @@ export default fp(async function jwtPlugin(app: FastifyInstance) {
       if (payload.type !== 'admin') throw new Error('wrong type');
       request.user = payload;
     } catch {
-      await reply.code(401).send({ code: 'unauthorized' });
+      await reply.code(401).sendError('unauthorized');
     }
   });
 
@@ -71,7 +71,7 @@ export default fp(async function jwtPlugin(app: FastifyInstance) {
       if (payload.type !== 'merchant') throw new Error('wrong type');
       request.user = payload;
     } catch {
-      await reply.code(401).send({ code: 'unauthorized' });
+      await reply.code(401).sendError('unauthorized');
     }
   });
 });

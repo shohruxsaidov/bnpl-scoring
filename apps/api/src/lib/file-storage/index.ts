@@ -25,7 +25,7 @@ export async function createUploadUrl(params: {
 }
 
 export async function recordFile(
-  db: Db,
+  db: Pick<Db, 'insert'>,
   params: {
     objectKey: string;
     mimeType?: string;

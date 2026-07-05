@@ -125,6 +125,16 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'settings/public-offer',
+        name: 'settings-public-offer',
+        component: () => import('@/views/settings-public-offer-view.vue'),
+        meta: {
+          titleKey: 'routeTitle.settingsPublicOffer',
+          breadcrumbKeys: ['breadcrumb.settings', 'breadcrumb.settingsPublicOffer'],
+          feature: 'manage_settings',
+        },
+      },
+      {
         path: 'settings/interface',
         name: 'settings-interface',
         component: () => import('@/views/settings-interface-view.vue'),

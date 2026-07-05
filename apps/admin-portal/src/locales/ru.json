@@ -42,7 +42,8 @@
     "scoringModel": "Модель скоринга · #{version}",
     "scorings": "Скоринги",
     "integrationLogs": "Логи интеграций",
-    "categories": "Категории"
+    "categories": "Категории",
+    "settingsPublicOffer": "Публичная оферта"
   },
   "breadcrumb": {
     "overview": "Обзор",
@@ -65,7 +66,8 @@
     "payments": "Платежи",
     "clients": "Клиенты",
     "integrationLogs": "Логи интеграций",
-    "categories": "Категории"
+    "categories": "Категории",
+    "settingsPublicOffer": "Публичная оферта"
   },
   "topbar": {
     "scoring": "Скоринг",
@@ -916,7 +918,9 @@
     "orgAccountNumber": "Расчётный счёт",
     "bankNotFound": "Банк с таким МФО не найден",
     "orgSaved": "Реквизиты организации сохранены",
-    "orgSaveFailed": "Не удалось сохранить реквизиты"
+    "orgSaveFailed": "Не удалось сохранить реквизиты",
+    "publicOffer": "Публичная оферта",
+    "publicOfferDesc": "PDF-оферта, принимаемая при регистрации, и её версии"
   },
   "orgWarning": {
     "title": "Реквизиты организации не заполнены",
@@ -1143,5 +1147,27 @@
     "district": "Район",
     "selectDistrict": "Выберите район",
     "optional": "необязательно"
+  },
+  "publicOffer": {
+    "current": "Текущая версия",
+    "currentHint": "Оферта, принимаемая при регистрации сейчас",
+    "none": "Оферта ещё не загружена",
+    "publishNew": "Опубликовать новую версию",
+    "publishHint": "Версия активируется сразу после загрузки обоих PDF (UZ и RU)",
+    "label": "Примечание (необязательно)",
+    "labelPlaceholder": "Например: обновлён пункт о просрочке",
+    "pdfUz": "PDF на узбекском",
+    "pdfRu": "PDF на русском",
+    "publish": "Опубликовать",
+    "published": "Новая версия опубликована",
+    "publishFailed": "Не удалось опубликовать версию",
+    "notPdf": "Можно загружать только PDF-файл",
+    "browse": "Выбрать файл",
+    "history": "История версий",
+    "colVersion": "Версия",
+    "colLabel": "Примечание",
+    "colDate": "Дата",
+    "colAuthor": "Автор",
+    "colFiles": "Файлы"
   }
 }

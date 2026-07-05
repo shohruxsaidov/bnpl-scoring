@@ -11,7 +11,6 @@ import {
   createSession,
   findDeviceByDeviceId,
   findUserById,
-  refreshAccessToken,
   registerDeviceKey,
   revokeDeviceSessions,
   revokeSession,
@@ -160,46 +159,6 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       const { sessionToken } = await createSession(user.id, deviceRowId);
 
       return { accessToken, sessionToken, client: toClientDto(user) };
-    },
-  );
-
-  /* ── Session refresh (backs silent refresh + biometric login) ────────────── */
-
-  fastify.post(
-    '/session',
-    {
-      schema: {
-        tags: TAGS,
-        summary: 'Refresh access token',
-        description:
-          'Exchanges a still-valid durable session token for a fresh 15-minute ' +
-          'access token. Unauthenticated by design — the session token IS the ' +
-          'credential (the access token has expired). The durable token is left ' +
-          'unchanged and must match this device (x-device-id). Backs both the ' +
-          'silent access-token refresh and biometric login (the same call, gated ' +
-          'client-side behind a fingerprint prompt). A 401 means the token is ' +
-          'dead (logged out / expired / device changed) — the client wipes it and ' +
-          'falls back to PIN login.',
-        body: Type.Object({
-          sessionToken: Type.String({ minLength: 1, examples: ['sess_4b8e1d0a9c'] }),
-        }),
-        response: {
-          200: Type.Object({ accessToken: Type.String() }),
-          401: ERROR,
-        },
-      },
-    },
-    async (request, reply) => {
-      if (!request.deviceId) return reply.code(401).sendError('invalid_session');
-
-      const result = await refreshAccessToken(request.body.sessionToken, request.deviceId);
-      if (!result) return reply.code(401).sendError('invalid_session');
-
-      const accessToken = app.jwt.sign(
-        { sub: result.user.id.toString(), type: 'client' },
-        { expiresIn: ACCESS_TOKEN_TTL },
-      );
-      return { accessToken };
     },
   );
 

@@ -42,7 +42,8 @@
     "scoringModel": "Skoring modeli · #{version}",
     "scorings": "Skoringlar",
     "integrationLogs": "Integratsiya loglari",
-    "categories": "Kategoriyalar"
+    "categories": "Kategoriyalar",
+    "settingsPublicOffer": "Ommaviy oferta"
   },
   "breadcrumb": {
     "overview": "Umumiy ko'rinish",
@@ -65,7 +66,8 @@
     "payments": "To'lovlar",
     "clients": "Mijozlar",
     "integrationLogs": "Integratsiya loglari",
-    "categories": "Kategoriyalar"
+    "categories": "Kategoriyalar",
+    "settingsPublicOffer": "Ommaviy oferta"
   },
   "topbar": {
     "scoring": "Skoring",
@@ -908,7 +910,9 @@
     "orgAccountNumber": "Hisob raqami",
     "bankNotFound": "Bunday MFO bilan bank topilmadi",
     "orgSaved": "Tashkilot rekvizitlari saqlandi",
-    "orgSaveFailed": "Rekvizitlarni saqlab bo'lmadi"
+    "orgSaveFailed": "Rekvizitlarni saqlab bo'lmadi",
+    "publicOffer": "Ommaviy oferta",
+    "publicOfferDesc": "Ro'yxatdan o'tishda qabul qilinadigan PDF oferta va uning versiyalari"
   },
   "orgWarning": {
     "title": "Tashkilot rekvizitlari to'ldirilmagan",
@@ -1131,5 +1135,27 @@
     "district": "Tuman",
     "selectDistrict": "Tumanni tanlang",
     "optional": "ixtiyoriy"
+  },
+  "publicOffer": {
+    "current": "Joriy versiya",
+    "currentHint": "Hozir ro'yxatdan o'tishda qabul qilinadigan oferta",
+    "none": "Hali oferta yuklanmagan",
+    "publishNew": "Yangi versiya joylash",
+    "publishHint": "Ikkala PDF (UZ va RU) yuklanganidan keyin versiya darhol faollashadi",
+    "label": "Izoh (ixtiyoriy)",
+    "labelPlaceholder": "Masalan: kechikish bandi yangilandi",
+    "pdfUz": "O'zbekcha PDF",
+    "pdfRu": "Ruscha PDF",
+    "publish": "Joylash",
+    "published": "Yangi versiya joylandi",
+    "publishFailed": "Versiyani joylab bo'lmadi",
+    "notPdf": "Faqat PDF fayl yuklash mumkin",
+    "browse": "Fayl tanlash",
+    "history": "Versiyalar tarixi",
+    "colVersion": "Versiya",
+    "colLabel": "Izoh",
+    "colDate": "Sana",
+    "colAuthor": "Muallif",
+    "colFiles": "Fayllar"
   }
 }
