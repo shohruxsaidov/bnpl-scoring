@@ -8,7 +8,9 @@ import { users } from './users';
 // ---------------------------------------------------------------------------
 export const katmClaims = pgTable('katm_claims', {
   claimId: varchar('claim_id', { length: 20 }).primaryKey(),
-  // 'created' only for now; 'approved' | 'cancelled' reserved for future use
+  // 'created' on registration; 'rejected' once the claim is retracted at KATM
+  // when its deal session is abandoned or scoring-rejected (see claim-reject.ts).
+  // 'approved' | 'cancelled' reserved for future use.
   status: varchar('status', { length: 20 }).notNull().default('created'),
   userId: integer('user_id')
     .notNull()

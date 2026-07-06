@@ -6,18 +6,6 @@ import type { DealSessionRow } from '../../types';
 
 export async function createSession(input: CreateSessionCommand): Promise<DealSessionRow> {
   return db.transaction(async (tx) => {
-    const [existing] = await tx
-      .select()
-      .from(dealSessions)
-      .where(and(eq(dealSessions.agentId, input.agentId), eq(dealSessions.status, 'active')))
-      .limit(1);
-    if (existing) {
-      await tx
-        .update(dealSessions)
-        .set({ status: 'abandoned', updatedAt: new Date() })
-        .where(eq(dealSessions.id, existing.id));
-    }
-
     const [session] = await tx
       .insert(dealSessions)
       .values({

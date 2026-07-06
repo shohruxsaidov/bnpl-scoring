@@ -9,10 +9,16 @@ import {
   processKatmPollJob,
   type KatmPollJobData,
 } from '../modules/integrations/katm/poller';
+import {
+  KATM_CLAIM_REJECT_QUEUE,
+  processClaimRejectJob,
+  type ClaimRejectJobData,
+} from '../modules/integrations/katm/claim-reject';
 
 declare module 'fastify' {
   interface FastifyInstance {
     katmPollQueue: Queue<KatmPollJobData>;
+    katmClaimRejectQueue: Queue<ClaimRejectJobData>;
     // Every Queue created by this plugin, in registration order. The bull-board
     // dashboard iterates this so new queues surface without touching its plugin.
     queues: Queue[];
@@ -33,15 +39,36 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
   const connection = redis as unknown as ConnectionOptions;
 
   const queue: Queue<KatmPollJobData> = new Queue(KATM_POLL_QUEUE, { connection });
+  const claimRejectQueue: Queue<ClaimRejectJobData> = new Queue(KATM_CLAIM_REJECT_QUEUE, {
+    connection,
+  });
 
   // Registry consumed by the bull-board dashboard. Push each new queue here.
-  const queues: Queue[] = [queue];
+  const queues: Queue[] = [queue, claimRejectQueue];
 
   const worker = new Worker<KatmPollJobData>(
     KATM_POLL_QUEUE,
-    async (job) => processKatmPollJob(job.data, queue),
+    async (job) => processKatmPollJob(job.data, queue, claimRejectQueue),
     { connection, concurrency: 5, maxStalledCount: 3 },
   );
+
+  // Claim retraction — its own worker with a short fixed backoff (see
+  // claim-reject.ts). No scoring-failure finalizer: a failed retraction is
+  // logged and left in the queue (removeOnFail:false) for manual re-drive.
+  const claimRejectWorker = new Worker<ClaimRejectJobData>(
+    KATM_CLAIM_REJECT_QUEUE,
+    async (job) => processClaimRejectJob(job.data),
+    { connection, concurrency: 5 },
+  );
+
+  claimRejectWorker.on('failed', (job, err) => {
+    if (!job) return;
+    const exhausted = job.attemptsMade >= (job.opts.attempts ?? 1);
+    app.log.warn(
+      { jobId: job.id, claimId: job.data.claimId, err, exhausted },
+      exhausted ? 'katm claim reject exhausted — claim left as created' : 'katm claim reject attempt failed',
+    );
+  });
 
   worker.on('failed', (job, err) => {
     if (!job) return;
@@ -57,10 +84,13 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
   });
 
   app.decorate('katmPollQueue', queue);
+  app.decorate('katmClaimRejectQueue', claimRejectQueue);
   app.decorate('queues', queues);
   app.addHook('onClose', async () => {
     await worker.close();
+    await claimRejectWorker.close();
     await queue.close();
+    await claimRejectQueue.close();
     await redis.quit().catch(() => null);
   });
 });

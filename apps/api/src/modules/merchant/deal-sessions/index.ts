@@ -28,6 +28,7 @@ import {
   type PipelineStepResult,
 } from '../../integrations/katm/flow';
 import { enqueueKatmPoll } from '../../integrations/katm/poller';
+import { enqueueClaimRejection } from '../../integrations/katm/claim-reject';
 import {
   REJECT_REASON_CATEGORY,
   type ScoringRejectReasonCode,
@@ -150,6 +151,11 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
   fastify.post('/', { schema: { tags: TAGS }, preHandler: guards }, async (request, reply) => {
     const p = payload(request);
+    const activeSession = await getActiveSession(Number(p.sub));
+    if (activeSession) {
+      await abandonSession(activeSession);
+      await enqueueClaimRejection(app.katmClaimRejectQueue, activeSession);
+    }
     const session = await createSession({
       merchantId: Number(p.merchantId),
       branchId: Number(p.branchId),
@@ -301,6 +307,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       try {
         const session = await loadOwnedActiveSession(request.params.id, Number(p.sub));
         await abandonSession(session);
+        await enqueueClaimRejection(app.katmClaimRejectQueue, session);
         return { ok: true };
       } catch (err: any) {
         if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found');
@@ -496,6 +503,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           error: step.reasonCode,
         });
         await rejectSession(session);
+        await enqueueClaimRejection(app.katmClaimRejectQueue, session);
         console.log('[START] ✓ responding status=rejected reasonCode=', step.reasonCode);
         return {
           status: 'rejected' as const,
@@ -849,6 +857,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           criteriaScores: {},
         });
         await rejectSession(sessionAfterCard);
+        await enqueueClaimRejection(app.katmClaimRejectQueue, sessionAfterCard);
         return {
           score: 0,
           limit: 0,
@@ -918,10 +927,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
             criteriaScores,
           });
         } else {
-          await markRejected(
-            scoringRun.id,
-            engineRejected ? 'model_stop_factor' : 'zero_limit',
-          );
+          await markRejected(scoringRun.id, engineRejected ? 'model_stop_factor' : 'zero_limit');
         }
       }
 
@@ -954,6 +960,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
       if (finalDecision === 'reject') {
         await rejectSession(sessionAfterCard);
+        await enqueueClaimRejection(app.katmClaimRejectQueue, sessionAfterCard);
       }
 
       return {

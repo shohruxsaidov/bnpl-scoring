@@ -30,6 +30,7 @@ import { checkMibReportStatus } from './queries/check-mib-report-status/check-mi
 import { checkInpsReportStatus } from './queries/check-inps-report-status/check-inps-report-status.handler'
 import { MIB_PASS_CODES, type KatmResult, type InpsResult, type MibResult } from './service/shared'
 import { evaluate077, evaluateInps, evaluateMib, type PipelineStepResult } from './flow'
+import { enqueueClaimRejection, type ClaimRejectJobData } from './claim-reject'
 import { loadScoringById, loadScoringBySession, markError } from '../../scoring/pipelines/store'
 import { applyClientStep } from '../../client/scoring/finalize'
 
@@ -76,6 +77,7 @@ export async function enqueueKatmPoll(queue: Queue<KatmPollJobData>, data: KatmP
 export async function processKatmPollJob(
   data: KatmPollJobData,
   queue: Queue<KatmPollJobData>,
+  rejectQueue: Queue<ClaimRejectJobData>,
 ): Promise<void> {
   if (data.origin === 'client') {
     await processClientPollJob(data, queue)
@@ -94,14 +96,14 @@ export async function processKatmPollJob(
     if (!session || !scoring) return
     // evaluateMib chains into the chargeable 077 request only on a clean result.
     const step = await evaluateMib(scoring.id, data.claimId, outcome.result)
-    await applyKatmStep(step, session, queue, data)
+    await applyKatmStep(step, session, queue, rejectQueue, data)
   } else if (reportType === 'inps') {
     const outcome = await checkInpsReportStatus({ claimId: data.claimId, token: data.token })
     if (outcome.status === 'pending') throw new KatmReportPendingError()
     await saveInpsReport(data.claimId, outcome.result)
     if (!session || !scoring) return
     const step = await evaluateInps(scoring.id, outcome.result)
-    await applyKatmStep(step, session, queue, data)
+    await applyKatmStep(step, session, queue, rejectQueue, data)
   } else {
     const outcome = await checkReportStatus({ claimId: data.claimId, token: data.token })
     if (outcome.status === 'pending') throw new KatmReportPendingError()
@@ -109,7 +111,7 @@ export async function processKatmPollJob(
     if (!session || !scoring) return
     // evaluate077 chains into the chargeable INPS request only if 077 passed.
     const step = await evaluate077(scoring.id, data.claimId, outcome.result)
-    await applyKatmStep(step, session, queue, data)
+    await applyKatmStep(step, session, queue, rejectQueue, data)
   }
 }
 
@@ -165,6 +167,7 @@ async function applyKatmStep(
   step: PipelineStepResult,
   session: DealSessionRow,
   queue: Queue<KatmPollJobData>,
+  rejectQueue: Queue<ClaimRejectJobData>,
   data: KatmPollJobData,
 ): Promise<void> {
   if (step.kind === 'enqueue_poll') {
@@ -179,6 +182,7 @@ async function applyKatmStep(
       error: step.reasonCode,
     })
     await rejectSession(session)
+    await enqueueClaimRejection(rejectQueue, session)
     return
   }
   if (step.kind === 'failed') {
