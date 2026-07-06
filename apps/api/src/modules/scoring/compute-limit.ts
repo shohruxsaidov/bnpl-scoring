@@ -173,7 +173,8 @@ export function runModelAndLimit(input: LimitComputationInput): LimitComputation
   const monthlyPayment = katm?.avgMonthlyPayment ? +katm.avgMonthlyPayment / 100 : 0;
   const limitIndex = creditLimitIndexForScore(scoreSum);
   const disposableMonthly = incomeMonthly * 0.5 - monthlyPayment;
-  const platformCreditLimit = Math.max(0, Math.round(disposableMonthly * limitIndex));
+  const platformCreditLimit =
+    Math.floor(Math.max(0, Math.round(disposableMonthly * limitIndex)) / 1000) * 1000;
   const decision: 'approve' | 'reject' =
     engineResult.rejected || platformCreditLimit === 0 ? 'reject' : 'approve';
 
