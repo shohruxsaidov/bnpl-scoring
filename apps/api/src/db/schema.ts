@@ -7,6 +7,7 @@ export * from './branches';
 export * from './buyouts';
 export * from './categories';
 export * from './user-cards';
+export * from './user-credit-limits';
 export * from './user-devices';
 export * from './user-sessions';
 export * from './deal-comments';

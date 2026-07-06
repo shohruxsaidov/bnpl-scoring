@@ -30,13 +30,18 @@ import { checkMibReportStatus } from './queries/check-mib-report-status/check-mi
 import { checkInpsReportStatus } from './queries/check-inps-report-status/check-inps-report-status.handler'
 import { MIB_PASS_CODES, type KatmResult, type InpsResult, type MibResult } from './service/shared'
 import { evaluate077, evaluateInps, evaluateMib, type PipelineStepResult } from './flow'
-import { loadScoringBySession } from '../../scoring/pipelines/store'
+import { loadScoringById, loadScoringBySession, markError } from '../../scoring/pipelines/store'
+import { applyClientStep } from '../../client/scoring/finalize'
 
 export const KATM_POLL_QUEUE = 'katm-report-poll'
 
 export interface KatmPollJobData {
-  /** deal_sessions.id */
-  sessionId: string
+  /** deal_sessions.id — set for merchant runs; omitted for client runs. */
+  sessionId?: string
+  /** scorings.id — set on all new jobs (both origins). Legacy jobs carry only sessionId. */
+  scoringId?: number
+  /** Which entry point opened the run. Absent on legacy jobs → treated as 'merchant'. */
+  origin?: 'merchant' | 'client'
   claimId: string
   token: string
   consentId: string
@@ -72,6 +77,11 @@ export async function processKatmPollJob(
   data: KatmPollJobData,
   queue: Queue<KatmPollJobData>,
 ): Promise<void> {
+  if (data.origin === 'client') {
+    await processClientPollJob(data, queue)
+    return
+  }
+
   const reportType = data.reportType ?? '077'
 
   const session = await loadWizardSession(data)
@@ -100,6 +110,50 @@ export async function processKatmPollJob(
     // evaluate077 chains into the chargeable INPS request only if 077 passed.
     const step = await evaluate077(scoring.id, data.claimId, outcome.result)
     await applyKatmStep(step, session, queue, data)
+  }
+}
+
+/**
+ * Client run poll — no deal session; the scorings row (loaded by scoringId) is
+ * the read model. Same status-check/save/evaluate spine as the merchant path,
+ * but completion runs the model + writes the credit limit (applyClientStep) and
+ * enqueues the next poll when a chargeable report goes async.
+ */
+async function processClientPollJob(
+  data: KatmPollJobData,
+  queue: Queue<KatmPollJobData>,
+): Promise<void> {
+  const reportType = data.reportType ?? '077'
+  const scoring = data.scoringId != null ? await loadScoringById(data.scoringId) : null
+
+  let step: PipelineStepResult
+  if (reportType === 'mib') {
+    const outcome = await checkMibReportStatus({ claimId: data.claimId, token: data.token })
+    if (outcome.status === 'pending') throw new KatmReportPendingError()
+    await saveMibReport(data.claimId, outcome.result)
+    if (!scoring) return
+    step = await evaluateMib(scoring.id, data.claimId, outcome.result)
+  } else if (reportType === 'inps') {
+    const outcome = await checkInpsReportStatus({ claimId: data.claimId, token: data.token })
+    if (outcome.status === 'pending') throw new KatmReportPendingError()
+    await saveInpsReport(data.claimId, outcome.result)
+    if (!scoring) return
+    step = await evaluateInps(scoring.id, outcome.result)
+  } else {
+    const outcome = await checkReportStatus({ claimId: data.claimId, token: data.token })
+    if (outcome.status === 'pending') throw new KatmReportPendingError()
+    await saveKatmReport(data.claimId, outcome.result)
+    if (!scoring) return
+    step = await evaluate077(scoring.id, data.claimId, outcome.result)
+  }
+
+  const outcome = await applyClientStep(step, scoring)
+  if (outcome.status === 'pending') {
+    await enqueueKatmPoll(queue, {
+      ...data,
+      token: outcome.enqueue.token,
+      reportType: outcome.enqueue.reportType,
+    })
   }
 }
 
@@ -144,6 +198,12 @@ async function applyKatmStep(
 /** Called by the worker's failed handler once all attempts are exhausted. */
 export async function handleKatmPollFailure(data: KatmPollJobData, err: Error): Promise<void> {
   const error = err instanceof KatmReportPendingError ? 'katm_report_timeout' : err.message
+  // Client run — fail the scoring run; no session to stamp. No credit-limit row
+  // is written (a technical timeout is retryable), so /status shows 'error'.
+  if (data.origin === 'client') {
+    if (data.scoringId != null) await markError(data.scoringId)
+    return
+  }
   await failWizard(data, error)
 }
 

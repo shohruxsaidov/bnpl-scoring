@@ -3,7 +3,7 @@
 // Leaf module: no KATM/model runtime imports, so flow.ts, poller.ts and the
 // wizard endpoints can all write through it without import cycles.
 // ---------------------------------------------------------------------------
-import { eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { db } from '@db';
 import { scorings } from '@db/scorings';
 import { scoringPipelines } from '@db/scoring-pipelines';
@@ -58,6 +58,64 @@ export async function loadScoringBySession(dealSessionId: string): Promise<Scori
     .select()
     .from(scorings)
     .where(eq(scorings.dealSessionId, dealSessionId))
+    .limit(1);
+  return row ?? null;
+}
+
+export async function loadScoringById(id: number): Promise<ScoringRow | null> {
+  const [row] = await db.select().from(scorings).where(eq(scorings.id, id)).limit(1);
+  return row ?? null;
+}
+
+/**
+ * Open a client self-scoring run (Client Scoring). No deal_session — anchored on
+ * the user. The partial unique index scorings_client_inflight_idx makes a second
+ * in-flight run for the same user fail here (23505); the caller maps that to a
+ * "already in progress" response. Throws on any other insert failure.
+ */
+export async function startClientScoringRun(userId: number): Promise<ScoringRow> {
+  const [row] = await db
+    .insert(scorings)
+    .values({
+      dealSessionId: null,
+      userId,
+      origin: 'client',
+      status: 'in_progress',
+      currentPipeline: 'myid',
+    })
+    .returning();
+  if (!row) throw new Error('client_scoring_insert_failed');
+  return row;
+}
+
+/** The user's most recent client run, or null. */
+export async function loadLatestClientScoring(userId: number): Promise<ScoringRow | null> {
+  const [row] = await db
+    .select()
+    .from(scorings)
+    .where(and(eq(scorings.userId, userId), eq(scorings.origin, 'client')))
+    .orderBy(desc(scorings.id))
+    .limit(1);
+  return row ?? null;
+}
+
+/**
+ * The user's client run awaiting the model stage: KATM gates cleared
+ * (status 'passed') but the numeric model has not run yet. Null when none —
+ * i.e. nothing to finalize.
+ */
+export async function loadClientScoringAwaitingModel(userId: number): Promise<ScoringRow | null> {
+  const [row] = await db
+    .select()
+    .from(scorings)
+    .where(
+      and(
+        eq(scorings.userId, userId),
+        eq(scorings.origin, 'client'),
+        eq(scorings.status, 'passed'),
+      ),
+    )
+    .orderBy(desc(scorings.id))
     .limit(1);
   return row ?? null;
 }

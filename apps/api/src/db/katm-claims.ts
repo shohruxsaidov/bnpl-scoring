@@ -13,7 +13,8 @@ export const katmClaims = pgTable('katm_claims', {
   userId: integer('user_id')
     .notNull()
     .references(() => users.id),
-  sessionId: uuid('session_id').notNull(),
+  // deal_sessions.id (no FK). NULL for client self-scoring runs (no session).
+  sessionId: uuid('session_id'),
   katmSir: varchar('katm_sir').notNull(),
   verified: jsonb('verified').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

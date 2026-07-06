@@ -154,7 +154,8 @@ export async function runScoringPipeline(input: {
   consent: AgreementRecord;
   subject: KatmSubject & { birthDate: string | null };
   userId: number;
-  sessionId: string;
+  // deal_sessions.id for merchant runs; omitted for client self-scoring runs.
+  sessionId?: string;
 }): Promise<PipelineStepResult> {
   console.log(
     '[PIPELINE] runScoringPipeline START scoringId=',
@@ -289,8 +290,8 @@ export async function runScoringPipeline(input: {
     await db.insert(katmClaims).values({
       claimId: input.claimId,
       userId: input.userId,
-      sessionId: input.sessionId,
-      katmSir: claim.katmSir, 
+      sessionId: input.sessionId ?? null,
+      katmSir: claim.katmSir,
       verified: claim.verified,
     });
     await recordPipeline(input.scoringId, 'katm_claim', {
