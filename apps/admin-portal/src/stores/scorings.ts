@@ -10,7 +10,7 @@ export interface ScoringListItem {
   phone: string | null
   status: string
   score: number | null
-  creditLimit: number | null
+  creditLimit: string | null
   currentPipeline: string | null
   createdAt: string
 }
@@ -37,7 +37,7 @@ export interface ScoringDetail {
   phone: string | null
   status: string
   score: number | null
-  creditLimit: number | null
+  creditLimit: string | null
   currentPipeline: string | null
   katmClaimId: string | null
   rejectReasonCode: string | null

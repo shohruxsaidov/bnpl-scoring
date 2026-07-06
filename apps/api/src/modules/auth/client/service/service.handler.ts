@@ -278,6 +278,29 @@ export async function rotateSession(
 }
 
 /**
+ * Hot-path refresh: validate a durable session token and confirm it belongs to
+ * the requesting device, without rotating it. Returns the session's user so the
+ * caller can mint a fresh short-lived access token; the session token is left in
+ * place (it keeps its original expiry). Boundary events that must rotate the
+ * durable token use rotateSession instead. `expectedDeviceId` is the caller's
+ * raw x-device-id, pinning the refresh to the device the session was issued to
+ * so a leaked session token cannot be replayed from elsewhere. Returns undefined
+ * when the token is invalid/expired/revoked or the device does not match.
+ */
+export async function refreshAccessToken(
+  sessionToken: string,
+  expectedDeviceId: string,
+): Promise<{ user: typeof users.$inferSelect } | undefined> {
+  const current = await verifySession(sessionToken);
+  if (!current) return undefined;
+
+  const device = await findDeviceById(current.session.deviceId);
+  if (!device || device.deviceId !== expectedDeviceId) return undefined;
+
+  return { user: current.user };
+}
+
+/**
  * Set (or change) a user's app PIN. Stores an argon2 hash of the 4-digit code;
  * the raw PIN is never persisted.
  */

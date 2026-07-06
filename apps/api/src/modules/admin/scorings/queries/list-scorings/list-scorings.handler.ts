@@ -13,7 +13,7 @@ export interface ScoringListItem {
   phone: string | null;
   status: string;
   score: number | null;
-  creditLimit: number | null;
+  creditLimit: string | null;
   currentPipeline: string | null;
   createdAt: string;
 }

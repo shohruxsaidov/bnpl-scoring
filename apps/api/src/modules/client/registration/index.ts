@@ -6,17 +6,18 @@ import { env } from '@env';
 import { db } from '@db';
 import { users } from '@db/schema';
 import { userPublicOfferAcceptances } from '@db/user-public-offer-acceptances';
-import { createOtp, verifyOtp, findUserByPinfl } from '../../auth/client/service/service.handler';
+import {
+  createOtp,
+  verifyOtp,
+  findUserByPinfl,
+  findUserByPhone,
+} from '../../auth/client/service/service.handler';
 import { createMyidSession, exchangeMyidCode } from '../../integrations/myid/client';
 import { createUserHandler } from '../../id/users';
 import { sendOtpSms } from '../../../lib/sms';
 import { getDownloadUrl } from '../../../lib/file-storage';
 import { getCurrentPublicOffer, findCurrentPublicOfferById } from './public-offers';
 import { pinFailKey } from '../auth/index';
-
-// Self-service client registration (mobile app). Public endpoints — no JWT.
-// Mirrors merchant/client otp→myid flow, but anonymous: no merchantId/branchId,
-// and myid-complete mints a client session instead of returning a DTO.
 
 const ERROR = { $ref: 'ErrorResponse#' };
 
@@ -64,6 +65,7 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
 
   const OtpBody = Type.Object({
     phone: Type.String({ minLength: 12, maxLength: 12, examples: ['998991234567'] }),
+    forgotPin: Type.Optional(Type.Boolean({ default: false, examples: [false] })),
   });
   const OtpVerifyBody = Type.Object({
     phone: Type.String({ minLength: 12, maxLength: 12, examples: ['998991234567'] }),
@@ -196,9 +198,6 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Current public offer',
-        description:
-          'Returns the current public-offer version with presigned download URLs ' +
-          'for the uz and ru PDFs, for the accept screen.',
         response: { 200: PublicOfferResponse, 404: ERROR },
       },
     },
@@ -218,23 +217,36 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
   fastify.post(
     '/otp',
     {
+      config: {
+        rateLimit: {
+          max: 2,
+          timeWindow: 60 * 1000, // 10 requests per minute per IP
+        },
+      },
       schema: {
         tags: TAGS,
         summary: 'Issue registration OTP',
-        description:
-          'Sends an OTP SMS to the phone. Rate-limited per phone (cooldown + daily cap). ' +
-          '`devOtp` is returned only outside production.',
         body: OtpBody,
-        response: { 200: OtpResponse, 429: ERROR },
+        response: { 200: OtpResponse, 429: ERROR, 404: ERROR },
       },
     },
     async (req, reply) => {
-      const { phone } = req.body;
+      const { phone, forgotPin } = req.body;
+      if (forgotPin) {
+        const existing = await findUserByPhone(phone);
+        if (!existing) return reply.code(404).sendError('user_not_found');
+      }
 
       // Per-phone cooldown: at most one code every OTP_COOLDOWN_SECONDS.
       const cooldownKey = `client:otp:cooldown:${phone}`;
       const onCooldown = await redis.get(cooldownKey).catch(() => null);
-      if (onCooldown) return reply.code(429).sendError('otp_cooldown');
+
+      if (onCooldown) {
+        const ttl = await redis.ttl(cooldownKey).catch(() => OTP_COOLDOWN_SECONDS);
+        return reply.code(429).sendError('otp_cooldown', {
+          seconds: ttl > 0 ? ttl : OTP_COOLDOWN_SECONDS,
+        });
+      }
 
       // Per-phone daily cap.
       const dailyKey = `client:otp:daily:${phone}`;
@@ -256,10 +268,15 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
   fastify.post(
     '/otp/verify',
     {
+      config: {
+        rateLimit: {
+          max: 2,
+          timeWindow: 60 * 1000, // 10 requests per minute per IP
+        },
+      },
       schema: {
         tags: TAGS,
         summary: 'Verify registration OTP',
-        description: 'Verifies the OTP and returns a phone-verified registration token.',
         body: OtpVerifyBody,
         response: { 200: OtpVerifyResponse, 400: ERROR },
       },
@@ -284,9 +301,6 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Start MyID session',
-        description:
-          'Opens a MyID liveness session for the PINFL. Returns a pinfl-verified ' +
-          'registration token and the MyID session id.',
         body: MyidSessionBody,
         response: { 200: MyidSessionResponse, 400: ERROR },
       },
@@ -324,10 +338,6 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Complete registration',
-        description:
-          'Exchanges the MyID code and creates the account on first registration ' +
-          '(recording public-offer acceptance). Returns a short-lived regToken that ' +
-          'authorizes POST /client/auth/setup — no session is created here.',
         body: MyidCompleteBody,
         response: { 200: MyidCompleteResponse, 400: ERROR, 409: ERROR },
       },

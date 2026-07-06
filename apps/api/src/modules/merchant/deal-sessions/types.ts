@@ -29,7 +29,7 @@ export interface ScoringStamp {
   scoreSum: number;
   coefficient: number;
   decision: string;
-  /** tiyin */
+  /** som (whole units) */
   platformCreditLimit: number;
   criteriaScores: Record<string, unknown>;
 }

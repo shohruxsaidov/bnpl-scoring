@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // Shared credit-limit computation — the single source of truth for turning a
 // resolved model + KATM/INPS/user data into a score, decision and per-month
-// credit limit (tiyin) plus the criteria_scores breakdown.
+// credit limit (whole som) plus the criteria_scores breakdown.
 //
 // Both the merchant wizard (POST /:id/cards/score) and the client self-scoring
 // path (the KATM poller's client completion) call this so the credit formula
@@ -99,7 +99,7 @@ export interface LimitComputationResult {
   coefficient: number;
   /** 'approve' | 'reject' — reject on a model stop-factor or a zero limit. */
   decision: 'approve' | 'reject';
-  /** Per-month credit limit in tiyin. 0 on any rejection. */
+  /** Per-month credit limit in whole som. 0 on any rejection. */
   platformCreditLimit: number;
   criteriaScores: CriteriaScores;
   /** True when the engine itself rejected (stop-factor), vs a zero-limit reject. */
@@ -167,13 +167,13 @@ export function runModelAndLimit(input: LimitComputationInput): LimitComputation
   }
 
   // Credit limit = monthly disposable income scaled by the score-based index.
-  // Per-month figure in tiyin (×100). Negative disposable or index 0 → 0, which
+  // Per-month figure in whole som. Negative disposable or index 0 → 0, which
   // flows through the zero_limit reject path.
   const incomeMonthly = (inps?.incomesAllSumma ?? 0) / 12;
   const monthlyPayment = katm?.avgMonthlyPayment ? +katm.avgMonthlyPayment / 100 : 0;
   const limitIndex = creditLimitIndexForScore(scoreSum);
   const disposableMonthly = incomeMonthly * 0.5 - monthlyPayment;
-  const platformCreditLimit = Math.max(0, Math.round(disposableMonthly * limitIndex) * 100);
+  const platformCreditLimit = Math.max(0, Math.round(disposableMonthly * limitIndex));
   const decision: 'approve' | 'reject' =
     engineResult.rejected || platformCreditLimit === 0 ? 'reject' : 'approve';
 

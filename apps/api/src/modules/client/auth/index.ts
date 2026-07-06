@@ -11,6 +11,7 @@ import {
   createSession,
   findDeviceByDeviceId,
   findUserById,
+  refreshAccessToken,
   registerDeviceKey,
   revokeDeviceSessions,
   revokeSession,
@@ -107,10 +108,6 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Finish onboarding',
-        description:
-          'Consumes the regToken from myid-complete: sets the account PIN, marks ' +
-          'this device (x-device-id) trusted, and mints the first active ' +
-          'user_device session. Returns the access + durable session tokens.',
         body: Type.Object({
           regToken: Type.String({ minLength: 1, examples: ['ey...'] }),
           pin: Pin,
@@ -170,13 +167,6 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Log in with PIN',
-        description:
-          'Re-establishes a session on a trusted device (one that completed ' +
-          '/setup) using the account PIN. Identity is resolved from x-device-id, ' +
-          'so no phone entry is needed. Backs the fallback path when the durable ' +
-          'session token is gone (post-logout or expired) and biometric can no ' +
-          'longer help. After MAX_PIN_FAILS consecutive wrong PINs the account is ' +
-          'locked; recovery is a full OTP + MyID re-auth.',
         body: Type.Object({ pin: Pin }),
         response: {
           200: Type.Object({
@@ -232,12 +222,6 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Enrol biometric key',
-        description:
-          'Registers the device (x-device-id) biometric public key for a logged-in ' +
-          'user. The device must already be trusted (completed /setup) and owned by ' +
-          'the caller. The key is a base64 SPKI-DER ES256 (P-256) public key whose ' +
-          'private half lives in the Secure Enclave / Keystore. Re-enrolling ' +
-          'overwrites the prior key. Enables biometric login via /challenge + /biometric.',
         security: SECURITY,
         body: Type.Object({
           publicKey: Type.String({ minLength: 1, examples: ['MFkwEwYHKoZIzj0CAQYI...'] }),
@@ -327,14 +311,6 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Log in with biometric',
-        description:
-          'Re-establishes a session on a trusted device by proving possession of the ' +
-          'biometric private key: the client signs the challenge from /challenge and ' +
-          'submits the DER (X9.62) ECDSA signature, base64-encoded. The challenge is ' +
-          'consumed on use (single-use). On success, mirrors /login — mints a fresh ' +
-          'access + durable session token. A 401 means the challenge is spent/expired, ' +
-          'the device is not enrolled, or the signature does not verify; the client ' +
-          'falls back to PIN login.',
         body: Type.Object({
           challengeId: Type.String({ minLength: 1, examples: ['uuid'] }),
           signature: Type.String({ minLength: 1, examples: ['MEUCIQ...'] }),
@@ -384,6 +360,39 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       const { sessionToken } = await createSession(user.id, device.id);
 
       return { accessToken, sessionToken, client: toClientDto(user) };
+    },
+  );
+
+  /* ── Refresh (durable session token → fresh access token) ────────────────── */
+
+  fastify.post(
+    '/refresh',
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Refresh access token',
+        body: Type.Object({
+          sessionToken: Type.String({ minLength: 1, examples: ['sess_4b8e1d0a9c'] }),
+        }),
+        response: {
+          200: Type.Object({ accessToken: Type.String() }),
+          400: ERROR,
+          401: ERROR,
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!request.deviceId) return reply.code(400).sendError('missing_device_id');
+
+      const result = await refreshAccessToken(request.body.sessionToken, request.deviceId);
+      if (!result) return reply.code(401).sendError('invalid_session');
+
+      const accessToken = app.jwt.sign(
+        { sub: result.user.id.toString(), type: 'client' },
+        { expiresIn: ACCESS_TOKEN_TTL },
+      );
+
+      return { accessToken };
     },
   );
 

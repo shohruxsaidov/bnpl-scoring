@@ -126,10 +126,10 @@ function statusClass(status: string): string {
 function formatScore(v: number | null): string {
   return v != null ? String(v) : '—'
 }
-function formatLimit(v: number | null): string {
-  // creditLimit is stored in tiyin (1 so'm = 100 tiyin); convert to so'm for display.
+function formatLimit(v: string | null): string {
+  // creditLimit is whole som as a string, e.g. '1000000' — format as-is.
   return v != null
-    ? new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(Math.round(v / 100)) + " so'm"
+    ? new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(Number(v)) + " so'm"
     : '—'
 }
 function formatTimestamp(iso: string): string {

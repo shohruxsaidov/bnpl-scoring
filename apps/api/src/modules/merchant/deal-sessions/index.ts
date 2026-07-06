@@ -239,7 +239,9 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         0,
       );
       const totalWithMarkup = Math.round(basketBase * (1 + data.tariff.markupPercent / 100));
-      const effectiveLimit = Math.round(data.scoring.platformCreditLimit * data.tariff.termMonths);
+      // platformCreditLimit is whole som; totalWithMarkup is tiyin — ×100 to compare.
+      const effectiveLimit =
+        Math.round(data.scoring.platformCreditLimit * data.tariff.termMonths) * 100;
       const gap = totalWithMarkup - effectiveLimit;
 
       if (gap <= 0) return reply.code(409).sendError('no_prepayment_needed');
@@ -904,16 +906,15 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       // model ran (approve, zero-limit, or stop-factor alike). The approve/reject
       // decision lives on the scorings rollup, not on this pipeline row.
       if (scoringRun) {
-        const limit = platformCreditLimit / 100;
         await recordPipeline(scoringRun.id, 'model_score', {
           status: 'passed',
-          summary: { score: scoreSum, platformCreditLimit: limit },
+          summary: { score: scoreSum, platformCreditLimit },
           raw: engineResult,
         });
         if (finalDecision === 'approve') {
           await markScored(scoringRun.id, {
             score: scoreSum,
-            creditLimit: platformCreditLimit,
+            creditLimit: String(platformCreditLimit),
             criteriaScores,
           });
         } else {

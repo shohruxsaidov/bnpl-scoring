@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { doublePrecision, integer, jsonb, pgTable, serial, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
+import { integer, jsonb, pgTable, serial, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
 import { dealSessions } from './deal-sessions';
 import { users } from './users';
 
@@ -47,7 +47,8 @@ export const scorings = pgTable(
     katmClaimId: varchar('katm_claim_id', { length: 20 }),
     // Model output, set when status reaches 'scored'.
     score: integer('score'),
-    creditLimit: doublePrecision('credit_limit'),
+    // Per-month credit limit in whole som as a string, e.g. '1000000'.
+    creditLimit: varchar('credit_limit', { length: 20 }),
     criteriaScores: jsonb('criteria_scores'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),

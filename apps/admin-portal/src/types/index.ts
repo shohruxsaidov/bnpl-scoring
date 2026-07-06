@@ -67,7 +67,8 @@ export interface Client {
 }
 
 export interface ClientOverview extends Client {
-  creditLimit: number | null
+  // Whole som as a string, e.g. '1000000'.
+  creditLimit: string | null
   availableBalance: number | null
   creditLimitScoredAt: string | null
 }

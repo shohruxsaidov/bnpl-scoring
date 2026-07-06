@@ -48,9 +48,10 @@ function formatScore(score: number | null): string {
   return score != null ? String(score) : '—'
 }
 
-function formatCreditLimit(value: number | null): string {
+function formatCreditLimit(value: string | null): string {
+  // creditLimit is whole som as a string, e.g. '1000000'.
   if (value == null) return '—'
-  return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(value) + " so'm"
+  return new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 }).format(Number(value)) + " so'm"
 }
 
 function formatTimestamp(iso: string): string {

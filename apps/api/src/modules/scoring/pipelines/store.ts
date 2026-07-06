@@ -191,7 +191,7 @@ export async function markGatesPassed(scoringId: number): Promise<void> {
 /** Model approved — final outcome stamped on the run. */
 export async function markScored(
   scoringId: number,
-  result: { score: number; creditLimit: number; criteriaScores: CriteriaScores },
+  result: { score: number; creditLimit: string; criteriaScores: CriteriaScores },
 ): Promise<void> {
   await db
     .update(scorings)

@@ -17,8 +17,10 @@ export async function getUserOverview(id: number) {
   const allUserIds = allUserRows.map((r) => r.id);
 
   // TODO: scoring rebuild — credit limit source removed with scoring_histories.
-  // Returns null until the new scoring persistence lands.
-  const creditLimit: number | null = null;
+  // Returns null until the new scoring persistence lands. When wired, creditLimit
+  // is a whole-som string but committedAmount is tiyin — convert (×100) before
+  // subtracting for availableBalance.
+  const creditLimit: string | null = null;
   const creditLimitScoredAt: string | null = null;
 
   let committedAmount = 0;
@@ -35,7 +37,8 @@ export async function getUserOverview(id: number) {
     committedAmount = activeDeals.reduce((sum, d) => sum + (d.amount ? Number(d.amount) : 0), 0);
   }
 
-  const availableBalance = creditLimit != null ? Math.max(0, creditLimit - committedAmount) : null;
+  const availableBalance =
+    creditLimit != null ? Math.max(0, Number(creditLimit) * 100 - committedAmount) : null;
 
   return {
     id: user.id.toString(),

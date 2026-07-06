@@ -1,15 +1,3 @@
-// ---------------------------------------------------------------------------
-// Client Scoring — server-driven completion.
-//
-// A client run is finalized when BOTH the KATM gates have cleared (scorings
-// status 'passed') AND the user has a card on file. Either event can arrive
-// last: the KATM poller calls in on gates_passed, and the card-confirm endpoint
-// calls in after a card is added. finalizeClientScoringIfReady is idempotent and
-// safe to call from both — it no-ops when the pair isn't complete yet.
-//
-// Leaf module: it must NOT import the poller (the poller imports applyClientStep
-// from here). Enqueue is the caller's job — applyClientStep only returns intent.
-// ---------------------------------------------------------------------------
 import { and, desc, eq } from 'drizzle-orm';
 import { db } from '@db';
 import { userCards } from '@db/user-cards';
@@ -42,16 +30,15 @@ export type ClientStepOutcome =
   | { status: 'pending'; enqueue: { reportType: '077' | 'inps' | 'mib'; token: string } }
   | { status: 'rejected'; reasonCode: string; missingFields?: string[] }
   | { status: 'failed'; reason: string }
-  | { status: 'scored'; creditLimit: number }
-  | { status: 'awaiting_card' }
+  | { status: 'scored'; creditLimit: string }
   | { status: 'error' };
 
-/** Upsert the user's current credit limit (tiyin; 0 on rejection). */
+/** Upsert the user's current credit limit (whole som string; '0' on rejection). */
 export async function writeClientCreditLimit(
   userId: number,
   scoringId: number,
-  creditLimit: number,
-): Promise<{ creditLimit: number; expiresAt: Date }> {
+  creditLimit: string,
+): Promise<{ creditLimit: string; expiresAt: Date }> {
   const now = new Date();
   const expiresAt = new Date(now.getTime() + CLIENT_LIMIT_TTL_MS);
   await db
@@ -99,16 +86,9 @@ async function loadInps(claimId: string) {
   return row?.demandId != null ? row : null;
 }
 
-/**
- * Run the model + write user_credit_limits IF the run is model-ready and a card
- * is on file. Returns:
- *   scored        — model ran, limit written (amount, 0 on model reject)
- *   awaiting_card — gates passed but no card yet; try again after card add
- *   null          — nothing awaiting the model (already scored, or none)
- */
 export async function finalizeClientScoringIfReady(
   userId: number,
-): Promise<Extract<ClientStepOutcome, { status: 'scored' | 'awaiting_card' | 'error' }> | null> {
+): Promise<Extract<ClientStepOutcome, { status: 'scored' | 'error' }> | null> {
   const scoring = await loadClientScoringAwaitingModel(userId);
   if (!scoring) return null;
 
@@ -149,14 +129,14 @@ export async function finalizeClientScoringIfReady(
 
   await recordPipeline(scoring.id, 'model_score', {
     status: 'passed',
-    summary: { score: result.scoreSum, platformCreditLimit: result.platformCreditLimit / 100 },
+    summary: { score: result.scoreSum, platformCreditLimit: result.platformCreditLimit },
     raw: result.engineResult,
   });
 
   if (result.decision === 'approve') {
     await markScored(scoring.id, {
       score: result.scoreSum,
-      creditLimit: result.platformCreditLimit,
+      creditLimit: String(result.platformCreditLimit),
       criteriaScores: result.criteriaScores,
     });
   } else {
@@ -164,7 +144,7 @@ export async function finalizeClientScoringIfReady(
   }
 
   // reject collapses to a 0 limit (the reason stays on the scorings run).
-  const limit = result.decision === 'approve' ? result.platformCreditLimit : 0;
+  const limit = result.decision === 'approve' ? String(result.platformCreditLimit) : '0';
   await writeClientCreditLimit(userId, scoring.id, limit);
   return { status: 'scored', creditLimit: limit };
 }
@@ -183,7 +163,7 @@ export async function applyClientStep(
   }
   if (step.kind === 'rejected') {
     // scorings already marked 'rejected' by the pipeline; surface a 0 limit.
-    await writeClientCreditLimit(scoring.userId!, scoring.id, 0);
+    await writeClientCreditLimit(scoring.userId!, scoring.id, '0');
     return {
       status: 'rejected',
       reasonCode: step.reasonCode,
@@ -195,5 +175,5 @@ export async function applyClientStep(
   }
   // gates_passed — try to finalize (needs a card). awaiting_card if none yet.
   const outcome = await finalizeClientScoringIfReady(scoring.userId!);
-  return outcome ?? { status: 'awaiting_card' };
+  return outcome ?? { status: 'failed', reason: 'Unknown error occurred' };
 }

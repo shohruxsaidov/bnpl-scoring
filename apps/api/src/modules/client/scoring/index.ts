@@ -18,7 +18,10 @@ import {
   setKatmClaimIdOnScoring,
   startClientScoringRun,
 } from '../../scoring/pipelines/store';
-import { REJECT_REASON_CATEGORY, type ScoringRejectReasonCode } from '../../scoring/pipelines/types';
+import {
+  REJECT_REASON_CATEGORY,
+  type ScoringRejectReasonCode,
+} from '../../scoring/pipelines/types';
 import type { GENDERS } from '../../integrations/katm/service/shared';
 import { applyClientStep, finalizeClientScoringIfReady } from './finalize';
 
@@ -42,10 +45,7 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
   const TAGS = ['Client · Scoring'];
   const guards = [app.verifyClientJwt];
 
-  const StartBody = Type.Object({
-    // Fresh KATM consent is required on every run (re-prompted each re-score).
-    consent: Type.Boolean(),
-  });
+  const StartBody = Type.Object({});
 
   const StartResponse = Type.Object({
     status: Type.Union([
@@ -57,7 +57,7 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
       Type.Literal('failed'),
       Type.Literal('error'),
     ]),
-    creditLimit: Type.Optional(Type.Number()),
+    creditLimit: Type.Optional(Type.String()),
     expiresAt: Type.Optional(Type.String()),
     reasonCode: Type.Optional(Type.String()),
     reasonCategory: Type.Optional(Type.String()),
@@ -73,9 +73,6 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Start scoring',
-        description:
-          'Requires fresh KATM consent. Returns the cached limit if still valid; ' +
-          'otherwise fires the KATM pipeline and returns pending. Poll GET /status.',
         security: SECURITY,
         body: StartBody,
         response: { 200: StartResponse, 400: ERROR, 401: ERROR, 404: ERROR },
@@ -84,7 +81,6 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
     },
     async (request, reply) => {
       const userId = Number(request.user.sub);
-      if (!request.body.consent) return reply.code(400).sendError('consent_required');
 
       // Reuse a still-valid limit — no fresh bureau charge within the TTL.
       const [limit] = await db
@@ -181,9 +177,7 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
             ...(outcome.missingFields ? { missingFields: outcome.missingFields } : {}),
           };
         case 'failed':
-          return { status: 'failed' as const, reason: outcome.reason };
-        case 'awaiting_card':
-          return { status: 'awaiting_card' as const };
+          return { status: 'rejected' as const, reason: outcome.reason };
         case 'scored':
           return { status: 'scored' as const, creditLimit: outcome.creditLimit };
         case 'error':
@@ -203,7 +197,7 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
       Type.Literal('rejected'),
       Type.Literal('error'),
     ]),
-    creditLimit: Type.Union([Type.Number(), Type.Null()]),
+    creditLimit: Type.Union([Type.String(), Type.Null()]),
     expiresAt: Type.Union([Type.String(), Type.Null()]),
     // True once the stored limit is past its TTL — the app offers a refresh.
     expired: Type.Boolean(),
