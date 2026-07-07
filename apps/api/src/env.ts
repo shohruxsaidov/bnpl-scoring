@@ -53,6 +53,10 @@ const schema = z.object({
   KATM_POLL_INTERVAL_MS: z.coerce.number().default(1_000),
   KATM_POLL_MAX_ATTEMPTS: z.coerce.number().default(15),
   KATM_TIMEOUT: z.coerce.number().default(10_000),
+  // Firebase Cloud Messaging — base64 of the service-account JSON. Optional:
+  // when unset, push soft-degrades (inbox rows still written; worker no-ops with
+  // a warn). See src/lib/firebase.ts.
+  FIREBASE_SERVICE_ACCOUNT_BASE64: z.string().optional(),
   LOKI_URL: z.string().url().optional(),
   OTEL_TRACES_ENDPOINT: z.string().url().optional(),
   OTEL_METRICS_ENDPOINT: z.string().url().optional(),

@@ -32,6 +32,7 @@ export * from './merchant-user-sessions';
 export * from './merchant-users';
 export * from './merchants';
 export * from './mxik-cache';
+export * from './notifications';
 export * from './organization';
 export * from './otp-verifications';
 export * from './products';

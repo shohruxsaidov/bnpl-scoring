@@ -10,6 +10,10 @@ export const userDevices = pgTable('user_devices', {
   fcmToken: text('fcm_token'),
   platform: varchar('platform', { length: 10 }).notNull().$type<'ios' | 'android'>(),
   appVersion: varchar('app_version', { length: 10 }).notNull(),
+  // UI language the app runs in, sent on the fcm-token upsert. Drives the
+  // locale of push title/body (rendered server-side in the push worker, which
+  // has no request context). Defaults to 'ru' (matches deals.lang).
+  language: varchar('language', { length: 2 }).notNull().default('ru').$type<'uz' | 'ru'>(),
   // Set when the device completes /setup (full OTP + MyID onboarding). Marks the
   // device as trusted for PIN/biometric login; null means merely known.
   activatedAt: timestamp('activated_at', { withTimezone: true }),

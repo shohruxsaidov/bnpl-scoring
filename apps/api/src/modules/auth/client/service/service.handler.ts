@@ -153,6 +153,7 @@ export async function upsertDevice(input: {
   fcmToken: string;
   platform: 'ios' | 'android';
   appVersion: string;
+  language: 'uz' | 'ru';
 }): Promise<void> {
   await db
     .insert(userDevices)
@@ -164,6 +165,7 @@ export async function upsertDevice(input: {
         fcmToken: input.fcmToken,
         platform: input.platform,
         appVersion: input.appVersion,
+        language: input.language,
         updatedAt: new Date(),
       },
     });

@@ -16,6 +16,7 @@ import {
   revokeDeviceSessions,
   revokeSession,
   setUserPin,
+  upsertDevice,
   verifyBiometricSignature,
   verifyUserPin,
 } from '../../auth/client/service/service.handler';
@@ -393,6 +394,46 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       );
 
       return { accessToken };
+    },
+  );
+
+  /* ── Register push token (FCM) for this device ───────────────────────────── */
+
+  fastify.put(
+    '/fcm-token',
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Register push token',
+        description:
+          'Upserts the FCM push token and UI language for the current device ' +
+          '(x-device-id). Called after the app obtains/refreshes its FCM token. ' +
+          'Language (uz|ru, default ru) drives the locale of push title/body.',
+        security: SECURITY,
+        body: Type.Object({
+          fcmToken: Type.String({ minLength: 1, maxLength: 4096, examples: ['fMEp...:APA91b...'] }),
+          platform: Platform,
+          appVersion: Type.String({ minLength: 1, maxLength: 10, examples: ['1.0.0'] }),
+          language: Type.Optional(
+            Type.Union([Type.Literal('uz'), Type.Literal('ru')], { examples: ['ru'] }),
+          ),
+        }),
+        response: { 200: Ok, 400: ERROR, 401: ERROR },
+      },
+      preHandler: [app.verifyClientJwt],
+    },
+    async (request, reply) => {
+      if (!request.deviceId) return reply.code(400).sendError('missing_device_id');
+
+      await upsertDevice({
+        userId: Number(request.user.sub),
+        deviceId: request.deviceId,
+        fcmToken: request.body.fcmToken,
+        platform: request.body.platform,
+        appVersion: request.body.appVersion,
+        language: request.body.language ?? 'ru',
+      });
+      return { ok: true };
     },
   );
 

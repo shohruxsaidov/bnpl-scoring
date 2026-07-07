@@ -106,4 +106,15 @@ export const ru: Record<string, string> = {
   session_incomplete: "В сессии заполнены не все шаги — пройдите мастер заново",
   scoring_missing: "Результат скоринга отсутствует в сессии",
   scoring_declined: "Скоринг отклонён — сделка не может быть создана",
+
+  // notifications — errors
+  notification_not_found: "Уведомление не найдено",
+
+  // notifications — push title/body (rendered server-side per device language)
+  "notification.scoring_approved.title": "Скоринг одобрен",
+  "notification.scoring_approved.body": "Вам одобрен кредитный лимит %{creditLimit} сум.",
+  "notification.scoring_rejected.title": "Скоринг отклонён",
+  "notification.scoring_rejected.body": "К сожалению, кредитный лимит пока не одобрен.",
+  "notification.limit_updated.title": "Кредитный лимит обновлён",
+  "notification.limit_updated.body": "Ваш кредитный лимит изменён на %{creditLimit} сум.",
 }

@@ -106,4 +106,15 @@ export const uz: Record<string, string> = {
   session_incomplete: "Sessiyada barcha qadamlar to'ldirilmagan — masterni qaytadan o'ting",
   scoring_missing: "Sessiyada skoring natijasi yo'q",
   scoring_declined: "Skoring rad etilgan — bitim yaratib bo'lmaydi",
+
+  // notifications — errors
+  notification_not_found: "Bildirishnoma topilmadi",
+
+  // notifications — push title/body (rendered server-side per device language)
+  "notification.scoring_approved.title": "Skoring tasdiqlandi",
+  "notification.scoring_approved.body": "Sizga %{creditLimit} so'm kredit limiti ajratildi.",
+  "notification.scoring_rejected.title": "Skoring rad etildi",
+  "notification.scoring_rejected.body": "Afsuski, hozircha kredit limiti ajratilmadi.",
+  "notification.limit_updated.title": "Kredit limiti yangilandi",
+  "notification.limit_updated.body": "Sizning kredit limitingiz %{creditLimit} so'mga o'zgardi.",
 }

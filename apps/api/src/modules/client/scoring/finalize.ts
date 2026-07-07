@@ -17,6 +17,7 @@ import {
   type ScoringRow,
 } from '../../scoring/pipelines/store';
 import type { PipelineStepResult } from '../../integrations/katm/flow';
+import { notify } from '../notifications/service';
 
 /** Credit-limit validity window before a re-score is allowed (Q: 7 days). */
 export const CLIENT_LIMIT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -146,6 +147,24 @@ export async function finalizeClientScoringIfReady(
   // reject collapses to a 0 limit (the reason stays on the scorings run).
   const limit = result.decision === 'approve' ? String(result.platformCreditLimit) : '0';
   await writeClientCreditLimit(userId, scoring.id, limit);
+
+  // Notify the terminal result (inbox + push). Idempotent per run via dedupeKey.
+  if (result.decision === 'approve') {
+    await notify({
+      userId,
+      type: 'scoring_approved',
+      data: { creditLimit: limit },
+      dedupeKey: `scoring_result:${scoring.id}`,
+    });
+  } else {
+    await notify({
+      userId,
+      type: 'scoring_rejected',
+      data: { reasonCode: result.engineRejected ? 'model_stop_factor' : 'zero_limit' },
+      dedupeKey: `scoring_result:${scoring.id}`,
+    });
+  }
+
   return { status: 'scored', creditLimit: limit };
 }
 
@@ -164,6 +183,13 @@ export async function applyClientStep(
   if (step.kind === 'rejected') {
     // scorings already marked 'rejected' by the pipeline; surface a 0 limit.
     await writeClientCreditLimit(scoring.userId!, scoring.id, '0');
+    // KATM stop-factor rejection — notify the terminal result (idempotent per run).
+    await notify({
+      userId: scoring.userId!,
+      type: 'scoring_rejected',
+      data: { reasonCode: step.reasonCode },
+      dedupeKey: `scoring_result:${scoring.id}`,
+    });
     return {
       status: 'rejected',
       reasonCode: step.reasonCode,

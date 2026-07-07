@@ -19,12 +19,19 @@ import {
   DEAL_SESSION_SWEEP_INTERVAL_MS,
   processDealSessionSweepJob,
 } from '../modules/merchant/deal-sessions/sweep';
+import {
+  NOTIFICATIONS_PUSH_QUEUE,
+  processNotificationPushJob,
+  setNotificationsPushQueue,
+  type NotificationPushJobData,
+} from '../modules/client/notifications/push';
 
 declare module 'fastify' {
   interface FastifyInstance {
     katmPollQueue: Queue<KatmPollJobData>;
     katmClaimRejectQueue: Queue<ClaimRejectJobData>;
     dealSessionSweepQueue: Queue;
+    notificationsPushQueue: Queue<NotificationPushJobData>;
     // Every Queue created by this plugin, in registration order. The bull-board
     // dashboard iterates this so new queues surface without touching its plugin.
     queues: Queue[];
@@ -49,9 +56,16 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
     connection,
   });
   const sweepQueue: Queue = new Queue(DEAL_SESSION_SWEEP_QUEUE, { connection });
+  const notificationsPushQueue: Queue<NotificationPushJobData> = new Queue(
+    NOTIFICATIONS_PUSH_QUEUE,
+    { connection },
+  );
+  // Hand the producing queue to notify() so it can enqueue without threading the
+  // queue through every scoring/finalize call site.
+  setNotificationsPushQueue(notificationsPushQueue);
 
   // Registry consumed by the bull-board dashboard. Push each new queue here.
-  const queues: Queue[] = [queue, claimRejectQueue, sweepQueue];
+  const queues: Queue[] = [queue, claimRejectQueue, sweepQueue, notificationsPushQueue];
 
   const worker = new Worker<KatmPollJobData>(
     KATM_POLL_QUEUE,
@@ -77,6 +91,22 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
     );
   });
 
+  // Notification push — best-effort FCM delivery mirroring an inbox row. Retries
+  // on transient/whole-job failure; the inbox row is the durable record.
+  const notificationsPushWorker = new Worker<NotificationPushJobData>(
+    NOTIFICATIONS_PUSH_QUEUE,
+    async (job) => processNotificationPushJob(job.data, app.log),
+    { connection, concurrency: 5 },
+  );
+
+  notificationsPushWorker.on('failed', (job, err) => {
+    if (!job) return;
+    app.log.warn(
+      { jobId: job.id, notificationId: job.data.notificationId, err },
+      'notification push attempt failed',
+    );
+  });
+
   worker.on('failed', (job, err) => {
     if (!job) return;
     const exhausted = job.attemptsMade >= (job.opts.attempts ?? 1);
@@ -92,12 +122,15 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
 
   app.decorate('katmPollQueue', queue);
   app.decorate('katmClaimRejectQueue', claimRejectQueue);
+  app.decorate('notificationsPushQueue', notificationsPushQueue);
   app.decorate('queues', queues);
   app.addHook('onClose', async () => {
     await worker.close();
     await claimRejectWorker.close();
+    await notificationsPushWorker.close();
     await queue.close();
     await claimRejectQueue.close();
+    await notificationsPushQueue.close();
     await redis.quit().catch(() => null);
   });
 });
