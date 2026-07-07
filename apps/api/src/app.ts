@@ -18,7 +18,13 @@ import bullBoardPlugin from './plugins/bull-board';
 import i18nPlugin from './plugins/i18n';
 import swaggerPlugin from './plugins/swagger';
 import healthRoutes from './routes/health.js';
-import { authModule, merchantModule, adminModule, clientModule } from './modules/index.js';
+import {
+  authModule,
+  merchantModule,
+  adminModule,
+  clientModule,
+  publicModule,
+} from './modules/index.js';
 import { env } from './env.js';
 
 const isDev = env.NODE_ENV !== 'production';
@@ -116,6 +122,7 @@ export async function buildApp() {
   await app.register(merchantModule, { prefix: '/api/v1' });
   await app.register(adminModule, { prefix: '/api/v1' });
   await app.register(clientModule, { prefix: '/api/v1' });
+  await app.register(publicModule, { prefix: '/api/v1' });
 
   return app;
 }
