@@ -1,11 +1,14 @@
+import { randomUUID } from 'node:crypto';
 import { Type } from '@sinclair/typebox';
+import fastifyMultipart from '@fastify/multipart';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { desc, eq, sql } from 'drizzle-orm';
 import { db } from '@db';
+import { env } from '@env';
 import { publicOffers } from '@db/public-offers';
 import { adminUsers } from '@db/admin-users';
-import { createUploadUrl, recordFile, getDownloadUrl } from '../../../lib/file-storage';
+import { recordFile, getDownloadUrl } from '../../../lib/file-storage';
 
 // ---------------------------------------------------------------------------
 // Admin management of the versioned, PDF-based public offer. Read + create
@@ -15,15 +18,25 @@ import { createUploadUrl, recordFile, getDownloadUrl } from '../../../lib/file-s
 // ---------------------------------------------------------------------------
 
 const UPLOAD_PREFIX = 'public-offers';
+const MAX_PDF_BYTES = 15 * 1024 * 1024; // 15 MB
 
 export default async function adminPublicOfferRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
 
+  // Scoped to this plugin: only the offer-upload route consumes multipart, so
+  // the rest of the admin API keeps its JSON-only body parsing.
+  await app.register(fastifyMultipart, {
+    limits: { fileSize: MAX_PDF_BYTES, files: 1 },
+    // Don't throw on oversize; flag `file.truncated` so we can reject with a
+    // localized 400 (file_too_large) instead of an opaque 413.
+    throwFileSizeLimit: false,
+  });
+
   const TAGS = ['Admin · Public Offer'];
 
-  const UploadUrlResponse = Type.Object(
-    { uploadUrl: Type.String(), objectKey: Type.String() },
-    { examples: [{ uploadUrl: 'https://minio.../public-offers/uuid?X-Amz-...', objectKey: 'public-offers/uuid' }] },
+  const UploadResponse = Type.Object(
+    { objectKey: Type.String(), originalName: Type.Union([Type.String(), Type.Null()]) },
+    { examples: [{ objectKey: 'public-offers/uuid', originalName: 'oferta-uz.pdf' }] },
   );
 
   const FileInput = Type.Object({
@@ -47,20 +60,40 @@ export default async function adminPublicOfferRoutes(app: FastifyInstance) {
     downloadUrlRu: Type.String(),
   });
 
-  /* ── Presigned upload URL (called once per PDF) ──────────────────────────── */
+  /* ── Direct PDF upload (called once per PDF; streams through the backend) ── */
 
   fastify.post(
     '/upload-url',
     {
       schema: {
         tags: TAGS,
-        summary: 'Presigned upload URL for a public-offer PDF',
-        response: { 200: UploadUrlResponse },
+        summary: 'Upload a public-offer PDF to storage',
+        description:
+          'Accepts a single multipart PDF file, stores it in object storage, and ' +
+          'returns its objectKey to reference when publishing a version.',
+        consumes: ['multipart/form-data'],
+        response: { 200: UploadResponse, 400: { $ref: 'ErrorResponse#' } },
       },
     },
-    async () => {
-      const { uploadUrl, objectKey } = await createUploadUrl({ prefix: UPLOAD_PREFIX });
-      return { uploadUrl, objectKey };
+    async (request, reply) => {
+      const upload = await request.file();
+      if (!upload) return reply.code(400).sendError('file_required');
+
+      if (upload.mimetype !== 'application/pdf') {
+        return reply.code(400).sendError('invalid_file_type');
+      }
+
+      // Buffer the whole file so a truncated stream (over the size limit) is
+      // rejected before anything lands in storage.
+      const buffer = await upload.toBuffer();
+      if (upload.file.truncated) return reply.code(400).sendError('file_too_large');
+
+      const objectKey = `${UPLOAD_PREFIX}/${randomUUID()}`;
+      await app.minio.putObject(env.MINIO_BUCKET, objectKey, buffer, buffer.length, {
+        'Content-Type': 'application/pdf',
+      });
+
+      return { objectKey, originalName: upload.filename ?? null };
     },
   );
 
