@@ -1,16 +1,8 @@
 {
   "mcpServers": {
-    "youtrack": {
+    "clickup": {
       "command": "npx",
-      "args": [
-        "mcp-remote",
-        "https://shohruxsaidov24.youtrack.cloud/mcp",
-        "--header",
-        "Authorization:${AUTH_HEADER}"
-      ],
-      "env": {
-        "AUTH_HEADER": "Bearer perm-YWRtaW4=.NDItMQ==.UrIuiROORjpMYQ3GmCJVEtQDBO4xuT"
-      }
+      "args": ["-y", "mcp-remote", "https://mcp.clickup.com/mcp"]
     }
   }
 }
