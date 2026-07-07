@@ -23,18 +23,15 @@ export const usePublicOffersStore = defineStore('public-offers', () => {
     loaded.value = true
   }
 
-  // Two-step presigned upload: ask for a URL, PUT the file straight to storage.
+  // Upload the PDF straight through the backend as multipart form data; the API
+  // stores it and returns the objectKey to reference when publishing.
   async function uploadPdf(file: File): Promise<string> {
-    const { uploadUrl, objectKey } = await api<{ uploadUrl: string; objectKey: string }>(
+    const form = new FormData()
+    form.append('file', file)
+    const { objectKey } = await api<{ objectKey: string; originalName: string | null }>(
       '/admin/public-offers/upload-url',
-      { method: 'POST' },
+      { method: 'POST', body: form },
     )
-    const putRes = await fetch(uploadUrl, {
-      method: 'PUT',
-      body: file,
-      headers: { 'Content-Type': file.type || 'application/pdf' },
-    })
-    if (!putRes.ok) throw new Error('upload_failed')
     return objectKey
   }
 

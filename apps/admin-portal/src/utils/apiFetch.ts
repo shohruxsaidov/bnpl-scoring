@@ -17,11 +17,17 @@ async function tryRefresh(): Promise<boolean> {
 }
 
 export async function apiFetch<T = any>(path: string, opts: RequestInit = {}): Promise<T> {
+  // Let the browser set the multipart boundary itself for FormData bodies;
+  // only default to JSON for other (string) bodies.
+  const isFormData = typeof FormData !== 'undefined' && opts.body instanceof FormData
   const makeRequest = () =>
     fetch(`${API}${path}`, {
       ...opts,
       credentials: 'include',
-      headers: { ...(opts.body != null ? { 'Content-Type': 'application/json' } : {}), ...(opts.headers ?? {}) },
+      headers: {
+        ...(opts.body != null && !isFormData ? { 'Content-Type': 'application/json' } : {}),
+        ...(opts.headers ?? {}),
+      },
     })
 
   let res = await makeRequest()
