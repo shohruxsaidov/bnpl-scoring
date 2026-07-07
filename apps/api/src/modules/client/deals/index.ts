@@ -1,0 +1,206 @@
+import { Type } from '@sinclair/typebox';
+import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
+import type { FastifyInstance } from 'fastify';
+import { and, desc, eq, inArray } from 'drizzle-orm';
+import { db } from '@db';
+import { deals, dealItems, merchants } from '@db/schema';
+import { loadProgressForDeals, loadDealSchedule } from './progress';
+
+// ---------------------------------------------------------------------------
+// Client Deals — a borrower's own credits in the mobile app. Scoped to the
+// authenticated user (request.user.sub); a client only ever sees deals they
+// signed. Visibility is limited to states that represent a real financial
+// obligation — active/overdue/closed — so pipeline/pre-signing states
+// (draft/scoring/approved/declined) never surface here. Money is integer tiyin.
+// ---------------------------------------------------------------------------
+
+const SECURITY = [{ clientAuth: [] }];
+const ERROR = { $ref: 'ErrorResponse#' };
+
+// The one visibility rule shared by list and detail. A deal outside this set —
+// or belonging to another user — is invisible through BOTH endpoints.
+const VISIBLE_STATUSES = ['active', 'overdue', 'closed'] as const;
+
+function formatDealNumber(n: number | null | undefined): string {
+  return n != null ? String(n) : '—';
+}
+
+export default async function clientDealRoutes(app: FastifyInstance) {
+  const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
+  const TAGS = ['Client · Deals'];
+  const guards = [app.verifyClientJwt];
+
+  const StatusEnum = Type.Union(VISIBLE_STATUSES.map((s) => Type.Literal(s)));
+
+  const Progress = {
+    paidAmount: Type.Integer(),
+    remainingAmount: Type.Integer(),
+    nextDueDate: Type.Union([Type.String(), Type.Null()]),
+    nextDueAmount: Type.Union([Type.Integer(), Type.Null()]),
+  };
+
+  const DealListItem = Type.Object({
+    id: Type.String(),
+    dealNumber: Type.String(),
+    status: Type.String(),
+    createdAt: Type.String(),
+    merchantName: Type.String(),
+    totalPayable: Type.Integer(),
+    termMonths: Type.Integer(),
+    ...Progress,
+  });
+
+  const ListQuery = Type.Object({ status: Type.Optional(StatusEnum) });
+
+  /* ── GET /client/deals — the authenticated client's own credits ────────── */
+
+  fastify.get(
+    '/',
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'List my deals',
+        description: "The authenticated client's active, overdue and closed credits.",
+        security: SECURITY,
+        querystring: ListQuery,
+        response: { 200: Type.Object({ deals: Type.Array(DealListItem) }), 401: ERROR },
+      },
+      preHandler: guards,
+    },
+    async (request) => {
+      const userId = Number(request.user.sub);
+      const { status } = request.query;
+
+      const statusFilter = status
+        ? eq(deals.status, status)
+        : inArray(deals.status, [...VISIBLE_STATUSES]);
+
+      const rows = await db
+        .select({ deal: deals, merchantName: merchants.name })
+        .from(deals)
+        .leftJoin(merchants, eq(deals.merchantId, merchants.id))
+        .where(and(eq(deals.userId, userId), statusFilter))
+        .orderBy(desc(deals.createdAt));
+
+      const progress = await loadProgressForDeals(rows.map((r) => r.deal.id));
+
+      const list = rows.map((r) => {
+        const p = progress.get(r.deal.id)!;
+        return {
+          id: r.deal.id,
+          dealNumber: formatDealNumber(r.deal.dealNumber),
+          status: r.deal.status,
+          createdAt: r.deal.createdAt.toISOString(),
+          merchantName: r.merchantName ?? '—',
+          totalPayable: r.deal.totalPayable ?? 0,
+          termMonths: r.deal.termMonths ?? 0,
+          ...p,
+        };
+      });
+
+      return { deals: list };
+    },
+  );
+
+  /* ── GET /client/deals/:id — one credit with basket + schedule ─────────── */
+
+  const IdParams = Type.Object({ id: Type.String() });
+
+  const BasketItem = Type.Object({
+    productName: Type.String(),
+    price: Type.Number(),
+    quantity: Type.Integer(),
+  });
+
+  const ScheduleItem = Type.Object({
+    index: Type.Integer(),
+    dueDate: Type.String(),
+    amount: Type.Integer(),
+    paidAmount: Type.Integer(),
+    paid: Type.Boolean(),
+    paidAt: Type.Union([Type.String(), Type.Null()]),
+  });
+
+  const DealDetail = Type.Object({
+    id: Type.String(),
+    dealNumber: Type.String(),
+    status: Type.String(),
+    createdAt: Type.String(),
+    lang: Type.String(),
+    merchantName: Type.String(),
+    termMonths: Type.Integer(),
+    paymentDay: Type.Union([Type.Integer(), Type.Null()]),
+    amount: Type.Integer(),
+    totalPayable: Type.Integer(),
+    prepaymentAmount: Type.Integer(),
+    ...Progress,
+    basket: Type.Array(BasketItem),
+    schedule: Type.Array(ScheduleItem),
+  });
+
+  fastify.get(
+    '/:id',
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Get my deal',
+        description: "One of the authenticated client's own credits, with basket and payment schedule.",
+        security: SECURITY,
+        params: IdParams,
+        response: { 200: Type.Object({ deal: DealDetail }), 401: ERROR, 404: ERROR },
+      },
+      preHandler: guards,
+    },
+    async (request, reply) => {
+      const userId = Number(request.user.sub);
+
+      const rows = await db
+        .select({ deal: deals, merchantName: merchants.name })
+        .from(deals)
+        .leftJoin(merchants, eq(deals.merchantId, merchants.id))
+        // Same visibility rule as the list — ownership AND status. A miss is a
+        // 404 (never 403): a deal that isn't the client's must not be
+        // distinguishable from one that doesn't exist.
+        .where(
+          and(
+            eq(deals.id, request.params.id),
+            eq(deals.userId, userId),
+            inArray(deals.status, [...VISIBLE_STATUSES]),
+          ),
+        )
+        .limit(1);
+
+      const row = rows[0];
+      if (!row) return reply.code(404).sendError('deal_not_found');
+      const { deal } = row;
+
+      const [itemRows, sched] = await Promise.all([
+        db.select().from(dealItems).where(eq(dealItems.dealId, deal.id)).orderBy(dealItems.id),
+        loadDealSchedule(deal.id),
+      ]);
+
+      return {
+        deal: {
+          id: deal.id,
+          dealNumber: formatDealNumber(deal.dealNumber),
+          status: deal.status,
+          createdAt: deal.createdAt.toISOString(),
+          lang: deal.lang ?? 'ru',
+          merchantName: row.merchantName ?? '—',
+          termMonths: deal.termMonths ?? 0,
+          paymentDay: deal.paymentDay ?? null,
+          amount: deal.amount ?? 0,
+          totalPayable: deal.totalPayable ?? 0,
+          prepaymentAmount: deal.prepaymentAmount ?? 0,
+          ...sched.progress,
+          basket: itemRows.map((i) => ({
+            productName: i.productName,
+            price: Number(i.price),
+            quantity: i.quantity,
+          })),
+          schedule: sched.schedule,
+        },
+      };
+    },
+  );
+}
