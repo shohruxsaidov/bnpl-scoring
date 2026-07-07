@@ -1,10 +1,12 @@
 import { Type } from '@sinclair/typebox';
+import { eq } from 'drizzle-orm';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { redis } from '@redis';
 import { env } from '@env';
 import { db } from '@db';
 import { users } from '@db/schema';
+import { files } from '@db/files';
 import { userPublicOfferAcceptances } from '@db/user-public-offer-acceptances';
 import {
   createOtp,
@@ -15,7 +17,6 @@ import {
 import { createMyidSession, exchangeMyidCode } from '../../integrations/myid/client';
 import { createUserHandler } from '../../id/users';
 import { sendOtpSms } from '../../../lib/sms';
-import { getDownloadUrl } from '../../../lib/file-storage';
 import { getCurrentPublicOffer, findCurrentPublicOfferById } from './public-offers';
 import { pinFailKey } from '../auth/index';
 
@@ -89,27 +90,6 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
   });
 
   /* ── Response schemas (examples power the Swagger UI sample bodies) ──────── */
-
-  const PublicOfferResponse = Type.Object(
-    {
-      id: Type.Integer(),
-      version: Type.Integer(),
-      // Freshly-generated presigned download URLs (24h) for the two PDFs of the
-      // current version. Accepting the version covers both languages.
-      downloadUrlUz: Type.String(),
-      downloadUrlRu: Type.String(),
-    },
-    {
-      examples: [
-        {
-          id: 1,
-          version: 3,
-          downloadUrlUz: 'https://minio.example.com/bucket/public-offers/....pdf?X-Amz-...',
-          downloadUrlRu: 'https://minio.example.com/bucket/public-offers/....pdf?X-Amz-...',
-        },
-      ],
-    },
-  );
 
   const OtpResponse = Type.Object(
     {
@@ -192,23 +172,43 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
 
   /* ── Current public offer (public, for the accept screen) ────────────────── */
 
+  const PublicOfferQuery = Type.Object({
+    lang: Type.Optional(
+      Type.Union([Type.Literal('uz'), Type.Literal('ru')], { default: 'uz', examples: ['uz'] }),
+    ),
+  });
+
+  // Streams the current offer's PDF straight from object storage (like the
+  // public GET /offer surface), so the client never handles a presigned URL.
+  // The offer id/version — needed later as `publicOfferId` at /myid-complete —
+  // ride along in response headers since the body is now raw PDF bytes.
   fastify.get(
     '/public-offer',
     {
       schema: {
         tags: TAGS,
-        summary: 'Current public offer',
-        response: { 200: PublicOfferResponse, 404: ERROR },
+        summary: 'Current public offer PDF',
+        querystring: PublicOfferQuery,
+        // Binary PDF response; no JSON body schema (streams bypass serialization).
+        response: { 404: ERROR },
       },
     },
-    async (_req, reply) => {
+    async (req, reply) => {
       const offer = await getCurrentPublicOffer();
       if (!offer) return reply.code(404).sendError('public_offer_not_found');
-      const [downloadUrlUz, downloadUrlRu] = await Promise.all([
-        getDownloadUrl(db, offer.fileUzId),
-        getDownloadUrl(db, offer.fileRuId),
-      ]);
-      return { id: offer.id, version: offer.version, downloadUrlUz, downloadUrlRu };
+
+      const lang = req.query.lang ?? 'uz';
+      const fileId = lang === 'ru' ? offer.fileRuId : offer.fileUzId;
+      const [file] = await db.select().from(files).where(eq(files.id, fileId)).limit(1);
+      if (!file) return reply.code(404).sendError('public_offer_not_found');
+
+      const stream = await app.minio.getObject(file.bucket, file.objectKey);
+      return reply
+        .header('Content-Type', file.mimeType ?? 'application/pdf')
+        .header('Content-Disposition', `inline; filename="public-offer-${lang}.pdf"`)
+        .header('X-Public-Offer-Id', String(offer.id))
+        .header('X-Public-Offer-Version', String(offer.version))
+        .send(stream);
     },
   );
 
