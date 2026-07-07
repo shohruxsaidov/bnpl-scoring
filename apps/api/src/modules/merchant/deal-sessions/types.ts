@@ -89,10 +89,36 @@ export interface SessionStepData {
 
 export type DealSessionRow = typeof dealSessions.$inferSelect;
 
+/**
+ * Idle budget for a Wizard run. A session with no WRITE (saveStep or any server
+ * stamp — reads never touch updatedAt) for this long is reaped to `expired`.
+ * A product rule, not a per-deploy knob — kept as a constant, not env.
+ */
+export const DEAL_SESSION_TTL_MS = 2 * 60 * 60 * 1000; // 2h
+
+/**
+ * How long after expiry the "your deal expired — we recommend starting over"
+ * banner keeps showing (2× TTL — covers a lunch-plus-meeting return). Older than
+ * this and the notice is stale nagging, so GET /active stops surfacing it.
+ */
+export const DEAL_SESSION_EXPIRED_NOTICE_WINDOW_MS = 4 * 60 * 60 * 1000; // 4h
+
 export function err(code: string): Error & { code: string } {
   return Object.assign(new Error(code), { code });
 }
 
 export function stepDataOf(session: DealSessionRow): SessionStepData {
   return (session.stepData ?? {}) as SessionStepData;
+}
+
+/**
+ * True when an `active` session has gone idle past the TTL and should be reaped.
+ * katmPending sessions are EXEMPT — a BullMQ poll worker owns them while a bureau
+ * report is in flight (and polling never exceeds the TTL anyway), so the "no
+ * writes" idle is an artifact of reads-don't-bump, not real abandonment.
+ */
+export function isSessionStale(session: DealSessionRow, now: Date = new Date()): boolean {
+  if (session.status !== 'active') return false;
+  if (stepDataOf(session).katmPending?.status === 'pending') return false;
+  return now.getTime() - session.updatedAt.getTime() > DEAL_SESSION_TTL_MS;
 }

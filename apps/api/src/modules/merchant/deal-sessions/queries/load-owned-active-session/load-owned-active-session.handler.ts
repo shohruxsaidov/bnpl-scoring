@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { db } from '@db';
 import { dealSessions } from '../../../../deals/schema';
-import { err, type DealSessionRow } from '../../types';
+import { err, isSessionStale, type DealSessionRow } from '../../types';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -21,5 +21,9 @@ export async function loadOwnedActiveSession(
 ): Promise<DealSessionRow> {
   const row = await loadOwnedSession(id, agentId);
   if (row.status !== 'active') throw err('session_not_active');
+  // Idle past the TTL — refuse to resume it even though the sweep hasn't flipped
+  // the row yet. The actual status flip + claim retraction happen in the sweep
+  // (≤5 min) or eagerly on GET /active / POST /, which hold the reject queue.
+  if (isSessionStale(row)) throw err('session_expired');
   return row;
 }

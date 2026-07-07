@@ -14,11 +14,17 @@ import {
   processClaimRejectJob,
   type ClaimRejectJobData,
 } from '../modules/integrations/katm/claim-reject';
+import {
+  DEAL_SESSION_SWEEP_QUEUE,
+  DEAL_SESSION_SWEEP_INTERVAL_MS,
+  processDealSessionSweepJob,
+} from '../modules/merchant/deal-sessions/sweep';
 
 declare module 'fastify' {
   interface FastifyInstance {
     katmPollQueue: Queue<KatmPollJobData>;
     katmClaimRejectQueue: Queue<ClaimRejectJobData>;
+    dealSessionSweepQueue: Queue;
     // Every Queue created by this plugin, in registration order. The bull-board
     // dashboard iterates this so new queues surface without touching its plugin.
     queues: Queue[];
@@ -42,9 +48,10 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
   const claimRejectQueue: Queue<ClaimRejectJobData> = new Queue(KATM_CLAIM_REJECT_QUEUE, {
     connection,
   });
+  const sweepQueue: Queue = new Queue(DEAL_SESSION_SWEEP_QUEUE, { connection });
 
   // Registry consumed by the bull-board dashboard. Push each new queue here.
-  const queues: Queue[] = [queue, claimRejectQueue];
+  const queues: Queue[] = [queue, claimRejectQueue, sweepQueue];
 
   const worker = new Worker<KatmPollJobData>(
     KATM_POLL_QUEUE,
