@@ -6,6 +6,7 @@ import clientMeRoutes from './me/index';
 import clientScoringRoutes from './scoring/index';
 import clientNotificationsRoutes from './notifications/index';
 import clientDealsRoutes from './deals/index';
+import clientScoringCardsRoutes from './scoring/cards';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -43,6 +44,7 @@ export default async function clientModule(app: FastifyInstance) {
   await app.register(clientCardsRoutes, { prefix: '/client/cards' });
   await app.register(clientMeRoutes, { prefix: '/client/me' });
   await app.register(clientScoringRoutes, { prefix: '/client/scoring' });
+  await app.register(clientScoringCardsRoutes, { prefix: '/client/scoring/cards' });
   await app.register(clientNotificationsRoutes, { prefix: '/client/notifications' });
   await app.register(clientDealsRoutes, { prefix: '/client/deals' });
 }

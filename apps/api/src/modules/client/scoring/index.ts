@@ -45,7 +45,9 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
   const TAGS = ['Client · Scoring'];
   const guards = [app.verifyClientJwt];
 
-  const StartBody = Type.Object({});
+  const StartBody = Type.Object({
+    cardId: Type.Optional(Type.String({ minLength: 1 })),
+  });
 
   const StartResponse = Type.Object({
     status: Type.Union([
