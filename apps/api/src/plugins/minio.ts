@@ -2,7 +2,6 @@ import fp from 'fastify-plugin';
 import { Client } from 'minio';
 import type { FastifyInstance } from 'fastify';
 import { env } from '../env';
-import { minioPresign } from '../lib/minio-presign';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -12,13 +11,20 @@ declare module 'fastify' {
 }
 
 export default fp(async function minioPlugin(app: FastifyInstance) {
+  const minioPresign = new Client({
+    endPoint: env.MINIO_PUBLIC_ENDPOINT ?? env.MINIO_ENDPOINT,
+    port: env.MINIO_PUBLIC_PORT ?? undefined,
+    useSSL: env.MINIO_PUBLIC_USE_SSL ?? false,
+    accessKey: env.MINIO_ACCESS_KEY,
+    secretKey: env.MINIO_SECRET_KEY,
+  });
+
   const client = new Client({
     endPoint: env.MINIO_ENDPOINT,
     port: env.MINIO_PORT,
     useSSL: false,
     accessKey: env.MINIO_ACCESS_KEY,
     secretKey: env.MINIO_SECRET_KEY,
-    // region: env.MINIO_REGION,
   });
 
   const bucket = env.MINIO_BUCKET;
