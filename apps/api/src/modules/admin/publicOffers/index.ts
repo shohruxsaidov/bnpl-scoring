@@ -146,11 +146,7 @@ export default async function adminPublicOfferRoutes(app: FastifyInstance) {
         return inserted!;
       });
 
-      // return reply.code(201).send(await serialize(row));
-      return {
-        id: 1,
-        version: 1,
-      };
+      return reply.code(201).send(await serialize(row));
     },
   );
 
