@@ -29,7 +29,10 @@ export const users = pgTable('users', {
   districtCode: varchar('district_code', { length: 10 }), // dict 052
   docType: integer('doc_type'), // 0 — ID card, 6 — biometric passport
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  hashPassword: varchar('hash_password'),
+  // Portable account credential (argon2 hash). Required from onboarding: set at
+  // /setup and used for phone+password login, incl. cross-device (with OTP
+  // step-up on untrusted devices). Distinct from the optional on-device pinHash.
+  passwordHash: varchar('password_hash', { length: 255 }),
   // Account-bound app PIN (4 digits), stored as a bcrypt hash. Null until the
   // client sets it during onboarding. Verified server-side on PIN login with
   // per-phone lockout; recovery is a full OTP + MyID re-auth.

@@ -1,13 +1,18 @@
 import { createHash, createPublicKey, createVerify, randomBytes, randomUUID } from 'node:crypto';
 import type { KeyObject } from 'node:crypto';
 import argon2 from 'argon2';
-import { and, eq, gt, ilike, isNull, or } from 'drizzle-orm';
+import { and, eq, gt, ilike, isNull, ne, or } from 'drizzle-orm';
 import { db } from '@db';
 import { redis } from '@redis';
 import { userDevices, userSessions, otpVerifications, users } from '@db/schema';
 import { env } from '../../../../env';
 
-export type OtpPurpose = 'login' | 'register' | 'client_registration' | 'deal_signing';
+export type OtpPurpose =
+  | 'login'
+  | 'register'
+  | 'client_registration'
+  | 'deal_signing'
+  | 'password_reset';
 
 /** Hash a raw token with SHA-256, hex-encoded. */
 function hashToken(token: string): string {
@@ -318,6 +323,55 @@ export async function verifyUserPin(
 ): Promise<boolean> {
   if (!user.pinHash) return false;
   return argon2.verify(user.pinHash, pin);
+}
+
+/**
+ * Set (or change) a user's account password. Stores an argon2 hash; the raw
+ * password is never persisted. This is the portable credential used by
+ * phone+password login — distinct from the optional on-device PIN.
+ */
+export async function setUserPassword(userId: number, password: string): Promise<void> {
+  const passwordHash = await argon2.hash(password);
+  await db.update(users).set({ passwordHash }).where(eq(users.id, userId));
+}
+
+/** Verify a candidate password against the user's stored hash. */
+export async function verifyUserPassword(
+  user: typeof users.$inferSelect,
+  password: string,
+): Promise<boolean> {
+  if (!user.passwordHash) return false;
+  return argon2.verify(user.passwordHash, password);
+}
+
+/** Revoke every active session a user holds, across all devices. */
+export async function revokeAllUserSessions(userId: number): Promise<void> {
+  await db
+    .update(userSessions)
+    .set({ revokedAt: new Date() })
+    .where(and(eq(userSessions.userId, userId), isNull(userSessions.revokedAt)));
+}
+
+/**
+ * Revoke every active session a user holds except the one identified by
+ * `keepSessionToken` (raw). Used on an authenticated password change to log the
+ * account out everywhere but the device performing the change.
+ */
+export async function revokeUserSessionsExcept(
+  userId: number,
+  keepSessionToken: string,
+): Promise<void> {
+  const keepHash = hashToken(keepSessionToken);
+  await db
+    .update(userSessions)
+    .set({ revokedAt: new Date() })
+    .where(
+      and(
+        eq(userSessions.userId, userId),
+        isNull(userSessions.revokedAt),
+        ne(userSessions.sessionTokenHash, keepHash),
+      ),
+    );
 }
 
 /* ── Biometric (hardware-backed keypair) auth ────────────────────────────────
