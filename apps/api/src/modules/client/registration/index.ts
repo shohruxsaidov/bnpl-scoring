@@ -1,13 +1,12 @@
 import { Type } from '@sinclair/typebox';
-import { eq } from 'drizzle-orm';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { redis } from '@redis';
 import { env } from '@env';
 import { db } from '@db';
 import { users } from '@db/schema';
-import { files } from '@db/files';
 import { userPublicOfferAcceptances } from '@db/user-public-offer-acceptances';
+import { getDownloadUrl } from '../../../lib/file-storage';
 import {
   createOtp,
   verifyOtp,
@@ -178,19 +177,28 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
     ),
   });
 
-  // Streams the current offer's PDF straight from object storage (like the
-  // public GET /offer surface), so the client never handles a presigned URL.
-  // The offer id/version — needed later as `publicOfferId` at /myid-complete —
-  // ride along in response headers since the body is now raw PDF bytes.
+  const PublicOfferResponse = Type.Object(
+    {
+      // Echoed back as `publicOfferId` at POST /myid-complete.
+      id: Type.Integer(),
+      version: Type.Integer(),
+      // Presigned GET URL for the language PDF; the client fetches it directly.
+      url: Type.String(),
+    },
+    { examples: [{ id: 1, version: 1, url: 'https://minio.example.com/…/public-offers/uuid?…' }] },
+  );
+
+  // Returns the current offer's id/version plus a presigned URL to its PDF for
+  // the requested language. `id` is sent back later as `publicOfferId` at
+  // /myid-complete.
   fastify.get(
     '/public-offer',
     {
       schema: {
         tags: TAGS,
-        summary: 'Current public offer PDF',
+        summary: 'Current public offer',
         querystring: PublicOfferQuery,
-        // Binary PDF response; no JSON body schema (streams bypass serialization).
-        response: { 404: ERROR },
+        response: { 200: PublicOfferResponse, 404: ERROR },
       },
     },
     async (req, reply) => {
@@ -199,16 +207,9 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
 
       const lang = req.query.lang ?? 'uz';
       const fileId = lang === 'ru' ? offer.fileRuId : offer.fileUzId;
-      const [file] = await db.select().from(files).where(eq(files.id, fileId)).limit(1);
-      if (!file) return reply.code(404).sendError('public_offer_not_found');
+      const url = await getDownloadUrl(db, fileId);
 
-      const stream = await app.minio.getObject(file.bucket, file.objectKey);
-      return reply
-        .header('Content-Type', file.mimeType ?? 'application/pdf')
-        .header('Content-Disposition', `inline; filename="public-offer-${lang}.pdf"`)
-        .header('X-Public-Offer-Id', String(offer.id))
-        .header('X-Public-Offer-Version', String(offer.version))
-        .send(stream);
+      return { id: offer.id, version: offer.version, url };
     },
   );
 
