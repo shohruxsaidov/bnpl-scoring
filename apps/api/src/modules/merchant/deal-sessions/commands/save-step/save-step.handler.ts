@@ -5,11 +5,13 @@ import { products, tariffs } from '@db/schema';
 import {
   err,
   stepDataOf,
-  WIZARD_STEPS,
+  wizardStepsFor,
   type WizardStep,
   type DealSessionRow,
   type SessionStepData,
+  type BailsmanItem,
 } from '../../types';
+import { loadReusableLimit } from '../../queries/reusable-limit/reusable-limit.handler';
 
 export async function saveStep(
   session: DealSessionRow,
@@ -24,16 +26,36 @@ export async function saveStep(
   const saved = await buildStepPayload(session, step, body, data);
   console.log('[saveStep] buildStepPayload result', saved);
 
-  const next: SessionStepData = { ...data, [step]: saved };
+  const seq = wizardStepsFor(session);
 
-  const idx = WIZARD_STEPS.indexOf(step);
-  for (const later of WIZARD_STEPS.slice(idx + 1)) delete next[later];
+  let next: SessionStepData;
+  if (step === 'contacts') {
+    // Contacts step (reuse path): bailsmen live in stepData.bailsmen (shared with
+    // the full path — never a stepData.contacts key), and we rehydrate the reused
+    // scoring stamp here since there is no card-score pass to produce one.
+    next = { ...data, bailsmen: saved as BailsmanItem[] };
+    const reused = session.userId != null ? await loadReusableLimit(session.userId) : null;
+    if (!reused) throw err('reuse_limit_unavailable');
+    next.scoring = reused.stamp;
+  } else {
+    next = { ...data, [step]: saved };
+  }
+
+  const idx = seq.indexOf(step);
+  // 'contacts' is not a stepData key (bailsmen is), so its delete is a harmless no-op.
+  for (const later of seq.slice(idx + 1)) delete (next as Record<string, unknown>)[later];
   console.log('[saveStep] next stepData after invalidation', next);
 
   if (step === 'client') {
+    // A (re)selected client invalidates any scoring + contacts collected for the
+    // previous one, and lets the next /start re-decide the flow mode.
     if (next.scoring) {
       console.log('[saveStep] dropping scoring (client changed)');
       delete next.scoring;
+    }
+    if (next.bailsmen) {
+      console.log('[saveStep] dropping bailsmen (client changed)');
+      delete next.bailsmen;
     }
   }
   if (step === 'card') {
@@ -49,7 +71,7 @@ export async function saveStep(
     delete next.prepayment;
   }
 
-  const after = WIZARD_STEPS[idx + 1] ?? 'verification';
+  const after = seq[idx + 1] ?? 'verification';
   console.log('[saveStep] advancing currentStep to', after);
 
   const [updated] = await db
@@ -81,7 +103,7 @@ async function buildStepPayload(
   step: WizardStep,
   body: Record<string, unknown>,
   _data: SessionStepData,
-): Promise<SessionStepData[WizardStep]> {
+): Promise<SessionStepData[keyof SessionStepData]> {
   console.log('[buildStepPayload] called', { sessionId: session.id, step, body });
 
   switch (step) {
@@ -114,6 +136,25 @@ async function buildStepPayload(
       };
       console.log('[buildStepPayload:card] returning', result);
       return result;
+    }
+
+    case 'contacts': {
+      // Reuse path only — 1..5 bailsmen, each { relation, phone }. Mirrors the
+      // full path's /cards/score bailsmen validation.
+      const raw = Array.isArray(body['bailsmen']) ? (body['bailsmen'] as unknown[]) : [];
+      console.log('[buildStepPayload:contacts] raw bailsmen count', raw.length);
+      if (raw.length < 1 || raw.length > 5) throw err('invalid_step_payload');
+      const RELATIONS = new Set(['father', 'mother', 'brother', 'friend', 'other']);
+      const bailsmen = raw.map((b) => {
+        const item = b as Record<string, unknown>;
+        const relation = str(item['relation']);
+        const phone = str(item['phone']);
+        if (!relation || !RELATIONS.has(relation) || !phone) throw err('invalid_step_payload');
+        return { relation, phone } as BailsmanItem;
+      });
+      console.log('[buildStepPayload:contacts] returning', bailsmen);
+      // Stored under stepData.bailsmen by saveStep (not next[step]).
+      return bailsmen;
     }
 
     case 'tariff': {

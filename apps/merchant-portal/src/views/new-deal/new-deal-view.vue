@@ -3,7 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import Dialog from 'primevue/dialog'
-import { useDealStore, DEAL_STEPS, type DealStepKey } from '@/stores/deal'
+import { useDealStore, type DealStepKey } from '@/stores/deal'
 import { useClientScoringStore } from '@/stores/client-scoring'
 import {
   abandonDealSession,
@@ -14,6 +14,7 @@ import {
 import type { ScoreDecision } from '@/types'
 import StepClient from './steps/step-client.vue'
 import StepCard from './steps/step-card.vue'
+import StepContacts from './steps/step-contacts.vue'
 import StepTariff from './steps/step-tariff.vue'
 import StepProducts from './steps/step-products.vue'
 import StepPaymentDay from './steps/step-payment-day.vue'
@@ -129,6 +130,7 @@ async function confirmCloseDeal() {
 const STEP_LABEL_KEYS: Record<string, string> = {
   client: 'deal.stepClient',
   card: 'deal.stepCard',
+  contacts: 'deal.stepContacts',
   tariff: 'deal.stepTariff',
   products: 'deal.stepProducts',
   payment: 'deal.stepPayment',
@@ -218,7 +220,7 @@ const route = useRoute()
 const router = useRouter()
 
 function stepIndex(key: string): number {
-  return DEAL_STEPS.findIndex((s) => s.key === key)
+  return deal.steps.findIndex((s) => s.key === key)
 }
 
 onMounted(() => {
@@ -334,6 +336,7 @@ function stepState(idx: number, key: string): 'done' | 'current' | 'todo' {
     <div v-if="ready" class="step-body">
       <StepClient v-if="deal.currentStep === 'client'" />
       <StepCard v-else-if="deal.currentStep === 'card'" />
+      <StepContacts v-else-if="deal.currentStep === 'contacts'" />
       <StepTariff v-else-if="deal.currentStep === 'tariff'" />
       <StepProducts v-else-if="deal.currentStep === 'products'" />
       <StepPaymentDay v-else-if="deal.currentStep === 'payment'" />

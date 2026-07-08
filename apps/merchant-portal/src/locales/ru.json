@@ -386,7 +386,8 @@
     "closeConfirmCancel": "Отмена",
     "closeConfirmAction": "Закрыть сделку",
     "sessionError": "Не удалось открыть сессию сделки. Проверьте соединение и повторите.",
-    "stepSaveError": "Не удалось сохранить шаг. Проверьте соединение и повторите."
+    "stepSaveError": "Не удалось сохранить шаг. Проверьте соединение и повторите.",
+    "stepContacts": "Контакты"
   },
   "stepClient": {
     "title": "Клиент",
@@ -489,7 +490,10 @@
         "districtCode": "Район",
         "phone": "Телефон"
       }
-    }
+    },
+    "reuseLimitTitle": "Клиент уже имеет действующий лимит",
+    "reuseLimitExpiry": "Действует до {date}",
+    "reuseLimitCurrency": "сум"
   },
   "stepCard": {
     "title": "Карта",
@@ -764,5 +768,10 @@
     "thNum": "№",
     "thMonth": "Месяц",
     "thAmount": "Сумма платежа"
+  },
+  "stepContacts": {
+    "title": "Контакты",
+    "subtitle": "Укажите контакты клиента",
+    "reusedLimit": "Используется действующий лимит:"
   }
 }

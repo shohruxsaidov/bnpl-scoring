@@ -15,10 +15,33 @@ export const WIZARD_STEPS = [
   'payment',
   'verification',
 ] as const;
-export type WizardStep = (typeof WIZARD_STEPS)[number];
+
+/**
+ * Reuse path — a returning client who already self-scored on mobile and still
+ * holds a valid, unexpired credit limit. Scoring (MyID + KATM + model) is
+ * skipped, so the `card` step (whose only job was to feed the model) is replaced
+ * by a contacts-only step. Same tail as the full sequence.
+ */
+export const REUSE_WIZARD_STEPS = [
+  'client',
+  'contacts',
+  'tariff',
+  'products',
+  'payment',
+  'verification',
+] as const;
+
+export type WizardStep = (typeof WIZARD_STEPS)[number] | 'contacts';
+
+const ALL_WIZARD_STEPS = new Set<string>([...WIZARD_STEPS, ...REUSE_WIZARD_STEPS]);
 
 export function isWizardStep(s: string): s is WizardStep {
-  return (WIZARD_STEPS as readonly string[]).includes(s);
+  return ALL_WIZARD_STEPS.has(s);
+}
+
+/** The step sequence this session runs, chosen by its stamped flow mode. */
+export function wizardStepsFor(session: DealSessionRow): readonly WizardStep[] {
+  return stepDataOf(session).flowMode === 'reuse' ? REUSE_WIZARD_STEPS : WIZARD_STEPS;
 }
 
 /** Scoring result stamped by the server at /merchant/cards/score. */
@@ -85,6 +108,12 @@ export interface SessionStepData {
   katmPending?: KatmPendingState;
   scoring?: ScoringStamp;
   prepayment?: PrepaymentStamp;
+  /**
+   * Which step sequence this run follows (ADR — reuse scoring). Absent ⇒ 'full'
+   * (client → card → …). 'reuse' routes through the contacts step and reuses the
+   * client's cached limit instead of re-scoring. Stamped by POST /:id/start.
+   */
+  flowMode?: 'full' | 'reuse';
 }
 
 export type DealSessionRow = typeof dealSessions.$inferSelect;

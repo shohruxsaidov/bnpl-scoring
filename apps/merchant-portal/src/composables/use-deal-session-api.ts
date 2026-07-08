@@ -65,6 +65,8 @@ export interface SessionStepData {
   scoring?: SessionScoring
   prepayment?: { amount: number; confirmedAt: string }
   bailsmen?: Array<{ relation: 'father' | 'mother' | 'brother' | 'friend' | 'other'; phone: string }>
+  /** Which step sequence this run follows (reuse scoring). Absent ⇒ 'full'. */
+  flowMode?: 'full' | 'reuse'
 }
 
 export interface DealSessionDto {

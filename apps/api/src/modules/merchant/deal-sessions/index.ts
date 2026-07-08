@@ -19,6 +19,8 @@ import { abandonSession } from './commands/abandon-session/abandon-session.handl
 import { saveStep } from './commands/save-step/save-step.handler';
 import { stampPrepayment } from './commands/stamp-prepayment/stamp-prepayment.handler';
 import { setSessionUserId } from './commands/set-session-user-id/set-session-user-id.handler';
+import { setFlowMode } from './commands/set-flow-mode/set-flow-mode.handler';
+import { loadReusableLimit } from './queries/reusable-limit/reusable-limit.handler';
 import { setKatmClaimId } from './commands/set-katm-claim-id/set-katm-claim-id.handler';
 import { stampKatmPending } from './commands/stamp-katm-pending/stamp-katm-pending.handler';
 import {
@@ -189,6 +191,8 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           return reply.code(409).sendError('session_not_active');
         if (err.code === 'invalid_step_payload')
           return reply.code(400).sendError('invalid_step_payload');
+        if (err.code === 'reuse_limit_unavailable')
+          return reply.code(409).sendError('reuse_limit_unavailable');
         if (err.code === 'client_not_found') return reply.code(400).sendError('client_not_found');
         if (err.code === 'tariff_not_found') return reply.code(400).sendError('tariff_not_found');
         if (err.code === 'product_not_found') return reply.code(400).sendError('product_not_found');
@@ -399,6 +403,33 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
       console.log('[START] → setSessionUserId(session,', client.id, ')');
       await setSessionUserId(session, client.id);
+
+      // ── Reuse path (ADR — reuse scoring) ────────────────────────────────────
+      // A returning client who already self-scored on mobile and still holds an
+      // unexpired, positive limit skips MyID + KATM + the model entirely. We
+      // route the wizard through the contacts step (flowMode='reuse'); the
+      // contacts step rehydrates the scoring stamp from that run. No KATM charge.
+      const reusable = await loadReusableLimit(client.id);
+      if (reusable) {
+        console.log(
+          '[START] reusable limit found — creditLimit=',
+          reusable.creditLimit,
+          'expiresAt=',
+          reusable.expiresAt.toISOString(),
+        );
+        await setFlowMode(session, 'reuse');
+        console.log('[START] ✓ responding status=cached');
+        return {
+          status: 'cached' as const,
+          creditLimit: reusable.creditLimit,
+          expiresAt: reusable.expiresAt.toISOString(),
+        };
+      }
+      // No reusable limit — full scoring. Clear any stale 'reuse' from a prior
+      // client selection on this session so advancement uses the full sequence.
+      // (Absent flowMode already means 'full'; the later KATM stamps re-derive
+      // stepData from the DB row, so no local reassignment is needed here.)
+      await setFlowMode(session, 'full');
 
       console.log(
         '[START] → createKatmConsent({ userId:',

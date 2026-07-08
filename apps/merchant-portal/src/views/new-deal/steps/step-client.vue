@@ -105,6 +105,19 @@ const rejected = ref(false)
 // the template can show why and, for data_missing, which fields to fix.
 const rejectReason = ref<{ code: string; category: string; missingFields: string[] } | null>(null)
 
+// Reuse path — set when /start returns a valid cached limit (scoring skipped).
+// Drives the "existing limit" panel; the agent confirms to move to contacts.
+const reuseCached = ref<{ creditLimit: number; expiresAt: string } | null>(null)
+
+const reuseLimitText = computed(() =>
+  reuseCached.value ? new Intl.NumberFormat('ru-RU').format(reuseCached.value.creditLimit) : '',
+)
+const reuseExpiryText = computed(() => {
+  if (!reuseCached.value?.expiresAt) return ''
+  const d = new Date(reuseCached.value.expiresAt)
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('ru-RU')
+})
+
 // Localized one-liner for an ineligible/other rejection. data_missing renders
 // its own field list instead of this.
 const rejectReasonText = computed(() => {
@@ -331,11 +344,13 @@ async function queryKatm(): Promise<boolean> {
   try {
     const result = await apiFetch<
       {
-        status: 'completed' | 'pending' | 'rejected' | 'failed'
+        status: 'completed' | 'pending' | 'rejected' | 'failed' | 'cached'
         reasonCode?: string
         reasonCategory?: string
         reason?: string
         missingFields?: string[]
+        creditLimit?: number
+        expiresAt?: string
       } & Partial<KatmSummary>
     >(`/merchant/deal-sessions/${deal.dealSessionId}/start`, {
       method: 'POST',
@@ -343,6 +358,20 @@ async function queryKatm(): Promise<boolean> {
         userId: confirmedClient.value.id,
       }),
     })
+    // Reuse path — the client already holds a valid cached limit; scoring is
+    // skipped and the wizard routes through the contacts step. Show the limit
+    // panel and wait for the agent to confirm before advancing.
+    if (result.status === 'cached') {
+      deal.setFlowMode('reuse')
+      reuseCached.value = {
+        creditLimit: result.creditLimit ?? 0,
+        expiresAt: result.expiresAt ?? '',
+      }
+      katmDone.value = true
+      return false
+    }
+    // Any non-cached outcome means we're on the full scoring path.
+    deal.setFlowMode('full')
     if (result.status === 'pending') {
       startKatmPolling()
       return false
@@ -649,9 +678,25 @@ const clientFullName = computed(() =>
       </div>
 
       <transition name="fade">
-        <div v-if="katmDone" class="katm-result">
+        <div v-if="katmDone && !reuseCached" class="katm-result">
           <i class="pi pi-check-circle" />
           {{ $t('stepClient.katmResult') }}
+        </div>
+      </transition>
+
+      <!-- Reuse path — existing valid limit; scoring skipped -->
+      <transition name="fade">
+        <div v-if="reuseCached" class="reuse-limit-panel">
+          <i class="pi pi-check-circle reuse-limit-icon" />
+          <div class="reuse-limit-body">
+            <p class="reuse-limit-title">{{ $t('stepClient.reuseLimitTitle') }}</p>
+            <p class="reuse-limit-amount font-mono">
+              {{ reuseLimitText }} {{ $t('stepClient.reuseLimitCurrency') }}
+            </p>
+            <p class="reuse-limit-expiry">
+              {{ $t('stepClient.reuseLimitExpiry', { date: reuseExpiryText }) }}
+            </p>
+          </div>
         </div>
       </transition>
 
@@ -1248,6 +1293,47 @@ const clientFullName = computed(() =>
   border-radius: 12px;
   font-weight: 600;
   font-size: 0.86rem;
+}
+
+.reuse-limit-panel {
+  margin-top: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  color: var(--success);
+  background: var(--success-bg);
+  padding: 1rem 1.2rem;
+  border-radius: 12px;
+}
+
+.reuse-limit-icon {
+  font-size: 1.4rem;
+  margin-top: 0.1rem;
+}
+
+.reuse-limit-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.reuse-limit-title {
+  margin: 0;
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+
+.reuse-limit-amount {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.reuse-limit-expiry {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
 }
 
 .katm-pending {

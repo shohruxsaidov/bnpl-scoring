@@ -12,6 +12,10 @@ const deal = useDealStore()
 const catalog = useCatalogStore()
 const scoring = useClientScoringStore()
 
+setInterval(() => {
+  console.log(scoring)
+}, 1000) // refresh every 5 minutes
+
 onMounted(() => catalog.fetchCatalog())
 
 const activeCategory = ref<string | null>(null)
@@ -51,7 +55,7 @@ const totalWithMarkup = computed(() => {
 
 /** Approved limit (tiyin) scaled by the selected tariff's term in months */
 const effectiveLimit = computed(
-  () => (scoring.platformCreditLimit ?? 0) * (tariff.value?.termMonths ?? 0),
+  () => (scoring.platformCreditLimit ?? 0) * (tariff.value?.termMonths ?? 0) * 100,
 )
 
 const withinLimit = computed(() => totalWithMarkup.value <= effectiveLimit.value)
@@ -425,11 +429,7 @@ async function submitPrepayment() {
         <button class="btn-ghost" @click="deal.back()">
           <i class="pi pi-arrow-left" /> {{ $t('common.back') }}
         </button>
-        <button
-          v-if="tariff && !withinLimit && !prepaymentConfirmed"
-          class="btn-prepay"
-          @click="openPrepayDialog"
-        >
+        <button v-if="tariff && !withinLimit && !prepaymentConfirmed" class="btn-prepay" @click="openPrepayDialog">
           <i class="pi pi-wallet" /> {{ $t('stepProducts.prepayBtn') }}
         </button>
         <button class="btn-gradient" :disabled="!canProceed || saving" @click="next">
@@ -458,14 +458,8 @@ async function submitPrepayment() {
         <div class="dialog-fields">
           <label>
             <span>{{ $t('stepProducts.labelField') }}</span>
-            <input
-              v-model="labelInput"
-              type="text"
-              class="font-mono"
-              :maxlength="LABEL_MAX"
-              :placeholder="$t('stepProducts.labelPlaceholder')"
-              @keydown.enter.prevent="confirmLabel"
-            />
+            <input v-model="labelInput" type="text" class="font-mono" :maxlength="LABEL_MAX"
+              :placeholder="$t('stepProducts.labelPlaceholder')" @keydown.enter.prevent="confirmLabel" />
           </label>
         </div>
 
@@ -517,11 +511,8 @@ async function submitPrepayment() {
           <p v-if="prepayError" class="dialog-error">
             <i class="pi pi-exclamation-triangle" /> {{ prepayError }}
           </p>
-          <button
-            class="btn-gradient dialog-confirm"
-            :disabled="!prepayCardNumber || !prepayExpiry || !prepayPhone || prepayLoading"
-            @click="requestPrepayOtp"
-          >
+          <button class="btn-gradient dialog-confirm"
+            :disabled="!prepayCardNumber || !prepayExpiry || !prepayPhone || prepayLoading" @click="requestPrepayOtp">
             <i v-if="prepayLoading" class="pi pi-spin pi-spinner" />
             {{ $t('stepProducts.prepayRequestOtp') }}
           </button>
@@ -539,11 +530,8 @@ async function submitPrepayment() {
               <input v-model="prepayOtp" type="text" maxlength="6" placeholder="000000" inputmode="numeric" />
             </label>
           </div>
-          <button
-            class="btn-link dialog-resend"
-            :disabled="prepayResendCooldown > 0 || prepayLoading"
-            @click="resendPrepayOtp"
-          >
+          <button class="btn-link dialog-resend" :disabled="prepayResendCooldown > 0 || prepayLoading"
+            @click="resendPrepayOtp">
             <i class="pi pi-refresh" />
             {{ prepayResendCooldown > 0
               ? $t('stepProducts.prepayResendIn', { seconds: prepayResendCooldown })
@@ -552,11 +540,7 @@ async function submitPrepayment() {
           <p v-if="prepayError" class="dialog-error">
             <i class="pi pi-exclamation-triangle" /> {{ prepayError }}
           </p>
-          <button
-            class="btn-gradient dialog-confirm"
-            :disabled="!prepayOtp || prepayLoading"
-            @click="submitPrepayment"
-          >
+          <button class="btn-gradient dialog-confirm" :disabled="!prepayOtp || prepayLoading" @click="submitPrepayment">
             <i v-if="prepayLoading" class="pi pi-spin pi-spinner" />
             {{ $t('stepProducts.prepayConfirm') }}
           </button>

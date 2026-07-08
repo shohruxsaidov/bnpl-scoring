@@ -386,7 +386,8 @@
     "closeConfirmCancel": "Bekor qilish",
     "closeConfirmAction": "Bitimni yopish",
     "sessionError": "Bitim sessiyasini ochib bo'lmadi. Aloqani tekshirib, qayta urinib ko'ring.",
-    "stepSaveError": "Qadamni saqlab bo'lmadi. Aloqani tekshirib, qayta urinib ko'ring."
+    "stepSaveError": "Qadamni saqlab bo'lmadi. Aloqani tekshirib, qayta urinib ko'ring.",
+    "stepContacts": "Kontaktlar"
   },
   "stepClient": {
     "title": "Mijoz",
@@ -489,7 +490,10 @@
         "districtCode": "Tuman",
         "phone": "Telefon"
       }
-    }
+    },
+    "reuseLimitTitle": "Mijozda amaldagi limit mavjud",
+    "reuseLimitExpiry": "{date} gacha amal qiladi",
+    "reuseLimitCurrency": "so'm"
   },
   "stepCard": {
     "title": "Karta",
@@ -760,5 +764,10 @@
     "thNum": "№",
     "thMonth": "Oy",
     "thAmount": "To'lov summasi"
+  },
+  "stepContacts": {
+    "title": "Kontaktlar",
+    "subtitle": "Mijoz kontaktlarini kiriting",
+    "reusedLimit": "Amaldagi limit ishlatilmoqda:"
   }
 }

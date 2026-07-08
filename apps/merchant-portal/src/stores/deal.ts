@@ -16,11 +16,14 @@ import { buildSchedulePreview } from '@/utils/schedule-preview';
 export type DealStepKey =
   | 'client'
   | 'card'
+  | 'contacts'
   | 'tariff'
   | 'products'
   | 'payment'
   | 'verification'
   | 'done';
+
+export type DealFlowMode = 'full' | 'reuse';
 
 export interface DealStep {
   key: DealStepKey;
@@ -28,9 +31,22 @@ export interface DealStep {
   icon: string;
 }
 
+// Full path — the client is scored from scratch (client → card → …).
 export const DEAL_STEPS: DealStep[] = [
   { key: 'client', label: 'Клиент', icon: 'pi pi-user' },
   { key: 'card', label: 'Karta', icon: 'pi pi-credit-card' },
+  { key: 'tariff', label: 'Tarif', icon: 'pi pi-percentage' },
+  { key: 'products', label: 'Mahsulot', icon: 'pi pi-shopping-bag' },
+  { key: 'payment', label: "To'lov kuni", icon: 'pi pi-calendar' },
+  { key: 'verification', label: 'Верификация', icon: 'pi pi-shield' },
+  { key: 'done', label: 'Готово', icon: 'pi pi-check-circle' },
+];
+
+// Reuse path — a returning client with a valid cached limit skips scoring; the
+// card step is replaced by a contacts-only step.
+export const DEAL_STEPS_REUSE: DealStep[] = [
+  { key: 'client', label: 'Клиент', icon: 'pi pi-user' },
+  { key: 'contacts', label: 'Kontaktlar', icon: 'pi pi-users' },
   { key: 'tariff', label: 'Tarif', icon: 'pi pi-percentage' },
   { key: 'products', label: 'Mahsulot', icon: 'pi pi-shopping-bag' },
   { key: 'payment', label: "To'lov kuni", icon: 'pi pi-calendar' },
@@ -97,6 +113,7 @@ function emptyCompleted(): Record<DealStepKey, boolean> {
   return {
     client: false,
     card: false,
+    contacts: false,
     tariff: false,
     products: false,
     payment: false,
@@ -113,10 +130,12 @@ export const useDealStore = defineStore(
     const sessionData = ref<SessionData>(emptySession());
     /** Server-side Deal Session id (ADR-0024) — set the moment the Wizard opens. */
     const dealSessionId = ref<string | null>(null);
+    /** Which step sequence this run follows (reuse scoring). Server-authoritative. */
+    const flowMode = ref<DealFlowMode>('full');
 
-    const steps = computed(() => DEAL_STEPS);
+    const steps = computed(() => (flowMode.value === 'reuse' ? DEAL_STEPS_REUSE : DEAL_STEPS));
 
-    const currentIndex = computed(() => DEAL_STEPS.findIndex((x) => x.key === currentStep.value));
+    const currentIndex = computed(() => steps.value.findIndex((x) => x.key === currentStep.value));
 
     const basketTotal = computed(() =>
       sessionData.value.basket.reduce(
@@ -134,10 +153,15 @@ export const useDealStore = defineStore(
       completed.value = emptyCompleted();
       sessionData.value = emptySession();
       dealSessionId.value = null;
+      flowMode.value = 'full';
     }
 
     function setDealSessionId(id: string) {
       dealSessionId.value = id;
+    }
+
+    function setFlowMode(mode: DealFlowMode) {
+      flowMode.value = mode;
     }
 
     /**
@@ -146,6 +170,9 @@ export const useDealStore = defineStore(
      */
     function hydrateFromSession(dto: DealSessionDto) {
       const data = dto.stepData;
+      // Set the flow mode first — the stepper sequence and currentStep validity
+      // below depend on it (reuse scoring).
+      flowMode.value = data.flowMode === 'reuse' ? 'reuse' : 'full';
       const fresh = emptySession();
 
       fresh.client = dto.client;
@@ -241,6 +268,7 @@ export const useDealStore = defineStore(
       const done = emptyCompleted();
       done.client = !!data.client;
       done.card = !!data.card;
+      done.contacts = !!data.bailsmen?.length; // reuse path — contacts == bailsmen saved
       done.tariff = !!data.tariff;
       done.products = !!data.products;
       done.payment = !!data.payment;
@@ -249,7 +277,7 @@ export const useDealStore = defineStore(
 
       const step = dto.currentStep as DealStepKey;
       currentStep.value =
-        DEAL_STEPS.some((s) => s.key === step) && step !== 'done' ? step : 'client';
+        steps.value.some((s) => s.key === step) && step !== 'done' ? step : 'client';
     }
 
     function goTo(step: DealStepKey) {
@@ -258,14 +286,15 @@ export const useDealStore = defineStore(
 
     function complete(step: DealStepKey) {
       completed.value[step] = true;
-      const idx = DEAL_STEPS.findIndex((x) => x.key === step);
-      const next = DEAL_STEPS[idx + 1];
+      const seq = steps.value;
+      const idx = seq.findIndex((x) => x.key === step);
+      const next = seq[idx + 1];
       if (next) currentStep.value = next.key;
     }
 
     function back() {
       const idx = currentIndex.value;
-      if (idx > 0) currentStep.value = DEAL_STEPS[idx - 1].key;
+      if (idx > 0) currentStep.value = steps.value[idx - 1].key;
     }
 
     function setClient(client: Client, opts?: { isNew?: boolean; myidVerified?: boolean }) {
@@ -371,12 +400,14 @@ export const useDealStore = defineStore(
       completed,
       sessionData,
       dealSessionId,
+      flowMode,
       steps,
       currentIndex,
       basketTotal,
       basketCount,
       reset,
       setDealSessionId,
+      setFlowMode,
       hydrateFromSession,
       goTo,
       complete,
@@ -403,7 +434,7 @@ export const useDealStore = defineStore(
   },
   {
     persist: {
-      pick: ['currentStep', 'completed', 'sessionData', 'dealSessionId'],
+      pick: ['currentStep', 'completed', 'sessionData', 'dealSessionId', 'flowMode'],
     },
   },
 );
