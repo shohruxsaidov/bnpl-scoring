@@ -6,7 +6,7 @@ import { env } from '../env';
 // will hit — not the internal one (e.g. host.docker.internal inside Docker).
 export const minioPresign = new Client({
   endPoint: env.MINIO_PUBLIC_ENDPOINT ?? env.MINIO_ENDPOINT,
-  port: env.MINIO_PUBLIC_PORT ?? env.MINIO_PORT,
+  port: env.MINIO_PUBLIC_PORT,
   useSSL: env.MINIO_PUBLIC_USE_SSL ?? false,
   accessKey: env.MINIO_ACCESS_KEY,
   secretKey: env.MINIO_SECRET_KEY,
