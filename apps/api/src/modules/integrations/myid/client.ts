@@ -100,6 +100,7 @@ async function getClientToken(): Promise<string> {
 
     return data.access_token;
   } catch (err) {
+    console.error('Error obtaining MyID client token:', err);
     logIntegration(db, {
       integration: 'myid',
       methodName: 'client_token',
