@@ -60,8 +60,8 @@ export interface MyidSessionResult {
 }
 
 function myidMobileClient() {
-  if (!env.MYID_API_BASE_URL) throw new Error('MYID_API_BASE_URL is not configured');
-  return createIntegrationClient(env.MYID_API_BASE_URL, 'myid');
+  if (!env.MYID_MOBILE_API_BASE_URL) throw new Error('MYID_MOBILE_API_BASE_URL is not configured');
+  return createIntegrationClient(env.MYID_MOBILE_API_BASE_URL, 'myid.mobile');
 }
 
 /** Obtain a server-to-server access token via client_credentials, cached in Redis. */
@@ -115,7 +115,7 @@ async function getClientToken(): Promise<string> {
 }
 
 /** Create a MyID WebSDK session for the given PINFL. */
-export async function createMyidSession(pinfl: string): Promise<MyidSessionResult> {
+export async function createMobileMyidSession(pinfl: string): Promise<MyidSessionResult> {
   const birthDate = parsePinflBirthDate(pinfl);
   const token = await getClientToken();
 
@@ -168,7 +168,7 @@ export async function createMyidSession(pinfl: string): Promise<MyidSessionResul
 }
 
 /** Exchange an OAuth2 code for MyID user data. */
-export async function exchangeMyidCode(code: string): Promise<MyidUserData> {
+export async function exchangeMobileMyidCode(code: string): Promise<MyidUserData> {
   const token = await getClientToken();
   const client = myidMobileClient();
 

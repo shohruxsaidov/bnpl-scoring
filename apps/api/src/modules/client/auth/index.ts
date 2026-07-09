@@ -6,6 +6,7 @@ import { env } from '@env';
 import { users } from '@db/schema';
 import {
   activateDevice,
+  clearAllUserDeviceKeys,
   clearDeviceKey,
   consumeBiometricChallenge,
   createBiometricChallenge,
@@ -37,6 +38,9 @@ import { sendOtpSms } from '../../../lib/sms';
 interface RegTokenSetup {
   sub: string;
   step: 'identity_verified';
+  // Device that completed MyID. Absent on tokens minted before device binding
+  // shipped; those stay valid until they expire (REG_TOKEN_TTL, 15m).
+  deviceId?: string;
 }
 
 // Client app re-auth: finish onboarding (/setup) and logout.
@@ -170,6 +174,29 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
     examples: ['ios'],
   });
 
+  // Base64 SPKI-DER of an ES256 (P-256) public key — ~124 chars in practice. The
+  // upper bound keeps an authenticated caller from writing an arbitrarily large
+  // blob into user_devices.public_key (an unbounded `text` column).
+  const PublicKey = Type.String({
+    minLength: 1,
+    maxLength: 512,
+    examples: ['MFkwEwYHKoZIzj0CAQYI...'],
+  });
+
+  /**
+   * Enrol an optional biometric key on a just-activated device. MUST run after
+   * activateDevice, which nulls publicKey on conflict — enrolling first would be
+   * silently undone. A malformed key never fails the caller: biometric is a
+   * convenience credential with PIN and password as fallbacks, and the flows
+   * calling this have already committed a password and a trusted device. The
+   * outcome is reported to the app as `biometricEnrolled` so it can re-prompt
+   * against POST /register-device with the access token it just received.
+   */
+  async function enrollKeyIfProvided(deviceRowId: string, publicKey?: string): Promise<boolean> {
+    if (!publicKey) return false;
+    return registerDeviceKey(deviceRowId, publicKey);
+  }
+
   /* ── Setup (finish onboarding: PIN + trusted device + session) ───────────── */
 
   fastify.post(
@@ -184,12 +211,14 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
           pin: Type.Optional(Pin),
           platform: Platform,
           appVersion: Type.String({ minLength: 1, maxLength: 10, examples: ['1.0.0'] }),
+          publicKey: Type.Optional(PublicKey),
         }),
         response: {
           200: Type.Object({
             accessToken: Type.String(),
             sessionToken: Type.String(),
             client: ClientDto,
+            biometricEnrolled: Type.Boolean(),
           }),
           400: ERROR,
         },
@@ -204,6 +233,12 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       }
       if (payload.step !== 'identity_verified') return reply.code(400).sendError('invalid_step');
       if (!request.deviceId) return reply.code(400).sendError('missing_device_id');
+      // The token is bound to the device that finished MyID. Tokens minted before
+      // binding shipped carry no deviceId; accept those until they age out, then
+      // make this check unconditional.
+      if (payload.deviceId && payload.deviceId !== request.deviceId) {
+        return reply.code(400).sendError('invalid_reg_token');
+      }
 
       const userId = Number(payload.sub);
       const user = await findUserById(userId);
@@ -221,6 +256,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       // One active session per device: drop any prior session on this device
       // (e.g. it changed hands) before minting the new one.
       await revokeDeviceSessions(deviceRowId);
+      const biometricEnrolled = await enrollKeyIfProvided(deviceRowId, request.body.publicKey);
 
       const accessToken = app.jwt.sign(
         { sub: user.id.toString(), type: 'client' },
@@ -228,7 +264,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       );
       const { sessionToken } = await createSession(user.id, deviceRowId);
 
-      return { accessToken, sessionToken, client: toClientDto(user) };
+      return { accessToken, sessionToken, client: toClientDto(user), biometricEnrolled };
     },
   );
 
@@ -250,12 +286,14 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
           password: Password,
           platform: Platform,
           appVersion: Type.String({ minLength: 1, maxLength: 10, examples: ['1.0.0'] }),
+          publicKey: Type.Optional(PublicKey),
         }),
         response: {
           200: Type.Object({
             accessToken: Type.String(),
             sessionToken: Type.String(),
             client: ClientDto,
+            biometricEnrolled: Type.Boolean(),
           }),
           400: ERROR,
           401: ERROR,
@@ -266,7 +304,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
     async (request, reply) => {
       if (!request.deviceId) return reply.code(400).sendError('missing_device_id');
 
-      const { phone, password, platform, appVersion } = request.body;
+      const { phone, password, platform, appVersion, publicKey } = request.body;
 
       const user = await findUserByPhone(phone);
       // Uniform 401 whether the user is unknown or the password is wrong, so the
@@ -293,13 +331,16 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       });
       // One active session per device: drop any stale session before the new one.
       await revokeDeviceSessions(deviceRowId);
+      // activateDevice above nulled any prior key, so a returning user who logs
+      // in by password loses biometric unless the app re-enrols here.
+      const biometricEnrolled = await enrollKeyIfProvided(deviceRowId, publicKey);
 
       const accessToken = app.jwt.sign(
         { sub: user.id.toString(), type: 'client' },
         { expiresIn: ACCESS_TOKEN_TTL },
       );
       const { sessionToken } = await createSession(user.id, deviceRowId);
-      return { accessToken, sessionToken, client: toClientDto(user) };
+      return { accessToken, sessionToken, client: toClientDto(user), biometricEnrolled };
     },
   );
 
@@ -438,6 +479,9 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
 
       await setUserPassword(user.id, newPassword);
       await revokeAllUserSessions(user.id);
+      // Sessions alone aren't enough: a biometric key mints fresh sessions with
+      // no authentication, so a reset that left one behind would evict nobody.
+      await clearAllUserDeviceKeys(user.id);
       await redis.del(passwordFailKey(phone)).catch(() => undefined);
 
       const deviceRowId = await activateDevice({
@@ -485,7 +529,11 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
 
       const { currentPassword, newPassword, sessionToken } = request.body;
 
-      if (user.passwordHash) {
+      // A first-time set (no hash yet) is not a credential rotation — nothing is
+      // being replaced, so enrolled biometric keys stay put.
+      const isRotation = Boolean(user.passwordHash);
+
+      if (isRotation) {
         if (!currentPassword) return reply.code(400).sendError('current_password_required');
         if (!(await verifyUserPassword(user, currentPassword))) {
           return reply.code(401).sendError('invalid_credentials');
@@ -496,6 +544,9 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       // Log out everywhere else; keep the caller's session alive when provided.
       if (sessionToken) await revokeUserSessionsExcept(userId, sessionToken);
       else await revokeAllUserSessions(userId);
+      // Rotating the root credential evicts every biometric key, including this
+      // device's — a key outlives sessions and would otherwise survive the change.
+      if (isRotation) await clearAllUserDeviceKeys(userId);
 
       return { ok: true };
     },
@@ -510,9 +561,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
         tags: TAGS,
         summary: 'Enrol biometric key',
         security: SECURITY,
-        body: Type.Object({
-          publicKey: Type.String({ minLength: 1, examples: ['MFkwEwYHKoZIzj0CAQYI...'] }),
-        }),
+        body: Type.Object({ publicKey: PublicKey }),
         response: { 200: Ok, 400: ERROR, 401: ERROR },
       },
       preHandler: [app.verifyClientJwt],

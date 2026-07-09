@@ -436,6 +436,20 @@ export async function clearDeviceKey(deviceRowId: string): Promise<void> {
 }
 
 /**
+ * Drop the biometric key on every device the user owns. A registered key grants
+ * unauthenticated session minting via /challenge + /biometric for as long as it
+ * exists, so rotating the account's root credential must evict it everywhere —
+ * otherwise a password reset revokes sessions while leaving an attacker's
+ * enrolled key live. Call alongside revokeAllUserSessions.
+ */
+export async function clearAllUserDeviceKeys(userId: number): Promise<void> {
+  await db
+    .update(userDevices)
+    .set({ publicKey: null, keyRegisteredAt: null, updatedAt: new Date() })
+    .where(eq(userDevices.userId, userId));
+}
+
+/**
  * Mint a single-use biometric challenge for the requesting device. Stores 32
  * random bytes (base64) in Redis under a fresh challengeId, bound to `deviceId`
  * (the raw x-device-id) so it can only be spent by that same device, expiring

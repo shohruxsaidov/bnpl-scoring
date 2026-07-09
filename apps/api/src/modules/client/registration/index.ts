@@ -18,6 +18,7 @@ import { createUserHandler } from '../../id/users';
 import { sendOtpSms } from '../../../lib/sms';
 import { getCurrentPublicOffer, findCurrentPublicOfferById } from './public-offers';
 import { pinFailKey } from '../auth/index';
+import { createMobileMyidSession, exchangeMobileMyidCode } from '../../integrations/myid/myid-mobile-new-flow';
 
 const ERROR = { $ref: 'ErrorResponse#' };
 
@@ -321,7 +322,7 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
       }
 
       const { pinfl } = req.body;
-      const myidResult = await createMyidSession(pinfl, req.ip);
+      const myidResult = await createMobileMyidSession(pinfl);
 
       const regToken = app.jwt.sign(
         { phone: payload.phone, pinfl, step: 'pinfl_verified' } satisfies RegTokenPhase2,
@@ -354,7 +355,7 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
         return reply.code(400).sendError('invalid_step');
       }
 
-      const myidUser = await exchangeMyidCode(req.body.myidCode);
+      const myidUser = await exchangeMobileMyidCode(req.body.myidCode);
       if (myidUser.pinfl !== phase2.pinfl) {
         return reply.code(400).sendError('pinfl_mismatch');
       }
@@ -414,8 +415,11 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
 
       // Onboarding token consumed only by POST /client/auth/setup. It carries no
       // `type` field, so it can never satisfy verifyClientJwt as an access token.
+      // `deviceId` pins it to the device that finished MyID: /setup sets the
+      // password, trusts the caller's device and (optionally) enrols a biometric
+      // key, so a leaked bearer token would otherwise buy a permanent credential.
       const regToken = app.jwt.sign(
-        { sub: client.id.toString(), step: 'identity_verified' },
+        { sub: client.id.toString(), step: 'identity_verified', deviceId: req.deviceId },
         { expiresIn: REG_TOKEN_TTL },
       );
 
