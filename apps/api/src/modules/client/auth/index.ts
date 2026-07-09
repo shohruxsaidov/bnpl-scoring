@@ -131,6 +131,7 @@ function toClientDto(c: typeof users.$inferSelect) {
 
 export default async function clientAuthRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
+
   const TAGS = ['Client · Auth'];
 
   const isProd = env.NODE_ENV === 'production';
@@ -168,7 +169,10 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
     docType: Type.Union([Type.Integer(), Type.Null()]),
   });
 
-  const Ok = Type.Object({ ok: Type.Boolean() }, { examples: [{ ok: true }] });
+  const Ok = Type.Object(
+    { ok: Type.Boolean(), devOtp: Type.String() },
+    { examples: [{ ok: true }] },
+  );
 
   const Platform = Type.Union([Type.Literal('ios'), Type.Literal('android')], {
     examples: ['ios'],

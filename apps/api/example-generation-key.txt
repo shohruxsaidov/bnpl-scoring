@@ -1,0 +1,28 @@
+import { generateKeyPairSync } from 'node:crypto';
+
+const { publicKey, privateKey } = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
+
+const publicKeyB64 = publicKey.export({ format: 'der', type: 'spki' }).toString('base64');
+// => "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEUDeY6NAvuVx4ltWf7BhT9kJngFuOtglnz..."
+
+
+//  React Native with WebCrypto:
+
+const { publicKey, privateKey } = await crypto.subtle.generateKey(
+  { name: 'ECDSA', namedCurve: 'P-256' },
+  false,              // non-extractable private key
+  ['sign', 'verify'],
+);
+// generation public key
+const spki = await crypto.subtle.exportKey('spki', publicKey);
+const publicKeyB64 = btoa(String.fromCharCode(...new Uint8Array(spki)));
+
+
+
+// making sign
+import { createSign } from 'node:crypto';
+
+const signer = createSign('SHA256');
+signer.update(Buffer.from(challenge, 'base64'));  // decode first — do not sign the base64 text
+signer.end();
+const signature = signer.sign({ key: privateKey, dsaEncoding: 'der' }).toString('base64');
