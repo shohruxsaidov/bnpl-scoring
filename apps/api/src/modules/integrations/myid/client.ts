@@ -166,12 +166,14 @@ export async function createMyidSession(
       redirectUrl,
     };
   } catch (err) {
+    const data = err instanceof IntegrationError ? err.body : null;
+    console.error('Error creating MyID session:', err, data);
     logIntegration(db, {
       integration: 'myid',
       methodName: 'create_session',
       methodType: 'POST',
       request: reqBody,
-      response: null,
+      response: data,
       status: err instanceof IntegrationError ? err.statusCode : null,
       errorMessage: err instanceof Error ? err.message : String(err),
       requestTimestamp,
