@@ -100,7 +100,6 @@ async function getClientToken(): Promise<string> {
 
     return data.access_token;
   } catch (err) {
-    console.error('Error obtaining MyID client token:', err);
     logIntegration(db, {
       integration: 'myid',
       methodName: 'client_token',
@@ -166,7 +165,7 @@ export async function createMyidSession(
       redirectUrl,
     };
   } catch (err) {
-    const data = err instanceof IntegrationError ? err.body : null;
+    const data = err instanceof IntegrationError ? err.body : (err as any).data || null;
     console.error('Error creating MyID session:', err, data);
     logIntegration(db, {
       integration: 'myid',
