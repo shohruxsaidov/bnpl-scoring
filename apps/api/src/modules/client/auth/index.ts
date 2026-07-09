@@ -363,7 +363,15 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
   fastify.post(
     '/forgot-password',
     {
-      config: { rateLimit: { max: 2, timeWindow: 60 * 1000 } },
+      config: {
+        rateLimit: {
+          max: 2,
+          timeWindow: 60 * 1000,
+          keyGenerator: (req) => {
+            return `client-forgot-password:${req.headers['x-device-id'] || ''}:${req.ip}`;
+          },
+        },
+      },
       schema: {
         tags: TAGS,
         summary: 'Request a password-reset OTP',
