@@ -170,7 +170,9 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
   });
 
   const Ok = Type.Object(
-    { ok: Type.Boolean(), devOtp: Type.String() },
+    {
+      ok: Type.Boolean(),
+    },
     { examples: [{ ok: true }] },
   );
 
@@ -423,7 +425,17 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
         body: Type.Object({
           phone: Type.String({ minLength: 1, maxLength: 20, examples: ['998901234567'] }),
         }),
-        response: { 200: Ok, 404: ERROR, 429: ERROR },
+        response: {
+          200: Type.Object(
+            {
+              ok: Type.Boolean(),
+              devOtp: Type.Optional(Type.String()),
+            },
+            { examples: [{ ok: true }] },
+          ),
+          404: ERROR,
+          429: ERROR,
+        },
       },
     },
     async (request, reply) => {
