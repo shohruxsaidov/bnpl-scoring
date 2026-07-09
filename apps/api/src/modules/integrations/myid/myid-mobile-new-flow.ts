@@ -10,7 +10,7 @@ import {
 import { logIntegration } from '../log';
 import { parsePinflBirthDate } from './pinfl';
 
-const MYID_TOKEN_KEY = 'myid:client_token';
+const MYID_TOKEN_KEY = 'myid_mobile:client_token';
 
 export interface MyidUserData {
   pinfl: string;
@@ -57,10 +57,9 @@ export interface MyidUserData {
 
 export interface MyidSessionResult {
   sessionId: string;
-  redirectUrl: string | null;
 }
 
-function myidClient() {
+function myidMobileClient() {
   if (!env.MYID_API_BASE_URL) throw new Error('MYID_API_BASE_URL is not configured');
   return createIntegrationClient(env.MYID_API_BASE_URL, 'myid');
 }
@@ -71,15 +70,14 @@ async function getClientToken(): Promise<string> {
   if (cached) return cached;
 
   const reqBody = {
-    client_id: env.MYID_WEB_CLIENT_ID!,
-    client_secret: env.MYID_WEB_CLIENT_SECRET!,
-    grant_type: 'client_credentials',
+    client_id: env.MYID_MOBILE_CLIENT_ID!,
+    client_secret: env.MYID_MOBILE_CLIENT_SECRET!,
   };
 
   const requestTimestamp = new Date();
   try {
-    const data = await myidClient()
-      .post('api/v1/oauth2/access-token', {
+    const data = await myidMobileClient()
+      .post('api/v1/auth/clients/access-token', {
         body: new URLSearchParams(reqBody),
       })
       .json<{ access_token: string; expires_in: number }>();
@@ -117,31 +115,23 @@ async function getClientToken(): Promise<string> {
 }
 
 /** Create a MyID WebSDK session for the given PINFL. */
-export async function createMyidSession(
-  pinfl: string,
-  ipAddress: string,
-  redirectUri?: string,
-): Promise<MyidSessionResult> {
+export async function createMyidSession(pinfl: string): Promise<MyidSessionResult> {
   const birthDate = parsePinflBirthDate(pinfl);
   const token = await getClientToken();
 
   const reqBody = {
-    client_id: env.MYID_WEB_CLIENT_ID,
-    external_id: randomUUID(),
     pinfl,
     birth_date: birthDate,
-    ip_address: ipAddress,
-    max_retries: 3,
   };
 
   const requestTimestamp = new Date();
   try {
-    const data = await myidClient()
-      .post('api/v1/web/sessions', {
+    const data = await myidMobileClient()
+      .post('api/v2/sdk/sessions', {
         headers: { Authorization: `Bearer ${token}` },
         json: reqBody,
       })
-      .json<{ session_id: string; url: string }>();
+      .json<{ session_id: string }>();
 
     logIntegration(db, {
       integration: 'myid',
@@ -157,13 +147,9 @@ export async function createMyidSession(
 
     // Native clients (mobile) drive the MyID SDK directly and have no browser
     // iframe to land on, so they omit redirectUri and get a null redirectUrl.
-    const redirectUrl = redirectUri
-      ? `${env.MYID_WEB_REDIRECT_URL}?session_id=${data.session_id}&pinfl=${pinfl}&birth_date=${birthDate}&theme=dark&redirect_uri=${redirectUri}`
-      : null;
 
     return {
       sessionId: data.session_id,
-      redirectUrl,
     };
   } catch (err) {
     logIntegration(db, {
@@ -184,116 +170,73 @@ export async function createMyidSession(
 /** Exchange an OAuth2 code for MyID user data. */
 export async function exchangeMyidCode(code: string): Promise<MyidUserData> {
   const token = await getClientToken();
-  const client = myidClient();
+  const client = myidMobileClient();
 
-  const tokenReqBody = {
-    grant_type: 'authorization_code',
-    code,
-    client_id: env.MYID_WEB_CLIENT_ID!,
-    client_secret: env.MYID_WEB_CLIENT_SECRET!,
-  };
-
-  let access_token: string;
   const tokenRequestTimestamp = new Date();
   try {
-    const tokenData = await client
-      .post('api/v1/oauth2/access-token', {
-        headers: { Authorization: `Bearer ${token}` },
-        body: new URLSearchParams(tokenReqBody),
-      })
-      .json<{ access_token: string }>();
-
-    logIntegration(db, {
-      integration: 'myid',
-      methodName: 'exchange_code',
-      methodType: 'POST',
-      request: tokenReqBody,
-      response: tokenData,
-      status: 200,
-      errorMessage: null,
-      requestTimestamp: tokenRequestTimestamp,
-      responseTimestamp: new Date(),
-    });
-
-    access_token = tokenData.access_token;
-  } catch (err) {
-    logIntegration(db, {
-      integration: 'myid',
-      methodName: 'exchange_code',
-      methodType: 'POST',
-      request: tokenReqBody,
-      response: null,
-      status: err instanceof IntegrationError ? err.statusCode : null,
-      errorMessage: err instanceof Error ? err.message : String(err),
-      requestTimestamp: tokenRequestTimestamp,
-      responseTimestamp: new Date(),
-    });
-    return handleHttpError(err, 'myid.token');
-  }
-
-  const meRequestTimestamp = new Date();
-  try {
     const me = await client
-      .get('api/v1/users/me', {
-        headers: { Authorization: `Bearer ${access_token}` },
+      .get('api/v1/sdk/data?code=' + code, {
+        headers: { Authorization: `Bearer ${token}` },
       })
       .json<{
-        profile: {
-          common_data: {
-            pinfl: string;
-            first_name: string;
-            last_name: string;
-            middle_name: string | null;
-            birth_date: string;
-            gender: string;
-            nationality: string | null;
-            nationality_id: string | null;
-            citizenship_id: string;
-          };
-          doc_data: {
-            pass_data: string;
-            doc_type_id?: number | string | null;
-          };
-          address?: {
-            permanent_registration?: {
-              region?: string | null;
-              country_id_cbu: string;
-              country_id?: string;
-              region_id?: number | string | null;
-              region_id_cbu: string;
-              district?: string | null;
-              district_id?: number | string | null;
-              district_id_cbu?: string;
-              address?: string | null;
+        data: {
+          profile: {
+            common_data: {
+              pinfl: string;
+              first_name: string;
+              last_name: string;
+              middle_name: string | null;
+              birth_date: string;
+              gender: string;
+              nationality: string | null;
+              nationality_id: string | null;
+              citizenship_id: string;
+            };
+            doc_data: {
+              pass_data: string;
+              doc_type_id?: number | string | null;
+            };
+            address?: {
+              permanent_registration?: {
+                region?: string | null;
+                country_id_cbu: string;
+                country_id?: string;
+                region_id?: number | string | null;
+                region_id_cbu: string;
+                district?: string | null;
+                district_id?: number | string | null;
+                district_id_cbu?: string;
+                address?: string | null;
+              } | null;
+              temporary_registration?: {
+                region?: string | null;
+                country_id_cbu: string;
+                country_id?: string;
+                region_id?: number | string | null;
+                region_id_cbu: string;
+                district?: string | null;
+                district_id?: number | string | null;
+                district_id_cbu?: string;
+                address?: string | null;
+              } | null;
             } | null;
-            temporary_registration?: {
-              region?: string | null;
-              country_id_cbu: string;
-              country_id?: string;
-              region_id?: number | string | null;
-              region_id_cbu: string;
-              district?: string | null;
-              district_id?: number | string | null;
-              district_id_cbu?: string;
-              address?: string | null;
-            } | null;
-          } | null;
+          };
         };
       }>();
 
     logIntegration(db, {
       integration: 'myid',
-      methodName: 'get_user',
-      methodType: 'GET',
-      request: null,
+      methodName: 'exchange_code',
+      methodType: 'POST',
+      request: { code },
       response: me,
       status: 200,
       errorMessage: null,
-      requestTimestamp: meRequestTimestamp,
+      requestTimestamp: tokenRequestTimestamp,
       responseTimestamp: new Date(),
     });
 
-    const { common_data, doc_data } = me.profile;
+    const { common_data, doc_data } = me.data.profile;
     const passData = doc_data.pass_data ?? '';
     const passportSerial = passData.slice(0, 2) || '';
     const passportNumber = passData.slice(2) || '';
@@ -306,7 +249,7 @@ export async function exchangeMyidCode(code: string): Promise<MyidUserData> {
     // biometric passport. Used only when MyID itself doesn't say.
     const docType = passportSerial ? (passportSerial.toUpperCase() === 'AD' ? 0 : 6) : null;
 
-    const reg = me.profile.address?.permanent_registration;
+    const reg = me.data.profile.address?.permanent_registration;
     const addressText =
       reg?.address ?? [reg?.region, reg?.district, reg?.address].filter(Boolean).join(', ') ?? null;
     const regionCode = reg?.region_id != null ? String(reg.region_id_cbu).padStart(2, '0') : null;
@@ -329,21 +272,22 @@ export async function exchangeMyidCode(code: string): Promise<MyidUserData> {
       districtCode,
       docType,
       citizenShipId: common_data.citizenship_id,
-      permanentRegistration: me.profile.address?.permanent_registration as any,
-      temporaryRegistration: me.profile.address?.temporary_registration as any,
+      permanentRegistration: me.data.profile.address?.permanent_registration as any,
+      temporaryRegistration: me.data.profile.address?.temporary_registration as any,
     };
   } catch (err) {
+    const body = (err as { response?: { body?: any } }).response?.body ?? null;
     logIntegration(db, {
       integration: 'myid',
-      methodName: 'get_user',
-      methodType: 'GET',
-      request: null,
-      response: null,
+      methodName: 'exchange_code',
+      methodType: 'POST',
+      request: { code },
+      response: body,
       status: err instanceof IntegrationError ? err.statusCode : null,
       errorMessage: err instanceof Error ? err.message : String(err),
-      requestTimestamp: meRequestTimestamp,
+      requestTimestamp: tokenRequestTimestamp,
       responseTimestamp: new Date(),
     });
-    return handleHttpError(err, 'myid.me');
+    return handleHttpError(err, 'myid.token');
   }
 }

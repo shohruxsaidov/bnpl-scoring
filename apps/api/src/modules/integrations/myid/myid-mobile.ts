@@ -10,8 +10,6 @@ import {
 import { logIntegration } from '../log';
 import { parsePinflBirthDate } from './pinfl';
 
-const MYID_TOKEN_KEY = 'myid:client_token';
-
 export interface MyidUserData {
   pinfl: string;
   firstName: string;
@@ -57,185 +55,52 @@ export interface MyidUserData {
 
 export interface MyidSessionResult {
   sessionId: string;
-  redirectUrl: string | null;
 }
 
-function myidClient() {
+function myidMobileClient() {
   if (!env.MYID_API_BASE_URL) throw new Error('MYID_API_BASE_URL is not configured');
   return createIntegrationClient(env.MYID_API_BASE_URL, 'myid');
 }
 
-/** Obtain a server-to-server access token via client_credentials, cached in Redis. */
-async function getClientToken(): Promise<string> {
-  const cached = await redis.get(MYID_TOKEN_KEY).catch(() => null);
-  if (cached) return cached;
+/** Exchange an OAuth2 code for MyID user data. */
+export async function exchangeMyidCode(code: string): Promise<MyidUserData> {
+  const client = myidMobileClient();
 
   const reqBody = {
-    client_id: env.MYID_WEB_CLIENT_ID!,
-    client_secret: env.MYID_WEB_CLIENT_SECRET!,
-    grant_type: 'client_credentials',
+    grant_type: 'authorization_code',
+    code,
+    client_id: env.MYID_MOBILE_CLIENT_ID!,
+    client_secret: env.MYID_MOBILE_CLIENT_SECRET!,
   };
 
-  const requestTimestamp = new Date();
+  const tokenRequestTimestamp = new Date();
   try {
-    const data = await myidClient()
+    const token = await client
       .post('api/v1/oauth2/access-token', {
         body: new URLSearchParams(reqBody),
       })
-      .json<{ access_token: string; expires_in: number }>();
-
-    redis.set(MYID_TOKEN_KEY, data.access_token, 'EX', data.expires_in - 60).catch(() => null);
-
-    logIntegration(db, {
-      integration: 'myid',
-      methodName: 'client_token',
-      methodType: 'POST',
-      request: reqBody,
-      response: data,
-      status: 200,
-      errorMessage: null,
-      requestTimestamp,
-      responseTimestamp: new Date(),
-    });
-
-    return data.access_token;
-  } catch (err) {
-    console.error('Error obtaining MyID client token:', err);
-    logIntegration(db, {
-      integration: 'myid',
-      methodName: 'client_token',
-      methodType: 'POST',
-      request: reqBody,
-      response: null,
-      status: err instanceof IntegrationError ? err.statusCode : null,
-      errorMessage: err instanceof Error ? err.message : String(err),
-      requestTimestamp,
-      responseTimestamp: new Date(),
-    });
-    return handleHttpError(err, 'myid.clientToken');
-  }
-}
-
-/** Create a MyID WebSDK session for the given PINFL. */
-export async function createMyidSession(
-  pinfl: string,
-  ipAddress: string,
-  redirectUri?: string,
-): Promise<MyidSessionResult> {
-  const birthDate = parsePinflBirthDate(pinfl);
-  const token = await getClientToken();
-
-  const reqBody = {
-    client_id: env.MYID_WEB_CLIENT_ID,
-    external_id: randomUUID(),
-    pinfl,
-    birth_date: birthDate,
-    ip_address: ipAddress,
-    max_retries: 3,
-  };
-
-  const requestTimestamp = new Date();
-  try {
-    const data = await myidClient()
-      .post('api/v1/web/sessions', {
-        headers: { Authorization: `Bearer ${token}` },
-        json: reqBody,
-      })
-      .json<{ session_id: string; url: string }>();
-
-    logIntegration(db, {
-      integration: 'myid',
-      methodName: 'create_session',
-      methodType: 'POST',
-      request: reqBody,
-      response: data,
-      status: 200,
-      errorMessage: null,
-      requestTimestamp,
-      responseTimestamp: new Date(),
-    });
-
-    // Native clients (mobile) drive the MyID SDK directly and have no browser
-    // iframe to land on, so they omit redirectUri and get a null redirectUrl.
-    const redirectUrl = redirectUri
-      ? `${env.MYID_WEB_REDIRECT_URL}?session_id=${data.session_id}&pinfl=${pinfl}&birth_date=${birthDate}&theme=dark&redirect_uri=${redirectUri}`
-      : null;
-
-    return {
-      sessionId: data.session_id,
-      redirectUrl,
-    };
-  } catch (err) {
-    logIntegration(db, {
-      integration: 'myid',
-      methodName: 'create_session',
-      methodType: 'POST',
-      request: reqBody,
-      response: null,
-      status: err instanceof IntegrationError ? err.statusCode : null,
-      errorMessage: err instanceof Error ? err.message : String(err),
-      requestTimestamp,
-      responseTimestamp: new Date(),
-    });
-    return handleHttpError(err, 'myid.createSession');
-  }
-}
-
-/** Exchange an OAuth2 code for MyID user data. */
-export async function exchangeMyidCode(code: string): Promise<MyidUserData> {
-  const token = await getClientToken();
-  const client = myidClient();
-
-  const tokenReqBody = {
-    grant_type: 'authorization_code',
-    code,
-    client_id: env.MYID_WEB_CLIENT_ID!,
-    client_secret: env.MYID_WEB_CLIENT_SECRET!,
-  };
-
-  let access_token: string;
-  const tokenRequestTimestamp = new Date();
-  try {
-    const tokenData = await client
-      .post('api/v1/oauth2/access-token', {
-        headers: { Authorization: `Bearer ${token}` },
-        body: new URLSearchParams(tokenReqBody),
-      })
-      .json<{ access_token: string }>();
+      .json<{
+        access_token: string;
+        expires_in: number;
+        token_type: string;
+        scope: string;
+      }>();
 
     logIntegration(db, {
       integration: 'myid',
       methodName: 'exchange_code',
       methodType: 'POST',
-      request: tokenReqBody,
-      response: tokenData,
+      request: { code },
+      response: token,
       status: 200,
       errorMessage: null,
       requestTimestamp: tokenRequestTimestamp,
       responseTimestamp: new Date(),
     });
 
-    access_token = tokenData.access_token;
-  } catch (err) {
-    logIntegration(db, {
-      integration: 'myid',
-      methodName: 'exchange_code',
-      methodType: 'POST',
-      request: tokenReqBody,
-      response: null,
-      status: err instanceof IntegrationError ? err.statusCode : null,
-      errorMessage: err instanceof Error ? err.message : String(err),
-      requestTimestamp: tokenRequestTimestamp,
-      responseTimestamp: new Date(),
-    });
-    return handleHttpError(err, 'myid.token');
-  }
-
-  const meRequestTimestamp = new Date();
-  try {
     const me = await client
-      .get('api/v1/users/me', {
-        headers: { Authorization: `Bearer ${access_token}` },
+      .post('api/v1/users/me', {
+        headers: { Authorization: `Bearer ${token.access_token}` },
       })
       .json<{
         profile: {
@@ -281,18 +146,6 @@ export async function exchangeMyidCode(code: string): Promise<MyidUserData> {
         };
       }>();
 
-    logIntegration(db, {
-      integration: 'myid',
-      methodName: 'get_user',
-      methodType: 'GET',
-      request: null,
-      response: me,
-      status: 200,
-      errorMessage: null,
-      requestTimestamp: meRequestTimestamp,
-      responseTimestamp: new Date(),
-    });
-
     const { common_data, doc_data } = me.profile;
     const passData = doc_data.pass_data ?? '';
     const passportSerial = passData.slice(0, 2) || '';
@@ -333,17 +186,18 @@ export async function exchangeMyidCode(code: string): Promise<MyidUserData> {
       temporaryRegistration: me.profile.address?.temporary_registration as any,
     };
   } catch (err) {
+    const body = (err as { response?: { body?: any } }).response?.body ?? null;
     logIntegration(db, {
       integration: 'myid',
-      methodName: 'get_user',
-      methodType: 'GET',
-      request: null,
-      response: null,
+      methodName: 'exchange_code',
+      methodType: 'POST',
+      request: { code },
+      response: body,
       status: err instanceof IntegrationError ? err.statusCode : null,
       errorMessage: err instanceof Error ? err.message : String(err),
-      requestTimestamp: meRequestTimestamp,
+      requestTimestamp: tokenRequestTimestamp,
       responseTimestamp: new Date(),
     });
-    return handleHttpError(err, 'myid.me');
+    return handleHttpError(err, 'myid.token');
   }
 }
