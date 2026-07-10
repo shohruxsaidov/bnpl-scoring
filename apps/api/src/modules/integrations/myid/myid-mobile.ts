@@ -58,8 +58,8 @@ export interface MyidSessionResult {
 }
 
 function myidMobileClient() {
-  if (!env.MYID_API_BASE_URL) throw new Error('MYID_API_BASE_URL is not configured');
-  return createIntegrationClient(env.MYID_API_BASE_URL, 'myid');
+  if (!env.MYID_MOBILE_API_BASE_URL) throw new Error('MYID_MOBILE_API_BASE_URL is not configured');
+  return createIntegrationClient(env.MYID_MOBILE_API_BASE_URL, 'myid');
 }
 
 /** Exchange an OAuth2 code for MyID user data. */

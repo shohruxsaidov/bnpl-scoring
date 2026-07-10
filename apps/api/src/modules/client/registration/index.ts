@@ -13,12 +13,15 @@ import {
   findUserByPinfl,
   findUserByPhone,
 } from '../../auth/client/service/service.handler';
-import { createMyidSession, exchangeMyidCode } from '../../integrations/myid/client';
+import { exchangeMyidCode,  } from '../../integrations/myid/myid-mobile';
 import { createUserHandler } from '../../id/users';
 import { sendOtpSms } from '../../../lib/sms';
 import { getCurrentPublicOffer, findCurrentPublicOfferById } from './public-offers';
 import { pinFailKey } from '../auth/index';
-import { createMobileMyidSession, exchangeMobileMyidCode } from '../../integrations/myid/myid-mobile-new-flow';
+import {
+  createMobileMyidSession,
+  exchangeMobileMyidCode,
+} from '../../integrations/myid/myid-mobile-new-flow';
 
 const ERROR = { $ref: 'ErrorResponse#' };
 
@@ -322,13 +325,13 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
       }
 
       const { pinfl } = req.body;
-      const myidResult = await createMobileMyidSession(pinfl);
+      // const myidResult = await createMobileMyidSession(pinfl);
 
       const regToken = app.jwt.sign(
         { phone: payload.phone, pinfl, step: 'pinfl_verified' } satisfies RegTokenPhase2,
         { expiresIn: REG_TOKEN_TTL },
       );
-      return { regToken, sessionId: myidResult.sessionId };
+      return { regToken, sessionId: 'test-session-id' };
     },
   );
 
@@ -355,7 +358,7 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
         return reply.code(400).sendError('invalid_step');
       }
 
-      const myidUser = await exchangeMobileMyidCode(req.body.myidCode);
+      const myidUser = await exchangeMyidCode(req.body.myidCode);
       if (myidUser.pinfl !== phase2.pinfl) {
         return reply.code(400).sendError('pinfl_mismatch');
       }
