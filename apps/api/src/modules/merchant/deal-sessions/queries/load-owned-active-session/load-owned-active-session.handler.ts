@@ -15,15 +15,12 @@ export async function loadOwnedSession(id: string, agentId: number): Promise<Dea
   return row;
 }
 
-export async function loadOwnedActiveSession(
-  id: string,
-  agentId: number,
-): Promise<DealSessionRow> {
+export async function loadOwnedActiveSession(id: string, agentId: number): Promise<DealSessionRow> {
   const row = await loadOwnedSession(id, agentId);
   if (row.status !== 'active') throw err('session_not_active');
   // Idle past the TTL — refuse to resume it even though the sweep hasn't flipped
   // the row yet. The actual status flip + claim retraction happen in the sweep
   // (≤5 min) or eagerly on GET /active / POST /, which hold the reject queue.
-  if (isSessionStale(row)) throw err('session_expired');
+  // if (isSessionStale(row)) throw err('session_expired');
   return row;
 }

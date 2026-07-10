@@ -123,7 +123,7 @@ export type DealSessionRow = typeof dealSessions.$inferSelect;
  * stamp — reads never touch updatedAt) for this long is reaped to `expired`.
  * A product rule, not a per-deploy knob — kept as a constant, not env.
  */
-export const DEAL_SESSION_TTL_MS = 2 * 60 * 60 * 1000; // 2h
+export const DEAL_SESSION_TTL_MS = 10 * 60 * 60 * 1000; // 10h
 
 /**
  * How long after expiry the "your deal expired — we recommend starting over"
