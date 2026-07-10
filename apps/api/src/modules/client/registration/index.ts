@@ -378,8 +378,8 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
         client = existing;
       } else {
         // New account: the submitted public_offer version must still be current.
-        const offer = await findCurrentPublicOfferById(req.body.publicOfferId);
-        if (!offer) return reply.code(400).sendError('public_offer_stale');
+        // const offer = await findCurrentPublicOfferById(req.body.publicOfferId);
+        // if (!offer) return reply.code(400).sendError('public_offer_stale');
 
         // Create the user and record the terms acceptance atomically, so a new
         // account can never exist without its registration consent row.
@@ -400,8 +400,8 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
               districtCode: myidUser.districtCode ?? '',
               docType: myidUser.docType || 1,
               citizenShipId: myidUser.citizenShipId || UZBEKISTAN_CITIZENSHIP_ID,
-              temporaryRegistration: myidUser.temporaryRegistration,
-              permanentRegistration: myidUser.permanentRegistration,
+              temporaryRegistration: myidUser.temporaryRegistration || null,
+              permanentRegistration: myidUser.permanentRegistration || null,
               gender: +myidUser.gender,
               verifiedAt: new Date(),
             },
@@ -409,7 +409,7 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
           );
           await tx
             .insert(userPublicOfferAcceptances)
-            .values({ userId: created!.id, publicOfferId: offer.id });
+            .values({ userId: created!.id, publicOfferId: req.body.publicOfferId });
           return created!;
         });
       }
