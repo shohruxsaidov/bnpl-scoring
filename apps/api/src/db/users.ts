@@ -18,7 +18,7 @@ export const users = pgTable('users', {
   middleName: varchar('middle_name', { length: 100 }),
   birthDate: date('birth_date').notNull(),
   gender: integer('gender').notNull(), // for male = 1; for female = 2;
-  nationality: varchar('nationality', { length: 100 }).notNull(),
+  nationality: varchar('nationality', { length: 100 }),
   passportSeries: varchar('passport_series', { length: 2 }),
   passportNumber: varchar('passport_number', { length: 7 }),
   photoUrl: text('photo_url'),

@@ -71,6 +71,13 @@
       "when": 1783528006056,
       "tag": "0009_premium_young_avengers",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1783670362851,
+      "tag": "0010_exotic_lifeguard",
+      "breakpoints": true
     }
   ]
 }
