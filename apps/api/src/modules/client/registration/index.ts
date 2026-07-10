@@ -13,7 +13,7 @@ import {
   findUserByPinfl,
   findUserByPhone,
 } from '../../auth/client/service/service.handler';
-import { exchangeMyidCode,  } from '../../integrations/myid/myid-mobile';
+import { exchangeMyidCode } from '../../integrations/myid/myid-mobile';
 import { createUserHandler } from '../../id/users';
 import { sendOtpSms } from '../../../lib/sms';
 import { getCurrentPublicOffer, findCurrentPublicOfferById } from './public-offers';
@@ -24,6 +24,8 @@ import {
 } from '../../integrations/myid/myid-mobile-new-flow';
 
 const ERROR = { $ref: 'ErrorResponse#' };
+
+const UZBEKISTAN_CITIZENSHIP_ID = '182';
 
 const OTP_COOLDOWN_SECONDS = 60;
 const OTP_DAILY_LIMIT = 10;
@@ -397,7 +399,7 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
               regionCode: myidUser.regionCode ?? '',
               districtCode: myidUser.districtCode ?? '',
               docType: myidUser.docType || 1,
-              citizenShipId: myidUser.citizenShipId,
+              citizenShipId: myidUser.citizenShipId || UZBEKISTAN_CITIZENSHIP_ID,
               temporaryRegistration: myidUser.temporaryRegistration,
               permanentRegistration: myidUser.permanentRegistration,
               gender: +myidUser.gender,

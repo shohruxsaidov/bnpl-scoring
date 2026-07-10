@@ -17,6 +17,8 @@ function formatDealNumber(n: number | null | undefined): string {
   return n != null ? String(n) : '—';
 }
 
+const UZBEKISTAN_CITIZENSHIP_ID = '182';
+
 function toClientDto(c: typeof users.$inferSelect) {
   return {
     id: c.id.toString(),
@@ -217,7 +219,7 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
         regionCode: myidUser.regionCode,
         districtCode: myidUser.districtCode,
         docType: myidUser.docType || 1,
-        citizenShipId: myidUser.citizenShipId,
+        citizenShipId: myidUser.citizenShipId || UZBEKISTAN_CITIZENSHIP_ID,
         gender: +myidUser.gender,
       });
 
