@@ -728,7 +728,14 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       const [user] = await db.select().from(users).where(eq(users.id, session.userId)).limit(1);
       if (!user) return reply.code(404).sendError('user_not_found');
 
-      const cards = await listCards(String(session.userId));
+      // A Plumgate outage must not block the wizard: the merchant can still add a
+      // card, which is the only action this list gates. Degrade to an empty list.
+      let cards: Awaited<ReturnType<typeof listCards>> = [];
+      try {
+        cards = await listCards(String(session.userId));
+      } catch (err) {
+        request.log.warn({ err, userId: session.userId }, 'listCards failed, returning empty list');
+      }
       return { cards };
     },
   );
