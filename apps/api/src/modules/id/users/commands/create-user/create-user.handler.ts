@@ -37,7 +37,7 @@ export async function createUserHandler(
       lastName,
       middleName,
       birthDate,
-      gender,
+      gender: gender || 3,
       nationality,
       passportSeries,
       passportNumber,
