@@ -1,11 +1,17 @@
-import { env, db, logIntegration, IntegrationError, makePlumClient, parsePlumError, toPlumCard } from '../../service/shared';
+import {
+  env,
+  db,
+  logIntegration,
+  IntegrationError,
+  makePlumClient,
+  parsePlumError,
+  toPlumCard,
+} from '../../service/shared';
 import type { PlumCard, PlumCardRaw } from '../../service/shared';
-import { mockListCards } from '../../mock';
 
 export type { PlumCard };
 
 export async function listCards(userId: string): Promise<PlumCard[]> {
-  if (env.PLUM_MOCK) return mockListCards();
   const client = makePlumClient();
   const reqParams = { userId };
 

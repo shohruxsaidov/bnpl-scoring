@@ -1,9 +1,20 @@
 import {
-  env, db, logIntegration, IntegrationError,
-  makePlumClient, parsePlumError, delay, scoreToDecision, scoreToLimit,
+  env,
+  db,
+  logIntegration,
+  IntegrationError,
+  makePlumClient,
+  parsePlumError,
+  delay,
+  scoreToDecision,
+  scoreToLimit,
 } from '../../service/shared';
-import type { PlumScoreResult, PlumScoringCreateResponse, PlumUzcardScoreResponse, PlumHumoScoreResponse } from '../../service/shared';
-import { mockScoreCard } from '../../mock';
+import type {
+  PlumScoreResult,
+  PlumScoringCreateResponse,
+  PlumUzcardScoreResponse,
+  PlumHumoScoreResponse,
+} from '../../service/shared';
 
 export type { PlumScoreResult };
 
@@ -11,11 +22,7 @@ export async function scoreCard(params: {
   plumCardId: string;
   pcType: 'uzcard' | 'humo';
 }): Promise<PlumScoreResult> {
-  console.log('[plum] scoreCard called:', JSON.stringify(params), 'PLUM_MOCK:', env.PLUM_MOCK);
-  if (env.PLUM_MOCK) return mockScoreCard(params);
-  return params.pcType === 'humo'
-    ? scoreHumo(params.plumCardId)
-    : scoreUzcard(params.plumCardId);
+  return params.pcType === 'humo' ? scoreHumo(params.plumCardId) : scoreUzcard(params.plumCardId);
 }
 
 async function scoreUzcard(userCardId: string): Promise<PlumScoreResult> {

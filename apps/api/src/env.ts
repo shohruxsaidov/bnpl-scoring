@@ -44,7 +44,6 @@ const schema = z.object({
   PLUM_PASSWORD: z.string().optional(),
   PLUM_TIMEOUT: z.coerce.number().default(15_000),
   PLUM_TEMPLATE_ID: z.coerce.number().default(123),
-  PLUM_MOCK: z.coerce.boolean().default(false),
   // KATM credit bureau — Retail API (ADR-0025).
   // NB: the vendor PDF's TEST/PROD labels are swapped — testapi.* is the test env.
   KATM_BASE_URL: z.string().url(),

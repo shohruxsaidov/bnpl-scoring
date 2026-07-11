@@ -1,12 +1,18 @@
-import { env, db, logIntegration, IntegrationError, makePlumClient, parsePlumError, toPlumCard } from '../../service/shared';
+import {
+  env,
+  db,
+  logIntegration,
+  IntegrationError,
+  makePlumClient,
+  parsePlumError,
+  toPlumCard,
+} from '../../service/shared';
 import type { PlumCard, PlumConfirmUserCardCreateResponse } from '../../service/shared';
-import { mockConfirmCard } from '../../mock';
 import type { ConfirmCardCommand } from './confirm-card.command';
 
 export type { PlumCard };
 
 export async function confirmCard(params: ConfirmCardCommand): Promise<PlumCard> {
-  if (env.PLUM_MOCK) return mockConfirmCard(params);
   const client = makePlumClient();
   const reqBody = { session: params.sessionId, otp: params.otp, cardName: 'Default card name' };
 

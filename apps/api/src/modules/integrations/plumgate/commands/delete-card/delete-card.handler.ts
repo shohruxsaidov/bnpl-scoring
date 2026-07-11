@@ -1,12 +1,16 @@
-import { env, db, logIntegration, IntegrationError, makePlumClient, parsePlumError } from '../../service/shared';
-import { mockDeleteCard } from '../../mock';
+import {
+  env,
+  db,
+  logIntegration,
+  IntegrationError,
+  makePlumClient,
+  parsePlumError,
+} from '../../service/shared';
 import type { DeleteCardCommand } from './delete-card.command';
 
 // Removes a card from Plumgate. A 404 ("card not found / already removed") is
 // treated as success so the caller can proceed to delete the local row
-// idempotently. Any other failure throws and the local row is kept in sync.
 export async function deleteCard(params: DeleteCardCommand): Promise<void> {
-  if (env.PLUM_MOCK) return mockDeleteCard(params);
   const client = makePlumClient();
   const reqParams = { id: params.id };
 
