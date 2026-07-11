@@ -71,9 +71,13 @@ export const ru: Record<string, string> = {
 
   // deals
   deal_not_found: "Договор не найден",
-  invalid_signing_token: "Неверный токен подписи",
   invalid_signing_purpose: "Неверное назначение токена подписи",
   invalid_signing_session: "Неверная сессия подписи",
+
+  // signing — MyID (личность) сначала, затем OTP (акцепт)
+  myid_not_verified: "Клиент не прошёл верификацию MyID или она устарела",
+  otp_not_verified: "Клиент не подтвердил договор кодом или подтверждение устарело",
+  client_step_missing: "Клиент не выбран",
 
   // payments
   overpayment: "Сумма превышает остаток по договору",

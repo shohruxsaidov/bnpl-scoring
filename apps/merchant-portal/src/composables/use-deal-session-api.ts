@@ -34,6 +34,26 @@ export interface SessionScoring {
   criteriaScores: Record<string, unknown>
 }
 
+/**
+ * The Верификация step's two proofs, stamped by the server and never written by
+ * us. MyID (identity) comes first, the OTP (акцепт) last; both must still be
+ * fresh — SIGNING_PROOF_TTL_MS on the server — when the Deal is created.
+ */
+export interface SessionSigning {
+  pinfl: string
+  myidVerifiedAt: string
+  otpVerifiedAt?: string
+}
+
+/** Mirrors the server's SIGNING_PROOF_TTL_MS — a face-scan proves presence NOW. */
+export const SIGNING_PROOF_TTL_MS = 15 * 60 * 1000
+
+export function isSigningProofFresh(at: string | null | undefined, now = Date.now()): boolean {
+  if (!at) return false
+  const stamped = Date.parse(at)
+  return Number.isFinite(stamped) && now - stamped <= SIGNING_PROOF_TTL_MS
+}
+
 export interface SessionStepData {
   client?: { isNewClient: boolean; myidVerified: boolean; katmConsent: boolean }
   card?: { cardId: string; maskedPan: string; pcType: 'uzcard' | 'humo'; bank: string; holderName: string; expiry: string }
@@ -59,7 +79,8 @@ export interface SessionStepData {
     }>
   }
   payment?: { paymentDay: number }
-  verification?: { lang: 'ru' | 'uz'; otpVerifiedAt: string | null }
+  verification?: { lang: 'ru' | 'uz' }
+  signing?: SessionSigning
   katm?: SessionKatm
   katmPending?: { status: 'pending' | 'failed'; startedAt: string; error?: string }
   scoring?: SessionScoring

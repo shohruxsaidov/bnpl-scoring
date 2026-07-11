@@ -51,9 +51,12 @@ export interface DealDetail extends DealListItem {
  * day, lang and scoring all live in the session's server-side step data —
  * the request carries only the run id and the OTP consent proof.
  */
+/**
+ * The Deal is built FROM the session (ADR-0024) — including both signing proofs,
+ * which the server stamped onto it. Nothing else is sent.
+ */
 export interface CreateDealInput {
   dealSessionId: string
-  signingToken: string
 }
 
 // ---------------------------------------------------------------------------

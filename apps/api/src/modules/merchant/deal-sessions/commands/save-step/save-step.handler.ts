@@ -57,6 +57,13 @@ export async function saveStep(
       console.log('[saveStep] dropping bailsmen (client changed)');
       delete next.bailsmen;
     }
+    // The face-scan and OTP prove things about a PERSON — they cannot follow the
+    // session to a different one. (Terms changes need no such rule: the OTP is the
+    // last act of the run, so new terms always get a fresh consent.)
+    if (next.signing) {
+      console.log('[saveStep] dropping signing (client changed)');
+      delete next.signing;
+    }
   }
   if (step === 'card') {
     const cardId = (saved as NonNullable<SessionStepData['card']>).cardId;
@@ -254,17 +261,14 @@ async function buildStepPayload(
     }
 
     case 'verification': {
+      // Contract language only. The signing proofs (MyID + OTP) are NOT here —
+      // they are server stamps under stepData.signing, because this block is
+      // client-writable and a re-save replaces it wholesale.
       const lang = body['lang'];
-      console.log(
-        '[buildStepPayload:verification] lang',
-        lang,
-        'otpVerifiedAt',
-        body['otpVerifiedAt'],
-      );
+      console.log('[buildStepPayload:verification] lang', lang);
       if (lang !== 'ru' && lang !== 'uz') throw err('invalid_step_payload');
-      const result = { lang, otpVerifiedAt: str(body['otpVerifiedAt']) } as any;
-      console.log('[buildStepPayload:verification] returning', result);
-      return result;
+      console.log('[buildStepPayload:verification] returning', { lang });
+      return { lang };
     }
   }
 }

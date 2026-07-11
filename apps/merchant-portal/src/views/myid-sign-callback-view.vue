@@ -8,42 +8,35 @@ const router = useRouter()
 const { myidSignCompleteMutation } = useClientApi()
 const deal = useDealStore()
 
+/**
+ * Return leg of the signing face-scan. It only VERIFIES — the deal is not created
+ * here: the client still has to give their акцепт by OTP back in the wizard, which
+ * is what makes the consent cover the final terms. The server stamps the proof
+ * onto the Deal Session, so nothing needs carrying back but a "go look at it" flag.
+ */
 onMounted(async () => {
   const params = new URLSearchParams(window.location.search)
   const code = params.get('auth_code')
   const signingSessionToken = sessionStorage.getItem('myid_sign_session_token')
-  const signingToken = sessionStorage.getItem('signing_token')
-  // The deal is built FROM the Deal Session (ADR-0024); its id survived the
-  // redirect in the persisted wizard store
+  // The session id survived the redirect in the persisted wizard store
   const dealSessionId = deal.dealSessionId
 
-  // Can't proceed without all the pieces
-  if (!code || !signingSessionToken || !signingToken || !dealSessionId) {
+  if (!code || !signingSessionToken || !dealSessionId) {
+    sessionStorage.setItem('myid_sign_failed', 'myid_incomplete')
     router.replace({ name: 'deals-create' })
     return
   }
 
   sessionStorage.removeItem('myid_sign_session_token')
 
-  // Single call: verify MyID face scan + create deal atomically
   try {
-    const res = await myidSignCompleteMutation.mutateAsync({
-      signingSessionToken,
-      myidCode: code,
-      signingToken,
-      dealSessionId,
-    })
-
-    // Persist the deal ID so NewDealView can advance directly to StepDone
-    sessionStorage.setItem('myid_sign_complete', '1')
-    sessionStorage.setItem('myid_sign_deal_id', res.dealId)
-    sessionStorage.setItem('myid_sign_deal_number', res.dealNumber)
-    sessionStorage.removeItem('signing_token')
-  } catch (err) {
-    console.error('myid-sign-complete failed', err)
-    sessionStorage.setItem('myid_sign_failed', '1')
-    router.replace({ name: 'deals-create' })
-    return
+    await myidSignCompleteMutation.mutateAsync({ dealSessionId, signingSessionToken, myidCode: code })
+    sessionStorage.setItem('myid_sign_done', '1')
+  } catch (err: any) {
+    // apiFetch surfaces the server's error code as the message — StepVerification
+    // tells a scan-by-the-wrong-person apart from a plain liveness failure.
+    console.error('myid-sign/complete failed', err)
+    sessionStorage.setItem('myid_sign_failed', err?.message ?? 'myid_failed')
   }
 
   router.replace({ name: 'deals-create' })

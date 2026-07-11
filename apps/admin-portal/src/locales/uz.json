@@ -43,7 +43,8 @@
     "scorings": "Skoringlar",
     "integrationLogs": "Integratsiya loglari",
     "categories": "Kategoriyalar",
-    "settingsPublicOffer": "Ommaviy oferta"
+    "settingsPublicOffer": "Ommaviy oferta",
+    "settingsScoring": "Skoring sozlamalari"
   },
   "breadcrumb": {
     "overview": "Umumiy ko'rinish",
@@ -67,7 +68,8 @@
     "clients": "Mijozlar",
     "integrationLogs": "Integratsiya loglari",
     "categories": "Kategoriyalar",
-    "settingsPublicOffer": "Ommaviy oferta"
+    "settingsPublicOffer": "Ommaviy oferta",
+    "settingsScoring": "Skoring"
   },
   "topbar": {
     "scoring": "Skoring",
@@ -966,7 +968,9 @@
     "orgSaved": "Tashkilot rekvizitlari saqlandi",
     "orgSaveFailed": "Rekvizitlarni saqlab bo'lmadi",
     "publicOffer": "Ommaviy oferta",
-    "publicOfferDesc": "Ro'yxatdan o'tishda qabul qilinadigan PDF oferta va uning versiyalari"
+    "publicOfferDesc": "Ro'yxatdan o'tishda qabul qilinadigan PDF oferta va uning versiyalari",
+    "scoring": "Skoring sozlamalari",
+    "scoringDesc": "Skoring vaqtida qaysi tekshiruvlar bajariladi"
   },
   "orgWarning": {
     "title": "Tashkilot rekvizitlari to'ldirilmagan",
@@ -1211,5 +1215,43 @@
     "colDate": "Sana",
     "colAuthor": "Muallif",
     "colFiles": "Fayllar"
+  },
+  "scoringSettings": {
+    "title": "Skoring bosqichlari",
+    "hint": "Global kalit: bosqich umuman bajariladimi. Model balli shu maʼlumotlarga bogʻliqmi — bu skoring modeli darajasidagi alohida qaror.",
+    "tagGate": "faqat tekshiruv",
+    "tagParams": "{count} param.",
+    "tagLimit": "limitga taʼsir qiladi",
+    "tagDefault": "standart",
+    "suppliesStopFactors": "Stop-faktorlar beradi: {list}",
+    "disable": "Oʻchirish",
+    "enableAnyway": "Baribir yoqish",
+    "disableTitle": "{name} oʻchirilsinmi?",
+    "disableGateMsg": "Bosqich bajarilmaydi va uning rad etish shartlari ishlamaydi. Ballga taʼsir qilmaydi.",
+    "disableSourceMsg": "Bu maʼlumotga muhtoj modellar ishlay olmaydi: skoring xatolik bilan tugaydi (pipeline_unavailable), mijoz rad etilmaydi. Sessiya ochiq qoladi.",
+    "mibEnableTitle": "KATM MIB 315 yoqilsinmi?",
+    "mibEnableMsg": "MIB uchun rad etish kodlari kiritilmagan: 204 dan boshqa har qanday javob skoringni «xatolik» holatiga oʻtkazadi. KATM test muhitida kodlar tasdiqlanmaguncha yoqmang.",
+    "enabled": "{name} yoqildi",
+    "disabled": "{name} oʻchirildi",
+    "saveFailed": "Sozlamani saqlab boʻlmadi",
+    "loadFailed": "Skoring sozlamalarini yuklab boʻlmadi",
+    "pipeline": {
+      "myid": {
+        "name": "MyID",
+        "desc": "Mijoz maʼlumotlari boʻyicha yosh va propiska tekshiruvi. Maʼlumot soʻralmaydi, ball oʻzgarmaydi."
+      },
+      "katm_mib": {
+        "name": "KATM MIB 315",
+        "desc": "Majburiy ijro byurosi. Faqat tekshiruv — ballga taʼsir qilmaydi."
+      },
+      "katm_077": {
+        "name": "KATM 077",
+        "desc": "Kredit tarixi: kechikishlar, majburiyatlar, arizalar. Ballning asosiy manbai."
+      },
+      "katm_inps": {
+        "name": "KATM INPS / GNK",
+        "desc": "Pensiya ajratmalari: daromad va staj. Daromad limit hisobida qatnashadi."
+      }
+    }
   }
 }

@@ -264,6 +264,22 @@ export interface Organization {
   updatedAt: string
 }
 
+export type ConfigurablePipeline = 'myid' | 'katm_mib' | 'katm_077' | 'katm_inps'
+
+// The global ops kill-switch for one scoring pipeline. `isDefault` means no row
+// has ever been stored — `enabled` is the catalog default, not an admin choice.
+export interface PipelineSetting {
+  type: ConfigurablePipeline
+  enabled: boolean
+  isDefault: boolean
+  updatedAt: string | null
+  // Scoring params that go unscored, and model stop-factors that stop firing,
+  // when this pipeline is off. Drives the warnings on the settings page.
+  scoringParams: string[]
+  stopFactors: string[]
+  feedsLimit: boolean
+}
+
 export interface Region {
   id: number
   upperId: number | null

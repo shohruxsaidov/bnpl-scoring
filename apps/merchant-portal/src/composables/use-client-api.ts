@@ -1,5 +1,6 @@
 import { useMutation } from '@tanstack/vue-query';
 import { apiFetch } from '@/utils/apiFetch';
+import type { SessionSigning } from '@/composables/use-deal-session-api';
 import type { Client } from '@/types';
 
 export function useClientApi() {
@@ -55,26 +56,33 @@ export function useClientApi() {
       }),
   });
 
+  // ── Kontrakt signing: MyID (identity) first, then the акцепт OTP ───────────
+  // Both proofs are stamped onto the Deal Session server-side and read back off it
+  // at deal creation — nothing is carried in the browser between them.
+
   const myidSignSessionMutation = useMutation({
-    mutationFn: (pinfl: string) =>
-      apiFetch<{ signingSessionToken: string; redirectUrl: string | null; mock: boolean }>(
-        '/merchant/client/myid-sign-session',
-        { method: 'POST', body: JSON.stringify({ pinfl }) },
+    mutationFn: (dealSessionId: string) =>
+      // No pinfl in the body: the server takes it from the session's client, so a
+      // scan by anyone else cannot be attached to this deal.
+      apiFetch<{ signingSessionToken: string; redirectUrl: string }>(
+        `/merchant/deal-sessions/${dealSessionId}/myid-sign`,
+        { method: 'POST' },
       ),
   });
 
   const myidSignCompleteMutation = useMutation({
-    mutationFn: (input: {
+    mutationFn: ({
+      dealSessionId,
+      ...body
+    }: {
+      dealSessionId: string;
       signingSessionToken: string;
       myidCode: string;
-      signingToken: string;
-      /** The deal is built FROM this Deal Session server-side (ADR-0024) */
-      dealSessionId: string;
     }) =>
-      apiFetch<{ verified: boolean; dealId: string; dealNumber: string }>('/merchant/client/myid-sign-complete', {
-        method: 'POST',
-        body: JSON.stringify(input),
-      }),
+      apiFetch<{ verified: boolean; signing: SessionSigning }>(
+        `/merchant/deal-sessions/${dealSessionId}/myid-sign/complete`,
+        { method: 'POST', body: JSON.stringify(body) },
+      ),
   });
 
   const sendSigningOtpMutation = useMutation({
@@ -87,7 +95,7 @@ export function useClientApi() {
 
   const verifySigningOtpMutation = useMutation({
     mutationFn: ({ dealSessionId, code }: { dealSessionId: string; code: string }) =>
-      apiFetch<{ signingToken: string }>(
+      apiFetch<{ ok: boolean; signing: SessionSigning }>(
         `/merchant/deal-sessions/${dealSessionId}/sign-otp/verify`,
         { method: 'POST', body: JSON.stringify({ code }) },
       ),

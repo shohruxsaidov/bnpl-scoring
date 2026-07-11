@@ -8,7 +8,20 @@ import { users } from '@db/schema';
 import { katm077Reports } from '@db/katm-077-reports';
 import { katmInpsReports } from '@db/katm-inps-reports';
 import { dealSessions } from '../../deals/schema';
-import { isWizardStep, type DealSessionRow, type SessionStepData } from './types';
+import {
+  err as codedErr,
+  isSigningProofFresh,
+  isWizardStep,
+  stepDataOf,
+  type DealSessionRow,
+  type SessionStepData,
+} from './types';
+import { createMyidSession, exchangeMyidCode } from '../../integrations/myid/client';
+import { env } from '../../../env';
+import {
+  stampMyidSigning,
+  stampOtpSigning,
+} from './commands/stamp-signing/stamp-signing.handler';
 import { getActiveSession } from './queries/get-active-session/get-active-session.handler';
 import {
   loadOwnedActiveSession,
@@ -65,6 +78,22 @@ type JwtPayload = {
 
 function payload(request: { user: unknown }) {
   return request.user as JwtPayload;
+}
+
+/** The session-loading failures every session-scoped route answers the same way. */
+function sessionErrorReply(reply: { code: (n: number) => { sendError: (c: string) => unknown } }, e: any) {
+  switch (e?.code) {
+    case 'session_not_found':
+      return reply.code(404).sendError('session_not_found');
+    case 'session_not_active':
+      return reply.code(409).sendError('session_not_active');
+    case 'client_step_missing':
+      return reply.code(409).sendError('client_step_missing');
+    case 'user_not_found':
+      return reply.code(404).sendError('user_not_found');
+    default:
+      throw e;
+  }
 }
 
 /**
@@ -568,44 +597,139 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
     },
   );
 
-  /* ── POST /:id/sign-otp — send signing OTP to the session's client ──────── */
+  /* ── Верификация — MyID (identity) first, then OTP (акцепт) ──────────────── */
+  //
+  // Both proofs are stamped onto the session server-side (stepData.signing); the
+  // browser carries no token between them, and POST /merchant/deals will not build
+  // a Deal without both, fresh. The order is enforced HERE, not by the UI: the OTP
+  // endpoints refuse until the face-scan has landed.
+
+  /**
+   * Load the session's client — the ONLY source of the PINFL that must pass the
+   * face-scan. Accepting it from the request body (as the old /merchant/client
+   * signing endpoints did) proves nothing: the callback would then compare MyID's
+   * PINFL against the very PINFL the caller chose.
+   */
+  async function loadSigningClient(sessionId: string, agentId: number) {
+    const session = await loadOwnedActiveSession(sessionId, agentId);
+    if (session.userId == null) throw codedErr('client_step_missing');
+
+    const [user] = await db
+      .select({ phone: users.phone, pinfl: users.pinfl })
+      .from(users)
+      .where(eq(users.id, session.userId))
+      .limit(1);
+    if (!user) throw codedErr('user_not_found');
+
+    return { session, user };
+  }
+
+  /* ── POST /:id/myid-sign — open the signing face-scan for the client ────── */
+
+  fastify.post(
+    '/:id/myid-sign',
+    { schema: { tags: TAGS, params: IdParams }, preHandler: guards },
+    async (request, reply) => {
+      const p = payload(request);
+      let ctx: Awaited<ReturnType<typeof loadSigningClient>>;
+      try {
+        ctx = await loadSigningClient(request.params.id, Number(p.sub));
+      } catch (err: any) {
+        return sessionErrorReply(reply, err);
+      }
+
+      const redirectUri = encodeURIComponent(
+        env.MERCHANT_PORTAL_URL + '/myid/callback/signing_deal',
+      );
+      const myid = await createMyidSession(ctx.user.pinfl, request.ip, redirectUri);
+
+      // Correlates the callback with the session we opened. The PINFL rides along
+      // so the callback can reject a scan by anyone else, even before it reaches
+      // the (authoritative) comparison against the session's client.
+      const signingSessionToken = app.jwt.sign(
+        { pinfl: ctx.user.pinfl, myidSessionId: myid.sessionId, purpose: 'deal_signing' },
+        { expiresIn: '15m' },
+      );
+
+      return { signingSessionToken, redirectUrl: myid.redirectUrl };
+    },
+  );
+
+  /* ── POST /:id/myid-sign/complete — the callback: verify + stamp ────────── */
+
+  const MyidSignCompleteBody = Type.Object({
+    signingSessionToken: Type.String({ minLength: 1 }),
+    myidCode: Type.String({ minLength: 1 }),
+  });
+
+  fastify.post(
+    '/:id/myid-sign/complete',
+    { schema: { tags: TAGS, params: IdParams, body: MyidSignCompleteBody }, preHandler: guards },
+    async (request, reply) => {
+      const p = payload(request);
+      let ctx: Awaited<ReturnType<typeof loadSigningClient>>;
+      try {
+        ctx = await loadSigningClient(request.params.id, Number(p.sub));
+      } catch (err: any) {
+        return sessionErrorReply(reply, err);
+      }
+
+      let signingSession: { pinfl: string; purpose: string };
+      try {
+        signingSession = app.jwt.verify<{ pinfl: string; purpose: string }>(
+          request.body.signingSessionToken,
+        );
+      } catch {
+        return reply.code(400).sendError('invalid_signing_session');
+      }
+      if (signingSession.purpose !== 'deal_signing') {
+        return reply.code(400).sendError('invalid_signing_purpose');
+      }
+
+      const myidUser = await exchangeMyidCode(request.body.myidCode);
+
+      // The face that scanned must be THIS session's client. Checking against the
+      // token alone would only prove the caller is consistent with themselves.
+      if (myidUser.pinfl !== ctx.user.pinfl || myidUser.pinfl !== signingSession.pinfl) {
+        return reply.code(400).sendError('pinfl_mismatch');
+      }
+
+      const signing = await stampMyidSigning(ctx.session, ctx.user.pinfl);
+      return { verified: true, signing };
+    },
+  );
+
+  /* ── POST /:id/sign-otp — send the акцепт code to the session's client ──── */
 
   fastify.post(
     '/:id/sign-otp',
     { schema: { tags: TAGS, params: IdParams }, preHandler: guards },
     async (request, reply) => {
       const p = payload(request);
-      let session;
+      let ctx: Awaited<ReturnType<typeof loadSigningClient>>;
       try {
-        session = await loadOwnedActiveSession(request.params.id, Number(p.sub));
+        ctx = await loadSigningClient(request.params.id, Number(p.sub));
       } catch (err: any) {
-        if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found');
-        if (err.code === 'session_not_active')
-          return reply.code(409).sendError('session_not_active');
-        throw err;
+        return sessionErrorReply(reply, err);
       }
 
-      if (session.userId == null) return reply.code(409).sendError('client_step_missing');
-
-      const [user] = await db
-        .select({ phone: users.phone })
-        .from(users)
-        .where(eq(users.id, session.userId))
-        .limit(1);
-      if (!user) return reply.code(404).sendError('user_not_found');
+      const signing = stepDataOf(ctx.session).signing;
+      if (!isSigningProofFresh(signing?.myidVerifiedAt)) {
+        return reply.code(409).sendError('myid_not_verified');
+      }
 
       const isProd = app.hasDecorator('isProd')
         ? (app as any).isProd
         : process.env['NODE_ENV'] === 'production';
 
-      const code = await createOtp(user.phone, 'deal_signing');
-      if (!isProd) request.log.info({ phone: user.phone, code }, 'deal_signing OTP issued');
+      const code = await createOtp(ctx.user.phone, 'deal_signing');
+      if (!isProd) request.log.info({ phone: ctx.user.phone, code }, 'deal_signing OTP issued');
 
       return { ok: true, ...(isProd ? {} : { devOtp: code }) };
     },
   );
 
-  /* ── POST /:id/sign-otp/verify — verify signing OTP, return signingToken ── */
+  /* ── POST /:id/sign-otp/verify — stamp the client's consent ─────────────── */
 
   const SignOtpVerifyBody = Type.Object({ code: Type.String({ minLength: 1 }) });
 
@@ -614,33 +738,25 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
     { schema: { tags: TAGS, params: IdParams, body: SignOtpVerifyBody }, preHandler: guards },
     async (request, reply) => {
       const p = payload(request);
-      let session;
+      let ctx: Awaited<ReturnType<typeof loadSigningClient>>;
       try {
-        session = await loadOwnedActiveSession(request.params.id, Number(p.sub));
+        ctx = await loadSigningClient(request.params.id, Number(p.sub));
       } catch (err: any) {
-        if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found');
-        if (err.code === 'session_not_active')
-          return reply.code(409).sendError('session_not_active');
-        throw err;
+        return sessionErrorReply(reply, err);
       }
 
-      if (session.userId == null) return reply.code(409).sendError('client_step_missing');
+      const signing = stepDataOf(ctx.session).signing;
+      if (!isSigningProofFresh(signing?.myidVerifiedAt)) {
+        return reply.code(409).sendError('myid_not_verified');
+      }
 
-      const [user] = await db
-        .select({ phone: users.phone })
-        .from(users)
-        .where(eq(users.id, session.userId))
-        .limit(1);
-      if (!user) return reply.code(404).sendError('user_not_found');
-
-      const ok = await verifyOtp(user.phone, request.body.code, 'deal_signing');
+      const ok = await verifyOtp(ctx.user.phone, request.body.code, 'deal_signing');
       if (!ok) return reply.code(400).sendError('invalid_otp');
 
-      const signingToken = app.jwt.sign(
-        { phone: user.phone, purpose: 'deal_signing' },
-        { expiresIn: '10m' },
-      );
-      return { signingToken };
+      // Consent is a stamp, not a token the browser carries: POST /merchant/deals
+      // reads it back off the session. A failed deal creation can therefore be
+      // retried without burning a second SMS.
+      return { ok: true, signing: await stampOtpSigning(ctx.session) };
     },
   );
 

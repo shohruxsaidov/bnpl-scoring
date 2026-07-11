@@ -7,15 +7,9 @@ import { users } from '@db/schema';
 import { findClientByPinflAndMerchant } from './queries/search-client/search-client.handler';
 import { createOtp, verifyOtp } from '../../auth/client/service/service.handler';
 import { createMyidSession, exchangeMyidCode } from '../../integrations/myid/client';
-import { createDealFromSession } from '../deals/commands/create-deal/create-deal.handler';
-import { loadOwnedActiveSession } from '../deal-sessions/queries/load-owned-active-session/load-owned-active-session.handler';
 import { env } from '../../../env';
 import { createUserHandler } from '../../id/users';
 import { findUsersHandler } from '../../id/users/queries/find-user/find-user.handler';
-
-function formatDealNumber(n: number | null | undefined): string {
-  return n != null ? String(n) : '—';
-}
 
 const UZBEKISTAN_CITIZENSHIP_ID = '182';
 
@@ -236,128 +230,8 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
     docType: Type.Union([Type.Literal(0), Type.Literal(6)]),
   });
 
-  /* ── MyID signing session ───────────────────────────────────────────────── */
-
-  const MyidSignSessionBody = Type.Object({
-    pinfl: Type.String({ minLength: 14, maxLength: 14, pattern: '^\\d{14}$' }),
-  });
-
-  const MyidSignCompleteBody = Type.Object({
-    signingSessionToken: Type.String({ minLength: 1 }),
-    myidCode: Type.String({ minLength: 1 }),
-    // OTP consent proof + the Deal Session the deal is built from (ADR-0024) —
-    // one call total from the callback view.
-    signingToken: Type.String({ minLength: 1 }),
-    dealSessionId: Type.String({ minLength: 1 }),
-  });
-
-  /**
-   * POST /merchant/client/myid-sign-session
-   * Create a MyID session for Kontrakt signing. Unlike /myid-session (which is
-   * gated behind a registration OTP regToken), this endpoint takes the Client's
-   * PINFL directly — the Client is already known at this point in the Wizard.
-   * Returns a redirectUrl pointing to the MyID iframe and a signingSessionToken
-   * to correlate the callback.
-   */
-  fastify.post(
-    '/myid-sign-session',
-    { schema: { tags: TAGS, body: MyidSignSessionBody }, preHandler: app.verifyMerchantJwt },
-    async (request) => {
-      const { pinfl } = request.body;
-      const redirectUrl = encodeURIComponent(
-        env.MERCHANT_PORTAL_URL + '/myid/callback/signing_deal',
-      );
-
-      const myidResult = await createMyidSession(pinfl, request.ip, redirectUrl);
-
-      const signingSessionToken = app.jwt.sign(
-        { pinfl, myidSessionId: myidResult.sessionId, purpose: 'deal_signing' },
-        { expiresIn: '15m' },
-      );
-
-      return { signingSessionToken, redirectUrl: myidResult.redirectUrl };
-    },
-  );
-
-  /**
-   * POST /merchant/client/myid-sign-complete
-   * Single-call endpoint used by the MyID signing callback:
-   *  1. Verifies the OTP signingToken (client consent proof)
-   *  2. Verifies the signingSessionToken (MyID session correlation)
-   *  3. Exchanges the MyID auth_code and confirms PINFL match
-   *  4. Creates the deal atomically from the Deal Session via createDealFromSession
-   * Returns { verified: true, dealId }.
-   */
-  fastify.post(
-    '/myid-sign-complete',
-    { schema: { tags: TAGS, body: MyidSignCompleteBody }, preHandler: app.verifyMerchantJwt },
-    async (request, reply) => {
-      const jwtPayload = request.user as {
-        sub: string;
-        merchantId: string;
-        branchId: string;
-        role: string;
-      };
-
-      // ── 1. Verify OTP consent token ────────────────────────────────────────
-      let signingPayload: { phone: string; purpose: string };
-      try {
-        signingPayload = app.jwt.verify<{ phone: string; purpose: string }>(
-          request.body.signingToken,
-        );
-      } catch {
-        return reply.code(400).sendError('invalid_signing_token');
-      }
-      if (signingPayload.purpose !== 'deal_signing') {
-        return reply.code(400).sendError('invalid_signing_purpose');
-      }
-
-      // ── 2. Verify MyID session token ───────────────────────────────────────
-      let session: { pinfl: string; purpose: string };
-      try {
-        session = app.jwt.verify<{ pinfl: string; purpose: string }>(
-          request.body.signingSessionToken,
-        );
-      } catch {
-        return reply.code(400).sendError('invalid_signing_session');
-      }
-      if (session.purpose !== 'deal_signing') {
-        return reply.code(400).sendError('invalid_purpose');
-      }
-
-      // ── 3. Exchange MyID code & confirm PINFL ──────────────────────────────
-      const myidUser = await exchangeMyidCode(request.body.myidCode);
-      if (myidUser.pinfl !== session.pinfl) {
-        return reply.code(400).sendError('pinfl_mismatch');
-      }
-
-      // ── 4. Create deal atomically from the Deal Session ────────────────────
-      let deal: Awaited<ReturnType<typeof createDealFromSession>>;
-      try {
-        const dealSession = await loadOwnedActiveSession(
-          request.body.dealSessionId,
-          Number(jwtPayload.sub),
-        );
-        deal = await createDealFromSession(dealSession);
-      } catch (err: any) {
-        if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found');
-        if (err.code === 'session_not_active')
-          return reply.code(409).sendError('session_not_active');
-        if (err.code === 'session_incomplete')
-          return reply.code(409).sendError('session_incomplete');
-        if (err.code === 'scoring_missing') return reply.code(409).sendError('scoring_missing');
-        if (err.code === 'scoring_declined') return reply.code(409).sendError('scoring_declined');
-        if (err.code === 'product_not_found') return reply.code(400).sendError('product_not_found');
-        if (err.code === 'amount_below_tariff_min')
-          return reply.code(400).sendError('amount_below_tariff_min');
-        if (err.code === 'amount_above_tariff_max')
-          return reply.code(400).sendError('amount_above_tariff_max');
-        throw err;
-      }
-
-      return reply
-        .code(201)
-        .send({ verified: true, dealId: deal.id, dealNumber: formatDealNumber(deal.dealNumber) });
-    },
-  );
+  // Kontrakt signing (MyID face-scan + акцепт OTP) lives on the Deal Session it
+  // stamps — see /merchant/deal-sessions/:id/myid-sign and .../sign-otp. It was
+  // moved out of here so the PINFL comes from the session's client row instead of
+  // the request body.
 }

@@ -71,6 +71,20 @@ export interface PrepaymentStamp {
   confirmedAt: string;
 }
 
+/**
+ * The Верификация step's two proofs, both stamped server-side — never written by
+ * the browser. MyID (identity: this client is standing at the counter right now)
+ * must come first; the OTP (акцепт: consent to the final terms) comes last, so a
+ * change of terms is always re-consented. The Deal cannot be created without both,
+ * fresh, and with `pinfl` matching the session's client.
+ */
+export interface SigningStamp {
+  /** The PINFL that actually passed the face-scan. */
+  pinfl: string;
+  myidVerifiedAt: string;
+  otpVerifiedAt?: string;
+}
+
 export interface SessionStepData {
   client?: { userId: string; isNewClient: boolean; myidVerified: boolean; katmConsent: boolean };
   card?: {
@@ -103,11 +117,12 @@ export interface SessionStepData {
     }>;
   };
   payment?: { paymentDay: number };
-  verification?: { lang: 'ru' | 'uz'; otpVerifiedAt: string | null };
+  verification?: { lang: 'ru' | 'uz' };
   bailsmen?: BailsmanItem[];
   katmPending?: KatmPendingState;
   scoring?: ScoringStamp;
   prepayment?: PrepaymentStamp;
+  signing?: SigningStamp;
   /**
    * Which step sequence this run follows (ADR — reuse scoring). Absent ⇒ 'full'
    * (client → card → …). 'reuse' routes through the contacts step and reuses the
@@ -131,6 +146,20 @@ export const DEAL_SESSION_TTL_MS = 10 * 60 * 60 * 1000; // 10h
  * this and the notice is stale nagging, so GET /active stops surfacing it.
  */
 export const DEAL_SESSION_EXPIRED_NOTICE_WINDOW_MS = 4 * 60 * 60 * 1000; // 4h
+
+/**
+ * How long a signing proof stands. A face-scan proves presence AT THIS MOMENT, so
+ * it cannot inherit the session's 10h budget — otherwise an Agent could scan a
+ * client in the morning and sign in their name that evening. Sized to cover the
+ * SMS plus a resend or two (the resend cooldown alone is 60s).
+ */
+export const SIGNING_PROOF_TTL_MS = 15 * 60 * 1000; // 15m
+
+export function isSigningProofFresh(at: string | null | undefined, now = Date.now()): boolean {
+  if (!at) return false;
+  const stamped = Date.parse(at);
+  return Number.isFinite(stamped) && now - stamped <= SIGNING_PROOF_TTL_MS;
+}
 
 export function err(code: string): Error & { code: string } {
   return Object.assign(new Error(code), { code });

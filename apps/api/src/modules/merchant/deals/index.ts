@@ -29,12 +29,12 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
 
   /* ── Body schemas ──────────────────────────────────────────────────────── */
 
-  // The Deal is built FROM the Deal Session (ADR-0024): basket, tariff,
-  // payment day, lang and scoring are read from step_data written server-side
-  // during the Wizard run. The body carries only the run id + consent proof.
+  // The Deal is built FROM the Deal Session (ADR-0024): basket, tariff, payment
+  // day, lang, scoring AND both signing proofs are read from step_data written
+  // server-side during the Wizard run. The body carries nothing but the run id —
+  // there is no token to forge and none to expire mid-flight.
   const CreateDealBody = Type.Object({
     dealSessionId: Type.String({ minLength: 1 }),
-    signingToken: Type.String({ minLength: 1 }),
   });
 
   const IdParams = Type.Object({ id: Type.String() });
@@ -57,19 +57,6 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const p = payload(request);
 
-      let signingPayload: { phone: string; purpose: string };
-      try {
-        signingPayload = app.jwt.verify<{ phone: string; purpose: string }>(
-          request.body.signingToken,
-        );
-      } catch {
-        return reply.code(400).sendError('invalid_signing_token');
-      }
-
-      if (signingPayload.purpose !== 'deal_signing') {
-        return reply.code(400).sendError('invalid_signing_purpose');
-      }
-
       let deal: Awaited<ReturnType<typeof createDealFromSession>>;
       try {
         const session = await loadOwnedActiveSession(request.body.dealSessionId, Number(p.sub));
@@ -82,6 +69,12 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
           return reply.code(409).sendError('session_incomplete');
         if (err.code === 'scoring_missing') return reply.code(409).sendError('scoring_missing');
         if (err.code === 'scoring_declined') return reply.code(409).sendError('scoring_declined');
+        // Signing proofs absent or stale — the wizard sends the agent back to the
+        // MyID gate (or the OTP gate) rather than showing a dead end.
+        if (err.code === 'myid_not_verified')
+          return reply.code(409).sendError('myid_not_verified');
+        if (err.code === 'otp_not_verified') return reply.code(409).sendError('otp_not_verified');
+        if (err.code === 'pinfl_mismatch') return reply.code(409).sendError('pinfl_mismatch');
         if (err.code === 'product_not_found') return reply.code(400).sendError('product_not_found');
         if (err.code === 'amount_below_tariff_min')
           return reply.code(400).sendError('amount_below_tariff_min');

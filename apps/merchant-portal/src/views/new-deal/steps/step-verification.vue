@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDealStore } from '@/stores/deal'
 import { useClientApi } from '@/composables/use-client-api'
 import { useCreateDealMutation } from '@/composables/use-deals-api'
-import { saveSessionStep } from '@/composables/use-deal-session-api'
+import {
+  fetchActiveSession,
+  isSigningProofFresh,
+  saveSessionStep,
+} from '@/composables/use-deal-session-api'
 import MonoAmount from '@/components/mono-amount.vue'
 
-const { locale } = useI18n()
+const { t, locale } = useI18n()
 const deal = useDealStore()
 const {
   sendSigningOtpMutation,
@@ -31,34 +35,59 @@ function itemPrice(price: string, quantity: number): number {
   return Math.round(base * (1 + pct / 100)) * quantity
 }
 
-// ── Signing phase machine ──────────────────────────────────────────────────
-// idle → otp_sent → signed → [MyID redirect] → myid_verified
-type SignPhase = 'idle' | 'otp_sent' | 'signed' | 'myid_verified'
-const signPhase = ref<SignPhase>('idle')
+// ── Signing gate ───────────────────────────────────────────────────────────
+// MyID (identity — the client is standing here) first, then the OTP (акцепт —
+// consent to these exact terms), which is therefore always the last act before
+// the Deal. Neither proof lives in the browser: both are stamped onto the Deal
+// Session server-side, and the phase below is READ back off that stamp — so the
+// gate the agent sees can never disagree with the gate the server enforces.
+type SignPhase = 'myid' | 'otp' | 'ready'
+
 const otpCode = ref('')
 const otpError = ref('')
 const devOtp = ref<string | null>(null)
 const myidError = ref('')
 const submitting = ref(false)
 const submitError = ref('')
-const lang = ref<'ru' | 'uz'>('ru')
-/** JWT proof of OTP consent — returned by /sign-otp/verify, sent with deal creation */
-const signingToken = ref<string | null>(null)
-/** When the Client's signing OTP was verified — recorded on the session's verification step */
-const otpVerifiedAt = ref<string | null>(null)
+const lang = ref<'ru' | 'uz'>(sd.value.contractLang ?? 'ru')
+/** The SMS has gone out in this sitting — a sub-state of the `otp` phase. */
+const otpSent = ref(false)
+
+/** Ticks so a proof going stale re-renders the gate instead of waiting for a 409. */
+const now = ref(Date.now())
+let clock: ReturnType<typeof setInterval> | null = null
+
+const signing = computed(() => sd.value.signing)
+const myidFresh = computed(() => isSigningProofFresh(signing.value?.myidVerifiedAt, now.value))
+const otpFresh = computed(() => isSigningProofFresh(signing.value?.otpVerifiedAt, now.value))
+
+const phase = computed<SignPhase>(() => {
+  if (!myidFresh.value) return 'myid'
+  if (!otpFresh.value) return 'otp'
+  return 'ready'
+})
+
+/** A scan that HAS happened but has aged out — say so, rather than looking untouched. */
+const myidExpired = computed(() => !!signing.value?.myidVerifiedAt && !myidFresh.value)
+
+// Falling back to the MyID gate voids the code we may have sent for the old scan.
+watch(phase, (p) => {
+  if (p === 'myid') {
+    otpSent.value = false
+    otpCode.value = ''
+    devOtp.value = ''
+  }
+})
 
 /**
- * Blocking save of the Верификация step (lang + OTP consent moment) onto the
- * Deal Session — the Deal is built from the session, so this must land before
- * deal creation or the MyID redirect (ADR-0024).
+ * Persist the contract language onto the session. Called before the MyID redirect
+ * (so the choice survives leaving the page) and again before deal creation, which
+ * reads `lang` off the session — never off the request (ADR-0024).
  */
 async function saveVerificationStep(): Promise<boolean> {
   if (!deal.dealSessionId) return false
   try {
-    await saveSessionStep(deal.dealSessionId, 'verification', {
-      lang: lang.value,
-      otpVerifiedAt: otpVerifiedAt.value,
-    })
+    await saveSessionStep(deal.dealSessionId, 'verification', { lang: lang.value })
     return true
   } catch {
     return false
@@ -86,76 +115,78 @@ function startResendCooldown() {
   }, 1000)
 }
 
-onUnmounted(stopResendTimer)
-
-// Resume after MyID sign callback
 onMounted(() => {
-  const complete = sessionStorage.getItem('myid_sign_complete')
+  clock = setInterval(() => (now.value = Date.now()), 5000)
+
+  // The face-scan's return leg left a verdict for us. Success needs no flag — the
+  // stamp is already on the session we just re-hydrated from.
   const failed = sessionStorage.getItem('myid_sign_failed')
-  if (complete) {
-    sessionStorage.removeItem('myid_sign_complete')
-    // Restore the signing token that was saved before the redirect
-    signingToken.value = sessionStorage.getItem('signing_token')
-    signPhase.value = 'myid_verified'
-  } else if (failed) {
+  if (failed) {
     sessionStorage.removeItem('myid_sign_failed')
-    // Resume at 'signed' — token is still valid, agent can retry MyID
-    signingToken.value = sessionStorage.getItem('signing_token')
-    signPhase.value = 'signed'
-    myidError.value = 'MyID верификация не удалась. Попробуйте ещё раз.'
+    myidError.value =
+      failed === 'pinfl_mismatch'
+        ? t('stepVerification.myidPinflMismatch')
+        : t('stepVerification.myidFailed')
   }
 })
+
+onUnmounted(() => {
+  stopResendTimer()
+  if (clock) clearInterval(clock)
+})
+
+async function startMyidSigning() {
+  if (!deal.dealSessionId) return
+  myidError.value = ''
+
+  // Save the language before we leave the page — a re-hydrate on return would
+  // otherwise silently reset the selector to RU and sign the wrong contract.
+  if (!(await saveVerificationStep())) {
+    myidError.value = t('stepVerification.stepSaveFailed')
+    return
+  }
+
+  try {
+    const res = await myidSignSessionMutation.mutateAsync(deal.dealSessionId)
+    sessionStorage.setItem('myid_sign_session_token', res.signingSessionToken)
+    window.location.href = res.redirectUrl
+  } catch {
+    myidError.value = t('stepVerification.myidSessionFailed')
+  }
+}
 
 async function sendSigningOtp() {
   if (!deal.dealSessionId) return
   otpError.value = ''
   devOtp.value = null
-  const res = await sendSigningOtpMutation.mutateAsync(deal.dealSessionId)
-  if (res.devOtp) devOtp.value = res.devOtp
-  signPhase.value = 'otp_sent'
-  startResendCooldown()
+  try {
+    const res = await sendSigningOtpMutation.mutateAsync(deal.dealSessionId)
+    if (res.devOtp) devOtp.value = res.devOtp
+    otpSent.value = true
+    startResendCooldown()
+  } catch (err: any) {
+    otpError.value =
+      err?.message === 'myid_not_verified'
+        ? t('stepVerification.myidExpired')
+        : t('stepVerification.otpSendFailed')
+  }
 }
 
 async function verifySigningOtp() {
   if (!deal.dealSessionId || !otpCode.value) return
   otpError.value = ''
   try {
-    const res = await verifySigningOtpMutation.mutateAsync({ dealSessionId: deal.dealSessionId, code: otpCode.value })
-    signingToken.value = res.signingToken
-    otpVerifiedAt.value = new Date().toISOString()
-    // Persist across the MyID redirect — restored in onMounted
-    sessionStorage.setItem('signing_token', res.signingToken)
-    signPhase.value = 'signed'
-  } catch {
-    otpError.value = 'Неверный код. Попробуйте ещё раз.'
-  }
-}
-
-async function startMyidSigning() {
-  const pinfl = sd.value.client?.pinfl
-  if (!pinfl) return
-  myidError.value = ''
-
-  // The MyID callback creates the deal FROM the session — the verification
-  // step must be on the server before we leave the page
-  if (!(await saveVerificationStep())) {
-    myidError.value = 'Не удалось сохранить шаг. Попробуйте ещё раз.'
-    return
-  }
-
-  try {
-    const res = await myidSignSessionMutation.mutateAsync(pinfl)
-    if (res.mock) {
-      // Dev/mock mode — skip redirect, go straight to verified
-      signPhase.value = 'myid_verified'
-      return
-    }
-    if (res.redirectUrl) {
-      sessionStorage.setItem('myid_sign_session_token', res.signingSessionToken)
-      window.location.href = res.redirectUrl
-    }
-  } catch {
-    myidError.value = 'Не удалось создать сессию MyID. Попробуйте ещё раз.'
+    const res = await verifySigningOtpMutation.mutateAsync({
+      dealSessionId: deal.dealSessionId,
+      code: otpCode.value,
+    })
+    // The stamp the server just wrote — the phase recomputes from it.
+    deal.setSigning(res.signing)
+  } catch (err: any) {
+    otpError.value =
+      err?.message === 'myid_not_verified'
+        ? t('stepVerification.myidExpired')
+        : t('stepVerification.otpInvalid')
   }
 }
 
@@ -168,27 +199,34 @@ function fmtDate(iso: string) {
 }
 
 async function signSubmit() {
-  if (!signingToken.value || !deal.dealSessionId) return
+  if (!deal.dealSessionId || phase.value !== 'ready') return
   submitting.value = true
   submitError.value = ''
   try {
-    // The deal is built FROM the session (ADR-0024): save the verification
-    // step (lang + consent moment), then send only the session id + token
+    // The deal is built FROM the session (ADR-0024): save the contract language,
+    // then send nothing but the session id — both signing proofs are already
+    // stamped on it, so a business-rule failure here can be retried without
+    // burning the client's SMS.
     if (!(await saveVerificationStep())) {
-      submitError.value = 'Не удалось сохранить шаг. Попробуйте ещё раз.'
+      submitError.value = t('stepVerification.stepSaveFailed')
       return
     }
 
-    const res = await createDealMutation.mutateAsync({
-      dealSessionId: deal.dealSessionId,
-      signingToken: signingToken.value,
-    })
+    const res = await createDealMutation.mutateAsync({ dealSessionId: deal.dealSessionId })
 
-    sessionStorage.removeItem('signing_token')
     deal.setCreatedDealId(res.dealId, res.dealNumber)
     deal.complete('verification')
   } catch (err: any) {
-    submitError.value = err?.message ?? 'Ошибка создания сделки. Попробуйте ещё раз.'
+    const code = err?.message
+    if (code === 'myid_not_verified' || code === 'otp_not_verified' || code === 'pinfl_mismatch') {
+      // A proof aged out between render and click — drop back to the gate that
+      // now needs redoing instead of leaving a dead "Создать сделку" button.
+      const active = await fetchActiveSession().catch(() => null)
+      if (active) deal.hydrateFromSession(active)
+      submitError.value = t('stepVerification.myidExpired')
+    } else {
+      submitError.value = code ?? t('stepVerification.createDealFailed')
+    }
   } finally {
     submitting.value = false
   }
@@ -300,35 +338,53 @@ async function signSubmit() {
       </div>
     </div>
 
-    <!-- Signing OTP gate -->
+    <!-- Signing gate: MyID (identity) → OTP (акцепт) → create -->
     <div class="sign-gate">
-      <!-- idle: prompt agent to send OTP -->
-      <div v-if="signPhase === 'idle'" class="gate-row">
+      <!-- myid: the client must pass the face-scan before any code is sent -->
+      <div v-if="phase === 'myid'" class="gate-row">
         <div class="gate-hint">
-          <i class="pi pi-shield" />
+          <i class="pi pi-id-card" />
           <div>
-            <p class="gate-title">{{ $t('stepVerification.signTitle') }}</p>
-            <p class="gate-sub">{{ $t('stepVerification.signHint', { phone: sd.client?.phone ?? '' }) }}</p>
+            <p class="gate-title">{{ $t('stepVerification.myidTitle') }}</p>
+            <p class="gate-sub">{{ $t('stepVerification.myidHint') }}</p>
+            <p v-if="myidExpired" class="otp-error mt-1">
+              <i class="pi pi-clock" /> {{ $t('stepVerification.myidExpired') }}
+            </p>
+            <p v-if="myidError" class="otp-error mt-1">
+              <i class="pi pi-exclamation-circle" /> {{ myidError }}
+            </p>
           </div>
         </div>
-        <button class="btn-gradient" :disabled="sendSigningOtpMutation.isPending.value" @click="sendSigningOtp">
+        <button class="btn-myid" :disabled="myidSignSessionMutation.isPending.value" @click="startMyidSigning">
+          <i v-if="myidSignSessionMutation.isPending.value" class="pi pi-spin pi-spinner" />
+          <span v-else class="myid-logo-text">MyID</span>
+          {{ $t('stepVerification.verifyMyid') }}
+        </button>
+      </div>
+
+      <!-- otp: identity proven — now take the client's consent to these terms -->
+      <div v-else-if="phase === 'otp'" class="gate-otp">
+        <div class="gate-hint">
+          <i class="pi pi-verified success-icon" />
+          <div>
+            <p class="gate-title">{{ $t('stepVerification.myidVerifiedTitle') }}</p>
+            <p class="gate-sub">
+              {{ otpSent
+                ? $t('stepVerification.otpSentHint', { phone: sd.client?.phone ?? '' })
+                : $t('stepVerification.signHint', { phone: sd.client?.phone ?? '' }) }}
+            </p>
+            <p v-if="devOtp" class="dev-otp">DEV: {{ devOtp }}</p>
+          </div>
+        </div>
+
+        <button v-if="!otpSent" class="btn-gradient" :disabled="sendSigningOtpMutation.isPending.value"
+          @click="sendSigningOtp">
           <i v-if="sendSigningOtpMutation.isPending.value" class="pi pi-spin pi-spinner" />
           <i v-else class="pi pi-send" />
           {{ $t('stepVerification.sendOtp') }}
         </button>
-      </div>
 
-      <!-- otp_sent: agent enters code received from client -->
-      <div v-else-if="signPhase === 'otp_sent'" class="gate-otp">
-        <div class="gate-hint">
-          <i class="pi pi-mobile" />
-          <div>
-            <p class="gate-title">{{ $t('stepVerification.otpSentTitle') }}</p>
-            <p class="gate-sub">{{ $t('stepVerification.otpSentHint', { phone: sd.client?.phone ?? '' }) }}</p>
-            <p v-if="devOtp" class="dev-otp">DEV: {{ devOtp }}</p>
-          </div>
-        </div>
-        <div class="otp-row">
+        <div v-else class="otp-row">
           <input v-model="otpCode" type="text" inputmode="numeric" maxlength="4" class="otp-input font-mono"
             :placeholder="$t('stepVerification.otpPlaceholder')" @keyup.enter="verifySigningOtp" />
           <button class="btn-gradient" :disabled="otpCode.length < 4 || verifySigningOtpMutation.isPending.value"
@@ -345,37 +401,19 @@ async function signSubmit() {
               : $t('stepVerification.resendOtp') }}
           </button>
         </div>
+
         <p v-if="otpError" class="otp-error">
           <i class="pi pi-exclamation-circle" /> {{ otpError }}
         </p>
       </div>
 
-      <!-- signed: OTP verified → now verify identity with MyID -->
-      <div v-else-if="signPhase === 'signed'" class="gate-row">
+      <!-- ready: both proofs stamped → build the deal from the session -->
+      <div v-else class="gate-row myid-verified">
         <div class="gate-hint">
           <i class="pi pi-check-circle success-icon" />
           <div>
             <p class="gate-title">{{ $t('stepVerification.signedTitle') }}</p>
-            <p class="gate-sub">{{ $t('stepVerification.myidHint') }}</p>
-            <p v-if="myidError" class="otp-error mt-1">
-              <i class="pi pi-exclamation-circle" /> {{ myidError }}
-            </p>
-          </div>
-        </div>
-        <button class="btn-myid" :disabled="myidSignSessionMutation.isPending.value" @click="startMyidSigning">
-          <i v-if="myidSignSessionMutation.isPending.value" class="pi pi-spin pi-spinner" />
-          <span v-else class="myid-logo-text">MyID</span>
-          {{ $t('stepVerification.verifyMyid') }}
-        </button>
-      </div>
-
-      <!-- myid_verified: both OTP + MyID done → create deal -->
-      <div v-else-if="signPhase === 'myid_verified'" class="gate-row myid-verified">
-        <div class="gate-hint">
-          <i class="pi pi-verified success-icon" />
-          <div>
-            <p class="gate-title">{{ $t('stepVerification.myidVerifiedTitle') }}</p>
-            <p class="gate-sub">{{ $t('stepVerification.myidVerifiedHint') }}</p>
+            <p class="gate-sub">{{ $t('stepVerification.signedHint') }}</p>
           </div>
         </div>
         <button class="btn-gradient sign" :disabled="submitting" @click="signSubmit">

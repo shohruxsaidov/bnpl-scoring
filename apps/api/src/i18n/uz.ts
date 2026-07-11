@@ -72,9 +72,13 @@ export const uz: Record<string, string> = {
 
   // deals
   deal_not_found: 'Shartnoma topilmadi',
-  invalid_signing_token: "Imzolash tokeni noto'g'ri",
   invalid_signing_purpose: "Imzolash maqsadi noto'g'ri",
   invalid_signing_session: "Imzolash sessiyasi noto'g'ri",
+
+  // signing — avval MyID (shaxs), keyin OTP (aksept)
+  myid_not_verified: "Mijoz MyID tekshiruvidan o'tmagan yoki u eskirgan",
+  otp_not_verified: 'Mijoz shartnomani kod bilan tasdiqlamagan yoki tasdiq eskirgan',
+  client_step_missing: 'Mijoz tanlanmagan',
 
   // payments
   overpayment: "To'lov qolgan summadan oshib ketdi",

@@ -1,6 +1,18 @@
+<script setup lang="ts">
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
+</script>
+
 <template>
   <div class="settings-hub">
-    <router-link class="surface-card hub-card" :to="{ name: 'settings-organization' }">
+    <!-- Each card carries its own gate: the hub itself is reachable with either
+         manage_settings or manage_scoring_model. -->
+    <router-link
+      v-if="auth.can('manage_settings')"
+      class="surface-card hub-card"
+      :to="{ name: 'settings-organization' }"
+    >
       <div class="hub-icon">
         <i class="pi pi-building" />
       </div>
@@ -11,7 +23,11 @@
       <i class="pi pi-chevron-right hub-arrow" />
     </router-link>
 
-    <router-link class="surface-card hub-card" :to="{ name: 'settings-public-offer' }">
+    <router-link
+      v-if="auth.can('manage_settings')"
+      class="surface-card hub-card"
+      :to="{ name: 'settings-public-offer' }"
+    >
       <div class="hub-icon">
         <i class="pi pi-file-pdf" />
       </div>
@@ -22,7 +38,27 @@
       <i class="pi pi-chevron-right hub-arrow" />
     </router-link>
 
-    <router-link class="surface-card hub-card" :to="{ name: 'settings-interface' }">
+    <!-- manage_settings is not enough to reach this one — see the route's feature gate. -->
+    <router-link
+      v-if="auth.can('manage_scoring_model')"
+      class="surface-card hub-card"
+      :to="{ name: 'settings-scoring' }"
+    >
+      <div class="hub-icon">
+        <i class="pi pi-sliders-h" />
+      </div>
+      <div class="hub-text">
+        <span class="hub-title">{{ $t('settings.scoring') }}</span>
+        <span class="hub-desc">{{ $t('settings.scoringDesc') }}</span>
+      </div>
+      <i class="pi pi-chevron-right hub-arrow" />
+    </router-link>
+
+    <router-link
+      v-if="auth.can('manage_settings')"
+      class="surface-card hub-card"
+      :to="{ name: 'settings-interface' }"
+    >
       <div class="hub-icon">
         <i class="pi pi-palette" />
       </div>

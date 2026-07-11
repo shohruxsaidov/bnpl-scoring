@@ -111,7 +111,10 @@ const routes: RouteRecordRaw[] = [
         meta: {
           titleKey: 'routeTitle.settings',
           breadcrumbKeys: ['breadcrumb.settings'],
-          feature: 'manage_settings',
+          // The hub is a menu: reachable if any card on it is. Scoring settings
+          // is gated on manage_scoring_model, so an admin holding only that
+          // would otherwise be bounced off the page that links to it.
+          anyFeature: ['manage_settings', 'manage_scoring_model'],
         },
       },
       {
@@ -132,6 +135,19 @@ const routes: RouteRecordRaw[] = [
           titleKey: 'routeTitle.settingsPublicOffer',
           breadcrumbKeys: ['breadcrumb.settings', 'breadcrumb.settingsPublicOffer'],
           feature: 'manage_settings',
+        },
+      },
+      {
+        // Gated by manage_scoring_model, not manage_settings: these toggles can
+        // weaken platform-wide risk controls, so they sit with model authoring
+        // rather than with the org-requisites / public-offer grant.
+        path: 'settings/scoring',
+        name: 'settings-scoring',
+        component: () => import('@/views/settings-scoring-view.vue'),
+        meta: {
+          titleKey: 'routeTitle.settingsScoring',
+          breadcrumbKeys: ['breadcrumb.settings', 'breadcrumb.settingsScoring'],
+          feature: 'manage_scoring_model',
         },
       },
       {
@@ -308,6 +324,13 @@ router.beforeEach((to) => {
   // Overview is always reachable as a safe landing; other routes are Feature-gated.
   const feature = to.meta.feature as string | undefined
   if (feature && !auth.can(feature) && to.name !== 'overview') {
+    return { name: 'overview' }
+  }
+
+  // A hub page is only a menu — it is reachable if ANY card on it is. Its cards
+  // carry their own gates, so holding one of these grants nothing extra.
+  const anyFeature = to.meta.anyFeature as string[] | undefined
+  if (anyFeature && !anyFeature.some((f) => auth.can(f)) && to.name !== 'overview') {
     return { name: 'overview' }
   }
 

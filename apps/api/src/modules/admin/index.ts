@@ -19,6 +19,7 @@ import mxikRoutes from "../mxik/index"
 import adminBankRoutes from "./banks/index"
 import adminOrganizationRoutes from "./organization/index"
 import adminScoringModelRoutes from "./scoringModel/index"
+import adminScoringSettingsRoutes from "./scoringSettings/index"
 import adminScoringRoutes from "./scorings/index"
 import adminIntegrationLogRoutes from "./integrationLogs/index"
 import adminPublicOfferRoutes from "./publicOffers/index"
@@ -63,6 +64,11 @@ export default async function adminModule(app: FastifyInstance) {
   await app.register(guarded(adminOrganizationRoutes, { read: "manage_settings", write: "manage_settings" }), { prefix: "/admin/organization" })
   await app.register(guarded(adminPublicOfferRoutes, { read: "manage_settings", write: "manage_settings" }), { prefix: "/admin/public-offers" })
   await app.register(guarded(adminScoringModelRoutes, { read: "manage_scoring_model", write: "manage_scoring_model" }), { prefix: "/admin/scoring-model" })
+  // Gated by manage_scoring_model, not manage_settings: disabling a pipeline can
+  // weaken platform-wide risk controls, so it belongs with model authoring rather
+  // than with the org-requisites / public-offer grant. `write` must stay mapped —
+  // requirePermissionByMethod skips the check entirely when it is absent.
+  await app.register(guarded(adminScoringSettingsRoutes, { read: "manage_scoring_model", write: "manage_scoring_model" }), { prefix: "/admin/scoring-settings" })
   await app.register(guarded(adminScoringRoutes, { read: "view_scorings" }), { prefix: "/admin/scorings" })
   await app.register(guarded(adminIntegrationLogRoutes, { read: "view_integration_logs" }), { prefix: "/admin/integration-logs" })
   await app.register(regionRoutes, { prefix: "/admin/regions", preHandler: app.verifyAdminJwt })

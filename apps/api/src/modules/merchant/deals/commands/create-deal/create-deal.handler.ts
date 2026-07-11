@@ -8,10 +8,14 @@ import {
   buyouts,
 } from '../../../../deals/schema';
 import { calcTotalPayable, splitInstallments } from '../../../../deals/installments';
-import { products } from '@db/schema';
+import { products, users } from '@db/schema';
 import { katm077Reports } from '@db/katm-077-reports';
 import type { CreateDealInput } from './create-deal.command';
-import type { DealSessionRow, SessionStepData } from '../../../deal-sessions/types';
+import {
+  isSigningProofFresh,
+  type DealSessionRow,
+  type SessionStepData,
+} from '../../../deal-sessions/types';
 
 function coded(code: string): Error & { code: string } {
   return Object.assign(new Error(code), { code });
@@ -25,7 +29,7 @@ function coded(code: string): Error & { code: string } {
  */
 export async function createDealFromSession(session: DealSessionRow) {
   const data = (session.stepData ?? {}) as SessionStepData;
-  const { client, tariff, products: productsStep, payment, verification, scoring } = data;
+  const { client, tariff, products: productsStep, payment, verification, scoring, signing } = data;
 
   let katmReport: typeof katm077Reports.$inferSelect | null = null;
   if (session.katmClaimId) {
@@ -44,6 +48,21 @@ export async function createDealFromSession(session: DealSessionRow) {
   }
   if (!scoring) throw coded('scoring_missing');
   if (scoring.decision === 'declined') throw coded('scoring_declined');
+
+  // The signature. MyID proves the client was at the counter; the OTP is their
+  // акцепт of these exact terms, given last. Both are server stamps (stepData is
+  // never client-written for `signing`), both must be fresh, and both must be
+  // about THIS client — a stamp left by a previously-selected client is dropped
+  // at save-step, but the PINFL check is the belt to that braces.
+  if (!signing || !isSigningProofFresh(signing.myidVerifiedAt)) throw coded('myid_not_verified');
+  if (!isSigningProofFresh(signing.otpVerifiedAt)) throw coded('otp_not_verified');
+
+  const [clientRow] = await db
+    .select({ pinfl: users.pinfl })
+    .from(users)
+    .where(eq(users.id, Number(client.userId)))
+    .limit(1);
+  if (!clientRow || clientRow.pinfl !== signing.pinfl) throw coded('pinfl_mismatch');
 
   // Products must still exist and be active — stale session fails hard and the
   // Agent redoes the Products step (ADR-0024)

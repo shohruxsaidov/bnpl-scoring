@@ -59,8 +59,9 @@ async function openFreshSession() {
   sessionError.value = false
   try {
     const created = await createDealSession()
-    sessionStorage.removeItem('signing_token')
-    sessionStorage.removeItem('myid_sign_deal_id')
+    sessionStorage.removeItem('myid_sign_done')
+    sessionStorage.removeItem('myid_sign_failed')
+    sessionStorage.removeItem('myid_sign_session_token')
     deal.reset()
     scoring.reset()
     deal.setDealSessionId(created.id)
@@ -158,23 +159,26 @@ onMounted(async () => {
     return
   }
 
-  // 2. Returning from MyID signing callback.
+  // 2. Returning from the MyID signing callback. The deal is NOT created there —
+  //    the client still owes their акцепт by OTP — so re-read the session and let
+  //    StepVerification pick up the phase from the stamp the server just wrote.
+  //    initSession() is deliberately bypassed: it would pop the resume dialog on
+  //    a session that (of course) has a client.
   const fromSign =
-    sessionStorage.getItem('myid_sign_deal_id') ||
-    sessionStorage.getItem('myid_sign_failed')
+    sessionStorage.getItem('myid_sign_done') || sessionStorage.getItem('myid_sign_failed')
   if (fromSign) {
-    // If the callback already created the deal, advance straight to StepDone.
-    const dealId = sessionStorage.getItem('myid_sign_deal_id')
-    if (dealId) {
-      const dealNumber = sessionStorage.getItem('myid_sign_deal_number')
-      sessionStorage.removeItem('myid_sign_deal_id')
-      sessionStorage.removeItem('myid_sign_deal_number')
-      sessionStorage.removeItem('myid_sign_complete')
-      deal.setCreatedDealId(dealId, dealNumber)
-      deal.complete('verification') // moves currentStep → 'done'
+    sessionStorage.removeItem('myid_sign_done')
+    // The failure flag is left for StepVerification to read and render.
+    try {
+      const active = await fetchActiveSession()
+      if (active) {
+        deal.hydrateFromSession(active)
+        hydrateScoring(active)
+      }
+    } catch {
+      sessionError.value = true
+      return
     }
-    // Flags (myid_sign_complete / myid_sign_failed) intentionally left for StepVerification
-    // to read in case the deal was NOT created (e.g. network error during step 2).
     ready.value = true
     return
   }
@@ -203,7 +207,6 @@ async function initSession() {
 
   if (active) {
     // An empty run (opened but nothing saved) — adopt it silently.
-    sessionStorage.removeItem('signing_token')
     deal.reset()
     scoring.reset()
     deal.setDealSessionId(active.id)

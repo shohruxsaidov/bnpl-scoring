@@ -10,7 +10,7 @@ import type {
   Product,
   Tariff,
 } from '@/types';
-import type { DealSessionDto } from '@/composables/use-deal-session-api';
+import type { DealSessionDto, SessionSigning } from '@/composables/use-deal-session-api';
 import { buildSchedulePreview } from '@/utils/schedule-preview';
 
 export type DealStepKey =
@@ -85,6 +85,10 @@ interface SessionData {
   prepaymentAmount: number | null;
   paymentDay: number | null;
   schedule: DealPaymentSchedule[];
+  /** Kontrakt language. Saved before the MyID redirect so the choice survives it. */
+  contractLang: 'ru' | 'uz';
+  /** Server-stamped signing proofs (MyID, then OTP). Null until the face-scan lands. */
+  signing: SessionSigning | null;
   createdDealId: string | null;
   createdDealNumber: string | null;
 }
@@ -104,6 +108,8 @@ function emptySession(): SessionData {
     prepaymentAmount: null,
     paymentDay: null,
     schedule: [],
+    contractLang: 'ru',
+    signing: null,
     createdDealId: null,
     createdDealNumber: null,
   };
@@ -162,6 +168,11 @@ export const useDealStore = defineStore(
 
     function setFlowMode(mode: DealFlowMode) {
       flowMode.value = mode;
+    }
+
+    /** Mirror a signing stamp the server just returned (MyID complete / OTP verify). */
+    function setSigning(signing: SessionSigning) {
+      sessionData.value.signing = signing;
     }
 
     /**
@@ -248,6 +259,8 @@ export const useDealStore = defineStore(
 
       fresh.prepaymentAmount = data.prepayment?.amount ?? null;
       fresh.paymentDay = data.payment?.paymentDay ?? null;
+      fresh.contractLang = data.verification?.lang ?? 'ru';
+      fresh.signing = data.signing ?? null;
 
       if (fresh.tariff && fresh.paymentDay) {
         const principal = fresh.basket.reduce(
@@ -408,6 +421,7 @@ export const useDealStore = defineStore(
       reset,
       setDealSessionId,
       setFlowMode,
+      setSigning,
       hydrateFromSession,
       goTo,
       complete,
