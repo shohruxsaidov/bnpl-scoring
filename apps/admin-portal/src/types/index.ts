@@ -253,6 +253,9 @@ export interface Branch {
   address: string
   phone: string
   regionId: number | null
+  // Set and cleared as a pair — the API rejects a lone half.
+  latitude: number | null
+  longitude: number | null
   active: boolean
   createdAt: string
 }

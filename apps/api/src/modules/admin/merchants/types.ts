@@ -3,13 +3,33 @@ import type { createBranch } from "../branches/commands/create-branch/create-bra
 import type { listEnabledCategories } from "../categories/queries/list-enabled-categories/list-enabled-categories.handler"
 import type { createProduct } from "../products/commands/create-product/create-product.handler"
 import type { recordDocument } from "./commands/record-document/record-document.handler"
-import { buildMerchantLogoUrl } from "../../../lib/merchant-logo"
+import { db } from '@db'
+import { getDownloadUrls } from "../../../lib/file-storage"
 
-// logoFileId is an internal handle; clients get the derived URL instead, so it is
-// dropped here rather than leaked alongside it.
-export function serializeMerchant(m: NonNullable<Awaited<ReturnType<typeof getMerchant>>>) {
-  const { logoFileId, ...rest } = m
-  return { ...rest, id: m.id.toString(), logoUrl: buildMerchantLogoUrl(m.id, logoFileId) }
+type MerchantRow = NonNullable<Awaited<ReturnType<typeof getMerchant>>>
+
+// The admin portal loads logos straight from object storage, so logoUrl is a
+// presigned MinIO GET rather than the public streaming endpoint the mobile app
+// uses (see lib/merchant-logo). It expires, which is fine here: the portal only
+// ever renders a URL it just fetched alongside the merchant.
+//
+// logoFileId is an internal handle; the URL replaces it rather than shipping
+// alongside it.
+export async function serializeMerchants(rows: MerchantRow[]) {
+  const logoUrls = await getDownloadUrls(
+    db,
+    rows.map((r) => r.logoFileId).filter((id): id is number => id != null),
+  )
+  return rows.map(({ logoFileId, ...rest }) => ({
+    ...rest,
+    id: rest.id.toString(),
+    logoUrl: logoFileId == null ? null : (logoUrls.get(logoFileId) ?? null),
+  }))
+}
+
+export async function serializeMerchant(m: MerchantRow) {
+  const [serialized] = await serializeMerchants([m])
+  return serialized!
 }
 
 export function serializeBranch(b: Awaited<ReturnType<typeof createBranch>>) {

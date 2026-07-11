@@ -3,6 +3,7 @@ import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { getBranch } from './queries/get-branch/get-branch.handler';
 import { updateBranch } from './commands/update-branch/update-branch.handler';
+import { Latitude, Longitude, hasLonelyCoordinate } from './coordinates';
 import { listEmployees } from '../employees/queries/list-employees/list-employees.handler';
 import { createEmployee } from '../employees/commands/create-employee/create-employee.handler';
 
@@ -31,6 +32,10 @@ export default async function adminBranchRoutes(app: FastifyInstance) {
       name: Type.String({ minLength: 1 }),
       address: Type.String({ minLength: 1 }),
       phone: Type.String({ minLength: 1 }),
+      // null clears the region / the map pin
+      regionId: Type.Union([Type.Integer(), Type.Null()]),
+      latitude: Latitude,
+      longitude: Longitude,
       active: Type.Boolean(),
     }),
   );
@@ -54,8 +59,17 @@ export default async function adminBranchRoutes(app: FastifyInstance) {
 
   fastify.patch(
     '/:id',
-    { schema: { tags: TAGS, params: IdParams, body: UpdateBranchBody }, preHandler },
+    {
+      schema: {
+        tags: TAGS,
+        params: IdParams,
+        body: UpdateBranchBody,
+        response: { 400: { $ref: 'ErrorResponse#' }, 404: { $ref: 'ErrorResponse#' } },
+      },
+      preHandler,
+    },
     async (request, reply) => {
+      if (hasLonelyCoordinate(request.body)) return reply.code(400).sendError('invalid_coordinates');
       const branch = await updateBranch({ id: +request.params.id, ...request.body });
       if (!branch) return reply.code(404).sendError('not_found');
       return { branch: serializeBranch(branch) };

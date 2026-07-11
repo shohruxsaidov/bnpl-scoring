@@ -44,6 +44,7 @@ export const uz: Record<string, string> = {
   invalid_image_type: 'Faqat PNG, JPEG yoki WebP rasmlar qabul qilinadi',
   file_too_large: 'Fayl hajmi juda katta',
   merchant_logo_not_found: 'Merchant logotipi topilmadi',
+  invalid_coordinates: "Kenglik va uzunlik birgalikda ko'rsatilishi kerak",
   otp_cooldown: "Iltimos, yangi kod so'rashdan oldin biroz kuting",
   otp_daily_limit: 'Tasdiqlash kodlari uchun kunlik chegaraga yetdingiz',
   otp_attempts_exceeded: "Juda ko'p noto'g'ri urinish. Yangi kod so'rang",

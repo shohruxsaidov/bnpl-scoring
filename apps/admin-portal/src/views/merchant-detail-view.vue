@@ -20,6 +20,13 @@ import { useScoringModelStore, type ScoringModelListItem } from '@/stores/scorin
 import { useMxik, type MxikEntry, type MxikPackage } from '@/composables/use-mxik'
 import { useRegions } from '@/composables/use-regions'
 import { formatDateTime } from '@/utils/money'
+import BranchMap from '@/components/branch-map.vue'
+import {
+  OBLAST_CENTROIDS,
+  TASHKENT,
+  isInsideUzbekistan,
+  parseCoordinatePair,
+} from '@/utils/region-centroids'
 import type { Branch, Category, MerchantEmployee, Product } from '@/types'
 
 const route = useRoute()
@@ -33,7 +40,7 @@ const scoringModels = useScoringModelStore()
 const merchantId = computed(() => route.params.id as string)
 const merchant = computed(() => merchants.byId(merchantId.value))
 
-const allTabs = ['Branches', 'Employees', 'Products', 'Categories', 'Documents', 'Tariffs', 'ScoringModel'] as const
+const allTabs = ['Branches', 'Address', 'Employees', 'Products', 'Categories', 'Documents', 'Tariffs', 'ScoringModel'] as const
 type Tab = (typeof allTabs)[number]
 
 // The models list endpoint is permission-gated; hide the tab like the sidebar does.
@@ -49,6 +56,7 @@ const activeTab = ref<Tab>(tabFromQuery())
 
 const TAB_LABEL_KEYS: Record<Tab, string> = {
   Branches: 'merchantDetail.tabBranches',
+  Address: 'merchantDetail.tabAddress',
   Employees: 'merchantDetail.tabEmployees',
   Products: 'merchantDetail.tabProducts',
   Categories: 'merchantDetail.tabCategories',
@@ -167,6 +175,12 @@ function loadTab(tab: Tab) {
   if (tab === 'Products' && !tabLoaded.value.has('products')) {
     tabLoaded.value.add('products')
     merchants.fetchProducts(merchantId.value).catch(() => notifyError('merchantDetail.loadFailed'))
+  }
+  // Branches are already loaded on mount, so there is nothing to fetch here —
+  // just land the admin on a branch instead of an empty map.
+  if (tab === 'Address' && !selectedBranchId.value) {
+    const first = branches.value[0]
+    if (first) selectBranch(first)
   }
   if (tab === 'Documents' && !tabLoaded.value.has('documents')) {
     tabLoaded.value.add('documents')
@@ -662,6 +676,160 @@ async function submitRegionInfo() {
   }
 }
 
+// --- Branch location (Address tab) -------------------------------------------
+const selectedBranchId = ref<string | null>(null)
+// Unsaved pin positions, keyed by branch. Parking them per-branch rather than in
+// one ref means switching branches mid-edit preserves the draft instead of
+// dropping it — which is why this tab needs no "discard changes?" prompt.
+const drafts = ref<Record<string, [number, number]>>({})
+const coordInput = ref('')
+const coordError = ref(false)
+const locationSaving = ref(false)
+const mapRef = ref<InstanceType<typeof BranchMap> | null>(null)
+
+const selectedBranch = computed(
+  () => branches.value.find((b) => b.id === selectedBranchId.value) ?? null,
+)
+
+function savedPin(b: Branch): [number, number] | null {
+  return b.latitude != null && b.longitude != null ? [b.latitude, b.longitude] : null
+}
+
+function pinOf(b: Branch): [number, number] | null {
+  return drafts.value[b.id] ?? savedPin(b)
+}
+
+const draftPin = computed<[number, number] | null>(() =>
+  selectedBranch.value ? pinOf(selectedBranch.value) : null,
+)
+
+function isDirty(b: Branch): boolean {
+  const draft = drafts.value[b.id]
+  if (!draft) return false
+  const saved = savedPin(b)
+  return !saved || saved[0] !== draft[0] || saved[1] !== draft[1]
+}
+
+const selectedDirty = computed(() =>
+  selectedBranch.value ? isDirty(selectedBranch.value) : false,
+)
+
+const locatedCount = computed(() => branches.value.filter((b) => savedPin(b) !== null).length)
+
+// Only a persisted pin can be removed; an unsaved draft is discarded by reselecting.
+const canRemoveLocation = computed(
+  () => !!selectedBranch.value && savedPin(selectedBranch.value) !== null,
+)
+
+// Every other branch's pin, so the admin places this one in context rather than
+// against a blank map.
+const otherPins = computed(() =>
+  branches.value
+    .filter((b) => b.id !== selectedBranchId.value)
+    .flatMap((b) => {
+      const pin = pinOf(b)
+      return pin ? [{ id: b.id, name: b.name, lat: pin[0], lng: pin[1] }] : []
+    }),
+)
+
+// regionId may hold an oblast or a district — the branch dialog lets the admin
+// stop at either level — so resolve up to the oblast before looking for a centroid.
+function centroidFor(b: Branch | null): [number, number] {
+  const regionId = b?.regionId
+  if (!regionId) return TASHKENT
+  const oblastId = OBLAST_CENTROIDS[regionId] ? regionId : lookupParent(regionId)?.id
+  return (oblastId ? OBLAST_CENTROIDS[oblastId] : null) ?? TASHKENT
+}
+
+// Read by the map on mount only; every later move goes through flyTo().
+const mapCenter = computed<[number, number]>(
+  () => draftPin.value ?? centroidFor(selectedBranch.value ?? branches.value[0] ?? null),
+)
+
+const outsideUz = computed(() => {
+  const pin = draftPin.value
+  return pin ? !isInsideUzbekistan(pin[0], pin[1]) : false
+})
+
+function formatPin(pin: [number, number]): string {
+  return `${pin[0].toFixed(6)}, ${pin[1].toFixed(6)}`
+}
+
+function clearDraft(branchId: string) {
+  const next = { ...drafts.value }
+  delete next[branchId]
+  drafts.value = next
+}
+
+function selectBranch(b: Branch) {
+  selectedBranchId.value = b.id
+  const pin = pinOf(b)
+  coordInput.value = pin ? formatPin(pin) : ''
+  coordError.value = false
+  const [lat, lng] = pin ?? centroidFor(b)
+  // Zoom out for an unplaced branch: we only know its oblast, and pretending to
+  // street-level precision we don't have would just mislead.
+  mapRef.value?.flyTo(lat, lng, pin ? 16 : 11)
+}
+
+function onMapPick(pin: [number, number]) {
+  if (!selectedBranchId.value) return
+  drafts.value = { ...drafts.value, [selectedBranchId.value]: pin }
+  coordInput.value = formatPin(pin)
+  coordError.value = false
+}
+
+// The paste path, and the one that carries most of the traffic: the admin copies
+// coordinates out of Yandex Maps rather than hunting for the shop by dragging.
+function applyCoordInput() {
+  if (!selectedBranchId.value) return
+  const raw = coordInput.value.trim()
+  if (!raw) {
+    coordError.value = false
+    return
+  }
+  const parsed = parseCoordinatePair(raw)
+  if (!parsed) {
+    coordError.value = true
+    return
+  }
+  coordError.value = false
+  drafts.value = { ...drafts.value, [selectedBranchId.value]: parsed }
+  mapRef.value?.flyTo(parsed[0], parsed[1], 16)
+}
+
+async function saveLocation() {
+  const branch = selectedBranch.value
+  const pin = draftPin.value
+  if (!branch || !pin) return
+  locationSaving.value = true
+  try {
+    await merchants.updateBranch(branch.id, { latitude: pin[0], longitude: pin[1] })
+    clearDraft(branch.id)
+    toast.add({ severity: 'success', summary: t('merchantDetail.locationSaved'), life: 2000 })
+  } catch {
+    notifyError('merchantDetail.locationSaveFailed')
+  } finally {
+    locationSaving.value = false
+  }
+}
+
+async function removeLocation() {
+  const branch = selectedBranch.value
+  if (!branch) return
+  locationSaving.value = true
+  try {
+    await merchants.updateBranch(branch.id, { latitude: null, longitude: null })
+    clearDraft(branch.id)
+    coordInput.value = ''
+    toast.add({ severity: 'warn', summary: t('merchantDetail.locationRemoved'), life: 2000 })
+  } catch {
+    notifyError('merchantDetail.locationRemoveFailed')
+  } finally {
+    locationSaving.value = false
+  }
+}
+
 // --- Tariffs -----------------------------------------------------------------
 const tariffToggling = ref<Set<string>>(new Set())
 
@@ -854,6 +1022,70 @@ async function assignScoringModel(radioValue: number) {
             </template>
           </Column>
         </DataTable>
+      </div>
+    </section>
+
+    <!-- Address -->
+    <section v-else-if="activeTab === 'Address'" class="tab-body">
+      <div class="tab-head">
+        <h3 class="section-title">{{ $t('merchantDetail.address') }}</h3>
+        <span class="muted located-count">
+          {{ $t('merchantDetail.locatedCount', { located: locatedCount, total: branches.length }) }}
+        </span>
+      </div>
+
+      <div v-if="branches.length === 0" class="surface-card empty-map">
+        <i class="pi pi-map-marker" />
+        <p class="muted">{{ $t('merchantDetail.noBranchesForMap') }}</p>
+        <button class="btn-ghost" @click="activeTab = 'Branches'">
+          {{ $t('merchantDetail.tabBranches') }}
+        </button>
+      </div>
+
+      <div v-else class="map-layout">
+        <aside class="surface-card branch-picker">
+          <button v-for="b in branches" :key="b.id" class="branch-row"
+            :class="{ active: b.id === selectedBranchId }" @click="selectBranch(b)">
+            <i class="pi pi-map-marker branch-row-pin" :class="pinOf(b) ? 'located' : 'unlocated'" />
+            <span class="branch-row-text">
+              <span class="branch-row-name">{{ b.name }}</span>
+              <span class="branch-row-address muted">{{ b.address }}</span>
+            </span>
+            <span v-if="isDirty(b)" class="dirty-dot" :title="$t('merchantDetail.locationUnsaved')" />
+          </button>
+        </aside>
+
+        <div class="surface-card map-panel">
+          <div class="map-controls">
+            <div class="field coord-field">
+              <label class="field-label">{{ $t('merchantDetail.coordinates') }}</label>
+              <InputText v-model="coordInput" :placeholder="$t('merchantDetail.coordinatesPlaceholder')"
+                :invalid="coordError" class="w-full" @change="applyCoordInput" @keyup.enter="applyCoordInput" />
+              <small v-if="coordError" class="coord-error">{{ $t('merchantDetail.coordinatesInvalid') }}</small>
+              <small v-else class="muted">{{ $t('merchantDetail.coordinatesHint') }}</small>
+            </div>
+            <div class="map-actions">
+              <button class="btn-ghost" :disabled="locationSaving || !canRemoveLocation" @click="removeLocation">
+                {{ $t('merchantDetail.removeLocation') }}
+              </button>
+              <button class="btn-gradient" :disabled="locationSaving || !selectedDirty" @click="saveLocation">
+                {{ $t('merchantDetail.saveLocation') }}
+              </button>
+            </div>
+          </div>
+
+          <p v-if="outsideUz" class="coord-warning">
+            <i class="pi pi-exclamation-triangle" />
+            {{ $t('merchantDetail.coordinatesOutsideUz') }}
+          </p>
+          <p v-else-if="!draftPin" class="muted place-hint">
+            <i class="pi pi-info-circle" />
+            {{ $t('merchantDetail.placePinHint') }}
+          </p>
+
+          <BranchMap ref="mapRef" :model-value="draftPin" :others="otherPins" :center="mapCenter"
+            @update:model-value="onMapPick" />
+        </div>
       </div>
     </section>
 
@@ -1917,6 +2149,155 @@ async function assignScoringModel(radioValue: number) {
   gap: 0.4rem;
   font-size: 0.82rem;
   margin: 0;
+}
+
+/* --- Address tab ---------------------------------------------------------- */
+
+.located-count {
+  font-size: 0.82rem;
+}
+
+.empty-map {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 3rem 1rem;
+}
+
+.empty-map .pi {
+  font-size: 1.6rem;
+  color: var(--text-secondary);
+}
+
+.map-layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (width <= 900px) {
+  .map-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.branch-picker {
+  display: flex;
+  flex-direction: column;
+  padding: 0.4rem;
+  gap: 0.15rem;
+  max-height: 560px;
+  overflow-y: auto;
+}
+
+.branch-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.55rem 0.6rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.branch-row:hover {
+  background: var(--bg-base);
+}
+
+.branch-row.active {
+  background: color-mix(in srgb, var(--accent-2) 12%, transparent);
+}
+
+.branch-row-pin {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+}
+
+.branch-row-pin.located {
+  color: var(--accent-2);
+}
+
+.branch-row-pin.unlocated {
+  color: var(--text-secondary);
+  opacity: 0.45;
+}
+
+.branch-row-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.branch-row-name {
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.branch-row-address {
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dirty-dot {
+  flex-shrink: 0;
+  margin-left: auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-2);
+}
+
+.map-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 1rem;
+}
+
+.map-controls {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.coord-field {
+  flex: 1 1 260px;
+  max-width: 340px;
+  margin: 0;
+}
+
+.map-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.coord-error {
+  color: var(--red-500, #ef4444);
+  font-size: 0.75rem;
+}
+
+.coord-warning,
+.place-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.coord-warning {
+  color: var(--orange-500, #f59e0b);
 }
 
 .icon-btn {

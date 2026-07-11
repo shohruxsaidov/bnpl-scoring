@@ -11,6 +11,7 @@ export interface UpdateMerchantCommand {
     mfo: string
     accountNumber: string
     bankName: string
+    regionId: number | null
     scoringModelId: number | null
   }>
 }

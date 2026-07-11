@@ -21,6 +21,7 @@ import { assignTariff } from "./commands/assign-tariff/assign-tariff.handler"
 import { removeTariff } from "./commands/remove-tariff/remove-tariff.handler"
 import { listBranches } from "../branches/queries/list-branches/list-branches.handler"
 import { createBranch } from "../branches/commands/create-branch/create-branch.handler"
+import { Latitude, Longitude, hasLonelyCoordinate } from "../branches/coordinates"
 import { listEnabledCategories } from "../categories/queries/list-enabled-categories/list-enabled-categories.handler"
 import { getCategory } from "../categories/queries/get-category/get-category.handler"
 import { enableMerchantCategory } from "../categories/commands/enable-merchant-category/enable-merchant-category.handler"
@@ -30,6 +31,7 @@ import { listProducts } from "../products/queries/list-products/list-products.ha
 import { createProduct } from "../products/commands/create-product/create-product.handler"
 import {
   serializeMerchant,
+  serializeMerchants,
   serializeBranch,
   serializeCategory,
   serializeProduct,
@@ -79,6 +81,9 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
       mfo: Type.String({ pattern: "^\\d{5}$" }),
       accountNumber: Type.String({ pattern: "^\\d{20}$" }),
       bankName: Type.String({ minLength: 1 }),
+      // Holds either an oblast or a district id — the admin UI lets you stop at
+      // either level. null clears it.
+      regionId: Type.Union([Type.Integer(), Type.Null()]),
       // null clears the assignment → merchant falls back to the Global Model
       scoringModelId: Type.Union([Type.Integer(), Type.Null()]),
     }),
@@ -90,6 +95,9 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     name: Type.String({ minLength: 1 }),
     address: Type.String({ minLength: 1 }),
     phone: Type.String({ minLength: 1 }),
+    regionId: Type.Optional(Type.Union([Type.Integer(), Type.Null()])),
+    latitude: Type.Optional(Latitude),
+    longitude: Type.Optional(Longitude),
   })
 
   const CreateProductBody = Type.Object({
@@ -113,7 +121,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
 
   fastify.get("/", { schema: { tags: TAGS }, preHandler }, async () => {
     const rows = await listMerchants()
-    return { merchants: rows.map(serializeMerchant) }
+    return { merchants: await serializeMerchants(rows) }
   })
 
   fastify.post(
@@ -125,7 +133,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
         if (!model) return reply.code(404).sendError("scoring_model_not_found")
       }
       const merchant = await createMerchant(request.body)
-      return reply.code(201).send({ merchant: serializeMerchant(merchant) })
+      return reply.code(201).send({ merchant: await serializeMerchant(merchant) })
     },
   )
 
@@ -135,7 +143,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const merchant = await getMerchant(Number(request.params.id))
       if (!merchant) return reply.code(404).sendError("not_found")
-      return { merchant: serializeMerchant(merchant) }
+      return { merchant: await serializeMerchant(merchant) }
     },
   )
 
@@ -149,7 +157,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
       }
       const merchant = await updateMerchant({ id: Number(request.params.id), patch: request.body })
       if (!merchant) return reply.code(404).sendError("not_found")
-      return { merchant: serializeMerchant(merchant) }
+      return { merchant: await serializeMerchant(merchant) }
     },
   )
 
@@ -207,7 +215,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
       // Only after the swap is committed — a rollback can't un-delete an object.
       if (previousFileId != null) await deleteFile(db, app.minio, previousFileId)
 
-      return { merchant: serializeMerchant(merchant) }
+      return { merchant: await serializeMerchant(merchant) }
     },
   )
 
@@ -230,7 +238,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
       const { merchant, previousFileId } = await clearMerchantLogo(merchantId)
       if (previousFileId != null) await deleteFile(db, app.minio, previousFileId)
 
-      return { merchant: serializeMerchant(merchant) }
+      return { merchant: await serializeMerchant(merchant) }
     },
   )
 
@@ -251,6 +259,7 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const merchant = await getMerchant(Number(request.params.id))
       if (!merchant) return reply.code(404).sendError("not_found")
+      if (hasLonelyCoordinate(request.body)) return reply.code(400).sendError("invalid_coordinates")
       const branch = await createBranch({ merchantId: merchant.id, ...request.body })
       return reply.code(201).send({ branch: serializeBranch(branch) })
     },

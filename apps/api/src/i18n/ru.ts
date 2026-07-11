@@ -44,6 +44,7 @@ export const ru: Record<string, string> = {
   invalid_image_type: "Допускаются только изображения PNG, JPEG или WebP",
   file_too_large: "Размер файла слишком большой",
   merchant_logo_not_found: "Логотип мерчанта не найден",
+  invalid_coordinates: "Широта и долгота должны быть указаны вместе",
   otp_cooldown: "Пожалуйста, подождите перед запросом нового кода",
   otp_daily_limit: "Достигнут дневной лимит запросов кода подтверждения",
   otp_attempts_exceeded: "Слишком много неверных попыток. Запросите новый код",

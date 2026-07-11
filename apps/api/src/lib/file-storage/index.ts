@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import type { Client as MinioClient } from 'minio';
 import type { Db } from '../../db';
 import { env } from '../../env';
@@ -56,6 +56,29 @@ export async function getDownloadUrl(
   const [row] = await db.select().from(files).where(eq(files.id, fileId)).limit(1);
   if (!row) throw new Error(`File ${fileId} not found`);
   return minioPresign.presignedGetObject(row.bucket, row.objectKey, expirySeconds);
+}
+
+// Batch form of getDownloadUrl, for serializing a list whose rows each point at a
+// file: one query for the whole set instead of one per row. Ids with no file row
+// are simply absent from the map.
+export async function getDownloadUrls(
+  db: Db,
+  fileIds: number[],
+  expirySeconds = PRESIGNED_GET_EXPIRY,
+): Promise<Map<number, string>> {
+  const ids = [...new Set(fileIds)];
+  if (ids.length === 0) return new Map();
+  const rows = await db.select().from(files).where(inArray(files.id, ids));
+  const entries = await Promise.all(
+    rows.map(
+      async (row) =>
+        [
+          row.id,
+          await minioPresign.presignedGetObject(row.bucket, row.objectKey, expirySeconds),
+        ] as const,
+    ),
+  );
+  return new Map(entries);
 }
 
 export async function deleteFile(db: Db, minio: MinioClient, fileId: number): Promise<void> {
