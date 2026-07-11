@@ -347,7 +347,7 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
         { phone: payload.phone, step: 'pinfl_verified' } satisfies RegTokenPhase2,
         { expiresIn: REG_TOKEN_TTL },
       );
-      return { regToken, sessionId: uuidv4() };
+      return { regToken, sessionId };
     },
   );
 
