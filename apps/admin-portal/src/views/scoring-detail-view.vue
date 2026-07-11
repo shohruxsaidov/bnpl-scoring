@@ -142,6 +142,10 @@ function formatTimestamp(iso: string): string {
 }
 
 // Render a pipeline's `summary` jsonb as a strip of cards.
+// plum_card keys that are structure, not figures — rendered elsewhere (or not at
+// all) rather than as cards in the summary strip.
+const PLUM_CARD_HIDDEN_SUMMARY = ['criteria', 'cardId', 'plumScoringId', 'pcType', 'maxScoreBall']
+
 function summaryCards(pipeline: { type: string; summary: Record<string, unknown> | null; raw?: unknown } | null) {
   if (!pipeline?.summary) return []
   const { type, summary, raw } = pipeline
@@ -151,7 +155,17 @@ function summaryCards(pipeline: { type: string; summary: Record<string, unknown>
       ([key]) =>
         !(type === 'katm_077' && ['hasDefaults', 'hasCreditBan', 'hasDecommission'].includes(key)),
     )
+    .filter(([key]) => !(type === 'plum_card' && PLUM_CARD_HIDDEN_SUMMARY.includes(key)))
     .map(([key, value]) => {
+      // Uzcard: the score only means anything against its ceiling — "113 / 550",
+      // never a bare 113.
+      if (type === 'plum_card' && key === 'scoredBall') {
+        const max = (summary as { maxScoreBall?: unknown }).maxScoreBall
+        return {
+          label: summaryLabel(key),
+          value: max != null ? `${String(value)} / ${String(max)}` : formatSummaryValue(value),
+        }
+      }
       // KATM 077: append the scoring level (Уровень) to the class, e.g. "A1 ОТЛИЧНЫЙ".
       if (type === 'katm_077' && key === 'scoringClass') {
         const level = (raw as { scorring?: { scoring_level?: unknown } } | undefined)?.scorring
@@ -207,6 +221,36 @@ function inpsData(raw: Record<string, unknown> | null): Json {
     return { ...report, incomes: { ...(incomes as Json), income } }
   }
   return report as Json
+}
+
+// ---- plum_card (card-behaviour scoring) -------------------------------------
+// Observational: Plumgate's read of how the card is used. It does NOT feed the
+// model — nothing here influenced the decision on this run.
+//
+// The two rails are different measurements and are rendered differently:
+//   uzcard — DATA-SET template points; each criterion reports the band it fell in
+//            ("25-50 лет") and the points earned. Rendered verbatim: the vendor
+//            does not return raw sums, and the per-criterion maxima are not in the
+//            payload, so no "x of y" is shown per row — only the run total.
+//   humo   — no template and no ceiling. Each *Score is a million-som bucket
+//            (ball N ⇒ turnover in ((N-1)m, N*1m]), so it must never be read as,
+//            or compared with, an Uzcard score.
+interface PlumCriterion {
+  name: string
+  category: string
+  ball: number
+}
+function plumPcType(p: ScoringDetailPipeline): 'uzcard' | 'humo' | null {
+  const s = p.summary as { pcType?: unknown } | null
+  return s?.pcType === 'humo' ? 'humo' : s?.pcType === 'uzcard' ? 'uzcard' : null
+}
+function plumCriteria(p: ScoringDetailPipeline): PlumCriterion[] {
+  const s = p.summary as { criteria?: unknown } | null
+  return Array.isArray(s?.criteria) ? (s.criteria as PlumCriterion[]) : []
+}
+function plumHumoMonths(p: ScoringDetailPipeline): Record<string, unknown>[] {
+  const raw = p.raw as { monthly?: unknown } | null
+  return Array.isArray(raw?.monthly) ? (raw.monthly as Record<string, unknown>[]) : []
 }
 
 // ---- model_score breakdown --------------------------------------------------
@@ -389,6 +433,76 @@ function goBack() {
           <KvTable :value="mibData(activePipeline.raw)" :labels="VENDOR_LABELS" />
         </div>
 
+        <!-- plum_card — card-behaviour scoring. Collected only; feeds no decision. -->
+        <template v-else-if="activePipeline.type === 'plum_card'">
+          <div class="callout callout-info">
+            <i class="pi pi-info-circle" />
+            <span>{{ t('scoringReport.plumCard.observationalNote') }}</span>
+          </div>
+
+          <!-- Uzcard: DATA-SET criteria, as returned -->
+          <div v-if="plumPcType(activePipeline) === 'uzcard' && plumCriteria(activePipeline).length"
+            class="surface-card table-card">
+            <table class="breakdown">
+              <thead>
+                <tr>
+                  <th>{{ t('scoringReport.plumCard.criterion') }}</th>
+                  <th>{{ t('scoringReport.plumCard.category') }}</th>
+                  <th class="num">{{ t('scoringReport.plumCard.ball') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(c, i) in plumCriteria(activePipeline)" :key="i">
+                  <td>{{ c.name }}</td>
+                  <td>{{ c.category }}</td>
+                  <td class="num font-mono">{{ c.ball }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="table-note">
+              {{ t('scoringReport.plumCard.reportedCount', { n: plumCriteria(activePipeline).length }) }}
+            </p>
+          </div>
+
+          <!-- Humo: monthly behaviour series -->
+          <div v-else-if="plumPcType(activePipeline) === 'humo' && plumHumoMonths(activePipeline).length"
+            class="surface-card table-card">
+            <table class="breakdown">
+              <thead>
+                <tr>
+                  <th>{{ t('scoringReport.plumCard.month') }}</th>
+                  <th class="num">{{ t('scoringReport.summary.totalDebitScore') }}</th>
+                  <th class="num">{{ t('scoringReport.summary.totalDebitCount') }}</th>
+                  <th class="num">{{ t('scoringReport.summary.creditScore') }}</th>
+                  <th class="num">{{ t('scoringReport.summary.creditCount') }}</th>
+                  <th class="num">{{ t('scoringReport.summary.replenishmentScore') }}</th>
+                  <th class="num">{{ t('scoringReport.summary.replenishmentCount') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(m, i) in plumHumoMonths(activePipeline)" :key="i">
+                  <td class="font-mono">{{ m.month }}</td>
+                  <td class="num font-mono">{{ m.totalDebitScore }}</td>
+                  <td class="num font-mono">{{ m.totalDebitCount }}</td>
+                  <td class="num font-mono">{{ m.creditScore }}</td>
+                  <td class="num font-mono">{{ m.creditCount }}</td>
+                  <td class="num font-mono">{{ m.replenishmentScore }}</td>
+                  <td class="num font-mono">{{ m.replenishmentCount }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="table-note">{{ t('scoringReport.plumCard.humoScaleNote') }}</p>
+          </div>
+
+          <!-- pending / error: no figures yet -->
+          <div v-else class="callout callout-warn">
+            <i class="pi pi-clock" />
+            <span>{{ activePipeline.status === 'error'
+              ? t('scoringReport.plumCard.failed')
+              : t('scoringReport.plumCard.pending') }}</span>
+          </div>
+        </template>
+
         <!-- myid / katm_claim — flat payloads -->
         <div v-else-if="activePipeline.raw" class="surface-card flat-card">
           <JsonNode :value="activePipeline.raw" :labels="VENDOR_LABELS" :show-meta="true" />
@@ -482,6 +596,19 @@ function goBack() {
   background: color-mix(in srgb, #f59e0b 14%, transparent);
   border: 1px solid color-mix(in srgb, #f59e0b 35%, transparent);
   color: #b45309;
+}
+
+.callout-info {
+  background: color-mix(in srgb, #3b82f6 12%, transparent);
+  border: 1px solid color-mix(in srgb, #3b82f6 30%, transparent);
+  color: #1d4ed8;
+  margin-bottom: 1rem;
+}
+
+.table-note {
+  margin: 0.8rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
 }
 
 .tabs {

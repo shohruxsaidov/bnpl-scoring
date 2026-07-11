@@ -106,6 +106,13 @@
       "when": 1783793784138,
       "tag": "0014_cooing_argent",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1783812215468,
+      "tag": "0015_wandering_beast",
+      "breakpoints": true
     }
   ]
 }

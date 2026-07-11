@@ -25,6 +25,13 @@ import {
   setNotificationsPushQueue,
   type NotificationPushJobData,
 } from '../modules/client/notifications/push';
+import {
+  PLUM_CARD_SCORE_QUEUE,
+  handlePlumCardScoreFailure,
+  processPlumCardScoreJob,
+  setPlumCardScoreQueue,
+  type PlumCardScoreJobData,
+} from '../modules/integrations/plumgate/card-scoring';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -32,6 +39,7 @@ declare module 'fastify' {
     katmClaimRejectQueue: Queue<ClaimRejectJobData>;
     dealSessionSweepQueue: Queue;
     notificationsPushQueue: Queue<NotificationPushJobData>;
+    plumCardScoreQueue: Queue<PlumCardScoreJobData>;
     // Every Queue created by this plugin, in registration order. The bull-board
     // dashboard iterates this so new queues surface without touching its plugin.
     queues: Queue[];
@@ -64,8 +72,19 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
   // queue through every scoring/finalize call site.
   setNotificationsPushQueue(notificationsPushQueue);
 
+  const plumCardScoreQueue: Queue<PlumCardScoreJobData> = new Queue(PLUM_CARD_SCORE_QUEUE, {
+    connection,
+  });
+  setPlumCardScoreQueue(plumCardScoreQueue);
+
   // Registry consumed by the bull-board dashboard. Push each new queue here.
-  const queues: Queue[] = [queue, claimRejectQueue, sweepQueue, notificationsPushQueue];
+  const queues: Queue[] = [
+    queue,
+    claimRejectQueue,
+    sweepQueue,
+    notificationsPushQueue,
+    plumCardScoreQueue,
+  ];
 
   const worker = new Worker<KatmPollJobData>(
     KATM_POLL_QUEUE,
@@ -107,6 +126,32 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
     );
   });
 
+  // plum_card — observational card-behaviour scoring. Uzcard polls (throw/retry),
+  // Humo answers inline. Nothing here may touch the scoring run: an exhausted job
+  // marks its own row 'error' and the run stays exactly as the model left it.
+  const plumCardScoreWorker = new Worker<PlumCardScoreJobData>(
+    PLUM_CARD_SCORE_QUEUE,
+    async (job) => processPlumCardScoreJob(job.data),
+    { connection, concurrency: 5 },
+  );
+
+  plumCardScoreWorker.on('failed', (job, err) => {
+    if (!job) return;
+    const exhausted = job.attemptsMade >= (job.opts.attempts ?? 1);
+    // A pending poll is the normal path, not a fault — only log it once it dies.
+    if (err.name !== 'PlumScorePendingError' || exhausted) {
+      app.log.warn(
+        { jobId: job.id, scoringId: job.data.scoringId, err, exhausted },
+        'plum card score attempt failed',
+      );
+    }
+    if (exhausted) {
+      handlePlumCardScoreFailure(job.data, err).catch((e) =>
+        app.log.error({ err: e }, 'plum card score failure finalizer crashed'),
+      );
+    }
+  });
+
   worker.on('failed', (job, err) => {
     if (!job) return;
     const exhausted = job.attemptsMade >= (job.opts.attempts ?? 1);
@@ -123,14 +168,17 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
   app.decorate('katmPollQueue', queue);
   app.decorate('katmClaimRejectQueue', claimRejectQueue);
   app.decorate('notificationsPushQueue', notificationsPushQueue);
+  app.decorate('plumCardScoreQueue', plumCardScoreQueue);
   app.decorate('queues', queues);
   app.addHook('onClose', async () => {
     await worker.close();
     await claimRejectWorker.close();
     await notificationsPushWorker.close();
+    await plumCardScoreWorker.close();
     await queue.close();
     await claimRejectQueue.close();
     await notificationsPushQueue.close();
+    await plumCardScoreQueue.close();
     await redis.quit().catch(() => null);
   });
 });

@@ -15,7 +15,13 @@
 // terminal stage; neither is an admin decision.
 // ---------------------------------------------------------------------------
 
-export const CONFIGURABLE_PIPELINES = ['myid', 'katm_mib', 'katm_077', 'katm_inps'] as const;
+export const CONFIGURABLE_PIPELINES = [
+  'myid',
+  'katm_mib',
+  'katm_077',
+  'katm_inps',
+  'plum_card',
+] as const;
 
 export type ConfigurablePipeline = (typeof CONFIGURABLE_PIPELINES)[number];
 
@@ -34,6 +40,11 @@ export const DEFAULT_PIPELINE_ENABLED: Record<ConfigurablePipeline, boolean> = {
   katm_mib: false,
   katm_077: true,
   katm_inps: true,
+  // Off until the vendor call shapes are confirmed against the Plum test env.
+  // Unlike the others, this flag is actually READ at runtime (see isPipelineEnabled)
+  // — the enqueue sites consult it, so flipping it in the admin UI takes effect
+  // without a deploy.
+  plum_card: false,
 };
 
 // The scoring params each pipeline supplies. engine.ts scores a param whose
@@ -71,6 +82,10 @@ export const PIPELINE_SCORING_PARAMS: Record<ConfigurablePipeline, readonly stri
   ],
   // Income also feeds the credit-limit formula itself, not only these params.
   katm_inps: ['IncomeSum', 'WorkExperience', 'MonthlyAveragePayment'],
+  // Observational — the card-behaviour data is collected and shown in admin, but
+  // no engine param reads it. Switching it off therefore costs zero score and
+  // lowers no coefficient band ceiling; it only stops the vendor call.
+  plum_card: [],
 };
 
 // The model StopFactors (keyed by their `Match` value) each pipeline supplies.
@@ -83,6 +98,8 @@ export const PIPELINE_STOP_FACTORS: Record<ConfigurablePipeline, readonly string
   katm_mib: [],
   katm_077: ['WithJuridical', 'WithDecommission'],
   katm_inps: [],
+  // No knockouts, by construction: plum_card cannot reject a run.
+  plum_card: [],
 };
 
 // Pipelines whose data the credit-limit formula itself consumes, beyond any
@@ -93,4 +110,5 @@ export const PIPELINE_FEEDS_LIMIT: Record<ConfigurablePipeline, boolean> = {
   katm_mib: false,
   katm_077: false,
   katm_inps: true,
+  plum_card: false,
 };

@@ -343,6 +343,7 @@
       "katm_mib": "KATM MIB",
       "katm_077": "KATM 077",
       "katm_inps": "KATM INPS",
+      "plum_card": "Plum · Karta",
       "model_score": "Model bahosi"
     }
   },
@@ -387,7 +388,15 @@
       "missingFields": "Yetishmayotgan maydonlar",
       "resultCode": "Natija kodi",
       "resultMessage": "Xabar",
-      "passed": "O'tdi"
+      "passed": "O'tdi",
+      "maskedPan": "Karta",
+      "scoredBall": "DATA-SET bali",
+      "totalDebitScore": "Xarajat bali",
+      "totalDebitCount": "Xarajat tranzaksiyalari",
+      "replenishmentScore": "Hisobdan to'ldirish bali",
+      "replenishmentCount": "Hisobdan to'ldirishlar",
+      "creditScore": "Tushumlar bali",
+      "creditCount": "Kartaga tushumlar"
     },
     "model": {
       "decision": "Qaror",
@@ -403,6 +412,17 @@
     "decision": {
       "approve": "Tasdiqlandi",
       "reject": "Rad etildi"
+    },
+    "plumCard": {
+      "observationalNote": "Karta bo'yicha xatti-harakat ma'lumotlari tahlil uchun yig'iladi. Ushbu arizadagi qarorga ta'sir qilmagan — model ulardan foydalanmaydi.",
+      "criterion": "Ko'rsatkich",
+      "category": "Toifa",
+      "ball": "Ball",
+      "month": "Oy",
+      "reportedCount": "Plum {n} ta ko'rsatkich qaytardi. Baholanmagan ko'rsatkichlar ro'yxatda yo'q, lekin maksimal balda hisobga olingan — natija kam ko'rsatilishi mumkin.",
+      "humoScaleNote": "Humo: N bali (N−1) mln — N mln so'm aylanmani bildiradi. Bu DATA-SET shablon bali emas — Uzcard bali bilan solishtirilmaydi.",
+      "pending": "Plum karta skoringini hali hisoblamoqda.",
+      "failed": "Plum karta skoringi natijasini qaytarmadi."
     }
   },
   "jsonReport": {
@@ -1251,6 +1271,10 @@
       "katm_inps": {
         "name": "KATM INPS / GNK",
         "desc": "Pensiya ajratmalari: daromad va staj. Daromad limit hisobida qatnashadi."
+      },
+      "plum_card": {
+        "name": "Plum · Karta skoringi",
+        "desc": "Karta bo'yicha xatti-harakat (Uzcard DATA-SET / Humo). Faqat ma'lumot yig'ish — model foydalanmaydi, qaror o'zgarmaydi."
       }
     }
   }

@@ -59,6 +59,7 @@ import {
   setCurrentPipeline,
   recordPipeline,
 } from '../../scoring/pipelines/store';
+import { enqueuePlumCardScore } from '../../integrations/plumgate/card-scoring';
 import { listCards } from '../../integrations/plumgate/queries/list-cards/list-cards.handler';
 import { addCard } from '../../integrations/plumgate/commands/add-card/add-card.handler';
 import { confirmCard } from '../../integrations/plumgate/commands/confirm-card/confirm-card.handler';
@@ -1115,6 +1116,19 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       if (finalDecision === 'reject') {
         await rejectSession(sessionAfterCard);
         await enqueueClaimRejection(app.katmClaimRejectQueue, sessionAfterCard);
+      }
+
+      // plum_card — observational card-behaviour scoring (does NOT feed the model).
+      // Fired for rejected runs too: a dataset truncated at the current model's
+      // decision boundary has no negative samples and cannot be used to fit its
+      // successor. Async, so the agent's wizard never waits on Plumgate.
+      if (scoringRun) {
+        await enqueuePlumCardScore({
+          scoringId: scoringRun.id,
+          plumCardId,
+          pcType,
+          maskedPan,
+        });
       }
 
       return {

@@ -17,6 +17,7 @@ import {
   type ScoringRow,
 } from '../../scoring/pipelines/store';
 import type { PipelineStepResult } from '../../integrations/katm/flow';
+import { enqueuePlumCardScore } from '../../integrations/plumgate/card-scoring';
 import { notify } from '../notifications/service';
 
 /** Credit-limit validity window before a re-score is allowed (Q: 7 days). */
@@ -52,8 +53,17 @@ export async function writeClientCreditLimit(
   return { creditLimit, expiresAt };
 }
 
-/** Most recently added card, mapped for the criteria breakdown. Null if none. */
-async function loadLatestCard(userId: number): Promise<LimitCard | null> {
+/**
+ * Most recently added card, mapped for the criteria breakdown. Null if none.
+ *
+ * A client never picks a card — "the card" for a self-scoring run is simply the
+ * last one they added. `plumCardId` rides along for the plum_card pipeline; it is
+ * null on rows written before the attachment id and the card id were told apart
+ * (see user_cards), and such a card cannot be scored at Plumgate.
+ */
+async function loadLatestCard(
+  userId: number,
+): Promise<(LimitCard & { plumCardId: string | null }) | null> {
   const [row] = await db
     .select()
     .from(userCards)
@@ -66,6 +76,7 @@ async function loadLatestCard(userId: number): Promise<LimitCard | null> {
     bank: row.pcType === 'humo' ? 'Humo' : 'Uzcard',
     maskedPan: row.maskedPan,
     holderName: row.holderName,
+    plumCardId: row.plumCardId,
   };
 }
 
@@ -142,6 +153,19 @@ export async function finalizeClientScoringIfReady(
     });
   } else {
     await markRejected(scoring.id, result.engineRejected ? 'model_stop_factor' : 'zero_limit');
+  }
+
+  // plum_card — observational card-behaviour scoring (does NOT feed the model).
+  // Same rule as the merchant path: fired on reject as well as approve. Skipped
+  // when the run reached the model with no card, or when the card predates the
+  // plum_card_id column and so has no id the scoring rail would accept.
+  if (card?.plumCardId) {
+    await enqueuePlumCardScore({
+      scoringId: scoring.id,
+      plumCardId: card.plumCardId,
+      pcType: card.pcType,
+      maskedPan: card.maskedPan,
+    });
   }
 
   // reject collapses to a 0 limit (the reason stays on the scorings run).

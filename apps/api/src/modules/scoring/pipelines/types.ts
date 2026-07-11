@@ -7,12 +7,16 @@
 
 // Ordered cost-ascending: cheap/free checks first so a knockout short-circuits
 // before any chargeable bureau call.
+// plum_card sits with the data-gathering stages, before the model verdict, even
+// though it resolves asynchronously alongside/after it. It is OBSERVATIONAL: it
+// has no stop-factors, feeds no model param, and never rejects — see config.ts.
 export const PIPELINE_ORDER = [
   'myid',
   'katm_claim',
   'katm_mib',
   'katm_077',
   'katm_inps',
+  'plum_card',
   'model_score',
 ] as const;
 export type PipelineType = (typeof PIPELINE_ORDER)[number];
@@ -143,12 +147,53 @@ export interface ModelScoreSummary {
   platformCreditLimit: number;
 }
 
+// --- plum_card --------------------------------------------------------------
+// Card-behaviour scoring from Plumgate. Discriminated on pcType because the two
+// rails are NOT the same measurement:
+//   uzcard — template points (DATA-SET) out of a fixed maxScoreBall (e.g. 113/550).
+//            Criteria the vendor did not evaluate are absent from `criteria` yet
+//            still counted in maxScoreBall, so the ratio can understate.
+//   humo   — unbounded million-som buckets (ball N ⇒ turnover in ((N-1)m, N*1m]).
+//            No ceiling, no total, no percentage. Never compare to an uzcard ball.
+// The fields common to both identify the card and the window the figures cover.
+interface PlumCardSummaryBase {
+  /** Plumgate's My Uzcard card id — the row's owner. A worker whose job carries a
+   *  different cardId is stale (the agent switched cards) and must not write. */
+  cardId: string;
+  maskedPan: string;
+  /** Vendor scoring id — uzcard only; persisted between create and poll. */
+  plumScoringId?: number;
+  /** ISO — the observation window both rails are measured over. */
+  periodBegin: string;
+  periodEnd: string;
+}
+
+export interface PlumCardUzcardSummary extends PlumCardSummaryBase {
+  pcType: 'uzcard';
+  scoredBall?: number;
+  maxScoreBall?: number;
+  criteria?: Array<{ name: string; category: string; ball: number }>;
+}
+
+export interface PlumCardHumoSummary extends PlumCardSummaryBase {
+  pcType: 'humo';
+  totalDebitScore?: number;
+  totalDebitCount?: number;
+  replenishmentScore?: number;
+  replenishmentCount?: number;
+  creditScore?: number;
+  creditCount?: number;
+}
+
+export type PlumCardSummary = PlumCardUzcardSummary | PlumCardHumoSummary;
+
 export type PipelineSummary =
   | MyidSummary
   | KatmClaimSummary
   | KatmMibSummary
   | Katm077Summary
   | KatmInpsSummary
+  | PlumCardSummary
   | ModelScoreSummary;
 
 // --- Evaluation result a stop-factor check returns --------------------------

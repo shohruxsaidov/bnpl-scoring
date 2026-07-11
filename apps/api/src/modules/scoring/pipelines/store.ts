@@ -164,6 +164,19 @@ export async function recordPipeline(
     });
 }
 
+/** One pipeline row of a run, or null. */
+export async function loadPipeline(
+  scoringId: number,
+  type: PipelineType,
+): Promise<typeof scoringPipelines.$inferSelect | null> {
+  const [row] = await db
+    .select()
+    .from(scoringPipelines)
+    .where(and(eq(scoringPipelines.scoringId, scoringId), eq(scoringPipelines.type, type)))
+    .limit(1);
+  return row ?? null;
+}
+
 /** Terminal: a pipeline knockout or a model-stage rejection. */
 export async function markRejected(
   scoringId: number,

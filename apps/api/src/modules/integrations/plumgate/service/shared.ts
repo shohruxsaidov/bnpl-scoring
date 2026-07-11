@@ -68,14 +68,52 @@ export interface PlumScoringCreateResponse {
   };
 }
 
-export interface PlumUzcardScoreResponse {
-  score: number;
-  creditLimit?: number;
+// --- Uzcard: template scoring (the DATA-SET methodology) ---------------------
+// Scoring/scoringGetPoint. `ball` is the applicant's points for that criterion;
+// `categoryName` is the band that matched ("25-50 лет", "от 0 до 0"). The vendor
+// reports no raw sums — only the band and the points — and criteria it did not
+// evaluate are simply absent from scoreList while still counting toward
+// maxScoreBall. So scoredBall/maxScoreBall can understate; do not read the ratio
+// as "how good this applicant is" without checking how many criteria reported.
+export interface PlumUzcardScoreItem {
+  templateName: string;
+  categoryName: string;
+  ball: number;
 }
 
-export interface PlumHumoScoreResponse {
-  avgScore: number;
-  creditLimit?: number;
+export interface PlumUzcardScoreResponse {
+  maxScoreBall: number;
+  scoredBall: number;
+  scoreList: PlumUzcardScoreItem[];
+  scoringId: number;
+}
+
+// --- Humo: behaviour report (no template, no ceiling) ------------------------
+// Scoring/HumoScoringAvg (averages, month always 0) and Scoring/HumoScoring
+// (the same shape once per month). A Humo `*Score` is an unbounded million-som
+// bucket — ball N means turnover in ((N-1)m, N*1m] som — NOT template points.
+// Never put a Humo ball and an Uzcard ball on the same scale.
+export interface PlumHumoScoreRow {
+  month: number;
+  totalDebitScore: number;
+  totalDebitCount: number;
+  replenishmentScore: number;
+  replenishmentCount: number;
+  creditScore: number;
+  creditCount: number;
+}
+
+export interface PlumHumoAvgResponse {
+  result: PlumHumoScoreRow;
+}
+
+export interface PlumHumoMonthlyResponse {
+  result: {
+    cardNumber?: string;
+    fullName?: string;
+    connectedPhone?: string;
+    report: PlumHumoScoreRow[];
+  };
 }
 
 export interface PlumConfirmUserCardCreateResponse {
@@ -116,10 +154,15 @@ export interface PlumAddCardResult {
   maskedPhone: string;
 }
 
-export interface PlumScoreResult {
-  score: number;
-  limit: number;
-  decision: 'approved' | 'manual_review' | 'declined';
+// Observation window for card scoring, both rails. Fixed so that an Uzcard row
+// and a Humo row (and any two runs) describe the same span of history — a
+// turnover figure whose period is unknown is worthless. Stamped into every
+// plum_card summary rather than left implicit.
+export const PLUM_SCORE_WINDOW_DAYS = 365;
+
+export function plumScoreWindow(now: Date): { beginDate: Date; endDate: Date } {
+  const beginDate = new Date(now.getTime() - PLUM_SCORE_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+  return { beginDate, endDate: now };
 }
 
 // ---------------------------------------------------------------------------
@@ -155,19 +198,6 @@ export function toPlumCard(r: PlumCardItem): PlumCard {
     bank: pcType === 'humo' ? 'Humo' : 'Uzcard',
     pcType,
   };
-}
-
-export function scoreToDecision(score: number): 'approved' | 'manual_review' | 'declined' {
-  if (score >= 700) return 'approved';
-  if (score >= 600) return 'manual_review';
-  return 'declined';
-}
-
-export function scoreToLimit(score: number, vendorLimit?: number): number {
-  if (vendorLimit && vendorLimit > 0) return vendorLimit;
-  if (score >= 700) return 700_000_000;
-  if (score >= 600) return 400_000_000;
-  return 0;
 }
 
 export function delay(ms: number): Promise<void> {

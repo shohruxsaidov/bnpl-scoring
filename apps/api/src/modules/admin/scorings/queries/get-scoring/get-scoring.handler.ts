@@ -12,7 +12,8 @@ const PIPELINE_ORDER: Record<string, number> = {
   katm_mib: 2,
   katm_077: 3,
   katm_inps: 4,
-  model_score: 5,
+  plum_card: 5,
+  model_score: 6,
 };
 
 export interface ScoringDetailPipeline {

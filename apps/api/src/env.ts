@@ -44,6 +44,11 @@ const schema = z.object({
   PLUM_PASSWORD: z.string().optional(),
   PLUM_TIMEOUT: z.coerce.number().default(15_000),
   PLUM_TEMPLATE_ID: z.coerce.number().default(123),
+  // Card-behaviour scoring (plum_card pipeline). The Uzcard rail is async —
+  // createScoringCard returns a scoringId and scoringGetPoint 404s until the
+  // vendor has computed the template. Humo answers inline and never polls.
+  PLUM_POLL_INTERVAL_MS: z.coerce.number().default(10_000),
+  PLUM_POLL_MAX_ATTEMPTS: z.coerce.number().default(12),
   // KATM credit bureau — Retail API (ADR-0025).
   // NB: the vendor PDF's TEST/PROD labels are swapped — testapi.* is the test env.
   KATM_BASE_URL: z.string().url(),

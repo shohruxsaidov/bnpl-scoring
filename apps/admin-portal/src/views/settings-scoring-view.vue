@@ -21,6 +21,7 @@ const ICONS: Record<ConfigurablePipeline, string> = {
   katm_mib: 'pi pi-gavel',
   katm_077: 'pi pi-chart-line',
   katm_inps: 'pi pi-wallet',
+  plum_card: 'pi pi-credit-card',
 }
 
 // A pipeline that supplies no scoring params is a pure gate: turning it off

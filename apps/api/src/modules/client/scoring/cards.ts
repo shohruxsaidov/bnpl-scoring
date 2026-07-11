@@ -157,11 +157,14 @@ export default async function clientScoringCardsRoutes(app: FastifyInstance) {
       const card = await confirmCard({ sessionId, otp });
 
       // Re-adding the same card is idempotent (unique on user_id + plum_id).
+      // Both Plumgate ids are stored: plumId (the attachment) is what deleteUserCard
+      // takes, plumCardId (the card in My Uzcard) is what the scoring rail takes.
       await db
         .insert(userCards)
         .values({
           userId,
           plumId: card.id,
+          plumCardId: card.plumCardId,
           maskedPan: card.maskedPan,
           holderName: card.holderName,
           expiry: card.expiry,

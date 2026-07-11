@@ -11,8 +11,16 @@ export const userCards = pgTable(
     userId: integer('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    // Numeric Plumgate card id — required by DELETE UserCard/deleteUserCard.
+    // Plumgate hands back TWO ids for a card and they are not interchangeable:
+    //   plum_id      — «Идентификатор прикрепления», the attachment. Required by
+    //                  DELETE UserCard/deleteUserCard.
+    //   plum_card_id — «Идентификатор карты в системе My Uzcard», the card itself.
+    //                  Required by Scoring/createScoringCard (plum_card pipeline).
+    // Nullable: rows written before the two were told apart only ever stored the
+    // attachment id, and there is no way to backfill the card id without re-reading
+    // the card list from Plumgate.
     plumId: integer('plum_id').notNull(),
+    plumCardId: varchar('plum_card_id', { length: 30 }),
     maskedPan: varchar('masked_pan', { length: 25 }).notNull(),
     holderName: varchar('holder_name', { length: 100 }),
     expiry: varchar('expiry', { length: 5 }).notNull(), // "08/27"

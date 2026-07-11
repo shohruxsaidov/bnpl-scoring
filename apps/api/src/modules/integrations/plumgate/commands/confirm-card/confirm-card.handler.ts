@@ -37,7 +37,7 @@ export async function confirmCard(params: ConfirmCardCommand): Promise<PlumCard>
 
     return toPlumCard({
       id: data.result.card.id,
-      cardId: data.result.card.id.toString(),
+      cardId: data.result.card.cardId.toString(),
       number: data.result.card.number,
       owner: data.result.card.owner,
       expireDate: data.result.card.expireDate,
