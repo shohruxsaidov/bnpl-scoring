@@ -119,18 +119,23 @@ export async function fetchUzcardScore(plumScoringId: number): Promise<UzcardSco
   const client = makePlumClient();
 
   const data = await logged('scoringGetPoint', 'GET', params, () =>
-    client.get('Scoring/scoringGetPoint', { searchParams: params }).json<PlumUzcardScoreResponse>(),
+    client
+      .get('Scoring/scoringGetPoint', { searchParams: params })
+      .json<{ result: PlumUzcardScoreResponse }>()
+      .catch((err) => {
+        console.log(err);
+      }),
   );
 
   // An empty scoreList means "not computed yet", not "this card scored zero" —
   // a scored card always reports at least the criteria it could evaluate.
-  if (!data?.scoreList?.length) throw new PlumScorePendingError();
+  if (!data?.result?.scoreList?.length) throw new PlumScorePendingError();
 
   return {
     plumScoringId,
-    scoredBall: data.scoredBall,
-    maxScoreBall: data.maxScoreBall,
-    criteria: data.scoreList.map((i) => ({
+    scoredBall: data.result.scoredBall,
+    maxScoreBall: data.result.maxScoreBall,
+    criteria: data.result.scoreList.map((i) => ({
       name: i.templateName,
       category: i.categoryName,
       ball: i.ball,
