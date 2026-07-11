@@ -22,7 +22,7 @@ import {
   createMobileMyidSession,
   exchangeMobileMyidCode,
 } from '../../integrations/myid/myid-mobile-new-flow';
-
+import { v4 as uuidv4 } from 'uuid';
 const ERROR = { $ref: 'ErrorResponse#' };
 
 const UZBEKISTAN_CITIZENSHIP_ID = '182';
@@ -337,7 +337,7 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
         { phone: payload.phone, pinfl, step: 'pinfl_verified' } satisfies RegTokenPhase2,
         { expiresIn: REG_TOKEN_TTL },
       );
-      return { regToken, sessionId: 'test-session-id' };
+      return { regToken, sessionId: uuidv4() };
     },
   );
 
