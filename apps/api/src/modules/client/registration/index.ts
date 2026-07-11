@@ -13,7 +13,6 @@ import {
   findUserByPinfl,
   findUserByPhone,
 } from '../../auth/client/service/service.handler';
-import { exchangeMyidCode } from '../../integrations/myid/myid-mobile';
 import { createUserHandler } from '../../id/users';
 import { sendOtpSms } from '../../../lib/sms';
 import { getCurrentPublicOffer, findCurrentPublicOfferById } from './public-offers';
@@ -40,7 +39,6 @@ interface RegTokenPhase1 {
 
 interface RegTokenPhase2 {
   phone: string;
-  pinfl: string;
   step: 'pinfl_verified';
 }
 
@@ -80,12 +78,14 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
   });
   const MyidSessionBody = Type.Object({
     regToken: Type.String({ minLength: 1, examples: ['ey.....'] }),
-    pinfl: Type.String({
-      minLength: 14,
-      maxLength: 14,
-      pattern: '^\\d{14}$',
-      examples: ['12345678901234'],
-    }),
+    pinfl: Type.Optional(
+      Type.String({
+        minLength: 14,
+        maxLength: 14,
+        pattern: '^\\d{14}$',
+        examples: ['12345678901234'],
+      }),
+    ),
     passData: Type.Optional(Type.String({ minLength: 1, maxLength: 9, examples: ['AD1234567'] })),
     birthDate: Type.Optional(
       Type.String({ minLength: 10, maxLength: 10, examples: ['1990-05-14'] }),
@@ -331,11 +331,20 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
         return reply.code(400).sendError('invalid_step');
       }
 
-      const { pinfl } = req.body;
-      // const myidResult = await createMobileMyidSession(pinfl);
+      const { pinfl, birthDate, passData } = req.body;
+      let sessionId: string;
+      if (pinfl) {
+        const myidResult = await createMobileMyidSession(pinfl);
+        sessionId = myidResult.sessionId;
+      } else if (birthDate && passData) {
+        const myidResult = await createMobileMyidSession({ passData, birthDate });
+        sessionId = myidResult.sessionId;
+      } else {
+        return reply.code(400).sendError('missing_myid_credentials');
+      }
 
       const regToken = app.jwt.sign(
-        { phone: payload.phone, pinfl, step: 'pinfl_verified' } satisfies RegTokenPhase2,
+        { phone: payload.phone, step: 'pinfl_verified' } satisfies RegTokenPhase2,
         { expiresIn: REG_TOKEN_TTL },
       );
       return { regToken, sessionId: uuidv4() };
@@ -365,14 +374,11 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
         return reply.code(400).sendError('invalid_step');
       }
 
-      const myidUser = await exchangeMyidCode(req.body.myidCode);
-      if (myidUser.pinfl !== phase2.pinfl) {
-        return reply.code(400).sendError('pinfl_mismatch');
-      }
+      const myidUser = await exchangeMobileMyidCode(req.body.myidCode);
 
       // Idempotent on the MyID-verified PINFL. If the identity already has an
       // account it must belong to the same OTP-verified phone, otherwise reject.
-      const existing = await findUserByPinfl(phase2.pinfl);
+      const existing = await findUserByPinfl(myidUser.pinfl);
       let client: typeof users.$inferSelect;
       if (existing) {
         if (existing.phone !== phase2.phone) {

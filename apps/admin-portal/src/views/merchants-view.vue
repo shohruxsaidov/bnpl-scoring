@@ -70,7 +70,11 @@ async function toggleStatus(merchant: Merchant) {
       >
         <Column :header="$t('merchants.name')" sortable field="name">
           <template #body="{ data }">
-            <span class="t-name">{{ data.name }}</span>
+            <div class="name-cell">
+              <img v-if="data.logoUrl" :src="data.logoUrl" :alt="data.name" class="row-logo" />
+              <span v-else class="row-logo row-logo-empty">{{ data.name.charAt(0) }}</span>
+              <span class="t-name">{{ data.name }}</span>
+            </div>
           </template>
         </Column>
         <Column :header="$t('merchants.inn')">
@@ -138,6 +142,26 @@ async function toggleStatus(merchant: Merchant) {
 .t-name {
   font-weight: 700;
   font-size: 0.86rem;
+}
+.name-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+.row-logo {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.row-logo-empty {
+  display: grid;
+  place-items: center;
+  background: var(--gradient-hero);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.78rem;
 }
 .actions {
   display: flex;

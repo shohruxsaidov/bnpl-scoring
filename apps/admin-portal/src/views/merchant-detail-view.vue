@@ -86,6 +86,69 @@ function notifyError(key: string) {
   toast.add({ severity: 'error', summary: t(key), life: 3000 })
 }
 
+/* ── Merchant logo ─────────────────────────────────────────────────────────── */
+
+const ACCEPTED_LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp']
+
+const showLogo = ref(false)
+const logoFile = ref<File | null>(null)
+const logoPreview = ref<string | null>(null)
+const logoBusy = ref(false)
+
+function openLogoDialog() {
+  clearLogoPick()
+  showLogo.value = true
+}
+
+function clearLogoPick() {
+  if (logoPreview.value) URL.revokeObjectURL(logoPreview.value)
+  logoPreview.value = null
+  logoFile.value = null
+}
+
+function pickLogo(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0] ?? null
+  // The server sniffs the real bytes; this only spares the admin a round-trip.
+  if (file && !ACCEPTED_LOGO_TYPES.includes(file.type)) {
+    notifyError('merchantDetail.logoNotImage')
+    input.value = ''
+    return
+  }
+  clearLogoPick()
+  logoFile.value = file
+  if (file) logoPreview.value = URL.createObjectURL(file)
+}
+
+async function submitLogo() {
+  if (!logoFile.value) return
+  logoBusy.value = true
+  try {
+    await merchants.uploadLogo(merchantId.value, logoFile.value)
+    toast.add({ severity: 'success', summary: t('merchantDetail.logoUploaded'), life: 2000 })
+    clearLogoPick()
+    showLogo.value = false
+  } catch {
+    notifyError('merchantDetail.logoUploadFailed')
+  } finally {
+    logoBusy.value = false
+  }
+}
+
+async function deleteLogo() {
+  logoBusy.value = true
+  try {
+    await merchants.removeLogo(merchantId.value)
+    toast.add({ severity: 'success', summary: t('merchantDetail.logoRemoved'), life: 2000 })
+    clearLogoPick()
+    showLogo.value = false
+  } catch {
+    notifyError('merchantDetail.logoRemoveFailed')
+  } finally {
+    logoBusy.value = false
+  }
+}
+
 async function loadEmployeesForBranches() {
   await Promise.all(branches.value.map((b) => merchants.fetchEmployees(b.id)))
 }
@@ -671,7 +734,12 @@ async function assignScoringModel(radioValue: number) {
 
     <header class="t-header surface-card">
       <div class="t-id">
-        <div class="t-avatar">{{ merchant.name.charAt(0) }}</div>
+        <button class="t-avatar" type="button" :title="$t(merchant.logoUrl ? 'merchantDetail.changeLogo' : 'merchantDetail.uploadLogo')"
+          @click="openLogoDialog">
+          <img v-if="merchant.logoUrl" :src="merchant.logoUrl" :alt="merchant.name" class="t-avatar-img" />
+          <span v-else>{{ merchant.name.charAt(0) }}</span>
+          <span class="t-avatar-overlay"><i class="pi pi-camera" /></span>
+        </button>
         <div>
           <h2 class="t-name">{{ merchant.name }}</h2>
           <span class="t-slug font-mono">
@@ -1248,6 +1316,32 @@ async function assignScoringModel(radioValue: number) {
       </template>
     </Dialog>
 
+    <!-- Logo dialog -->
+    <Dialog v-model:visible="showLogo" modal :header="$t('merchantDetail.logo')" :style="{ width: '420px' }"
+      @hide="clearLogoPick">
+      <div class="logo-preview">
+        <img v-if="logoPreview" :src="logoPreview" alt="" />
+        <img v-else-if="merchant?.logoUrl" :src="merchant.logoUrl" :alt="merchant.name" />
+        <span v-else class="logo-preview-empty">{{ merchant?.name.charAt(0) }}</span>
+      </div>
+      <label class="file-drop" :class="{ 'has-file': logoFile }">
+        <input type="file" accept="image/png,image/jpeg,image/webp" class="file-native" @change="pickLogo" />
+        <i :class="logoFile ? 'pi pi-image' : 'pi pi-upload'" />
+        <span class="file-drop-text">{{ logoFile ? logoFile.name : $t('merchantDetail.logoBrowse') }}</span>
+      </label>
+      <p class="logo-hint">{{ $t('merchantDetail.logoHint') }}</p>
+      <template #footer>
+        <button v-if="merchant?.logoUrl" class="btn-ghost logo-remove" :disabled="logoBusy" @click="deleteLogo">
+          <i class="pi pi-trash" />
+          {{ $t('merchantDetail.removeLogo') }}
+        </button>
+        <button class="btn-ghost" @click="showLogo = false">{{ $t('common.cancel') }}</button>
+        <button class="btn-gradient" :disabled="logoBusy || !logoFile" @click="submitLogo">
+          {{ logoBusy ? $t('merchantDetail.uploading') : $t('merchantDetail.upload') }}
+        </button>
+      </template>
+    </Dialog>
+
     <!-- Document dialog -->
     <Dialog v-model:visible="showDocument" modal :header="$t('merchantDetail.uploadDocument')"
       :style="{ width: '460px' }">
@@ -1370,15 +1464,114 @@ async function assignScoringModel(radioValue: number) {
 }
 
 .t-avatar {
+  position: relative;
   width: 42px;
   height: 42px;
   border-radius: 11px;
+  border: none;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
   background: var(--gradient-hero);
   color: #fff;
   font-weight: 800;
   display: grid;
   place-items: center;
   font-size: 1.05rem;
+}
+
+.t-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Reveals the "this is editable" affordance only on hover, so the header stays
+   clean while the logo is just a logo. */
+.t-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.t-avatar:hover .t-avatar-overlay,
+.t-avatar:focus-visible .t-avatar-overlay {
+  opacity: 1;
+}
+
+.logo-preview {
+  display: grid;
+  place-items: center;
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 1rem;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--gradient-hero);
+}
+
+.logo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.logo-preview-empty {
+  color: #fff;
+  font-weight: 800;
+  font-size: 2rem;
+}
+
+.logo-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.logo-remove {
+  margin-right: auto;
+  color: var(--danger);
+}
+
+.file-drop {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px dashed var(--border-subtle);
+  border-radius: 0.6rem;
+  cursor: pointer;
+  background: color-mix(in srgb, var(--accent-1) 3%, transparent);
+}
+
+.file-drop:hover {
+  border-color: var(--accent-1);
+  background: color-mix(in srgb, var(--accent-1) 8%, transparent);
+}
+
+.file-drop.has-file {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--accent-1) 45%, transparent);
+}
+
+.file-drop .pi {
+  font-size: 0.95rem;
+  color: var(--accent-1);
+}
+
+.file-drop-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-native {
+  display: none;
 }
 
 .t-name {
