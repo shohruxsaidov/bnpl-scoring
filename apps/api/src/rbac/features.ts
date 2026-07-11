@@ -18,6 +18,7 @@ export const MERCHANT_FEATURES = [
 export const ADMIN_FEATURES = [
   'view_overview',
   'view_clients',
+  'send_client_push',
   'view_merchants',
   'manage_merchants',
   'onboard_merchants',

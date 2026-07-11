@@ -124,6 +124,8 @@ export const uz: Record<string, string> = {
 
   // notifications — errors
   notification_not_found: 'Bildirishnoma topilmadi',
+  push_disabled: "Push-bildirishnomalar serverda sozlanmagan",
+  no_push_devices: "Mijozda ilova o'rnatilgan qurilma yo'q",
 
   // notifications — push title/body (rendered server-side per device language)
   'notification.scoring_approved.title': 'Skoring tasdiqlandi',

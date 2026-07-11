@@ -49,6 +49,7 @@ const MODULE_CONFIG: Record<Platform, ModuleDef[]> = {
   ],
   admin: [
     { key: 'overview', icon: 'chart-bar', features: ['view_overview'] },
+    { key: 'clients', icon: 'users', features: ['view_clients', 'send_client_push'] },
     { key: 'merchants', icon: 'building', features: ['view_merchants', 'manage_merchants', 'onboard_merchants'] },
     { key: 'deals', icon: 'file-edit', features: ['view_deals'] },
     { key: 'employees', icon: 'users', features: ['manage_employees'] },

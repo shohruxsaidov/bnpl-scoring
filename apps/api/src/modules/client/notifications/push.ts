@@ -55,11 +55,24 @@ const DEAD_TOKEN_CODES = new Set([
   'messaging/invalid-argument',
 ]);
 
+// `custom` rows carry admin-authored text in `data` instead of an i18n key. The
+// route requires all four fields, but this is not the only way a row can reach
+// the queue — so fall back across languages rather than letting an `undefined`
+// title reach FCM, which would render literally as "undefined" on the device.
+function pickText(data: Record<string, unknown>, lang: SupportedLang, field: 'title' | 'body'): string {
+  const suffixed = lang === 'uz' ? `${field}Uz` : `${field}Ru`;
+  const candidates = [data[suffixed], data[`${field}Ru`], data[`${field}Uz`]];
+  return (candidates.find((v) => typeof v === 'string' && v.trim() !== '') as string | undefined) ?? '';
+}
+
 function renderPush(
   type: NotificationType,
   lang: SupportedLang,
   data: Record<string, unknown>,
 ): { title: string; body: string } {
+  if (type === 'custom') {
+    return { title: pickText(data, lang, 'title'), body: pickText(data, lang, 'body') };
+  }
   return {
     title: translate(lang, `notification.${type}.title`, data),
     body: translate(lang, `notification.${type}.body`, data),

@@ -161,7 +161,33 @@
     "paymentStatus_unpaid": "Не оплачено",
     "channel": "Канал",
     "channel_manual": "Ручной",
-    "channel_automated": "Автоматический"
+    "channel_automated": "Автоматический",
+    "tabNotifications": "Уведомления",
+    "sendPush": "Отправить push",
+    "sendPushTitle": "Push-уведомление клиенту",
+    "pushHint": "Сообщение придёт на телефон клиента как push-уведомление. Заполните оба языка — текст показывается на языке устройства.",
+    "pushTitleLabel": "Заголовок",
+    "pushBodyLabel": "Текст",
+    "pushTitlePlaceholder": "Например: Специальное предложение",
+    "pushBodyPlaceholder": "Текст уведомления…",
+    "pushSend": "Отправить",
+    "pushSent": "Отправлено на {n} устройств(а)",
+    "pushAllFieldsRequired": "Заполните заголовок и текст на обоих языках",
+    "pushNoDevices": "У клиента нет устройства с установленным приложением — push доставить некуда",
+    "pushDisabled": "Push-уведомления не настроены на сервере",
+    "pushFailed": "Не удалось отправить уведомление",
+    "noNotifications": "Уведомлений пока нет",
+    "notifSentAt": "Дата",
+    "notifMessage": "Сообщение",
+    "notifSender": "Отправитель",
+    "notifStatus": "Статус",
+    "notifSystem": "Система",
+    "notifRead": "Прочитано",
+    "notifUnread": "Не прочитано",
+    "notifType_scoring_approved": "Скоринг одобрен",
+    "notifType_scoring_rejected": "Скоринг отклонён",
+    "notifType_limit_updated": "Кредитный лимит обновлён",
+    "notifType_custom": "Сообщение"
   },
   "collectionBoard": {
     "allMerchants": "Все мерчанты",
@@ -272,7 +298,8 @@
       "settings": "Настройки",
       "roles": "Роли",
       "admins": "Администраторы",
-      "integrationLogs": "Логи интеграций"
+      "integrationLogs": "Логи интеграций",
+      "clients": "Клиенты"
     }
   },
   "scorings": {

@@ -161,7 +161,33 @@
     "paymentStatus_unpaid": "To'lanmagan",
     "channel": "Kanal",
     "channel_manual": "Qo'lda",
-    "channel_automated": "Avtomatik"
+    "channel_automated": "Avtomatik",
+    "tabNotifications": "Bildirishnomalar",
+    "sendPush": "Push yuborish",
+    "sendPushTitle": "Mijozga push-bildirishnoma",
+    "pushHint": "Xabar mijozning telefoniga push-bildirishnoma sifatida keladi. Ikkala tilni ham to'ldiring — matn qurilma tilida ko'rsatiladi.",
+    "pushTitleLabel": "Sarlavha",
+    "pushBodyLabel": "Matn",
+    "pushTitlePlaceholder": "Masalan: Maxsus taklif",
+    "pushBodyPlaceholder": "Bildirishnoma matni…",
+    "pushSend": "Yuborish",
+    "pushSent": "{n} ta qurilmaga yuborildi",
+    "pushAllFieldsRequired": "Ikkala tilda sarlavha va matnni to'ldiring",
+    "pushNoDevices": "Mijozda ilova o'rnatilgan qurilma yo'q — push yetkazib bo'lmaydi",
+    "pushDisabled": "Push-bildirishnomalar serverda sozlanmagan",
+    "pushFailed": "Bildirishnomani yuborib bo'lmadi",
+    "noNotifications": "Hozircha bildirishnomalar yo'q",
+    "notifSentAt": "Sana",
+    "notifMessage": "Xabar",
+    "notifSender": "Yuboruvchi",
+    "notifStatus": "Holat",
+    "notifSystem": "Tizim",
+    "notifRead": "O'qilgan",
+    "notifUnread": "O'qilmagan",
+    "notifType_scoring_approved": "Skoring tasdiqlandi",
+    "notifType_scoring_rejected": "Skoring rad etildi",
+    "notifType_limit_updated": "Kredit limiti yangilandi",
+    "notifType_custom": "Xabar"
   },
   "collectionBoard": {
     "allMerchants": "Barcha merchantlar",
@@ -264,7 +290,8 @@
       "settings": "Sozlamalar",
       "roles": "Rollar",
       "admins": "Administratorlar",
-      "integrationLogs": "Integratsiya loglari"
+      "integrationLogs": "Integratsiya loglari",
+      "clients": "Mijozlar"
     }
   },
   "scorings": {

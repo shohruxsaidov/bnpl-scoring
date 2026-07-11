@@ -121,6 +121,8 @@ export const ru: Record<string, string> = {
 
   // notifications — errors
   notification_not_found: "Уведомление не найдено",
+  push_disabled: "Push-уведомления не настроены на сервере",
+  no_push_devices: "У клиента нет устройства с установленным приложением",
 
   // notifications — push title/body (rendered server-side per device language)
   "notification.scoring_approved.title": "Скоринг одобрен",

@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { index, integer, jsonb, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { adminUsers } from './admin-users';
 import { users } from './users';
 
 // ---------------------------------------------------------------------------
@@ -15,8 +16,24 @@ import { users } from './users';
 // 'scoring_result:<scoringId>') — notify() inserts on-conflict-do-nothing and
 // only enqueues a push when a row was actually inserted, so a retrying job
 // never double-pushes.
+//
+// 'custom' is the one type NOT rendered from the i18n bundle: an admin authors
+// the text by hand on the client detail page, and it travels in `data` as
+// {titleRu, titleUz, bodyRu, bodyUz}. See renderPush() in ./notifications/push.
 // ---------------------------------------------------------------------------
-export type NotificationType = 'scoring_approved' | 'scoring_rejected' | 'limit_updated';
+export type NotificationType =
+  | 'scoring_approved'
+  | 'scoring_rejected'
+  | 'limit_updated'
+  | 'custom';
+
+/** Admin-authored text for a `custom` notification, carried in `data`. */
+export interface CustomNotificationText {
+  titleRu: string;
+  titleUz: string;
+  bodyRu: string;
+  bodyUz: string;
+}
 
 export const notifications = pgTable(
   'notifications',
@@ -32,6 +49,12 @@ export const notifications = pgTable(
     // One row per source domain event, e.g. 'scoring_result:<scoringId>'. Unique;
     // NULL allowed (Postgres treats NULLs as distinct) for ad-hoc rows.
     dedupeKey: varchar('dedupe_key', { length: 120 }).unique(),
+    // The admin who authored a `custom` notification; null for system-generated
+    // types. Lives in a column rather than in `data` because toNotificationDto
+    // hands `data` verbatim to the client app — an admin id has no business there.
+    sentByAdminId: integer('sent_by_admin_id').references(() => adminUsers.id, {
+      onDelete: 'set null',
+    }),
     // null = unread.
     readAt: timestamp('read_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

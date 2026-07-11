@@ -1,22 +1,29 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
+import InputText from 'primevue/inputtext'
+import Textarea from 'primevue/textarea'
+import { useToast } from 'primevue/usetoast'
 import { useClientsStore } from '@/stores/clients'
+import { useAuthStore } from '@/stores/auth'
 import MonoAmount from '@/components/mono-amount.vue'
 import StatusBadge from '@/components/status-badge.vue'
 import { formatDate, formatDateTime } from '@/utils/money'
+import type { ClientNotificationRow } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
+const toast = useToast()
 const store = useClientsStore()
+const auth = useAuthStore()
 
 const clientId = route.params.id as string
 
-const tabs = ['Overview', 'Deals', 'Scoring', 'Payments'] as const
+const tabs = ['Overview', 'Deals', 'Scoring', 'Payments', 'Notifications'] as const
 type Tab = (typeof tabs)[number]
 
 const activeTab = ref<Tab>('Overview')
@@ -26,6 +33,7 @@ const TAB_LABEL_KEYS: Record<Tab, string> = {
   Deals: 'clientDetail.tabDeals',
   Scoring: 'clientDetail.tabScoring',
   Payments: 'clientDetail.tabPayments',
+  Notifications: 'clientDetail.tabNotifications',
 }
 
 function tabLabel(tab: Tab): string {
@@ -38,7 +46,87 @@ watch(activeTab, (tab) => {
   if (tab === 'Deals') store.fetchDetailDeals(clientId)
   else if (tab === 'Scoring') store.fetchDetailScoring(clientId)
   else if (tab === 'Payments') store.fetchDetailPayments(clientId)
+  else if (tab === 'Notifications') store.fetchDetailNotifications(clientId)
 })
+
+// ── Send push ───────────────────────────────────────────────────────────────
+const TITLE_MAX = 120
+const BODY_MAX = 500
+
+const canSendPush = computed(() => auth.can('send_client_push'))
+
+const pushOpen = ref(false)
+const sending = ref(false)
+const pushLang = ref<'ru' | 'uz'>('ru')
+const pushError = ref('')
+const pushForm = ref({ titleRu: '', titleUz: '', bodyRu: '', bodyUz: '' })
+
+// Minted once per opened dialog, not per click: a double-clicked Send replays the
+// same key and the backend collapses it to a single push. Reopening mints a new
+// one, so a deliberate resend still goes through.
+const idempotencyKey = ref('')
+
+function openPush() {
+  pushForm.value = { titleRu: '', titleUz: '', bodyRu: '', bodyUz: '' }
+  pushLang.value = 'ru'
+  pushError.value = ''
+  idempotencyKey.value = crypto.randomUUID()
+  pushOpen.value = true
+}
+
+function closePush() {
+  if (sending.value) return
+  pushOpen.value = false
+}
+
+// Both languages are mandatory — the push worker renders per device language, so
+// a blank Uzbek title would reach an Uzbek-language phone as an empty push.
+const pushIncomplete = computed(() =>
+  Object.values(pushForm.value).some((v) => v.trim() === ''),
+)
+
+async function submitPush() {
+  if (pushIncomplete.value) {
+    pushError.value = t('clientDetail.pushAllFieldsRequired')
+    return
+  }
+
+  sending.value = true
+  pushError.value = ''
+  try {
+    const { deviceCount } = await store.sendPush(clientId, {
+      titleRu: pushForm.value.titleRu.trim(),
+      titleUz: pushForm.value.titleUz.trim(),
+      bodyRu: pushForm.value.bodyRu.trim(),
+      bodyUz: pushForm.value.bodyUz.trim(),
+      idempotencyKey: idempotencyKey.value,
+    })
+    toast.add({
+      severity: 'success',
+      summary: t('clientDetail.pushSent', { n: deviceCount }),
+      life: 3000,
+    })
+    pushOpen.value = false
+    activeTab.value = 'Notifications'
+  } catch (e) {
+    // The backend refuses up front when it knows the push cannot land, so these
+    // are real, actionable states — not generic failures.
+    const code = (e as Error).message
+    pushError.value =
+      code === 'no_push_devices' ? t('clientDetail.pushNoDevices')
+      : code === 'push_disabled' ? t('clientDetail.pushDisabled')
+      : t('clientDetail.pushFailed')
+  } finally {
+    sending.value = false
+  }
+}
+
+// ── Notifications tab ───────────────────────────────────────────────────────
+function notificationTitle(row: ClientNotificationRow): string {
+  // Custom rows carry admin-authored text; system rows are rendered by the mobile
+  // app from `type`, so all we can show here is what the type means.
+  return row.titleRu ?? t(`clientDetail.notifType_${row.type}`)
+}
 
 function goToDeals(dealId: string) {
   router.push(`/deals/${dealId}`)
@@ -105,6 +193,10 @@ function paymentStatusBg(status: string): string {
           <span class="meta-label">{{ $t('clientDetail.registeredAt') }}</span>
           <span class="meta-value font-mono">{{ formatDateTime(store.detail.createdAt) }}</span>
         </div>
+        <button v-if="canSendPush" class="btn-gradient push-btn" @click="openPush">
+          <i class="pi pi-send" />
+          {{ $t('clientDetail.sendPush') }}
+        </button>
       </div>
     </header>
 
@@ -281,7 +373,7 @@ function paymentStatusBg(status: string): string {
     </section>
 
     <!-- Payments tab -->
-    <section v-else class="tab-body">
+    <section v-else-if="activeTab === 'Payments'" class="tab-body">
       <div class="surface-card table-wrap">
         <DataTable
           :value="store.detailPayments"
@@ -337,6 +429,158 @@ function paymentStatusBg(status: string): string {
         </DataTable>
       </div>
     </section>
+
+    <!-- Notifications tab -->
+    <section v-else class="tab-body">
+      <div class="surface-card table-wrap">
+        <DataTable
+          :value="store.detailNotifications"
+          data-key="id"
+          size="small"
+          :empty-message="$t('clientDetail.noNotifications')"
+        >
+          <Column :header="$t('clientDetail.notifSentAt')">
+            <template #body="{ data }">
+              <span class="font-mono muted">{{ formatDateTime(data.createdAt) }}</span>
+            </template>
+          </Column>
+          <Column :header="$t('clientDetail.notifMessage')">
+            <template #body="{ data }">
+              <span class="t-name-sm">{{ notificationTitle(data) }}</span>
+              <span v-if="data.bodyRu" class="muted notif-body">{{ data.bodyRu }}</span>
+            </template>
+          </Column>
+          <Column :header="$t('clientDetail.notifSender')">
+            <template #body="{ data }">
+              <span v-if="data.sentByName">{{ data.sentByName }}</span>
+              <span v-else class="muted system-chip">{{ $t('clientDetail.notifSystem') }}</span>
+            </template>
+          </Column>
+          <Column :header="$t('clientDetail.notifStatus')">
+            <template #body="{ data }">
+              <span
+                class="status-chip"
+                :style="{
+                  color: data.readAt ? 'var(--success)' : 'var(--text-secondary)',
+                  background: data.readAt ? 'var(--success-bg)' : 'var(--bg-surface)',
+                }"
+              >
+                {{ data.readAt ? $t('clientDetail.notifRead') : $t('clientDetail.notifUnread') }}
+              </span>
+            </template>
+          </Column>
+        </DataTable>
+      </div>
+    </section>
+
+    <!-- Send push dialog -->
+    <Transition name="fade">
+      <div v-if="pushOpen" class="dialog-backdrop" @mousedown.self="closePush">
+        <div class="dialog surface-card">
+          <div class="dialog-header">
+            <h3>{{ $t('clientDetail.sendPushTitle') }}</h3>
+            <button class="close-btn" @click="closePush"><i class="pi pi-times" /></button>
+          </div>
+
+          <div class="dialog-body">
+            <p class="dialog-hint muted">{{ $t('clientDetail.pushHint') }}</p>
+
+            <!-- Language tabs: both are required, so this is a view switch, not a choice -->
+            <div class="lang-toggle">
+              <button
+                v-for="lang in (['ru', 'uz'] as const)"
+                :key="lang"
+                class="lang-opt"
+                :class="{ active: pushLang === lang, filled: pushForm[lang === 'ru' ? 'titleRu' : 'titleUz'].trim() && pushForm[lang === 'ru' ? 'bodyRu' : 'bodyUz'].trim() }"
+                @click="pushLang = lang"
+              >
+                {{ lang === 'ru' ? 'Русский' : "O'zbekcha" }}
+                <i
+                  v-if="pushForm[lang === 'ru' ? 'titleRu' : 'titleUz'].trim() && pushForm[lang === 'ru' ? 'bodyRu' : 'bodyUz'].trim()"
+                  class="pi pi-check"
+                />
+              </button>
+            </div>
+
+            <!-- RU -->
+            <template v-if="pushLang === 'ru'">
+              <div class="field">
+                <label class="field-label">
+                  {{ $t('clientDetail.pushTitleLabel') }}
+                  <span class="counter">{{ pushForm.titleRu.length }}/{{ TITLE_MAX }}</span>
+                </label>
+                <InputText
+                  v-model="pushForm.titleRu"
+                  :maxlength="TITLE_MAX"
+                  :placeholder="$t('clientDetail.pushTitlePlaceholder')"
+                  @input="pushError = ''"
+                />
+              </div>
+              <div class="field">
+                <label class="field-label">
+                  {{ $t('clientDetail.pushBodyLabel') }}
+                  <span class="counter">{{ pushForm.bodyRu.length }}/{{ BODY_MAX }}</span>
+                </label>
+                <Textarea
+                  v-model="pushForm.bodyRu"
+                  :maxlength="BODY_MAX"
+                  rows="4"
+                  auto-resize
+                  :placeholder="$t('clientDetail.pushBodyPlaceholder')"
+                  @input="pushError = ''"
+                />
+              </div>
+            </template>
+
+            <!-- UZ -->
+            <template v-else>
+              <div class="field">
+                <label class="field-label">
+                  {{ $t('clientDetail.pushTitleLabel') }}
+                  <span class="counter">{{ pushForm.titleUz.length }}/{{ TITLE_MAX }}</span>
+                </label>
+                <InputText
+                  v-model="pushForm.titleUz"
+                  :maxlength="TITLE_MAX"
+                  :placeholder="$t('clientDetail.pushTitlePlaceholder')"
+                  @input="pushError = ''"
+                />
+              </div>
+              <div class="field">
+                <label class="field-label">
+                  {{ $t('clientDetail.pushBodyLabel') }}
+                  <span class="counter">{{ pushForm.bodyUz.length }}/{{ BODY_MAX }}</span>
+                </label>
+                <Textarea
+                  v-model="pushForm.bodyUz"
+                  :maxlength="BODY_MAX"
+                  rows="4"
+                  auto-resize
+                  :placeholder="$t('clientDetail.pushBodyPlaceholder')"
+                  @input="pushError = ''"
+                />
+              </div>
+            </template>
+
+            <span v-if="pushError" class="field-error">{{ pushError }}</span>
+          </div>
+
+          <div class="dialog-footer">
+            <button class="btn-ghost" :disabled="sending" @click="closePush">
+              {{ $t('common.cancel') }}
+            </button>
+            <button
+              class="btn-gradient"
+              :disabled="sending || pushIncomplete"
+              @click="submitPush"
+            >
+              <i :class="sending ? 'pi pi-spin pi-spinner' : 'pi pi-send'" />
+              {{ $t('clientDetail.pushSend') }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 
   <div v-else class="not-found surface-card">
@@ -605,5 +849,175 @@ function paymentStatusBg(status: string): string {
 .not-found i {
   font-size: 2rem;
   color: var(--danger);
+}
+
+/* ── Send push ───────────────────────────────────────────────────────────── */
+.push-btn {
+  align-self: center;
+  white-space: nowrap;
+}
+
+.notif-body {
+  display: block;
+  font-size: 0.78rem;
+  margin-top: 0.1rem;
+  max-width: 46ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.system-chip {
+  font-size: 0.78rem;
+  font-style: italic;
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
+.dialog {
+  width: 100%;
+  max-width: 480px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.dialog-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.close-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 0.78rem;
+  transition: all 0.12s;
+}
+
+.close-btn:hover {
+  color: var(--text-primary);
+}
+
+.dialog-body {
+  padding: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.dialog-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding: 0.9rem 1.2rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.lang-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.lang-opt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.55rem;
+  border-radius: 10px;
+  border: 1.5px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.lang-opt.active {
+  border-color: var(--accent-2);
+  color: var(--accent-2);
+}
+
+/* A filled-but-inactive tab still reads as done — both languages are required,
+   so the admin needs to see at a glance which half is still empty. */
+.lang-opt.filled:not(.active) {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 40%, transparent);
+}
+
+.lang-opt .pi-check {
+  font-size: 0.7rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.field-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.counter {
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0.65;
+}
+
+.field-error {
+  font-size: 0.75rem;
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

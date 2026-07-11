@@ -14,6 +14,7 @@ import adminPaymentRoutes from "./payments/index"
 import adminCollectionBoardRoutes from "./collectionBoard/index"
 import adminBuyoutRoutes from "./buyouts/index"
 import adminClientsRoutes from "./clients/index"
+import adminNotificationsRoutes from "./notifications/index"
 import mxikRoutes from "../mxik/index"
 import adminBankRoutes from "./banks/index"
 import adminOrganizationRoutes from "./organization/index"
@@ -49,7 +50,12 @@ export default async function adminModule(app: FastifyInstance) {
   await app.register(guarded(adminPaymentRoutes, { read: "view_payments", write: "manage_payments" }), { prefix: "/admin/payments" })
   await app.register(guarded(adminCollectionBoardRoutes, { read: "view_collection_board" }), { prefix: "/admin/collection-board" })
   await app.register(guarded(adminBuyoutRoutes, { read: "manage_buyout", write: "manage_buyout" }), { prefix: "/admin/buyouts" })
+  // Read-only by design: requirePermissionByMethod skips the check when no
+  // `write` feature is mapped, so a POST added here would be reachable by any
+  // admin holding read-only view_clients. Client mutations belong in their own
+  // guarded module — see /admin/notifications.
   await app.register(guarded(adminClientsRoutes, { read: "view_clients" }), { prefix: "/admin/clients" })
+  await app.register(guarded(adminNotificationsRoutes, { read: "send_client_push", write: "send_client_push" }), { prefix: "/admin/notifications" })
   await app.register(guarded(adminUsersRoutes, { read: "manage_admins", write: "manage_admins" }), { prefix: "/admin/users" })
   await app.register(adminPermissionsRoutes, { prefix: "/admin/permissions" })
   await app.register(mxikRoutes, { prefix: "/admin/mxik", preHandler: app.verifyAdminJwt })

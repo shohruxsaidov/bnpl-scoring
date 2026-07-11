@@ -9,6 +9,8 @@ import type {
   ClientDeal,
   ClientScoringEntry,
   ClientPaymentRow,
+  ClientNotificationRow,
+  SendPushInput,
 } from '@/types'
 
 export const useClientsStore = defineStore('clients', () => {
@@ -20,12 +22,14 @@ export const useClientsStore = defineStore('clients', () => {
   const detailDeals = ref<ClientDeal[]>([])
   const detailScoring = ref<ClientScoringEntry[]>([])
   const detailPayments = ref<ClientPaymentRow[]>([])
+  const detailNotifications = ref<ClientNotificationRow[]>([])
 
   const detailLoading = ref(false)
 
   const dealsLoaded = ref(false)
   const scoringLoaded = ref(false)
   const paymentsLoaded = ref(false)
+  const notificationsLoaded = ref(false)
 
   const hasDetail = computed(() => detail.value !== null)
 
@@ -49,10 +53,12 @@ export const useClientsStore = defineStore('clients', () => {
     detailDeals.value = []
     detailScoring.value = []
     detailPayments.value = []
+    detailNotifications.value = []
 
     dealsLoaded.value = false
     scoringLoaded.value = false
     paymentsLoaded.value = false
+    notificationsLoaded.value = false
 
     detailLoading.value = true
 
@@ -96,6 +102,35 @@ export const useClientsStore = defineStore('clients', () => {
     paymentsLoaded.value = true
   }
 
+  async function fetchDetailNotifications(id: string, force = false): Promise<void> {
+    if (notificationsLoaded.value && !force) return
+
+    const body = await api<{ notifications: ClientNotificationRow[] }>(
+      `/admin/clients/${id}/notifications`,
+    )
+
+    detailNotifications.value = body.notifications
+    notificationsLoaded.value = true
+  }
+
+  /**
+   * Send a hand-written push to this client. The backend rejects up front when
+   * push is unconfigured (503 push_disabled) or the client has no device holding
+   * an FCM token (409 no_push_devices), so a success here means it really was
+   * handed to FCM — not merely accepted.
+   */
+  async function sendPush(id: string, input: SendPushInput): Promise<{ deviceCount: number }> {
+    const body = await api<{ notificationId: string | null; deviceCount: number; duplicate: boolean }>(
+      `/admin/notifications/push`,
+      { method: 'POST', body: JSON.stringify({ userId: Number(id), ...input }) },
+    )
+
+    // The new row won't be in the cached history — refetch rather than guess.
+    await fetchDetailNotifications(id, true)
+
+    return { deviceCount: body.deviceCount }
+  }
+
   return {
     clients,
     loading,
@@ -105,12 +140,14 @@ export const useClientsStore = defineStore('clients', () => {
     detailDeals,
     detailScoring,
     detailPayments,
+    detailNotifications,
 
     detailLoading,
 
     dealsLoaded,
     scoringLoaded,
     paymentsLoaded,
+    notificationsLoaded,
 
     hasDetail,
 
@@ -119,5 +156,7 @@ export const useClientsStore = defineStore('clients', () => {
     fetchDetailDeals,
     fetchDetailScoring,
     fetchDetailPayments,
+    fetchDetailNotifications,
+    sendPush,
   }
 })

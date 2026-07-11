@@ -9,6 +9,8 @@ export interface NotifyInput {
   data?: Record<string, unknown>;
   /** Idempotency key for the source domain event, e.g. 'scoring_result:<id>'. */
   dedupeKey?: string;
+  /** Authoring admin, for `custom` notifications. Null for system-generated types. */
+  sentByAdminId?: number;
 }
 
 /**
@@ -19,8 +21,12 @@ export interface NotifyInput {
  * a row was actually inserted — so it never double-pushes. The inbox row is the
  * durable source of truth; the push is a mirror. By contract this never throws:
  * a notification failure must not fail the scoring pipeline that triggered it.
+ *
+ * Returns the new notification id, or null when the insert was a dedupe hit (or
+ * failed). Callers that must report an outcome to a human — the admin send-push
+ * route — read it; the scoring pipeline ignores it.
  */
-export async function notify(input: NotifyInput): Promise<void> {
+export async function notify(input: NotifyInput): Promise<string | null> {
   try {
     const [inserted] = await db
       .insert(notifications)
@@ -29,15 +35,18 @@ export async function notify(input: NotifyInput): Promise<void> {
         type: input.type,
         data: input.data ?? {},
         dedupeKey: input.dedupeKey ?? null,
+        sentByAdminId: input.sentByAdminId ?? null,
       })
       .onConflictDoNothing({ target: notifications.dedupeKey })
       .returning({ id: notifications.id });
 
     // Conflict (dedupe hit) → no inserted row → no push. Fresh insert → push.
-    if (!inserted) return;
+    if (!inserted) return null;
     await enqueueNotificationPush({ notificationId: inserted.id, userId: input.userId });
+    return inserted.id;
   } catch (err) {
     console.error('[notifications] notify failed', err);
+    return null;
   }
 }
 

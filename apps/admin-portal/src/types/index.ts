@@ -107,6 +107,32 @@ export interface ClientPaymentRow {
   channel: 'manual' | 'automated'
 }
 
+export type ClientNotificationType =
+  | 'scoring_approved'
+  | 'scoring_rejected'
+  | 'limit_updated'
+  | 'custom'
+
+export interface ClientNotificationRow {
+  id: string
+  type: ClientNotificationType
+  /** Set only for admin-authored (`custom`) rows; system rows render from `type`. */
+  titleRu: string | null
+  bodyRu: string | null
+  /** Authoring admin's name; null for system-generated notifications. */
+  sentByName: string | null
+  readAt: string | null
+  createdAt: string
+}
+
+export interface SendPushInput {
+  titleRu: string
+  titleUz: string
+  bodyRu: string
+  bodyUz: string
+  idempotencyKey: string
+}
+
 export type DealStatus = 'active' | 'overdue' | 'closed' | 'declined' | 'scoring'
 
 export type ScoreDecision = 'approved' | 'declined' | 'partial' | 'manual_review'
