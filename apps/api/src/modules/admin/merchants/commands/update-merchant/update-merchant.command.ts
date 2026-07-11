@@ -6,7 +6,6 @@ export interface UpdateMerchantCommand {
     inn: string
     phone: string
     address: string
-    logoUrl: string
     contractNumber: string
     active: boolean
     mfo: string

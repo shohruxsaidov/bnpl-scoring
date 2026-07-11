@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '@db';
 import { deals, dealItems, merchants } from '@db/schema';
+import { buildMerchantLogoUrl } from '../../../lib/merchant-logo';
 import { loadProgressForDeals, loadDealSchedule } from './progress';
 
 // ---------------------------------------------------------------------------
@@ -45,6 +46,9 @@ export default async function clientDealRoutes(app: FastifyInstance) {
     status: Type.String(),
     createdAt: Type.String(),
     merchantName: Type.String(),
+    // Absolute, publicly fetchable; null when the merchant has no logo, in which
+    // case the app falls back to its own placeholder.
+    merchantLogoUrl: Type.Union([Type.String(), Type.Null()]),
     totalPayable: Type.Integer(),
     termMonths: Type.Integer(),
     ...Progress,
@@ -76,7 +80,12 @@ export default async function clientDealRoutes(app: FastifyInstance) {
         : inArray(deals.status, [...VISIBLE_STATUSES]);
 
       const rows = await db
-        .select({ deal: deals, merchantName: merchants.name })
+        .select({
+          deal: deals,
+          merchantId: merchants.id,
+          merchantName: merchants.name,
+          merchantLogoFileId: merchants.logoFileId,
+        })
         .from(deals)
         .leftJoin(merchants, eq(deals.merchantId, merchants.id))
         .where(and(eq(deals.userId, userId), statusFilter))
@@ -92,6 +101,9 @@ export default async function clientDealRoutes(app: FastifyInstance) {
           status: r.deal.status,
           createdAt: r.deal.createdAt.toISOString(),
           merchantName: r.merchantName ?? '—',
+          merchantLogoUrl: r.merchantId
+            ? buildMerchantLogoUrl(r.merchantId, r.merchantLogoFileId)
+            : null,
           totalPayable: r.deal.totalPayable ?? 0,
           termMonths: r.deal.termMonths ?? 0,
           ...p,
@@ -128,6 +140,7 @@ export default async function clientDealRoutes(app: FastifyInstance) {
     createdAt: Type.String(),
     lang: Type.String(),
     merchantName: Type.String(),
+    merchantLogoUrl: Type.Union([Type.String(), Type.Null()]),
     termMonths: Type.Integer(),
     paymentDay: Type.Union([Type.Integer(), Type.Null()]),
     amount: Type.Integer(),
@@ -155,7 +168,12 @@ export default async function clientDealRoutes(app: FastifyInstance) {
       const userId = Number(request.user.sub);
 
       const rows = await db
-        .select({ deal: deals, merchantName: merchants.name })
+        .select({
+          deal: deals,
+          merchantId: merchants.id,
+          merchantName: merchants.name,
+          merchantLogoFileId: merchants.logoFileId,
+        })
         .from(deals)
         .leftJoin(merchants, eq(deals.merchantId, merchants.id))
         // Same visibility rule as the list — ownership AND status. A miss is a
@@ -187,6 +205,9 @@ export default async function clientDealRoutes(app: FastifyInstance) {
           createdAt: deal.createdAt.toISOString(),
           lang: deal.lang ?? 'ru',
           merchantName: row.merchantName ?? '—',
+          merchantLogoUrl: row.merchantId
+            ? buildMerchantLogoUrl(row.merchantId, row.merchantLogoFileId)
+            : null,
           termMonths: deal.termMonths ?? 0,
           paymentDay: deal.paymentDay ?? null,
           amount: deal.amount ?? 0,

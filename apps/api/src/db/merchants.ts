@@ -1,4 +1,5 @@
 import { boolean, integer, pgTable, serial, text, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { files } from './files';
 import { regions } from './regions';
 import { scoringModels } from './scoring-models';
 
@@ -9,7 +10,10 @@ export const merchants = pgTable('merchants', {
   inn: varchar('inn', { length: 20 }).notNull().unique(),
   phone: varchar('phone', { length: 20 }).notNull(),
   address: text('address').notNull(),
-  logoUrl: text('logo_url'),
+  // The logo's public URL is derived, never stored — see lib/merchant-logo.ts.
+  // Replacing a logo points this at a new files row, which changes the URL's
+  // ?v= and so busts any cached copy of the old image.
+  logoFileId: integer('logo_file_id').references(() => files.id),
   contractNumber: varchar('contract_number', { length: 100 }),
   mfo: varchar('mfo', { length: 5 }),
   accountNumber: varchar('account_number', { length: 20 }),

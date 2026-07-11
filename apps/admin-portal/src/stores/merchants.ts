@@ -105,13 +105,38 @@ export const useMerchantsStore = defineStore('merchants', () => {
     return body.merchant
   }
 
-  async function update(id: string, patch: Partial<Merchant>): Promise<Merchant> {
+  // logoUrl is excluded: it is derived server-side and settable only through
+  // uploadLogo/removeLogo, never as a free-text field on the merchant patch.
+  async function update(id: string, patch: Partial<Omit<Merchant, 'logoUrl'>>): Promise<Merchant> {
     const body = await api<{ merchant: Merchant }>(`/admin/merchants/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(patch),
     })
-    const idx = merchants.value.findIndex((m) => m.id === id)
-    if (idx >= 0) merchants.value[idx] = body.merchant
+    replaceInList(body.merchant)
+    return body.merchant
+  }
+
+  function replaceInList(merchant: Merchant): void {
+    const idx = merchants.value.findIndex((m) => m.id === merchant.id)
+    if (idx >= 0) merchants.value[idx] = merchant
+  }
+
+  async function uploadLogo(merchantId: string, file: File): Promise<Merchant> {
+    const form = new FormData()
+    form.append('file', file)
+    const body = await api<{ merchant: Merchant }>(`/admin/merchants/${merchantId}/logo`, {
+      method: 'POST',
+      body: form,
+    })
+    replaceInList(body.merchant)
+    return body.merchant
+  }
+
+  async function removeLogo(merchantId: string): Promise<Merchant> {
+    const body = await api<{ merchant: Merchant }>(`/admin/merchants/${merchantId}/logo`, {
+      method: 'DELETE',
+    })
+    replaceInList(body.merchant)
     return body.merchant
   }
 
@@ -345,6 +370,8 @@ export const useMerchantsStore = defineStore('merchants', () => {
     fetchOne,
     create,
     update,
+    uploadLogo,
+    removeLogo,
     fetchBranches,
     createBranch,
     updateBranch,

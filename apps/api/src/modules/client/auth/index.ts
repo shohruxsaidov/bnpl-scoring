@@ -97,7 +97,8 @@ const MAX_PASSWORD_FAILS = 5;
 // OTP throttle (shared Redis keys with the registration flow so one phone can't
 // be flooded across purposes). Mirrors client/registration.
 const OTP_COOLDOWN_SECONDS = 60;
-const OTP_DAILY_LIMIT = 10;
+//TODO need to change to 10
+const OTP_DAILY_LIMIT = 100;
 const OTP_DAILY_TTL = 24 * 60 * 60;
 
 // Lifetime of an OTP row, mirroring createOtp. Used only to bound the guess
@@ -703,7 +704,10 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
         platform,
         appVersion,
       });
-      const biometricEnrolled = await enrollKeyIfProvided(deviceRowId, publicKey);
+      let biometricEnrolled = false;
+      if (publicKey) {
+        biometricEnrolled = await enrollKeyIfProvided(deviceRowId, publicKey);
+      }
 
       const accessToken = app.jwt.sign(
         { sub: user.id.toString(), type: 'client' },

@@ -12,6 +12,11 @@ const schema = z.object({
   MYID_MOBILE_API_BASE_URL: z.string().url(),
   MYID_WEB_REDIRECT_URL: z.string().url().optional(),
   MERCHANT_PORTAL_URL: z.string().url(),
+  // This API's own internet-reachable origin. Used to build absolute URLs handed
+  // to clients that are not same-origin (the mobile app renders merchant logos
+  // from these). Must be set in every deployed environment — the localhost
+  // default only serves local dev.
+  PUBLIC_BASE_URL: z.string().url().default('http://localhost:3000'),
   MYID_WEB_SIGN_REDIRECT_URI: z.string().url().optional(),
   MYID_WEB_CLIENT_ID: z.string().optional(),
   MYID_WEB_CLIENT_SECRET: z.string().optional(),

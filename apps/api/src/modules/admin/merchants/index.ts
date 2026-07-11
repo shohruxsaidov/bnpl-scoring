@@ -1,7 +1,12 @@
 import { Type } from "@sinclair/typebox"
+import fastifyMultipart from "@fastify/multipart"
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
 import type { FastifyInstance } from "fastify"
 import { randomUUID } from "node:crypto"
+import { db } from '@db'
+import { env } from '@env'
+import { deleteFile } from "../../../lib/file-storage"
+import { sniffImageMime } from "../../../lib/image-type"
 import { listMerchants } from "./queries/list-merchants/list-merchants.handler"
 import { getScoringModel } from "../scoringModel/queries/get-scoring-model/get-scoring-model.handler"
 import { getMerchant } from "./queries/get-merchant/get-merchant.handler"
@@ -9,6 +14,8 @@ import { listDocuments } from "./queries/list-documents/list-documents.handler"
 import { getMerchantTariffs } from "./queries/get-merchant-tariffs/get-merchant-tariffs.handler"
 import { createMerchant } from "./commands/create-merchant/create-merchant.handler"
 import { updateMerchant } from "./commands/update-merchant/update-merchant.handler"
+import { setMerchantLogo } from "./commands/set-merchant-logo/set-merchant-logo.handler"
+import { clearMerchantLogo } from "./commands/clear-merchant-logo/clear-merchant-logo.handler"
 import { recordDocument } from "./commands/record-document/record-document.handler"
 import { assignTariff } from "./commands/assign-tariff/assign-tariff.handler"
 import { removeTariff } from "./commands/remove-tariff/remove-tariff.handler"
@@ -31,16 +38,31 @@ import {
 
 const TAGS = ["Admin · Merchants"]
 
+const LOGO_PREFIX = "merchant-logos"
+const MAX_LOGO_BYTES = 2 * 1024 * 1024 // 2 MB — a logo needing more is a mistake
+
 export default async function adminMerchantRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
 
+  // Scoped to this plugin: only the logo route consumes multipart, so the rest of
+  // the admin API keeps its JSON-only body parsing.
+  await app.register(fastifyMultipart, {
+    limits: { fileSize: MAX_LOGO_BYTES, files: 1 },
+    // Don't throw on oversize; flag `file.truncated` so we can reject with a
+    // localized 400 (file_too_large) instead of an opaque 413.
+    throwFileSizeLimit: false,
+  })
+
+  // logoUrl is absent from both write bodies on purpose. It is derived from
+  // logoFileId on read, and the logo is settable only through the upload/delete
+  // routes below — leaving it writable here would let an admin point a merchant's
+  // logo at an arbitrary external URL.
   const CreateMerchantBody = Type.Object({
     name: Type.String({ minLength: 1 }),
     legalName: Type.String({ minLength: 1 }),
     inn: Type.String({ minLength: 1 }),
     phone: Type.String({ minLength: 1 }),
     address: Type.String({ minLength: 1 }),
-    logoUrl: Type.Optional(Type.String()),
     contractNumber: Type.Optional(Type.String()),
     scoringModelId: Type.Optional(Type.Integer()),
   })
@@ -52,7 +74,6 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
       inn: Type.String({ minLength: 1 }),
       phone: Type.String({ minLength: 1 }),
       address: Type.String({ minLength: 1 }),
-      logoUrl: Type.String(),
       contractNumber: Type.String(),
       active: Type.Boolean(),
       mfo: Type.String({ pattern: "^\\d{5}$" }),
@@ -128,6 +149,87 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
       }
       const merchant = await updateMerchant({ id: Number(request.params.id), patch: request.body })
       if (!merchant) return reply.code(404).sendError("not_found")
+      return { merchant: serializeMerchant(merchant) }
+    },
+  )
+
+  /* ── Merchant logo ──────────────────────────────────────────────────────── */
+
+  // Uploaded through the API rather than by presigned PUT (the pattern merchant
+  // documents use) because these bytes are served publicly from our own origin:
+  // the server has to be the one that decides the file really is an image.
+  fastify.post(
+    "/:id/logo",
+    {
+      schema: {
+        tags: TAGS,
+        summary: "Upload a merchant logo",
+        description:
+          "Accepts a single PNG/JPEG/WebP file, replacing any existing logo. " +
+          "The previous logo is deleted from storage.",
+        params: IdParams,
+        consumes: ["multipart/form-data"],
+        response: { 400: { $ref: "ErrorResponse#" }, 404: { $ref: "ErrorResponse#" } },
+      },
+      preHandler,
+    },
+    async (request, reply) => {
+      const merchantId = Number(request.params.id)
+      const existing = await getMerchant(merchantId)
+      if (!existing) return reply.code(404).sendError("not_found")
+
+      const upload = await request.file()
+      if (!upload) return reply.code(400).sendError("file_required")
+
+      // Buffer first so a truncated stream (over the size limit) is rejected
+      // before anything lands in storage.
+      const buffer = await upload.toBuffer()
+      if (upload.file.truncated) return reply.code(400).sendError("file_too_large")
+
+      // The declared mimetype is caller-supplied and proves nothing; the bytes do.
+      const mimeType = sniffImageMime(buffer)
+      if (!mimeType) return reply.code(400).sendError("invalid_image_type")
+
+      const objectKey = `${LOGO_PREFIX}/${merchantId}/${randomUUID()}`
+      await app.minio.putObject(env.MINIO_BUCKET, objectKey, buffer, buffer.length, {
+        "Content-Type": mimeType,
+      })
+
+      const adminId = Number((request.user as { sub: string }).sub)
+      const { merchant, previousFileId } = await setMerchantLogo({
+        merchantId,
+        objectKey,
+        mimeType,
+        originalName: upload.filename ?? undefined,
+        uploadedByAdminId: adminId,
+      })
+
+      // Only after the swap is committed — a rollback can't un-delete an object.
+      if (previousFileId != null) await deleteFile(db, app.minio, previousFileId)
+
+      return { merchant: serializeMerchant(merchant) }
+    },
+  )
+
+  fastify.delete(
+    "/:id/logo",
+    {
+      schema: {
+        tags: TAGS,
+        summary: "Remove a merchant logo",
+        params: IdParams,
+        response: { 404: { $ref: "ErrorResponse#" } },
+      },
+      preHandler,
+    },
+    async (request, reply) => {
+      const merchantId = Number(request.params.id)
+      const existing = await getMerchant(merchantId)
+      if (!existing) return reply.code(404).sendError("not_found")
+
+      const { merchant, previousFileId } = await clearMerchantLogo(merchantId)
+      if (previousFileId != null) await deleteFile(db, app.minio, previousFileId)
+
       return { merchant: serializeMerchant(merchant) }
     },
   )

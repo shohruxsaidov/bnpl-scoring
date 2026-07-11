@@ -28,7 +28,8 @@ const ERROR = { $ref: 'ErrorResponse#' };
 const UZBEKISTAN_CITIZENSHIP_ID = '182';
 
 const OTP_COOLDOWN_SECONDS = 60;
-const OTP_DAILY_LIMIT = 10;
+//TODO need to change to 10
+const OTP_DAILY_LIMIT = 100;
 const OTP_DAILY_TTL = 24 * 60 * 60;
 const REG_TOKEN_TTL = '15m';
 

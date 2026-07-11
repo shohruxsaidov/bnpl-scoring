@@ -4,7 +4,6 @@ export interface CreateMerchantCommand {
   inn: string
   phone: string
   address: string
-  logoUrl?: string
   contractNumber?: string
   scoringModelId?: number
 }

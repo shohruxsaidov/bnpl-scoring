@@ -3,9 +3,13 @@ import type { createBranch } from "../branches/commands/create-branch/create-bra
 import type { listEnabledCategories } from "../categories/queries/list-enabled-categories/list-enabled-categories.handler"
 import type { createProduct } from "../products/commands/create-product/create-product.handler"
 import type { recordDocument } from "./commands/record-document/record-document.handler"
+import { buildMerchantLogoUrl } from "../../../lib/merchant-logo"
 
+// logoFileId is an internal handle; clients get the derived URL instead, so it is
+// dropped here rather than leaked alongside it.
 export function serializeMerchant(m: NonNullable<Awaited<ReturnType<typeof getMerchant>>>) {
-  return { ...m, id: m.id.toString() }
+  const { logoFileId, ...rest } = m
+  return { ...rest, id: m.id.toString(), logoUrl: buildMerchantLogoUrl(m.id, logoFileId) }
 }
 
 export function serializeBranch(b: Awaited<ReturnType<typeof createBranch>>) {
