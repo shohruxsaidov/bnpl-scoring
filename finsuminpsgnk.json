@@ -96,7 +96,7 @@
 
     "MonthlyAveragePayment": {
       "Name": "Соотношение кредитной нагрузки к доходу",
-      "Enabled": false,
+      "Enabled": true,
       "ImportantLevel": 1,
       "Type": "range",
       "Unit": "percent",
