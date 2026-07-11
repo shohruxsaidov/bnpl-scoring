@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Type } from '@sinclair/typebox';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
@@ -12,6 +13,7 @@ import {
   createBiometricChallenge,
   createOtp,
   createSession,
+  deleteOtps,
   findDeviceByDeviceId,
   findUserById,
   findUserByPhone,
@@ -43,6 +45,38 @@ interface RegTokenSetup {
   deviceId?: string;
 }
 
+// Minted by /forgot-password/verify once the reset OTP is consumed, redeemed by
+// /reset-password. `step` is what keeps it from being interchangeable with the
+// registration tokens — every token in this API is signed with the same
+// JWT_SECRET, so a bare { phone } payload would be replayable across flows. It
+// carries no `type`, so it cannot pass verifyClientJwt as an access token.
+interface ResetToken {
+  phone: string;
+  step: 'password_reset_verified';
+  // The device that verified the OTP. /reset-password activates request.deviceId
+  // and mints a session on it, so an unbound token could be redeemed straight
+  // into a session on an attacker's device.
+  deviceId: string;
+  // Single-use marker; must match the jti held in Redis under resetTokenKey.
+  jti: string;
+}
+
+// Minted by /forgot-pin/verify once the reset OTP is consumed, redeemed by
+// /pin-reset. Structurally identical to ResetToken, but `step` differs and that
+// is the only thing keeping the two apart: both are signed with the same
+// JWT_SECRET, so without it a password-reset token would be redeemable at
+// /pin-reset (and vice versa). Carries no `type`, so it cannot pass
+// verifyClientJwt as an access token.
+interface PinResetToken {
+  phone: string;
+  step: 'pin_reset_verified';
+  // The device that verified the OTP. /pin-reset mints a session on it, so an
+  // unbound token could be redeemed straight into a session on another device.
+  deviceId: string;
+  // Single-use marker; must match the jti held in Redis under pinResetTokenKey.
+  jti: string;
+}
+
 // Client app re-auth: finish onboarding (/setup) and logout.
 
 const ERROR = { $ref: 'ErrorResponse#' };
@@ -66,6 +100,25 @@ const OTP_COOLDOWN_SECONDS = 60;
 const OTP_DAILY_LIMIT = 10;
 const OTP_DAILY_TTL = 24 * 60 * 60;
 
+// Lifetime of an OTP row, mirroring createOtp. Used only to bound the guess
+// counter to the code it guards.
+const OTP_TTL_SECONDS = 5 * 60;
+
+// Guesses allowed against a single reset OTP before it is burned. /forgot-
+// password/verify exists only to answer "is this code right?", which makes it a
+// clean oracle against a 4-digit (10k) space; the global limiter is in-memory
+// and therefore per-process, so it cannot be the bound. Spending the budget
+// deletes the code — a caller who merely waited out a rate-limit window would
+// otherwise resume against the same live OTP. A resend mints a new code and
+// clears this counter: the daily cap (10) is what bounds brute force across
+// codes, so refusing a legitimate re-try after a mistyped code buys nothing.
+const MAX_OTP_ATTEMPTS = 5;
+
+// Window for redeeming a reset token — one password-entry screen. Deliberately
+// shorter than REG_TOKEN_TTL (15m), which is sized for a MyID identity check.
+const RESET_TOKEN_TTL = '5m';
+const RESET_TOKEN_TTL_SECONDS = 5 * 60;
+
 /** Redis key holding the consecutive failed-PIN count for a phone. */
 export function pinFailKey(phone: string): string {
   return `client:pin:fails:${phone}`;
@@ -74,6 +127,33 @@ export function pinFailKey(phone: string): string {
 /** Redis key holding the consecutive failed-password count for a phone. */
 export function passwordFailKey(phone: string): string {
   return `client:password:fails:${phone}`;
+}
+
+/**
+ * Redis key holding the guess count against the live OTP for a phone+purpose.
+ * Keyed by purpose so the password-reset and PIN-reset budgets are independent:
+ * they guard different codes (deleteOtps is per-purpose, so both can be live at
+ * once) and spending one must not lock the user out of the other.
+ */
+function otpAttemptKey(phone: string, purpose: OtpPurpose): string {
+  return `client:otp:attempts:${purpose}:${phone}`;
+}
+
+/**
+ * Redis key holding the jti of the phone's current reset token. One key per
+ * phone (not per token) so it does double duty: /reset-password fetch-and-
+ * deletes it to make redemption single-use, and issuing a fresh OTP deletes it,
+ * which supersedes any token minted from a code the user has since replaced.
+ */
+function resetTokenKey(phone: string): string {
+  return `client:reset:token:${phone}`;
+}
+
+/** As resetTokenKey, for the PIN-reset flow. Separate key: the two flows run
+ * independently, so a fresh PIN-reset OTP must not supersede a live password-
+ * reset token. */
+function pinResetTokenKey(phone: string): string {
+  return `client:pin-reset:token:${phone}`;
 }
 
 // Flat result (this project builds without strictNullChecks, so a discriminated
@@ -448,28 +528,382 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
         return reply.code(429).sendError('otp_cooldown', { seconds: issued.seconds });
       }
       if (issued.error === 'daily') return reply.code(429).sendError('otp_daily_limit');
+
+      // The previous code is dead (createOtp deleted it), so anything derived
+      // from it must die with it: the guess budget resets for the new code, and
+      // a reset token already minted from the old one stops being redeemable.
+      await redis
+        .del(otpAttemptKey(phone, 'password_reset'), resetTokenKey(phone))
+        .catch(() => undefined);
+
       if (!isProd) request.log.info({ phone, code: issued.code }, 'client password reset OTP');
       return { ok: true, ...(isProd ? {} : { devOtp: issued.code }) };
     },
   );
 
-  /* ── Reset password (confirm OTP → new password → logged in) ─────────────── */
+  /* ── Forgot password · verify OTP (→ reset token) ─────────────────────────── */
   //
-  // The reset OTP already proves phone possession, so a successful reset both
+  // Consumes the reset OTP and hands back a short-lived token that /reset-
+  // password redeems. Splitting verification from the password change means the
+  // user learns the code was wrong before typing a new password — but it also
+  // makes this a pure oracle against a 4-digit code, hence the attempt budget.
+  fastify.post(
+    '/forgot-password/verify',
+    {
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: 60 * 1000,
+          keyGenerator: (req) => {
+            return `client-forgot-password-verify:${req.headers['x-device-id'] || ''}:${req.ip}`;
+          },
+        },
+      },
+      schema: {
+        tags: TAGS,
+        summary: 'Verify a password-reset OTP',
+        body: Type.Object({
+          phone: Type.String({ minLength: 1, maxLength: 20, examples: ['998901234567'] }),
+          otp: Type.String({ minLength: 4, maxLength: 10, examples: ['1234'] }),
+        }),
+        response: {
+          200: Type.Object({ resetToken: Type.String() }),
+          400: ERROR,
+          401: ERROR,
+          404: ERROR,
+          429: ERROR,
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!request.deviceId) return reply.code(400).sendError('missing_device_id');
+
+      const { phone, otp } = request.body;
+      const user = await findUserByPhone(phone);
+      if (!user) return reply.code(404).sendError('user_not_found');
+
+      const attemptKey = otpAttemptKey(phone, 'password_reset');
+      const attempts = Number((await redis.get(attemptKey).catch(() => null)) ?? 0);
+      if (attempts >= MAX_OTP_ATTEMPTS) {
+        return reply.code(429).sendError('otp_attempts_exceeded');
+      }
+
+      if (!(await verifyOtp(phone, otp, 'password_reset'))) {
+        const spent = await redis.incr(attemptKey).catch(() => 0);
+        // Bound the counter to the OTP's own lifetime. Without this it would
+        // outlive the code it guards (as pinFailKey/passwordFailKey do today)
+        // and lock the phone out of a future reset it never attempted.
+        if (spent === 1) await redis.expire(attemptKey, OTP_TTL_SECONDS).catch(() => undefined);
+        if (spent >= MAX_OTP_ATTEMPTS) {
+          await deleteOtps(phone, 'password_reset');
+          return reply.code(429).sendError('otp_attempts_exceeded');
+        }
+        return reply.code(401).sendError('invalid_otp');
+      }
+
+      await redis.del(attemptKey).catch(() => undefined);
+
+      const jti = randomUUID();
+      await redis.set(resetTokenKey(phone), jti, 'EX', RESET_TOKEN_TTL_SECONDS);
+
+      const resetToken = app.jwt.sign(
+        { phone, step: 'password_reset_verified', deviceId: request.deviceId, jti },
+        { expiresIn: RESET_TOKEN_TTL },
+      );
+      return { resetToken };
+    },
+  );
+
+  /* ── Reset password (redeem reset token → new password → logged in) ──────── */
+  //
+  // The reset OTP already proved phone possession, so a successful reset both
   // logs the account out everywhere (an attacker who reset it inherits no live
   // session) and trusts this device + mints a session — no redundant second OTP.
+  // The PIN is deliberately left standing: it can only be set at /setup, so
+  // clearing it here would strand the user with no way to set a new one.
   fastify.post(
     '/reset-password',
     {
       schema: {
         tags: TAGS,
-        summary: 'Reset password with OTP',
+        summary: 'Reset password with a reset token',
         body: Type.Object({
-          phone: Type.String({ minLength: 1, maxLength: 20, examples: ['998901234567'] }),
-          otp: Type.String({ minLength: 4, maxLength: 10, examples: ['1234'] }),
+          resetToken: Type.String(),
           newPassword: Password,
           platform: Platform,
           appVersion: Type.String({ minLength: 1, maxLength: 10, examples: ['1.0.0'] }),
+          // Optional: the reset wipes every biometric key on the account, so the
+          // app can re-enrol this device's key in the same call rather than be
+          // silently de-enrolled until it notices and calls /register-device.
+          publicKey: Type.Optional(PublicKey),
+        }),
+        response: {
+          200: Type.Object({
+            accessToken: Type.String(),
+            sessionToken: Type.String(),
+            client: ClientDto,
+            biometricEnrolled: Type.Boolean(),
+          }),
+          400: ERROR,
+          401: ERROR,
+          403: ERROR,
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!request.deviceId) return reply.code(400).sendError('missing_device_id');
+
+      const { resetToken, newPassword, platform, appVersion, publicKey } = request.body;
+
+      let payload: ResetToken;
+      try {
+        payload = app.jwt.verify<ResetToken>(resetToken);
+      } catch {
+        return reply.code(401).sendError('invalid_reset_token');
+      }
+      // Every token in this API shares JWT_SECRET, so a valid signature proves
+      // only that we minted it — not which flow minted it.
+      if (payload.step !== 'password_reset_verified') {
+        return reply.code(401).sendError('invalid_reset_token');
+      }
+      if (payload.deviceId !== request.deviceId) {
+        return reply.code(403).sendError('reset_token_device_mismatch');
+      }
+
+      // Single-use, and superseded by any newer OTP: a mismatch means this token
+      // was already redeemed or the user has since requested a fresh code.
+      const storedJti = await redis.getdel(resetTokenKey(payload.phone)).catch(() => null);
+      if (!storedJti || storedJti !== payload.jti) {
+        return reply.code(401).sendError('invalid_reset_token');
+      }
+
+      const user = await findUserByPhone(payload.phone);
+      if (!user) return reply.code(400).sendError('user_not_found');
+
+      await setUserPassword(user.id, newPassword);
+      await revokeAllUserSessions(user.id);
+      // Sessions alone aren't enough: a biometric key mints fresh sessions with
+      // no authentication, so a reset that left one behind would evict nobody.
+      await clearAllUserDeviceKeys(user.id);
+      // pinFailKey too: a password reset is strictly stronger proof than a PIN
+      // reset, so it must lift a PIN lockout. Without this a user who tripped
+      // MAX_PIN_FAILS follows the account_locked copy ("reset your password"),
+      // completes the reset, and is still locked out of /login/pin.
+      await redis
+        .del(
+          passwordFailKey(user.phone),
+          pinFailKey(user.phone),
+          otpAttemptKey(user.phone, 'password_reset'),
+        )
+        .catch(() => undefined);
+
+      const deviceRowId = await activateDevice({
+        userId: user.id,
+        deviceId: request.deviceId,
+        platform,
+        appVersion,
+      });
+      const biometricEnrolled = await enrollKeyIfProvided(deviceRowId, publicKey);
+
+      const accessToken = app.jwt.sign(
+        { sub: user.id.toString(), type: 'client' },
+        { expiresIn: ACCESS_TOKEN_TTL },
+      );
+      const { sessionToken } = await createSession(user.id, deviceRowId);
+      return { accessToken, sessionToken, client: toClientDto(user), biometricEnrolled };
+    },
+  );
+
+  /* ── Forgot PIN (request reset OTP) ──────────────────────────────────────── */
+  //
+  // Mirrors the forgot-password trio, with a deliberately narrower blast radius:
+  // a PIN is a device-gated convenience credential, not the account's root one.
+  // Recovering it therefore leaves other devices' sessions and every enrolled
+  // biometric key standing — wiping a Secure-Enclave-backed key because the user
+  // forgot four digits would trade a stronger credential for a weaker one. An
+  // attacker holding the SIM gains nothing here either: they could already run
+  // /forgot-password and take the account outright, which is why THAT flow
+  // carries the heavy revocation and this one does not.
+  //
+  // Doubles as first-time PIN enrolment: the PIN is optional at /setup and there
+  // is no authenticated change-PIN route, so for a user who skipped it this is
+  // the only way one can ever be set. No pinHash check, by design.
+
+  /**
+   * Resolve the caller's device and assert it is trusted AND owned by `userId`.
+   * The whole flow is gated on this because /login/pin (above) already refuses
+   * untrusted devices: resetting a PIN where it cannot be used would accomplish
+   * nothing except minting a session from an OTP — which is /forgot-password's
+   * job and carries the blast radius that warrants. Gating here keeps /pin-reset
+   * strictly weaker than /forgot-password, so it can't be a backdoor around it.
+   * The ownership half stops one user, on their own trusted device, from
+   * resetting another user's PIN given that user's OTP.
+   */
+  async function trustedDeviceFor(deviceId: string, userId: number) {
+    const device = await findDeviceByDeviceId(deviceId);
+    if (!device || !device.activatedAt || device.userId !== userId) return undefined;
+    return device;
+  }
+
+  fastify.post(
+    '/forgot-pin',
+    {
+      config: {
+        rateLimit: {
+          max: 2,
+          timeWindow: 60 * 1000,
+          keyGenerator: (req) => {
+            return `client-forgot-pin:${req.headers['x-device-id'] || ''}:${req.ip}`;
+          },
+        },
+      },
+      schema: {
+        tags: TAGS,
+        summary: 'Request a PIN-reset OTP',
+        description:
+          'Sends an OTP to reset (or first set) the account PIN. Requires a trusted ' +
+          'device (x-device-id) belonging to the given phone — a PIN is only usable ' +
+          'on one. A user on an unknown device should log in with their password ' +
+          'instead, which trusts the device.',
+        body: Type.Object({
+          phone: Type.String({ minLength: 1, maxLength: 20, examples: ['998901234567'] }),
+        }),
+        response: {
+          200: Type.Object(
+            {
+              ok: Type.Boolean(),
+              devOtp: Type.Optional(Type.String()),
+            },
+            { examples: [{ ok: true }] },
+          ),
+          400: ERROR,
+          404: ERROR,
+          429: ERROR,
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!request.deviceId) return reply.code(400).sendError('missing_device_id');
+
+      const { phone } = request.body;
+      const user = await findUserByPhone(phone);
+      if (!user) return reply.code(404).sendError('user_not_found');
+
+      const device = await trustedDeviceFor(request.deviceId, user.id);
+      if (!device) return reply.code(400).sendError('device_not_trusted');
+
+      const issued = await issueOtp(phone, 'pin_reset');
+      if (issued.error === 'cooldown') {
+        return reply.code(429).sendError('otp_cooldown', { seconds: issued.seconds });
+      }
+      if (issued.error === 'daily') return reply.code(429).sendError('otp_daily_limit');
+
+      // The previous code is dead (createOtp deleted it), so anything derived
+      // from it must die with it: the guess budget resets for the new code, and
+      // a PIN-reset token already minted from the old one stops being redeemable.
+      await redis
+        .del(otpAttemptKey(phone, 'pin_reset'), pinResetTokenKey(phone))
+        .catch(() => undefined);
+
+      if (!isProd) request.log.info({ phone, code: issued.code }, 'client PIN reset OTP');
+      return { ok: true, ...(isProd ? {} : { devOtp: issued.code }) };
+    },
+  );
+
+  /* ── Forgot PIN · verify OTP (→ PIN reset token) ─────────────────────────── */
+  //
+  // As /forgot-password/verify: a pure oracle against a 4-digit code, so the
+  // guess budget (not the per-process rate limiter) is what actually bounds it.
+  fastify.post(
+    '/forgot-pin/verify',
+    {
+      config: {
+        rateLimit: {
+          max: 5,
+          timeWindow: 60 * 1000,
+          keyGenerator: (req) => {
+            return `client-forgot-pin-verify:${req.headers['x-device-id'] || ''}:${req.ip}`;
+          },
+        },
+      },
+      schema: {
+        tags: TAGS,
+        summary: 'Verify a PIN-reset OTP',
+        body: Type.Object({
+          phone: Type.String({ minLength: 1, maxLength: 20, examples: ['998901234567'] }),
+          otp: Type.String({ minLength: 4, maxLength: 10, examples: ['1234'] }),
+        }),
+        response: {
+          200: Type.Object({ pinResetToken: Type.String() }),
+          400: ERROR,
+          401: ERROR,
+          404: ERROR,
+          429: ERROR,
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!request.deviceId) return reply.code(400).sendError('missing_device_id');
+
+      const { phone, otp } = request.body;
+      const user = await findUserByPhone(phone);
+      if (!user) return reply.code(404).sendError('user_not_found');
+
+      const device = await trustedDeviceFor(request.deviceId, user.id);
+      if (!device) return reply.code(400).sendError('device_not_trusted');
+
+      const attemptKey = otpAttemptKey(phone, 'pin_reset');
+      const attempts = Number((await redis.get(attemptKey).catch(() => null)) ?? 0);
+      if (attempts >= MAX_OTP_ATTEMPTS) {
+        return reply.code(429).sendError('otp_attempts_exceeded');
+      }
+
+      if (!(await verifyOtp(phone, otp, 'pin_reset'))) {
+        const spent = await redis.incr(attemptKey).catch(() => 0);
+        // Bound the counter to the OTP's own lifetime, or it would outlive the
+        // code it guards and lock the phone out of a future reset it never
+        // attempted.
+        if (spent === 1) await redis.expire(attemptKey, OTP_TTL_SECONDS).catch(() => undefined);
+        if (spent >= MAX_OTP_ATTEMPTS) {
+          // Burn the code: rate-limiting the caller alone would leave it live to
+          // resume against once the window rolls over.
+          await deleteOtps(phone, 'pin_reset');
+          return reply.code(429).sendError('otp_attempts_exceeded');
+        }
+        return reply.code(401).sendError('invalid_otp');
+      }
+
+      await redis.del(attemptKey).catch(() => undefined);
+
+      const jti = randomUUID();
+      await redis.set(pinResetTokenKey(phone), jti, 'EX', RESET_TOKEN_TTL_SECONDS);
+
+      const pinResetToken = app.jwt.sign(
+        { phone, step: 'pin_reset_verified', deviceId: request.deviceId, jti },
+        { expiresIn: RESET_TOKEN_TTL },
+      );
+      return { pinResetToken };
+    },
+  );
+
+  /* ── PIN reset (redeem token → new PIN → logged in) ──────────────────────── */
+  //
+  // Sets the PIN, lifts any PIN lockout, and mints a session on this device —
+  // the response shape is /login/pin's, because that is what this is: a PIN login
+  // with a PIN change on the front. Note what is absent: no activateDevice (the
+  // device is already trusted, and activateDevice nulls publicKey on conflict —
+  // calling it would silently de-enrol this device's biometric key), no
+  // revokeAllUserSessions, no clearAllUserDeviceKeys. Only this device's own
+  // stale session is dropped, to hold the one-session-per-device invariant.
+  fastify.post(
+    '/pin-reset',
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Reset PIN with a PIN-reset token',
+        body: Type.Object({
+          pinResetToken: Type.String(),
+          newPin: Pin,
         }),
         response: {
           200: Type.Object({
@@ -479,39 +913,61 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
           }),
           400: ERROR,
           401: ERROR,
+          403: ERROR,
         },
       },
     },
     async (request, reply) => {
       if (!request.deviceId) return reply.code(400).sendError('missing_device_id');
 
-      const { phone, otp, newPassword, platform, appVersion } = request.body;
-      const user = await findUserByPhone(phone);
-      if (!user) return reply.code(400).sendError('user_not_found');
+      const { pinResetToken, newPin } = request.body;
 
-      if (!(await verifyOtp(phone, otp, 'password_reset'))) {
-        return reply.code(401).sendError('invalid_otp');
+      let payload: PinResetToken;
+      try {
+        payload = app.jwt.verify<PinResetToken>(pinResetToken);
+      } catch {
+        return reply.code(401).sendError('invalid_pin_reset_token');
+      }
+      // Every token in this API shares JWT_SECRET, so a valid signature proves
+      // only that we minted it — not which flow minted it. `step` is what stops a
+      // password-reset token from being spent here.
+      if (payload.step !== 'pin_reset_verified') {
+        return reply.code(401).sendError('invalid_pin_reset_token');
+      }
+      if (payload.deviceId !== request.deviceId) {
+        return reply.code(403).sendError('pin_reset_token_device_mismatch');
       }
 
-      await setUserPassword(user.id, newPassword);
-      await revokeAllUserSessions(user.id);
-      // Sessions alone aren't enough: a biometric key mints fresh sessions with
-      // no authentication, so a reset that left one behind would evict nobody.
-      await clearAllUserDeviceKeys(user.id);
-      await redis.del(passwordFailKey(phone)).catch(() => undefined);
+      // Single-use, and superseded by any newer OTP: a mismatch means this token
+      // was already redeemed or the user has since requested a fresh code.
+      const storedJti = await redis.getdel(pinResetTokenKey(payload.phone)).catch(() => null);
+      if (!storedJti || storedJti !== payload.jti) {
+        return reply.code(401).sendError('invalid_pin_reset_token');
+      }
 
-      const deviceRowId = await activateDevice({
-        userId: user.id,
-        deviceId: request.deviceId,
-        platform,
-        appVersion,
-      });
+      const user = await findUserByPhone(payload.phone);
+      if (!user) return reply.code(400).sendError('user_not_found');
+
+      // Re-check trust at redemption: the device could have been re-assigned to
+      // another user (activateDevice on a device that changed hands) in the
+      // window since the token was minted.
+      const device = await trustedDeviceFor(request.deviceId, user.id);
+      if (!device) return reply.code(400).sendError('device_not_trusted');
+
+      await setUserPin(user.id, newPin);
+      // The whole point of the flow: without this, a user locked out by
+      // MAX_PIN_FAILS sets a new PIN and is still account_locked on /login/pin.
+      await redis.del(pinFailKey(user.phone)).catch(() => undefined);
+
+      // One active session per device: drop any stale session before the new one.
+      await revokeDeviceSessions(device.id);
 
       const accessToken = app.jwt.sign(
         { sub: user.id.toString(), type: 'client' },
         { expiresIn: ACCESS_TOKEN_TTL },
       );
-      const { sessionToken } = await createSession(user.id, deviceRowId);
+      const { sessionToken } = await createSession(user.id, device.id);
+
       return { accessToken, sessionToken, client: toClientDto(user) };
     },
   );

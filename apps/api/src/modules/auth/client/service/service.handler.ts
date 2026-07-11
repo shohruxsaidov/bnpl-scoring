@@ -1,4 +1,11 @@
-import { createHash, createPublicKey, createVerify, randomBytes, randomUUID } from 'node:crypto';
+import {
+  createHash,
+  createPublicKey,
+  createVerify,
+  randomBytes,
+  randomInt,
+  randomUUID,
+} from 'node:crypto';
 import type { KeyObject } from 'node:crypto';
 import argon2 from 'argon2';
 import { and, eq, gt, ilike, isNull, ne, or } from 'drizzle-orm';
@@ -12,7 +19,8 @@ export type OtpPurpose =
   | 'register'
   | 'client_registration'
   | 'deal_signing'
-  | 'password_reset';
+  | 'password_reset'
+  | 'pin_reset';
 
 /** Hash a raw token with SHA-256, hex-encoded. */
 function hashToken(token: string): string {
@@ -21,14 +29,16 @@ function hashToken(token: string): string {
 
 /** Generate a random 4-digit OTP string (zero-padded). */
 export function generateOtp(): string {
-  return String(Math.floor(Math.random() * 10000)).padStart(4, '0');
+  return String(randomInt(0, 10000)).padStart(4, '0');
 }
 
 /**
- * Delete any existing unused OTPs for the same phone+purpose, then insert a
- * fresh code valid for 5 minutes. Returns the generated code.
+ * Drop every live (unused) OTP for a phone+purpose. Called before issuing a
+ * fresh code, and to burn the outstanding code once its guess budget is spent —
+ * rate-limiting the caller alone would leave the code alive for an attacker to
+ * resume against after the window rolls over.
  */
-export async function createOtp(phone: string, purpose: OtpPurpose): Promise<string> {
+export async function deleteOtps(phone: string, purpose: OtpPurpose): Promise<void> {
   await db
     .delete(otpVerifications)
     .where(
@@ -38,6 +48,14 @@ export async function createOtp(phone: string, purpose: OtpPurpose): Promise<str
         isNull(otpVerifications.usedAt),
       ),
     );
+}
+
+/**
+ * Delete any existing unused OTPs for the same phone+purpose, then insert a
+ * fresh code valid for 5 minutes. Returns the generated code.
+ */
+export async function createOtp(phone: string, purpose: OtpPurpose): Promise<string> {
+  await deleteOtps(phone, purpose);
 
   const code = generateOtp();
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
