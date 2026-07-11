@@ -85,6 +85,10 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
       pattern: '^\\d{14}$',
       examples: ['12345678901234'],
     }),
+    passData: Type.Optional(Type.String({ minLength: 1, maxLength: 9, examples: ['AD1234567'] })),
+    birthDate: Type.Optional(
+      Type.String({ minLength: 10, maxLength: 10, examples: ['1990-05-14'] }),
+    ),
   });
   const MyidCompleteBody = Type.Object({
     regToken: Type.String({ minLength: 1, examples: ['ey..'] }),

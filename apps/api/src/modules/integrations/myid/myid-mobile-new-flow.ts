@@ -115,14 +115,19 @@ async function getClientToken(): Promise<string> {
 }
 
 /** Create a MyID WebSDK session for the given PINFL. */
-export async function createMobileMyidSession(pinfl: string): Promise<MyidSessionResult> {
-  const birthDate = parsePinflBirthDate(pinfl);
+export async function createMobileMyidSession(
+  session: string | { passData: string; birthDate: string },
+): Promise<MyidSessionResult> {
+  let reqBody: Record<string, unknown> = {};
+  if (typeof session === 'string') {
+    reqBody = { session, birth_date: parsePinflBirthDate(session) };
+  } else {
+    reqBody = {
+      pass_data: session.passData,
+      birth_date: session.birthDate,
+    };
+  }
   const token = await getClientToken();
-
-  const reqBody = {
-    pinfl,
-    birth_date: birthDate,
-  };
 
   const requestTimestamp = new Date();
   try {
