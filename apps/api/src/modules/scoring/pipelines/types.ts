@@ -7,10 +7,15 @@
 
 // Ordered cost-ascending: cheap/free checks first so a knockout short-circuits
 // before any chargeable bureau call.
+// active_deal leads because it is the cheapest of all — one indexed read of our
+// own deals table — and because it is the one gate that says nothing about the
+// applicant's creditworthiness: they simply already hold the single deal a
+// client is allowed (see modules/deals/blocking.ts).
 // plum_card sits with the data-gathering stages, before the model verdict, even
 // though it resolves asynchronously alongside/after it. It is OBSERVATIONAL: it
 // has no stop-factors, feeds no model param, and never rejects — see config.ts.
 export const PIPELINE_ORDER = [
+  'active_deal',
   'myid',
   'katm_claim',
   'katm_mib',
@@ -29,6 +34,8 @@ export type ScoringStatus = 'in_progress' | 'passed' | 'scored' | 'rejected' | '
 
 // scoring_pipelines.reject_reason_code — the hardcoded stop-factor that knocked out.
 export type RejectReasonCode =
+  // active_deal — the client already holds their one open deal
+  | 'active_deal_exists'
   // myid — business knockouts + per-field missing-data knockouts
   | 'address_absent'
   | 'age_below'
@@ -65,6 +72,9 @@ export type ScoringRejectReasonCode = RejectReasonCode | 'model_stop_factor' | '
 export type RejectReasonCategory = 'data_missing' | 'ineligible' | 'access';
 
 export const REJECT_REASON_CATEGORY: Record<ScoringRejectReasonCode, RejectReasonCategory> = {
+  // active_deal — nothing is wrong with the applicant; they are simply out of
+  // slots until the deal they already hold is closed.
+  active_deal_exists: 'ineligible',
   // myid — missing registration fields (fixable)
   address_absent: 'data_missing',
   pinfl_absent: 'data_missing',
@@ -95,7 +105,62 @@ export const REJECT_REASON_CATEGORY: Record<ScoringRejectReasonCode, RejectReaso
   zero_limit: 'ineligible',
 };
 
+// Can the applicant clear this reason themselves and score again straight away?
+//
+// A DURABLE rejection earns a cooldown: the client path stores a 0 limit under
+// the usual 7-day TTL so a declined applicant cannot re-burn chargeable KATM by
+// hammering the button (client/scoring/finalize.ts). Nothing about a credit ban
+// or a date of birth changes overnight, so the week costs them nothing.
+//
+// A RETRYABLE rejection must NOT: its cause is one the applicant can go and fix
+// — fill in the missing field, unlock their One ID, close their open deal — and
+// a cooldown would lock them out for the rest of the week after they had. They
+// also all knock out at a FREE stage, before a single chargeable call, so there
+// is no spend for a cooldown to protect in the first place. Retryable reasons
+// therefore skip both the 0-limit write and the rejection push.
+//
+// Independent of RejectReasonCategory on purpose: that axis is about what the UI
+// says, this one is about what the backend stores. They happen to agree today.
+export const REJECT_REASON_RETRYABLE: Record<ScoringRejectReasonCode, boolean> = {
+  // active_deal — clears the day the deal closes
+  active_deal_exists: true,
+  // myid — the applicant completes their profile
+  address_absent: true,
+  pinfl_absent: true,
+  passport_series_absent: true,
+  passport_number_absent: true,
+  doc_type_absent: true,
+  region_absent: true,
+  district_absent: true,
+  phone_absent: true,
+  // katm_claim — the applicant unlocks their One ID
+  oneid_locked: true,
+  // Hard knockouts — the cooldown is the point.
+  age_below: false,
+  age_above: false,
+  not_resident_uzbekistan: false,
+  mib_enforcement_found: false,
+  credit_ban: false,
+  has_defaults: false,
+  judicial_or_decommissioned: false,
+  has_actual_overdue_debts_from_60_to_90: false,
+  has_actual_overdue_debts_from_30_to_60: false,
+  no_income: false,
+  model_stop_factor: false,
+  zero_limit: false,
+};
+
+export function isRetryableRejectReason(code: string): boolean {
+  return REJECT_REASON_RETRYABLE[code as ScoringRejectReasonCode] === true;
+}
+
 // --- Per-type summary shapes (the up-front admin-card fields) ----------------
+
+export interface ActiveDealSummary {
+  hasActiveDeal: boolean;
+  /** The deal holding the slot — null when the stage passed. */
+  blockingDealNumber: number | null;
+}
 
 export interface MyidSummary {
   age: number | null;
@@ -188,6 +253,7 @@ export interface PlumCardHumoSummary extends PlumCardSummaryBase {
 export type PlumCardSummary = PlumCardUzcardSummary | PlumCardHumoSummary;
 
 export type PipelineSummary =
+  | ActiveDealSummary
   | MyidSummary
   | KatmClaimSummary
   | KatmMibSummary

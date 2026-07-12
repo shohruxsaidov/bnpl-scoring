@@ -1,44 +1,28 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { db } from '@db';
-import { users, merchants, branches, tariffs } from '@db/schema';
-import { deals } from '../../../../deals/schema';
+import { users } from '@db/schema';
+import { userCreditLimits } from '@db/user-credit-limits';
+import { loadBlockingDeal } from '../../../../deals/blocking';
 
+// A limit is a one-shot ticket: the client either holds an unspent one or they
+// do not. There is no "available balance" to report — the deal that spends the
+// limit spends all of it, whatever it was worth, and deletes the row on its way
+// past (see modules/deals/blocking.ts). What replaces the balance is the deal
+// itself: when a client shows no limit, the reason is the deal named here.
 export async function getUserOverview(id: number) {
   const userRows = await db.select().from(users).where(eq(users.id, id)).limit(1);
   const user = userRows[0];
   if (!user) return null;
 
-  const pinfl = user.pinfl;
+  const [[limit], blockingDeal] = await Promise.all([
+    db.select().from(userCreditLimits).where(eq(userCreditLimits.userId, id)).limit(1),
+    loadBlockingDeal(id),
+  ]);
 
-  const allUserRows = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.pinfl, pinfl));
-  const allUserIds = allUserRows.map((r) => r.id);
-
-  // TODO: scoring rebuild — credit limit source removed with scoring_histories.
-  // Returns null until the new scoring persistence lands. When wired, creditLimit
-  // is a whole-som string but committedAmount is tiyin — convert (×100) before
-  // subtracting for availableBalance.
-  const creditLimit: string | null = null;
-  const creditLimitScoredAt: string | null = null;
-
-  let committedAmount = 0;
-  if (allUserIds.length > 0) {
-    const activeDeals = await db
-      .select({ amount: deals.amount })
-      .from(deals)
-      .where(
-        and(
-          inArray(deals.userId, allUserIds),
-          inArray(deals.status, ['active', 'overdue', 'scoring', 'approved']),
-        ),
-      );
-    committedAmount = activeDeals.reduce((sum, d) => sum + (d.amount ? Number(d.amount) : 0), 0);
-  }
-
-  const availableBalance =
-    creditLimit != null ? Math.max(0, Number(creditLimit) * 100 - committedAmount) : null;
+  // Only an unspent limit is a limit: a lapsed one buys nothing, and a zero is
+  // the cooldown a rejection left behind, not an offer of nothing.
+  const usable =
+    limit && limit.expiresAt.getTime() > Date.now() && Number(limit.creditLimit) > 0 ? limit : null;
 
   return {
     id: user.id.toString(),
@@ -48,8 +32,10 @@ export async function getUserOverview(id: number) {
     middleName: user.middleName ?? null,
     birthDate: user.birthDate,
     createdAt: user.createdAt.toISOString(),
-    creditLimit,
-    availableBalance,
-    creditLimitScoredAt,
+    creditLimit: usable ? usable.creditLimit : null,
+    creditLimitScoredAt: usable ? usable.scoredAt.toISOString() : null,
+    creditLimitExpiresAt: usable ? usable.expiresAt.toISOString() : null,
+    // The deal holding the client's one slot — null when they are free to score.
+    blockingDealNumber: blockingDeal?.dealNumber ?? null,
   };
 }

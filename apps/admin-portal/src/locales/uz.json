@@ -139,7 +139,6 @@
     "birthDate": "Tug'ilgan sana",
     "registeredAt": "Ro'yxatdan o'tgan",
     "creditLimit": "Kredit limiti",
-    "availableBalance": "Mavjud qoldiq",
     "sourceWizard": "Shartnoma",
     "sourceSelfService": "O'z-o'ziga xizmat",
     "dealNumber": "Shartnoma raqami",
@@ -189,7 +188,12 @@
     "notifType_scoring_approved": "Skoring tasdiqlandi",
     "notifType_scoring_rejected": "Skoring rad etildi",
     "notifType_limit_updated": "Kredit limiti yangilandi",
-    "notifType_custom": "Xabar"
+    "notifType_custom": "Xabar",
+    "limitStatus": "Limit holati",
+    "blockedByDeal": "№{n} shartnoma bilan band",
+    "blockedByDealHint": "Limit shartnoma yopilgandan so'ng ochiladi",
+    "limitAvailable": "Limit mavjud",
+    "limitValidUntil": "{date} gacha amal qiladi"
   },
   "collectionBoard": {
     "allMerchants": "Barcha merchantlar",
@@ -323,6 +327,7 @@
       "error": "Xato"
     },
     "rejectReason": {
+      "active_deal_exists": "Mijozda faol shartnoma bor",
       "address_absent": "Manzil mavjud emas",
       "age_below": "Yosh 18 dan kichik",
       "age_above": "Yosh ruxsat etilgan chegaradan yuqori",
@@ -338,6 +343,7 @@
   },
   "scoringPipeline": {
     "type": {
+      "active_deal": "Faol shartnoma",
       "myid": "MyID",
       "katm_claim": "KATM ariza",
       "katm_mib": "KATM MIB",
@@ -631,7 +637,9 @@
     "kybRejected": "KYB: Rad etilgan",
     "kybPendingDelta": "tekshiruv kutmoqda",
     "kybVerifiedDelta": "tasdiqlangan",
-    "kybRejectedDelta": "rad etilgan"
+    "kybRejectedDelta": "rad etilgan",
+    "stuckDeals": "Bloklangan mijozlar",
+    "stuckDealsDelta": "jadvali tugagan shartnomalar — mijoz yangisini ola olmaydi"
   },
   "tenants": {
     "summary": "{total} merchant · {active} faol",
@@ -1256,6 +1264,10 @@
     "saveFailed": "Sozlamani saqlab boʻlmadi",
     "loadFailed": "Skoring sozlamalarini yuklab boʻlmadi",
     "pipeline": {
+      "active_deal": {
+        "name": "Faol shartnoma",
+        "desc": "Mijoz allaqachon shartnoma rasmiylashtirgan. Limit rasmiylashtirishda to'liq sarflanadi va faqat shartnoma yopilgandan so'ng qayta tiklanadi."
+      },
       "myid": {
         "name": "MyID",
         "desc": "Mijoz maʼlumotlari boʻyicha yosh va propiska tekshiruvi. Maʼlumot soʻralmaydi, ball oʻzgarmaydi."

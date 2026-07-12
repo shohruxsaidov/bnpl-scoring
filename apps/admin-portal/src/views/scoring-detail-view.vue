@@ -54,8 +54,10 @@ watch(
   () => load(),
 )
 
-// Pipeline types that are never shown as tabs.
-const HIDDEN_PIPELINE_TYPES = ['katm_claim', 'myid']
+// Pipeline types that are never shown as tabs. active_deal joins them: it is a
+// pure gate with nothing to inspect, and when it knocks out, the run's reject
+// reason already says so at the top of the page.
+const HIDDEN_PIPELINE_TYPES = ['katm_claim', 'myid', 'active_deal']
 
 async function load() {
   await store.fetchDetail(route.params.id as string)

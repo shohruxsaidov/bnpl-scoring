@@ -6,7 +6,7 @@ export const uz: Record<string, string> = {
   internal_error: 'Ichki server xatosi',
 
   // auth — admin
-  invalid_credentials: "Email yoki parol noto'g'ri",
+  invalid_credentials: "Login yoki parol noto'g'ri",
   invalid_current_password: "Joriy parol noto'g'ri",
   email_taken: "Bu email allaqachon ro'yxatdan o'tgan",
   invalid_role: "Noto'g'ri rol",
@@ -128,7 +128,7 @@ export const uz: Record<string, string> = {
 
   // notifications — errors
   notification_not_found: 'Bildirishnoma topilmadi',
-  push_disabled: "Push-bildirishnomalar serverda sozlanmagan",
+  push_disabled: 'Push-bildirishnomalar serverda sozlanmagan',
   no_push_devices: "Mijozda ilova o'rnatilgan qurilma yo'q",
 
   // notifications — push title/body (rendered server-side per device language)

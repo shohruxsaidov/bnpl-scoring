@@ -40,6 +40,19 @@ const kybKpis = computed(() => [
     sparkColor: '#ff5c5c',
     icon: 'pi pi-times-circle',
   },
+  // A client with an open deal cannot score and cannot buy from any merchant, and
+  // only an admin recording the last payment closes a deal. So a deal sitting here
+  // past the end of its schedule is not merely untidy bookkeeping — it is a client
+  // locked out of the platform, and every day it sits is a day of lost sales.
+  {
+    key: 'stuck-deals',
+    label: t('overview.stuckDeals'),
+    value: String(overview.stuckDeals.value),
+    delta: t('overview.stuckDealsDelta'),
+    tone: overview.stuckDeals.value > 0 ? ('down' as const) : ('up' as const),
+    sparkColor: '#ffb02e',
+    icon: 'pi pi-lock',
+  },
 ])
 
 onMounted(() => {

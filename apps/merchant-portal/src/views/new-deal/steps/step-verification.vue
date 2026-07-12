@@ -150,8 +150,14 @@ async function startMyidSigning() {
     const res = await myidSignSessionMutation.mutateAsync(deal.dealSessionId)
     sessionStorage.setItem('myid_sign_session_token', res.signingSessionToken)
     window.location.href = res.redirectUrl
-  } catch {
-    myidError.value = t('stepVerification.myidSessionFailed')
+  } catch (err: any) {
+    // The client took a deal elsewhere while this wizard was open. The server
+    // stops us here, before the face scan and the SMS — the deal cannot exist,
+    // so there is nothing to be gained by putting the client through signing it.
+    myidError.value =
+      err?.message === 'active_deal_exists'
+        ? t('stepVerification.activeDealExists')
+        : t('stepVerification.myidSessionFailed')
   }
 }
 
@@ -224,6 +230,8 @@ async function signSubmit() {
       const active = await fetchActiveSession().catch(() => null)
       if (active) deal.hydrateFromSession(active)
       submitError.value = t('stepVerification.myidExpired')
+    } else if (code === 'active_deal_exists') {
+      submitError.value = t('stepVerification.activeDealExists')
     } else {
       submitError.value = code ?? t('stepVerification.createDealFailed')
     }

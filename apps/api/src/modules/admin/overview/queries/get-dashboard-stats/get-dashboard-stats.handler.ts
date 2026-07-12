@@ -1,7 +1,42 @@
-import { count, eq, ne } from "drizzle-orm"
+import { and, count, eq, inArray, ne, sql } from "drizzle-orm"
 import { db } from '@db'
-import { deals } from "../../../../deals/schema"
+import { deals, dealPaymentSchedules } from "../../../../deals/schema"
+import { BLOCKING_DEAL_STATUSES } from "../../../../deals/blocking"
 import { merchants } from '@db/schema'
+
+/**
+ * Deals whose term has fully elapsed — not one unpaid installment is still in the
+ * future — yet which are still open.
+ *
+ * This number used to be nobody's problem. It is now the only thing standing
+ * between a client and their next purchase: a deal closes when an admin records
+ * its final payment, and nothing else in the system closes one — no ageing job,
+ * no auto-debit. So for as long as a deal sits here, its client cannot score and
+ * cannot buy from ANY merchant on the platform, and every day of that is a day of
+ * sales lost across all of them.
+ *
+ * Each of these is either a payment someone collected and never entered, or a
+ * client who genuinely stopped paying. We cannot tell the two apart from here —
+ * both need an admin to look.
+ */
+export async function getStuckDealCount(): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(deals)
+    .where(
+      and(
+        inArray(deals.status, [...BLOCKING_DEAL_STATUSES]),
+        // No unpaid installment still to fall due — i.e. the schedule has run out.
+        sql`not exists (
+          select 1 from ${dealPaymentSchedules} s
+           where s.deal_id = ${deals.id}
+             and s.paid = false
+             and s.due_date >= current_date
+        )`,
+      ),
+    )
+  return Number(row?.n ?? 0)
+}
 
 export async function getKybStats() {
   const rows = await db

@@ -13,6 +13,7 @@ import {
   type PipelineStepResult,
 } from '../../integrations/katm/flow';
 import { enqueueKatmPoll } from '../../integrations/katm/poller';
+import { loadBlockingDeal } from '../../deals/blocking';
 import {
   loadLatestClientScoring,
   setKatmClaimIdOnScoring,
@@ -84,6 +85,19 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const userId = Number(request.user.sub);
 
+      // One Active Deal — the client's limit was consumed by the deal they are
+      // still paying off. Answered before a run is opened: the block lifts the day
+      // that deal closes, so it must not cost them a scoring row or a cooldown.
+      // The active_deal pipeline stage is the authority (and catches the merchant
+      // path); this is just the cheap early exit, as data_missing is below.
+      if (await loadBlockingDeal(userId)) {
+        return {
+          status: 'rejected' as const,
+          reasonCode: 'active_deal_exists',
+          reasonCategory: reasonCategory('active_deal_exists'),
+        };
+      }
+
       // Reuse a still-valid limit — no fresh bureau charge within the TTL.
       const [limit] = await db
         .select()
@@ -91,10 +105,23 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
         .where(eq(userCreditLimits.userId, userId))
         .limit(1);
       if (limit && limit.expiresAt.getTime() > Date.now()) {
+        if (Number(limit.creditLimit) > 0) {
+          return {
+            status: 'cached' as const,
+            creditLimit: limit.creditLimit,
+            expiresAt: limit.expiresAt.toISOString(),
+          };
+        }
+        // A zero limit inside its TTL is not a cached limit of nothing — it is the
+        // cooldown a durable rejection leaves behind, and the TTL is what stops the
+        // client re-firing chargeable KATM. Hold the line, but say what it is: the
+        // run that set it still carries the reason.
+        const declined = await loadLatestClientScoring(userId);
+        const reasonCode = declined?.rejectReasonCode ?? 'zero_limit';
         return {
-          status: 'cached' as const,
-          creditLimit: limit.creditLimit,
-          expiresAt: limit.expiresAt.toISOString(),
+          status: 'rejected' as const,
+          reasonCode,
+          reasonCategory: reasonCategory(reasonCode),
         };
       }
 
@@ -105,9 +132,17 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
       if (latest?.status === 'in_progress') return { status: 'pending' as const };
       if (latest?.status === 'passed') {
         const outcome = await finalizeClientScoringIfReady(userId);
-        return outcome?.status === 'scored'
-          ? { status: 'scored' as const, creditLimit: outcome.creditLimit }
-          : { status: 'awaiting_card' as const };
+        if (outcome?.status === 'scored') {
+          return { status: 'scored' as const, creditLimit: outcome.creditLimit };
+        }
+        if (outcome?.status === 'rejected') {
+          return {
+            status: 'rejected' as const,
+            reasonCode: outcome.reasonCode,
+            reasonCategory: reasonCategory(outcome.reasonCode),
+          };
+        }
+        return { status: 'awaiting_card' as const };
       }
 
       const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
@@ -220,10 +255,25 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
     },
     async (request) => {
       const userId = Number(request.user.sub);
-      const [scoring, [limit]] = await Promise.all([
+      const [scoring, [limit], blocking] = await Promise.all([
         loadLatestClientScoring(userId),
         db.select().from(userCreditLimits).where(eq(userCreditLimits.userId, userId)).limit(1),
+        loadBlockingDeal(userId),
       ]);
+
+      // An open deal outranks whatever the last run says. Without this the app
+      // would read the stale 'scored' run left behind by the very scoring that
+      // funded the deal, next to the limit row createDeal deleted, and render
+      // "approved — for nothing".
+      if (blocking) {
+        return {
+          status: 'rejected' as const,
+          creditLimit: null,
+          expiresAt: null,
+          expired: false,
+          reasonCode: 'active_deal_exists',
+        };
+      }
 
       const status = !scoring
         ? ('none' as const)

@@ -7,6 +7,8 @@ import { katmInpsReports } from '@db/katm-inps-reports';
 import { users } from '@db/users';
 import { resolveScoringModel } from '../../scoring/resolve-model';
 import { runModelAndLimit, type LimitCard } from '../../scoring/compute-limit';
+import { loadBlockingDeal } from '../../deals/blocking';
+import { isRetryableRejectReason } from '../../scoring/pipelines/types';
 import {
   loadClientScoringAwaitingModel,
   markError,
@@ -100,9 +102,27 @@ async function loadInps(claimId: string) {
 
 export async function finalizeClientScoringIfReady(
   userId: number,
-): Promise<Extract<ClientStepOutcome, { status: 'scored' | 'error' }> | null> {
+): Promise<Extract<ClientStepOutcome, { status: 'scored' | 'rejected' | 'error' }> | null> {
   const scoring = await loadClientScoringAwaitingModel(userId);
   if (!scoring) return null;
+
+  // The active_deal gate ran at the top of the chain; the limit gets written down
+  // here, a whole KATM round trip later. A deal signed in between would have had
+  // its limit row deleted by createDeal, and this write would hand it straight
+  // back — leaving the client holding an open deal AND a reusable limit, which is
+  // the one state the rule exists to forbid. So the gate is asked again, last,
+  // where the answer is the one that matters.
+  const blocking = await loadBlockingDeal(userId);
+  if (blocking) {
+    await recordPipeline(scoring.id, 'active_deal', {
+      status: 'rejected',
+      rejectReasonCode: 'active_deal_exists',
+      summary: { hasActiveDeal: true, blockingDealNumber: blocking.dealNumber },
+      raw: blocking,
+    });
+    await markRejected(scoring.id, 'active_deal_exists');
+    return { status: 'rejected', reasonCode: 'active_deal_exists' };
+  }
 
   const card = await loadLatestCard(userId);
 
@@ -205,15 +225,23 @@ export async function applyClientStep(
     return { status: 'pending', enqueue: { reportType: step.reportType, token: step.token } };
   }
   if (step.kind === 'rejected') {
-    // scorings already marked 'rejected' by the pipeline; surface a 0 limit.
-    await writeClientCreditLimit(scoring.userId!, scoring.id, '0');
-    // KATM stop-factor rejection — notify the terminal result (idempotent per run).
-    await notify({
-      userId: scoring.userId!,
-      type: 'scoring_rejected',
-      data: { reasonCode: step.reasonCode },
-      dedupeKey: `scoring_result:${scoring.id}`,
-    });
+    // scorings is already marked 'rejected' by the pipeline. A DURABLE knockout
+    // additionally earns the 0-limit cooldown, which is what stops a declined
+    // applicant re-firing chargeable KATM every time they open the app.
+    //
+    // A retryable one must not: the applicant can go and fix its cause — fill in
+    // the field, unlock their One ID, close their deal — and a week's lockout
+    // after they had would be a bug wearing the costume of a policy. Nor do they
+    // get the "you were rejected" push; nothing was decided about them.
+    if (!isRetryableRejectReason(step.reasonCode)) {
+      await writeClientCreditLimit(scoring.userId!, scoring.id, '0');
+      await notify({
+        userId: scoring.userId!,
+        type: 'scoring_rejected',
+        data: { reasonCode: step.reasonCode },
+        dedupeKey: `scoring_result:${scoring.id}`,
+      });
+    }
     return {
       status: 'rejected',
       reasonCode: step.reasonCode,

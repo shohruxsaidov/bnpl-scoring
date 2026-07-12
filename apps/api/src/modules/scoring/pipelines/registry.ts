@@ -16,11 +16,29 @@ import {
   type KatmResult,
   type MibResult,
 } from '../../integrations/katm/service/shared';
+import type { BlockingDeal } from '../../deals/blocking';
 import type { PipelineEvaluation } from './types';
 
 const MIN_AGE = 18;
 const MAX_AGE_FOR_MALE = 64;
 const MAX_AGE_FOR_FEMALE = 59;
+
+// --- active_deal: active_deal_exists -----------------------------------------
+// A client may carry one open deal at a time, platform-wide. The limit is a
+// one-shot ticket, consumed whole by the deal it funded, so while that deal
+// lives there is nothing to score against. The caller reads the blocking deal
+// (modules/deals/blocking.ts); this stays a pure function like the rest.
+
+export function evaluateActiveDeal(blocking: BlockingDeal | null): PipelineEvaluation {
+  const summary = {
+    hasActiveDeal: blocking !== null,
+    blockingDealNumber: blocking?.dealNumber ?? null,
+  };
+  if (blocking) {
+    return { status: 'rejected', rejectReasonCode: 'active_deal_exists', summary, raw: blocking };
+  }
+  return { status: 'passed', summary, raw: null };
+}
 
 /** Whole years between birthDate (ISO YYYY-MM-DD) and now. null if unparseable. */
 export function ageFromBirthDate(birthDate: string | null, now: Date): number | null {

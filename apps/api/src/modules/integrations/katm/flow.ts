@@ -18,12 +18,15 @@ import {
   type MibResult,
 } from './service/shared';
 import {
+  evaluateActiveDeal,
   evaluateKatm077,
   evaluateKatmInps,
   evaluateKatmMib,
   evaluateMyid,
   type MyidSubject,
 } from '../../scoring/pipelines/registry';
+import { isPipelineEnabled } from '../../scoring/pipelines/settings';
+import { loadBlockingDeal } from '../../deals/blocking';
 import {
   markError,
   markGatesPassed,
@@ -167,6 +170,35 @@ export async function runScoringPipeline(input: {
     'sessionId=',
     input.sessionId,
   );
+  // --- Pipeline 0: active_deal — the client's one deal slot must be free ------
+  // Cheapest gate there is: one indexed read of our own deals table, ahead of
+  // even myid. Ops can stand the rule down from the admin panel; the createDeal
+  // guard and its unique index do not depend on this flag.
+  if (await isPipelineEnabled('active_deal')) {
+    console.log('[PIPELINE:active_deal] setCurrentPipeline → active_deal');
+    await setCurrentPipeline(input.scoringId, 'active_deal');
+    const blocking = await loadBlockingDeal(input.userId);
+    const activeDealEv = evaluateActiveDeal(blocking);
+    console.log('[PIPELINE:active_deal] evaluateActiveDeal →', activeDealEv.status);
+    if (activeDealEv.status === 'rejected') {
+      await recordPipeline(input.scoringId, 'active_deal', {
+        status: 'rejected',
+        rejectReasonCode: 'active_deal_exists',
+        summary: activeDealEv.summary,
+        raw: activeDealEv.raw,
+      });
+      await markRejected(input.scoringId, 'active_deal_exists');
+      console.log('[PIPELINE:active_deal] REJECTED blockingDeal=', blocking?.dealNumber);
+      return { kind: 'rejected', reasonCode: 'active_deal_exists' };
+    }
+    await recordPipeline(input.scoringId, 'active_deal', {
+      status: 'passed',
+      summary: activeDealEv.status === 'passed' ? activeDealEv.summary : null,
+      raw: null,
+    });
+    console.log('[PIPELINE:active_deal] PASSED');
+  }
+
   // --- Pipeline 1: myid — validate the MyID-sourced fields already on hand ---
   console.log('[PIPELINE:myid] setCurrentPipeline → myid');
   await setCurrentPipeline(input.scoringId, 'myid');

@@ -67,10 +67,13 @@ export interface Client {
 }
 
 export interface ClientOverview extends Client {
-  // Whole som as a string, e.g. '1000000'.
+  // Whole som as a string, e.g. '1000000'. Null when the client holds no unspent
+  // limit — either they have never scored, or a deal consumed it (see below).
   creditLimit: string | null
-  availableBalance: number | null
   creditLimitScoredAt: string | null
+  creditLimitExpiresAt: string | null
+  // The open deal holding the client's one slot; null when they are free to score.
+  blockingDealNumber: number | null
 }
 
 export interface ClientDeal {

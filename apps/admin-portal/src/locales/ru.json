@@ -139,7 +139,6 @@
     "birthDate": "Дата рождения",
     "registeredAt": "Зарегистрирован",
     "creditLimit": "Кредитный лимит",
-    "availableBalance": "Доступный остаток",
     "sourceWizard": "Мастер",
     "sourceSelfService": "Самообслуживание",
     "dealNumber": "Номер сделки",
@@ -189,7 +188,12 @@
     "notifType_scoring_approved": "Скоринг одобрен",
     "notifType_scoring_rejected": "Скоринг отклонён",
     "notifType_limit_updated": "Кредитный лимит обновлён",
-    "notifType_custom": "Сообщение"
+    "notifType_custom": "Сообщение",
+    "limitStatus": "Статус лимита",
+    "blockedByDeal": "Занят сделкой №{n}",
+    "blockedByDealHint": "Лимит будет доступен после закрытия сделки",
+    "limitAvailable": "Лимит доступен",
+    "limitValidUntil": "Действует до {date}"
   },
   "collectionBoard": {
     "allMerchants": "Все мерчанты",
@@ -331,6 +335,7 @@
       "error": "Ошибка"
     },
     "rejectReason": {
+      "active_deal_exists": "Активная сделка у клиента",
       "address_absent": "Адрес отсутствует",
       "age_below": "Возраст младше 18",
       "age_above": "Возраст выше допустимого",
@@ -346,6 +351,7 @@
   },
   "scoringPipeline": {
     "type": {
+      "active_deal": "Активная сделка",
       "myid": "MyID",
       "katm_claim": "Заявка КАТМ",
       "katm_mib": "КАТМ МИБ",
@@ -639,7 +645,9 @@
     "kybRejected": "KYB: Отклонены",
     "kybPendingDelta": "ожидают проверки",
     "kybVerifiedDelta": "проверено",
-    "kybRejectedDelta": "отклонено"
+    "kybRejectedDelta": "отклонено",
+    "stuckDeals": "Заблокированные клиенты",
+    "stuckDealsDelta": "сделки с истёкшим графиком — клиент не может оформить новую"
   },
   "tenants": {
     "summary": "{total} арендаторов · {active} активных",
@@ -1268,6 +1276,10 @@
     "saveFailed": "Не удалось сохранить настройку",
     "loadFailed": "Не удалось загрузить настройки скоринга",
     "pipeline": {
+      "active_deal": {
+        "name": "Активная сделка",
+        "desc": "Клиент уже оформил сделку. Лимит расходуется полностью при оформлении и восстанавливается только после её закрытия."
+      },
       "myid": {
         "name": "MyID",
         "desc": "Проверка возраста и прописки по данным клиента. Данные не запрашиваются, балл не меняется."

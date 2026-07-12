@@ -461,6 +461,7 @@
     "rejectReasons": {
       "generic": "Mijozga rasmiylashtirish rad etildi.",
       "dataMissingDesc": "Mijoz ma'lumotlari yetarli emas. Quyidagi yetishmayotgan maydonlarni to'ldiring va qayta urinib ko'ring:",
+      "active_deal_exists": "Mijozda amaldagi shartnoma bor. Yangisini faqat u yopilgandan so'ng rasmiylashtirish mumkin.",
       "address_absent": "Mijoz manzili ko'rsatilmagan.",
       "age_below": "Mijoz 18 yoshga to'lmagan.",
       "age_above": "Mijozning yoshi ruxsat etilgan chegaradan yuqori.",
@@ -655,7 +656,8 @@
     "creatingDeal": "Shartnoma yaratilmoqda…",
     "createDealFailed": "Shartnoma yaratishda xatolik. Qayta urinib ko'ring.",
     "stepSaveFailed": "Qadamni saqlab bo'lmadi. Qayta urinib ko'ring.",
-    "contractLang": "Shartnoma tili:"
+    "contractLang": "Shartnoma tili:",
+    "activeDealExists": "Mijozda amaldagi shartnoma paydo bo'ldi. Yangisini faqat u yopilgandan so'ng rasmiylashtirish mumkin."
   },
   "stepDone": {
     "title": "Tayyor!",

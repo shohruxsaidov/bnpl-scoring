@@ -8,7 +8,9 @@ import {
   buyouts,
 } from '../../../../deals/schema';
 import { calcTotalPayable, splitInstallments } from '../../../../deals/installments';
+import { isActiveDealConflict, loadBlockingDeal } from '../../../../deals/blocking';
 import { products, users } from '@db/schema';
+import { userCreditLimits } from '@db/user-credit-limits';
 import { katm077Reports } from '@db/katm-077-reports';
 import type { CreateDealInput } from './create-deal.command';
 import {
@@ -48,6 +50,12 @@ export async function createDealFromSession(session: DealSessionRow) {
   }
   if (!scoring) throw coded('scoring_missing');
   if (scoring.decision === 'declined') throw coded('scoring_declined');
+
+  // One Active Deal — the client cannot already be carrying one. Every earlier
+  // gate (the reuse lookup, the scoring pipeline's stage 0, the signing guard)
+  // is a read taken at some point in the past; this is the read taken last, and
+  // deals_user_active_idx catches the two merchants who both pass even this one.
+  if (await loadBlockingDeal(Number(client.userId))) throw coded('active_deal_exists');
 
   // The signature. MyID proves the client was at the counter; the OTP is their
   // акцепт of these exact terms, given last. Both are server stamps (stepData is
@@ -101,9 +109,7 @@ export async function createDealFromSession(session: DealSessionRow) {
   const totalPayable = calcTotalPayable(amount, tariff.markupPercent);
 
   // Prepayment amount stamped by POST /prepayment (ADR-0026). Null means no prepayment.
-  const prepaymentAmount = data.prepayment
-    ? Number(Math.round(data.prepayment.amount))
-    : null;
+  const prepaymentAmount = data.prepayment ? Number(Math.round(data.prepayment.amount)) : null;
 
   return createDeal({
     merchantId: session.merchantId,
@@ -123,7 +129,8 @@ export async function createDealFromSession(session: DealSessionRow) {
     coefficient: scoring.coefficient,
     platformCreditLimit: Number(Math.round(scoring.platformCreditLimit)),
     criteriaScores: scoring.criteriaScores,
-    scoringId: scoring.scoringId && /^\d+$/.test(scoring.scoringId) ? Number(scoring.scoringId) : null,
+    scoringId:
+      scoring.scoringId && /^\d+$/.test(scoring.scoringId) ? Number(scoring.scoringId) : null,
     lang: verification.lang,
     consentId: katmReport?.consentId ?? null,
     consentDate: null,
@@ -134,88 +141,103 @@ export async function createDealFromSession(session: DealSessionRow) {
 }
 
 export async function createDeal(input: CreateDealInput) {
-  return db.transaction(async (tx) => {
-    const [deal] = await tx
-      .insert(deals)
-      .values({
+  try {
+    return await db.transaction(async (tx) => {
+      const [deal] = await tx
+        .insert(deals)
+        .values({
+          merchantId: input.merchantId,
+          branchId: input.branchId,
+          agentId: input.agentId,
+          userId: input.userId,
+          tariffId: input.tariffId,
+          dealSessionId: input.dealSessionId,
+          consentId: input.consentId ?? null,
+          consentDate: input.consentDate ?? null,
+          demandId: input.demandId ?? null,
+          infoscoreRaw: input.infoscoreRaw ?? null,
+          paymentDay: input.paymentDay,
+          amount: input.amount,
+          totalPayable: input.totalPayable,
+          prepaymentAmount: input.prepaymentAmount ?? null,
+          termMonths: input.termMonths,
+          scoreSum: input.scoreSum?.toString() ?? null,
+          scoringDecision: input.scoringDecision ?? null,
+          lang: input.lang,
+          status: 'active',
+        })
+        .returning();
+
+      if (!deal) throw new Error('deal_insert_failed');
+
+      if (input.basket.length > 0) {
+        await tx.insert(dealItems).values(
+          input.basket.map((item) => ({
+            dealId: deal.id,
+            productId: item.productId,
+            productName: item.productName,
+            price: item.price,
+            mxikCode: item.mxikCode,
+            packageCode: item.packageCode,
+            packageName: item.packageName,
+            quantity: item.quantity,
+            labels: item.labels ?? [],
+          })),
+        );
+      }
+
+      // Installments run on the credit portion only; the prepayment covers the gap upfront
+      const creditPortion = input.prepaymentAmount
+        ? input.totalPayable - input.prepaymentAmount
+        : input.totalPayable;
+      const installments = splitInstallments(creditPortion, input.termMonths);
+
+      const now = new Date();
+      const scheduleRows = installments.map((amount, i) => {
+        const due = new Date(now.getFullYear(), now.getMonth() + i + 1, input.paymentDay);
+        return {
+          dealId: deal.id,
+          index: i + 1,
+          dueDate: due.toISOString().slice(0, 10),
+          amount: Number(amount),
+          paid: false,
+        };
+      });
+
+      await tx.insert(dealPaymentSchedules).values(scheduleRows);
+
+      // Scoring history snapshot removed — to be rebuilt from scratch. The deal
+      // keeps its own denormalized scoreSum/scoringDecision set above.
+
+      await tx.insert(buyouts).values({
+        dealId: deal.id,
         merchantId: input.merchantId,
         branchId: input.branchId,
-        agentId: input.agentId,
-        userId: input.userId,
-        tariffId: input.tariffId,
-        dealSessionId: input.dealSessionId,
-        consentId: input.consentId ?? null,
-        consentDate: input.consentDate ?? null,
-        demandId: input.demandId ?? null,
-        infoscoreRaw: input.infoscoreRaw ?? null,
-        paymentDay: input.paymentDay,
         amount: input.amount,
-        totalPayable: input.totalPayable,
-        prepaymentAmount: input.prepaymentAmount ?? null,
-        termMonths: input.termMonths,
-        scoreSum: input.scoreSum?.toString() ?? null,
-        scoringDecision: input.scoringDecision ?? null,
-        lang: input.lang,
-        status: 'active',
-      })
-      .returning();
+      });
 
-    if (!deal) throw new Error('deal_insert_failed');
+      // Close the Wizard run atomically with the Deal it produced
+      if (input.dealSessionId) {
+        await tx
+          .update(dealSessions)
+          .set({ status: 'completed', updatedAt: now })
+          .where(eq(dealSessions.id, input.dealSessionId));
+      }
 
-    if (input.basket.length > 0) {
-      await tx.insert(dealItems).values(
-        input.basket.map((item) => ({
-          dealId: deal.id,
-          productId: item.productId,
-          productName: item.productName,
-          price: item.price,
-          mxikCode: item.mxikCode,
-          packageCode: item.packageCode,
-          packageName: item.packageName,
-          quantity: item.quantity,
-          labels: item.labels ?? [],
-        })),
-      );
-    }
+      // The limit is a one-shot ticket and this deal just spent it — whatever the
+      // deal was worth. It does not decrement and it is not handed back when the
+      // deal closes: the client re-scores, because by then their obligations have
+      // changed and the seven-day TTL had long since lapsed anyway. A no-op for a
+      // client scored at the counter, who never had a row of their own.
+      await tx.delete(userCreditLimits).where(eq(userCreditLimits.userId, input.userId));
 
-    // Installments run on the credit portion only; the prepayment covers the gap upfront
-    const creditPortion = input.prepaymentAmount
-      ? input.totalPayable - input.prepaymentAmount
-      : input.totalPayable;
-    const installments = splitInstallments(creditPortion, input.termMonths);
-
-    const now = new Date();
-    const scheduleRows = installments.map((amount, i) => {
-      const due = new Date(now.getFullYear(), now.getMonth() + i + 1, input.paymentDay);
-      return {
-        dealId: deal.id,
-        index: i + 1,
-        dueDate: due.toISOString().slice(0, 10),
-        amount: Number(amount),
-        paid: false,
-      };
+      return deal;
     });
-
-    await tx.insert(dealPaymentSchedules).values(scheduleRows);
-
-    // Scoring history snapshot removed — to be rebuilt from scratch. The deal
-    // keeps its own denormalized scoreSum/scoringDecision set above.
-
-    await tx.insert(buyouts).values({
-      dealId: deal.id,
-      merchantId: input.merchantId,
-      branchId: input.branchId,
-      amount: input.amount,
-    });
-
-    // Close the Wizard run atomically with the Deal it produced
-    if (input.dealSessionId) {
-      await tx
-        .update(dealSessions)
-        .set({ status: 'completed', updatedAt: now })
-        .where(eq(dealSessions.id, input.dealSessionId));
-    }
-
-    return deal;
-  });
+  } catch (err) {
+    // Lost the race to deals_user_active_idx — another merchant committed the
+    // client's one deal while this transaction was in flight. Same answer as the
+    // guard above, just arrived at the hard way.
+    if (isActiveDealConflict(err)) throw coded('active_deal_exists');
+    throw err;
+  }
 }

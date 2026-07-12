@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '@db';
 import { userCreditLimits } from '@db/user-credit-limits';
 import { scorings } from '@db/scorings';
+import { loadBlockingDeal } from '../../../../deals/blocking';
 import { creditLimitIndexForScore } from '../../../../scoring/compute-limit';
 import type { ScoringStamp } from '../../types';
 
@@ -27,10 +28,18 @@ export interface ReusableLimit {
 
 /**
  * The client's reusable limit, or null when they must be scored from scratch
- * (no row, expired, zero/rejected, or the source run is missing). Only a valid,
- * positive, unexpired limit qualifies for reuse.
+ * (no row, expired, zero/rejected, the source run is missing, or an open deal
+ * has already consumed it). Only a valid, positive, unexpired limit qualifies.
+ *
+ * The open-deal check is what keeps the One Active Deal rule enforceable at all:
+ * a reuse hit skips the scoring pipeline outright, so without it the wizard
+ * would sail past the active_deal stage and straight into a second deal. Falling
+ * through to null routes the client down the full path instead, where stage 0
+ * rejects them with a reason the agent can read.
  */
 export async function loadReusableLimit(userId: number): Promise<ReusableLimit | null> {
+  if (await loadBlockingDeal(userId)) return null;
+
   const [limit] = await db
     .select()
     .from(userCreditLimits)

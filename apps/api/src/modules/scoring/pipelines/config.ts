@@ -16,6 +16,7 @@
 // ---------------------------------------------------------------------------
 
 export const CONFIGURABLE_PIPELINES = [
+  'active_deal',
   'myid',
   'katm_mib',
   'katm_077',
@@ -36,6 +37,11 @@ export function isConfigurablePipeline(value: string): value is ConfigurablePipe
 // table needs no seed migration, and why adding a pipeline needs no schema
 // change.
 export const DEFAULT_PIPELINE_ENABLED: Record<ConfigurablePipeline, boolean> = {
+  // The One Active Deal rule. Honoured at runtime (see isPipelineEnabled), so if
+  // the rule ever needs standing down it can be switched off from the admin panel
+  // without a deploy — the createDeal guard and its unique index stay regardless,
+  // so switching it off relaxes scoring, it does not permit a second deal.
+  active_deal: true,
   myid: true,
   katm_mib: false,
   katm_077: true,
@@ -56,6 +62,9 @@ export const DEFAULT_PIPELINE_ENABLED: Record<ConfigurablePipeline, boolean> = {
 // MonthlyAveragePayment is the credit-load-to-income ratio and so appears under
 // BOTH katm_077 and katm_inps — it needs either source to be scorable.
 export const PIPELINE_SCORING_PARAMS: Record<ConfigurablePipeline, readonly string[]> = {
+  // Pure gate over our own deals table. Fetches nothing from a vendor and feeds
+  // no param — disabling it costs zero score, it only removes the knockout.
+  active_deal: [],
   // Pure gate. Knocks out on address/age against the `users` row we already
   // hold; it fetches nothing. Age, gender, citizenship and region reach the
   // engine from `users` whether or not this pipeline runs, so disabling it
@@ -94,6 +103,8 @@ export const PIPELINE_SCORING_PARAMS: Record<ConfigurablePipeline, readonly stri
 // judicially-encumbered applicants. The model editor uses this map to block
 // that combination outright.
 export const PIPELINE_STOP_FACTORS: Record<ConfigurablePipeline, readonly string[]> = {
+  // The knockout is the pipeline's own, hardcoded — no model StopFactor reads it.
+  active_deal: [],
   myid: [],
   katm_mib: [],
   katm_077: ['WithJuridical', 'WithDecommission'],
@@ -106,6 +117,7 @@ export const PIPELINE_STOP_FACTORS: Record<ConfigurablePipeline, readonly string
 // scoring param. Disabling one of these is what forces a model to re-author its
 // LimitCoefficient (and BaseLimit) rather than merely losing a few points.
 export const PIPELINE_FEEDS_LIMIT: Record<ConfigurablePipeline, boolean> = {
+  active_deal: false,
   myid: false,
   katm_mib: false,
   katm_077: false,

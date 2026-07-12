@@ -69,6 +69,9 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
           return reply.code(409).sendError('session_incomplete');
         if (err.code === 'scoring_missing') return reply.code(409).sendError('scoring_missing');
         if (err.code === 'scoring_declined') return reply.code(409).sendError('scoring_declined');
+        // The client took a deal elsewhere while this wizard was running.
+        if (err.code === 'active_deal_exists')
+          return reply.code(409).sendError('active_deal_exists');
         // Signing proofs absent or stale — the wizard sends the agent back to the
         // MyID gate (or the OTP gate) rather than showing a dead end.
         if (err.code === 'myid_not_verified')

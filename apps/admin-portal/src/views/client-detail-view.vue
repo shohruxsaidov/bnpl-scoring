@@ -215,15 +215,22 @@ function paymentStatusBg(status: string): string {
           {{ formatDate(store.detail.creditLimitScoredAt) }}
         </span>
       </div>
+      <!-- A limit is a one-shot ticket, so there is no balance to show: the client
+           either holds an unspent limit or an open deal has already spent it. -->
       <div class="limit-card surface-card">
-        <span class="limit-label">{{ $t('clientDetail.availableBalance') }}</span>
-        <MonoAmount
-          v-if="store.detail.availableBalance != null"
-          :value="store.detail.availableBalance"
-          size="lg"
-          gradient
-          class="limit-value"
-        />
+        <span class="limit-label">{{ $t('clientDetail.limitStatus') }}</span>
+        <template v-if="store.detail.blockingDealNumber != null">
+          <span class="limit-value">
+            {{ $t('clientDetail.blockedByDeal', { n: store.detail.blockingDealNumber }) }}
+          </span>
+          <span class="limit-source muted">{{ $t('clientDetail.blockedByDealHint') }}</span>
+        </template>
+        <template v-else-if="store.detail.creditLimitExpiresAt">
+          <span class="limit-value">{{ $t('clientDetail.limitAvailable') }}</span>
+          <span class="limit-source muted">
+            {{ $t('clientDetail.limitValidUntil', { date: formatDate(store.detail.creditLimitExpiresAt) }) }}
+          </span>
+        </template>
         <span v-else class="limit-value muted">—</span>
       </div>
     </div>

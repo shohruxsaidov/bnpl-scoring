@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   date,
   integer,
@@ -5,6 +6,7 @@ import {
   numeric,
   pgTable,
   timestamp,
+  uniqueIndex,
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
@@ -22,47 +24,64 @@ import { users } from './users';
 // Only real signed deals live here — in-progress/abandoned runs are
 // deal_sessions rows. See ADR-0024.
 // ---------------------------------------------------------------------------
-export const deals = pgTable('deals', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  merchantId: integer('merchant_id')
-    .notNull()
-    .references(() => merchants.id),
-  branchId: integer('branch_id')
-    .notNull()
-    .references(() => branches.id),
-  agentId: integer('agent_id')
-    .notNull()
-    .references(() => merchantUsers.id),
-  userId: integer('user_id').references(() => users.id),
-  tariffId: integer('tariff_id').references(() => tariffs.id),
-  // The Wizard run that produced this Deal (null for deals predating ADR-0024)
-  dealSessionId: uuid('deal_session_id').references(() => dealSessions.id),
-  // KATM consent — collected at start of Wizard
-  consentId: varchar('consent_id', { length: 100 }),
-  consentDate: date('consent_date'),
-  // KATM response audit fields (previously on wizard_sessions)
-  demandId: varchar('demand_id', { length: 16 }),
-  infoscoreRaw: jsonb('infoscore_raw'),
-  paymentDay: integer('payment_day'),
-  // 'draft' | 'scoring' | 'approved' | 'declined' | 'active' | 'closed' | 'overdue'
-  status: varchar('status', { length: 20 }).notNull().default('draft'),
-  // Denormalized financials — stored at creation so list queries need no heavy joins
-  /** Sum of dealItems.price × quantity in tiyin */
-  amount: integer('amount'),
-  /** amount × (1 + markupPercent / 100), tiyin */
-  totalPayable: integer('total_payable'),
-  /** Copied from tariffs.term_months at creation time */
-  termMonths: integer('term_months'),
-  // Scoring result — copied from scoring_histories at deal activation
-  scoreSum: numeric('score_sum', { precision: 10, scale: 2 }),
-  scoringDecision: varchar('scoring_decision', { length: 20 }),
-  // Avansoviy to'lov — recorded at deal creation when the client paid a gap amount
-  // upfront so the installment schedule covers only (totalPayable - prepaymentAmount).
-  // Null means no prepayment was made. ADR-0026.
-  prepaymentAmount: integer('prepayment_amount'),
-  // Kontrakt language selected at Wizard verification step
-  lang: varchar('lang', { length: 5 }).notNull().default('ru'),
-  // Human-readable sequential identifier — plain integer starting at 1000
-  dealNumber: integer('deal_number').notNull().unique().generatedAlwaysAsIdentity({ startWith: 1000 }),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+export const deals = pgTable(
+  'deals',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    merchantId: integer('merchant_id')
+      .notNull()
+      .references(() => merchants.id),
+    branchId: integer('branch_id')
+      .notNull()
+      .references(() => branches.id),
+    agentId: integer('agent_id')
+      .notNull()
+      .references(() => merchantUsers.id),
+    userId: integer('user_id').references(() => users.id),
+    tariffId: integer('tariff_id').references(() => tariffs.id),
+    // The Wizard run that produced this Deal (null for deals predating ADR-0024)
+    dealSessionId: uuid('deal_session_id').references(() => dealSessions.id),
+    // KATM consent — collected at start of Wizard
+    consentId: varchar('consent_id', { length: 100 }),
+    consentDate: date('consent_date'),
+    // KATM response audit fields (previously on wizard_sessions)
+    demandId: varchar('demand_id', { length: 16 }),
+    infoscoreRaw: jsonb('infoscore_raw'),
+    paymentDay: integer('payment_day'),
+    // 'draft' | 'scoring' | 'approved' | 'declined' | 'active' | 'closed' | 'overdue'
+    status: varchar('status', { length: 20 }).notNull().default('draft'),
+    // Denormalized financials — stored at creation so list queries need no heavy joins
+    /** Sum of dealItems.price × quantity in tiyin */
+    amount: integer('amount'),
+    /** amount × (1 + markupPercent / 100), tiyin */
+    totalPayable: integer('total_payable'),
+    /** Copied from tariffs.term_months at creation time */
+    termMonths: integer('term_months'),
+    // Scoring result — copied from scoring_histories at deal activation
+    scoreSum: numeric('score_sum', { precision: 10, scale: 2 }),
+    scoringDecision: varchar('scoring_decision', { length: 20 }),
+    // Avansoviy to'lov — recorded at deal creation when the client paid a gap amount
+    // upfront so the installment schedule covers only (totalPayable - prepaymentAmount).
+    // Null means no prepayment was made. ADR-0026.
+    prepaymentAmount: integer('prepayment_amount'),
+    // Kontrakt language selected at Wizard verification step
+    lang: varchar('lang', { length: 5 }).notNull().default('ru'),
+    // Human-readable sequential identifier — plain integer starting at 1000
+    dealNumber: integer('deal_number')
+      .notNull()
+      .unique()
+      .generatedAlwaysAsIdentity({ startWith: 1000 }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    // One Active Deal — a client carries at most one open deal, platform-wide.
+    // The app rejects earlier and with a reason (modules/deals/blocking.ts); this
+    // index is what wins the race two merchants can otherwise both pass, since
+    // neither transaction's SELECT can see the other's uncommitted insert.
+    // Legacy deals carry a NULL user_id and Postgres treats NULLs as distinct,
+    // so they never collide here.
+    uniqueIndex('deals_user_active_idx')
+      .on(t.userId)
+      .where(sql`status in ('active', 'overdue')`),
+  ],
+);

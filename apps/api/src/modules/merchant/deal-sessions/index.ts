@@ -8,6 +8,7 @@ import { users } from '@db/schema';
 import { katm077Reports } from '@db/katm-077-reports';
 import { katmInpsReports } from '@db/katm-inps-reports';
 import { dealSessions } from '../../deals/schema';
+import { loadBlockingDeal } from '../../deals/blocking';
 import {
   err as codedErr,
   isSigningProofFresh,
@@ -637,6 +638,14 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         ctx = await loadSigningClient(request.params.id, Number(p.sub));
       } catch (err: any) {
         return sessionErrorReply(reply, err);
+      }
+
+      // The client can have taken a deal at another merchant since this wizard
+      // opened — /start's gate is minutes or hours stale by now. This is the last
+      // free moment: past here the face scan and the OTP cost money and put the
+      // client's phone in their hand, all for a deal createDeal would refuse.
+      if (await loadBlockingDeal(ctx.session.userId!)) {
+        return reply.code(409).sendError('active_deal_exists');
       }
 
       const redirectUri = encodeURIComponent(
