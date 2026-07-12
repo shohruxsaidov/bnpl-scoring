@@ -121,10 +121,7 @@ export async function fetchUzcardScore(plumScoringId: number): Promise<UzcardSco
   const data = await logged('scoringGetPoint', 'GET', params, () =>
     client
       .get('Scoring/scoringGetPoint', { searchParams: params })
-      .json<{ result: PlumUzcardScoreResponse }>()
-      .catch((err) => {
-        console.log(err);
-      }),
+      .json<{ result: PlumUzcardScoreResponse }>(),
   );
 
   // An empty scoreList means "not computed yet", not "this card scored zero" —
