@@ -113,6 +113,13 @@
       "when": 1783812215468,
       "tag": "0015_wandering_beast",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1783860307588,
+      "tag": "0016_icy_millenium_guard",
+      "breakpoints": true
     }
   ]
 }
