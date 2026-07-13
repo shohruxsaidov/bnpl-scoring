@@ -17,4 +17,5 @@ export interface CreateUserCommand {
   citizenShipId: string; // for uzbekistan 182
   permanentRegistration?: unknown; // for permanent registration
   temporaryRegistration?: unknown; // for temporary registration
+  photoId?: string;
 }

@@ -6,7 +6,7 @@ import { env } from '@env';
 import { db } from '@db';
 import { users } from '@db/schema';
 import { userPublicOfferAcceptances } from '@db/user-public-offer-acceptances';
-import { getDownloadUrl } from '../../../lib/file-storage';
+import { getDownloadUrl, recordFile } from '../../../lib/file-storage';
 import {
   createOtp,
   verifyOtp,
@@ -22,6 +22,7 @@ import {
   exchangeMobileMyidCode,
 } from '../../integrations/myid/myid-mobile-new-flow';
 import { v4 as uuidv4 } from 'uuid';
+import minio from '../../../plugins/minio';
 const ERROR = { $ref: 'ErrorResponse#' };
 
 const UZBEKISTAN_CITIZENSHIP_ID = '182';
@@ -43,6 +44,10 @@ interface RegTokenPhase2 {
 }
 
 function toClientDto(c: typeof users.$inferSelect) {
+  let photoUrl: string | null = null;
+  if (c.photoId) {
+    photoUrl = `https://${env.MINIO_PUBLIC_ENDPOINT}/public/${c.photoId}`;
+  }
   return {
     id: c.id.toString(),
     pinfl: c.pinfl,
@@ -54,7 +59,7 @@ function toClientDto(c: typeof users.$inferSelect) {
     nationality: c.nationality,
     passportSeries: c.passportSeries,
     passportNumber: c.passportNumber,
-    photoUrl: c.photoUrl,
+    photoUrl,
     address: c.address,
     regionCode: c.regionCode,
     districtCode: c.districtCode,
@@ -395,6 +400,25 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
 
         // Create the user and record the terms acceptance atomically, so a new
         // account can never exist without its registration consent row.
+
+        let photoId: string;
+        if (req.body.photoBase64) {
+          const key = `${uuidv4()}.png`;
+          const objectKey = `user-photos/${key}`;
+          const buffer = Buffer.from(req.body.photoBase64, 'base64');
+          await app.minio.putObject(env.MINIO_BUCKET, objectKey, buffer, buffer.length, {
+            'Content-Type': 'application/pdf',
+          });
+
+          await recordFile(db, {
+            objectKey,
+            mimeType: 'image/png',
+            originalName: objectKey,
+            uploadedByType: 'system',
+          });
+          photoId = objectKey;
+        }
+
         client = await db.transaction(async (tx) => {
           const created = await createUserHandler(
             {
@@ -416,6 +440,7 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
               permanentRegistration: myidUser.permanentRegistration || null,
               gender: +myidUser.gender,
               verifiedAt: new Date(),
+              photoId,
             },
             tx,
           );

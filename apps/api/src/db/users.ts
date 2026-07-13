@@ -21,7 +21,7 @@ export const users = pgTable('users', {
   nationality: varchar('nationality', { length: 100 }),
   passportSeries: varchar('passport_series', { length: 2 }),
   passportNumber: varchar('passport_number', { length: 7 }),
-  photoUrl: text('photo_url'),
+  photoId: varchar('photo_id', { length: 100 }),
   verifiedAt: timestamp('verified_at', { withTimezone: true }),
   citizenShipId: varchar('citizen_ship_id', { length: 5 }),
   address: varchar('address', { length: 100 }),

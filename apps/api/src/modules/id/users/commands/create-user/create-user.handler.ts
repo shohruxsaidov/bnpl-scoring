@@ -25,6 +25,7 @@ export async function createUserHandler(
     citizenShipId,
     permanentRegistration,
     temporaryRegistration,
+    photoId
   }: CreateUserCommand,
   executor: Pick<Db, 'insert'> = db,
 ) {
@@ -49,6 +50,7 @@ export async function createUserHandler(
       citizenShipId,
       permanentRegistration,
       temporaryRegistration,
+      photoId
     })
     .returning();
   return row;
