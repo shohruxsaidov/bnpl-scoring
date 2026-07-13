@@ -3,6 +3,7 @@ import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { users } from '@db/schema';
 import { findUserById } from '../../auth/client/service/service.handler';
+import { env } from '@env';
 
 const SECURITY = [{ clientAuth: [] }];
 const ERROR = { $ref: 'ErrorResponse#' };
@@ -58,6 +59,10 @@ const Profile = Type.Object(
 // client JWT — user id comes from request.user.sub.
 
 function toProfile(c: typeof users.$inferSelect) {
+  let photoUrl: string | null = null;
+  if (c.photoId) {
+    photoUrl = `https://${env.MINIO_PUBLIC_ENDPOINT}/public/${c.photoId}`;
+  }
   return {
     id: c.id.toString(),
     pinfl: c.pinfl,
@@ -70,7 +75,7 @@ function toProfile(c: typeof users.$inferSelect) {
     nationality: c.nationality,
     passportSeries: c.passportSeries,
     passportNumber: c.passportNumber,
-    photoUrl: c.photoUrl,
+    photoUrl,
     address: c.address,
     regionCode: c.regionCode,
     districtCode: c.districtCode,

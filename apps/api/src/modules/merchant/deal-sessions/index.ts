@@ -162,7 +162,6 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           nationality: c.nationality,
           passportSeries: c.passportSeries,
           passportNumber: c.passportNumber,
-          photoUrl: c.photoUrl,
         };
       }
     }
