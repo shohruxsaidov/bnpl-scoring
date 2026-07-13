@@ -23,6 +23,7 @@ import {
 } from '../../integrations/myid/myid-mobile-new-flow';
 import { v4 as uuidv4 } from 'uuid';
 import minio from '../../../plugins/minio';
+import { setUserPhotoHandler } from '../../id/users/commands/set-user-photo/set-user-photo.handler';
 const ERROR = { $ref: 'ErrorResponse#' };
 
 const UZBEKISTAN_CITIZENSHIP_ID = '182';
@@ -204,6 +205,23 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
     },
     { examples: [{ id: 1, version: 1, url: 'https://minio.example.com/…/public-offers/uuid?…' }] },
   );
+
+  const uploadPhoto = async (base64: string) => {
+    const key = `${uuidv4()}.png`;
+    const objectKey = `user-photos/${key}`;
+    const buffer = Buffer.from(base64, 'base64');
+    await app.minio.putObject(env.MINIO_BUCKET, objectKey, buffer, buffer.length, {
+      'Content-Type': 'application/pdf',
+    });
+
+    await recordFile(db, {
+      objectKey,
+      mimeType: 'image/png',
+      originalName: objectKey,
+      uploadedByType: 'system',
+    });
+    return objectKey;
+  };
 
   // Returns the current offer's id/version plus a presigned URL to its PDF for
   // the requested language. `id` is sent back later as `publicOfferId` at
@@ -393,6 +411,17 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
         // Existing users already accepted the terms at their original signup;
         // re-verification does not re-record acceptance.
         client = existing;
+        if (!client.photoId) {
+          let photoId: string;
+          if (req.body.photoBase64) {
+            photoId = await uploadPhoto(req.body.photoBase64);
+            setUserPhotoHandler({
+              userId: existing.id,
+              photoId
+            }),
+            db
+          }
+        }
       } else {
         // New account: the submitted public_offer version must still be current.
         // const offer = await findCurrentPublicOfferById(req.body.publicOfferId);
@@ -403,20 +432,7 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
 
         let photoId: string;
         if (req.body.photoBase64) {
-          const key = `${uuidv4()}.png`;
-          const objectKey = `user-photos/${key}`;
-          const buffer = Buffer.from(req.body.photoBase64, 'base64');
-          await app.minio.putObject(env.MINIO_BUCKET, objectKey, buffer, buffer.length, {
-            'Content-Type': 'application/pdf',
-          });
-
-          await recordFile(db, {
-            objectKey,
-            mimeType: 'image/png',
-            originalName: objectKey,
-            uploadedByType: 'system',
-          });
-          photoId = objectKey;
+          photoId = await uploadPhoto(req.body.photoBase64);
         }
 
         client = await db.transaction(async (tx) => {
