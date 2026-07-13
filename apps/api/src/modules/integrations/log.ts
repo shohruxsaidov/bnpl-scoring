@@ -1,28 +1,27 @@
-import type { Db } from "../../db";
-import { integrationLogs } from "@db/integration-logs";
+import type { Db } from '../../db';
+import { integrationLogs } from '@db/integration-logs';
 
-const REDACTED = "[REDACTED]";
+const REDACTED = '[REDACTED]';
 const SENSITIVE_KEYS = new Set([
-  "client_secret",
-  "access_token",
-  "password",
-  "pPassword", // KATM Retail API body-level credential
-  "token",
+  'access_token',
+  'password',
+  'pPassword', // KATM Retail API body-level credential
+  'token',
 ]);
 const PINFL_RE = /^\d{14}$/;
 
 function maskPinfl(val: string): string {
-  return val.slice(0, 4) + "****" + val.slice(8);
+  return val.slice(0, 4) + '****' + val.slice(8);
 }
 
 function redact(payload: unknown): unknown {
-  if (typeof payload !== "object" || payload === null) return payload;
+  if (typeof payload !== 'object' || payload === null) return payload;
   if (Array.isArray(payload)) return payload.map(redact);
   return Object.fromEntries(
     Object.entries(payload as Record<string, unknown>).map(([k, v]) => {
       if (SENSITIVE_KEYS.has(k)) return [k, REDACTED];
-      if (typeof v === "string" && PINFL_RE.test(v)) return [k, maskPinfl(v)];
-      if (typeof v === "object") return [k, redact(v)];
+      if (typeof v === 'string' && PINFL_RE.test(v)) return [k, maskPinfl(v)];
+      if (typeof v === 'object') return [k, redact(v)];
       return [k, v];
     }),
   );
@@ -54,8 +53,7 @@ export function logIntegration(db: Db, entry: IntegrationLogEntry): void {
       errorMessage: entry.errorMessage,
       requestTimestamp: entry.requestTimestamp,
       responseTimestamp: entry.responseTimestamp,
-      responseTimeInMs:
-        entry.responseTimestamp.getTime() - entry.requestTimestamp.getTime(),
+      responseTimeInMs: entry.responseTimestamp.getTime() - entry.requestTimestamp.getTime(),
     })
     .catch(() => {
       // fire-and-forget: log write failures must never surface to the caller
