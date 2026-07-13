@@ -82,7 +82,8 @@ export async function loadSigningContext(
   // A run nobody has been asked to sign is not signable from a phone. Without this,
   // any authenticated client could drive the signing endpoints against the Agent's
   // still-open wizard run and consent to terms nobody has finished typing.
-  if (!stepDataOf(session).signingRequest) throw err('signing_request_not_found');
+  if (!stepDataOf(session).signingRequest || stepDataOf(session).signingRequest?.rejectedAt)
+    throw err('signing_request_not_found');
 
   const [user] = await db
     .select({ id: users.id, pinfl: users.pinfl, phone: users.phone })
