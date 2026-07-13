@@ -250,8 +250,7 @@ export async function exchangeMobileMyidCode(code: string): Promise<MyidUserData
     const passportNumber = passData.slice(2) || '';
 
     // MyID returns DD.MM.YYYY — convert to ISO YYYY-MM-DD for Postgres
-    const [day, month, year] = common_data.birth_date.split('.');
-    const birthDate = `${year}-${month}-${day}`;
+    const birthDate = common_data.birth_date;
 
     // KATM doc type: ID cards carry an 'AD' serial; everything else is a
     // biometric passport. Used only when MyID itself doesn't say.
