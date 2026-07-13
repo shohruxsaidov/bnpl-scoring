@@ -123,7 +123,7 @@ export async function createMobileMyidSession(
 ): Promise<MyidSessionResult> {
   let reqBody: Record<string, unknown> = {};
   if (typeof session === 'string') {
-    reqBody = { session, birth_date: parsePinflBirthDate(session) };
+    reqBody = { pinfl: session, birth_date: parsePinflBirthDate(session) };
   } else {
     reqBody = {
       pass_data: session.passData,
