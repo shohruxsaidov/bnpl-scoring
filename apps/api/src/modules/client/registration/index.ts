@@ -97,6 +97,7 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
     // Id of the public_offers version the client accepted (the row returned by
     // GET /public-offer). Required for new accounts; must be the current version.
     publicOfferId: Type.Integer({ minimum: 1, examples: [1] }),
+    photoBase64: Type.Optional(Type.String({ minLength: 1, examples: ['ey'] })),
   });
 
   /* ── Response schemas (examples power the Swagger UI sample bodies) ──────── */
