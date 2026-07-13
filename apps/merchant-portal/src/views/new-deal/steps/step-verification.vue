@@ -5,9 +5,12 @@ import { useDealStore } from '@/stores/deal'
 import { useClientApi } from '@/composables/use-client-api'
 import { useCreateDealMutation } from '@/composables/use-deals-api'
 import {
+  cancelSigningRequest,
   fetchActiveSession,
+  fetchSigningStatus,
   isSigningProofFresh,
   saveSessionStep,
+  sendSigningRequest,
 } from '@/composables/use-deal-session-api'
 import MonoAmount from '@/components/mono-amount.vue'
 
@@ -36,11 +39,17 @@ function itemPrice(price: string, quantity: number): number {
 }
 
 // ── Signing gate ───────────────────────────────────────────────────────────
-// MyID (identity — the client is standing here) first, then the OTP (акцепт —
+// MyID (identity — the client is who they say) first, then the OTP (акцепт —
 // consent to these exact terms), which is therefore always the last act before
 // the Deal. Neither proof lives in the browser: both are stamped onto the Deal
 // Session server-side, and the phase below is READ back off that stamp — so the
 // gate the agent sees can never disagree with the gate the server enforces.
+//
+// The same two proofs can be collected on two surfaces. At the COUNTER the client
+// uses this browser (the agent hands over the tablet). REMOTELY they use their own
+// phone — the app they already have, because it is how they got their limit. The
+// session is what gets signed either way, so switching surfaces mid-run costs
+// nothing and loses nothing.
 type SignPhase = 'myid' | 'otp' | 'ready'
 
 const otpCode = ref('')
@@ -79,10 +88,99 @@ watch(phase, (p) => {
   }
 })
 
+// ── Remote signing ─────────────────────────────────────────────────────────
+const request = computed(() => sd.value.signingRequest)
+/** Waiting on the client's phone: asked, not yet declined, not yet finished. */
+const awaitingClient = computed(
+  () => !!request.value && !request.value.rejectedAt && phase.value !== 'ready',
+)
+const clientRejected = computed(() => !!request.value?.rejectedAt)
+
+/** Whether the client has an app we can actually reach. Server-answered, not guessed. */
+const remoteAvailable = ref(false)
+const remoteError = ref('')
+const sendingRequest = ref(false)
+
+let poll: ReturnType<typeof setInterval> | null = null
+
+/** Read the gate back off the server — the only thing that knows if the phone signed. */
+async function refreshSigningStatus() {
+  if (!deal.dealSessionId) return
+  try {
+    const status = await fetchSigningStatus(deal.dealSessionId)
+    remoteAvailable.value = status.remoteAvailable
+    deal.setSigningRequest(status.signingRequest)
+    deal.setSigning(status.signing)
+  } catch {
+    // A poll that fails is a slower screen, not a broken one — the agent can still
+    // fall back to signing here, and the next tick will pick the truth back up.
+  }
+}
+
+function stopPolling() {
+  if (poll) {
+    clearInterval(poll)
+    poll = null
+  }
+}
+
+// Poll ONLY while the client's phone owes us something. Nothing else on this
+// screen changes without the agent doing it, so polling outside that window would
+// be asking the server a question we already know the answer to.
+watch(
+  awaitingClient,
+  (waiting) => {
+    stopPolling()
+    if (waiting) poll = setInterval(refreshSigningStatus, 3000)
+  },
+  { immediate: true },
+)
+
+/** Ask the client to sign on their own phone. Fires a push; the request is the truth. */
+async function askClientToSign() {
+  if (!deal.dealSessionId) return
+  remoteError.value = ''
+  sendingRequest.value = true
+  try {
+    const req = await sendSigningRequest(deal.dealSessionId)
+    deal.setSigningRequest(req)
+  } catch (err: any) {
+    const code = err?.message
+    if (code === 'no_signing_device') {
+      // They uninstalled the app, or never opened it on this phone. Stop offering
+      // the option rather than letting the agent press it again.
+      remoteAvailable.value = false
+      remoteError.value = t('stepVerification.noSigningDevice')
+    } else if (code === 'active_deal_exists') {
+      remoteError.value = t('stepVerification.activeDealExists')
+    } else {
+      remoteError.value = t('stepVerification.signingRequestFailed')
+    }
+  } finally {
+    sendingRequest.value = false
+  }
+}
+
+/** Give up on the phone and take the client through the gate here. Proofs are kept. */
+async function signHereInstead() {
+  if (!deal.dealSessionId) return
+  remoteError.value = ''
+  try {
+    await cancelSigningRequest(deal.dealSessionId)
+    deal.setSigningRequest(null)
+  } catch {
+    remoteError.value = t('stepVerification.signingRequestFailed')
+  }
+}
+
 /**
- * Persist the contract language onto the session. Called before the MyID redirect
- * (so the choice survives leaving the page) and again before deal creation, which
- * reads `lang` off the session — never off the request (ADR-0024).
+ * Persist the contract language onto the session. The Deal reads `lang` off the
+ * session, never off the request (ADR-0024).
+ *
+ * Only callable before the first proof lands: saving ANY step now voids the
+ * signature (a change of terms must be re-consented, and the contract's language
+ * is part of what was consented to). So the selector locks once signing starts —
+ * you choose the language, then you sign it, not the other way round.
  */
 async function saveVerificationStep(): Promise<boolean> {
   if (!deal.dealSessionId) return false
@@ -91,6 +189,17 @@ async function saveVerificationStep(): Promise<boolean> {
     return true
   } catch {
     return false
+  }
+}
+
+/** The language is part of the terms — it cannot move once someone has signed them. */
+const langLocked = computed(() => !!signing.value || awaitingClient.value)
+
+async function pickLang(next: 'ru' | 'uz') {
+  if (langLocked.value || lang.value === next) return
+  lang.value = next
+  if (!(await saveVerificationStep())) {
+    myidError.value = t('stepVerification.stepSaveFailed')
   }
 }
 
@@ -115,7 +224,7 @@ function startResendCooldown() {
   }, 1000)
 }
 
-onMounted(() => {
+onMounted(async () => {
   clock = setInterval(() => (now.value = Date.now()), 5000)
 
   // The face-scan's return leg left a verdict for us. Success needs no flag — the
@@ -128,10 +237,21 @@ onMounted(() => {
         ? t('stepVerification.myidPinflMismatch')
         : t('stepVerification.myidFailed')
   }
+
+  // The contract language must be ON the session before anyone signs: the terms
+  // digest covers it, and the Deal reads it from there. Landing on this step with
+  // no language saved would otherwise mean the first thing to write it is the
+  // save that voids the signature we just collected.
+  if (!sd.value.contractLang || !deal.completed.verification) await saveVerificationStep()
+
+  // Tells us whether remote signing is even on offer, and picks up a request that
+  // was already outstanding when the agent reloaded the page.
+  await refreshSigningStatus()
 })
 
 onUnmounted(() => {
   stopResendTimer()
+  stopPolling()
   if (clock) clearInterval(clock)
 })
 
@@ -139,13 +259,10 @@ async function startMyidSigning() {
   if (!deal.dealSessionId) return
   myidError.value = ''
 
-  // Save the language before we leave the page — a re-hydrate on return would
-  // otherwise silently reset the selector to RU and sign the wrong contract.
-  if (!(await saveVerificationStep())) {
-    myidError.value = t('stepVerification.stepSaveFailed')
-    return
-  }
-
+  // The language is already on the session — written when the agent picked it, and
+  // locked the moment the first proof lands. We must NOT re-save it here: a step
+  // save now voids the signature, so doing it on the way into the face-scan would
+  // quietly discard proofs the client may already have given on their phone.
   try {
     const res = await myidSignSessionMutation.mutateAsync(deal.dealSessionId)
     sessionStorage.setItem('myid_sign_session_token', res.signingSessionToken)
@@ -209,15 +326,14 @@ async function signSubmit() {
   submitting.value = true
   submitError.value = ''
   try {
-    // The deal is built FROM the session (ADR-0024): save the contract language,
-    // then send nothing but the session id — both signing proofs are already
-    // stamped on it, so a business-rule failure here can be retried without
-    // burning the client's SMS.
-    if (!(await saveVerificationStep())) {
-      submitError.value = t('stepVerification.stepSaveFailed')
-      return
-    }
-
+    // The deal is built FROM the session (ADR-0024): send nothing but the session
+    // id — both proofs and the terms they were given against are already stamped on
+    // it, so a business-rule failure here can be retried without burning the SMS.
+    //
+    // Note we deliberately do NOT save the verification step first. Saving any step
+    // voids the signature, which is the whole point of the rule — doing it here
+    // would drop the акцепт we are about to spend. The language was written when the
+    // agent chose it, before the gate locked.
     const res = await createDealMutation.mutateAsync({ dealSessionId: deal.dealSessionId })
 
     deal.setCreatedDealId(res.dealId, res.dealNumber)
@@ -230,6 +346,12 @@ async function signSubmit() {
       const active = await fetchActiveSession().catch(() => null)
       if (active) deal.hydrateFromSession(active)
       submitError.value = t('stepVerification.myidExpired')
+    } else if (code === 'terms_changed') {
+      // The terms moved after the client consented to them. The server refuses to
+      // build a deal the client never agreed to, and we send them back to the gate.
+      const active = await fetchActiveSession().catch(() => null)
+      if (active) deal.hydrateFromSession(active)
+      submitError.value = t('stepVerification.termsChanged')
     } else if (code === 'active_deal_exists') {
       submitError.value = t('stepVerification.activeDealExists')
     } else {
@@ -337,19 +459,92 @@ async function signSubmit() {
       </table>
     </section>
 
-    <!-- Contract language selector -->
+    <!-- Contract language — part of the terms, so it locks once anyone has signed -->
     <div class="lang-selector">
       <span class="lang-label">{{ $t('stepVerification.contractLang') }}</span>
       <div class="lang-btns">
-        <button class="lang-btn" :class="{ active: lang === 'ru' }" @click="lang = 'ru'">RU</button>
-        <button class="lang-btn" :class="{ active: lang === 'uz' }" @click="lang = 'uz'">UZ</button>
+        <button class="lang-btn" :class="{ active: lang === 'ru' }" :disabled="langLocked"
+          @click="pickLang('ru')">RU</button>
+        <button class="lang-btn" :class="{ active: lang === 'uz' }" :disabled="langLocked"
+          @click="pickLang('uz')">UZ</button>
       </div>
+      <span v-if="langLocked" class="lang-lock">
+        <i class="pi pi-lock" /> {{ $t('stepVerification.langLocked') }}
+      </span>
     </div>
 
     <!-- Signing gate: MyID (identity) → OTP (акцепт) → create -->
     <div class="sign-gate">
+      <!-- waiting on the client's phone -->
+      <div v-if="awaitingClient" class="gate-otp">
+        <div class="gate-hint">
+          <i class="pi pi-mobile" />
+          <div>
+            <p class="gate-title">{{ $t('stepVerification.awaitingClientTitle') }}</p>
+            <p class="gate-sub">
+              {{ $t('stepVerification.awaitingClientHint', { phone: sd.client?.phone ?? '' }) }}
+            </p>
+          </div>
+        </div>
+
+        <!-- The gate as the CLIENT's phone is walking it, read back off the server -->
+        <ol class="remote-steps">
+          <li :class="{ done: myidFresh, current: !myidFresh }">
+            <i :class="myidFresh ? 'pi pi-check-circle' : 'pi pi-spin pi-spinner'" />
+            {{ $t('stepVerification.remoteStepMyid') }}
+          </li>
+          <li :class="{ done: otpFresh, current: myidFresh && !otpFresh, idle: !myidFresh }">
+            <i :class="otpFresh
+              ? 'pi pi-check-circle'
+              : myidFresh
+                ? 'pi pi-spin pi-spinner'
+                : 'pi pi-circle'" />
+            {{ $t('stepVerification.remoteStepOtp') }}
+          </li>
+        </ol>
+
+        <div class="remote-actions">
+          <button class="btn-ghost" :disabled="sendingRequest" @click="askClientToSign">
+            <i v-if="sendingRequest" class="pi pi-spin pi-spinner" />
+            <i v-else class="pi pi-bell" />
+            {{ $t('stepVerification.resendRequest') }}
+          </button>
+          <button class="btn-ghost" @click="signHereInstead">
+            <i class="pi pi-desktop" /> {{ $t('stepVerification.signHereInstead') }}
+          </button>
+        </div>
+
+        <p v-if="remoteError" class="otp-error">
+          <i class="pi pi-exclamation-circle" /> {{ remoteError }}
+        </p>
+      </div>
+
+      <!-- the client said no. Recoverable: change the terms and ask again. -->
+      <div v-else-if="clientRejected && phase !== 'ready'" class="gate-otp rejected">
+        <div class="gate-hint">
+          <i class="pi pi-times-circle danger-icon" />
+          <div>
+            <p class="gate-title">{{ $t('stepVerification.clientRejectedTitle') }}</p>
+            <p class="gate-sub">{{ $t('stepVerification.clientRejectedHint') }}</p>
+          </div>
+        </div>
+        <div class="remote-actions">
+          <button class="btn-ghost" :disabled="sendingRequest" @click="askClientToSign">
+            <i v-if="sendingRequest" class="pi pi-spin pi-spinner" />
+            <i v-else class="pi pi-replay" />
+            {{ $t('stepVerification.resendRequest') }}
+          </button>
+          <button class="btn-ghost" @click="signHereInstead">
+            <i class="pi pi-desktop" /> {{ $t('stepVerification.signHereInstead') }}
+          </button>
+        </div>
+        <p v-if="remoteError" class="otp-error">
+          <i class="pi pi-exclamation-circle" /> {{ remoteError }}
+        </p>
+      </div>
+
       <!-- myid: the client must pass the face-scan before any code is sent -->
-      <div v-if="phase === 'myid'" class="gate-row">
+      <div v-else-if="phase === 'myid'" class="gate-row">
         <div class="gate-hint">
           <i class="pi pi-id-card" />
           <div>
@@ -361,13 +556,28 @@ async function signSubmit() {
             <p v-if="myidError" class="otp-error mt-1">
               <i class="pi pi-exclamation-circle" /> {{ myidError }}
             </p>
+            <p v-if="remoteError" class="otp-error mt-1">
+              <i class="pi pi-exclamation-circle" /> {{ remoteError }}
+            </p>
           </div>
         </div>
-        <button class="btn-myid" :disabled="myidSignSessionMutation.isPending.value" @click="startMyidSigning">
-          <i v-if="myidSignSessionMutation.isPending.value" class="pi pi-spin pi-spinner" />
-          <span v-else class="myid-logo-text">MyID</span>
-          {{ $t('stepVerification.verifyMyid') }}
-        </button>
+        <div class="gate-choice">
+          <!-- The preferred path when we can reach the client: they scan their own
+               face and type their own акцепт code, on the phone already in their
+               hand. Signing here stays one click away — a push is not a guarantee. -->
+          <button v-if="remoteAvailable" class="btn-gradient" :disabled="sendingRequest"
+            @click="askClientToSign">
+            <i v-if="sendingRequest" class="pi pi-spin pi-spinner" />
+            <i v-else class="pi pi-mobile" />
+            {{ $t('stepVerification.askClientToSign') }}
+          </button>
+          <button class="btn-myid" :disabled="myidSignSessionMutation.isPending.value"
+            @click="startMyidSigning">
+            <i v-if="myidSignSessionMutation.isPending.value" class="pi pi-spin pi-spinner" />
+            <span v-else class="myid-logo-text">MyID</span>
+            {{ $t('stepVerification.verifyMyid') }}
+          </button>
+        </div>
       </div>
 
       <!-- otp: identity proven — now take the client's consent to these terms -->
@@ -635,6 +845,75 @@ async function signSubmit() {
   border-color: var(--accent-2);
   color: var(--accent-2);
   background: color-mix(in srgb, var(--accent-2) 10%, transparent);
+}
+
+.lang-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.lang-lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Remote signing — the client's phone is walking the gate */
+.gate-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.remote-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.remote-steps li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.remote-steps li.current {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.remote-steps li.done {
+  color: var(--success);
+}
+
+.remote-steps li.idle {
+  opacity: 0.5;
+}
+
+.remote-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.gate-otp.rejected {
+  border-left: 3px solid var(--danger);
+  padding-left: 0.9rem;
+}
+
+.danger-icon {
+  color: var(--danger) !important;
 }
 
 .sign-gate {

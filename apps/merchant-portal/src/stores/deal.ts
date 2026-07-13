@@ -10,7 +10,11 @@ import type {
   Product,
   Tariff,
 } from '@/types';
-import type { DealSessionDto, SessionSigning } from '@/composables/use-deal-session-api';
+import type {
+  DealSessionDto,
+  SessionSigning,
+  SessionSigningRequest,
+} from '@/composables/use-deal-session-api';
 import { buildSchedulePreview } from '@/utils/schedule-preview';
 
 export type DealStepKey =
@@ -89,6 +93,8 @@ interface SessionData {
   contractLang: 'ru' | 'uz';
   /** Server-stamped signing proofs (MyID, then OTP). Null until the face-scan lands. */
   signing: SessionSigning | null;
+  /** An outstanding "sign on your phone" request. Null when signing at the counter. */
+  signingRequest: SessionSigningRequest | null;
   createdDealId: string | null;
   createdDealNumber: string | null;
 }
@@ -110,6 +116,7 @@ function emptySession(): SessionData {
     schedule: [],
     contractLang: 'ru',
     signing: null,
+    signingRequest: null,
     createdDealId: null,
     createdDealNumber: null,
   };
@@ -170,9 +177,18 @@ export const useDealStore = defineStore(
       flowMode.value = mode;
     }
 
-    /** Mirror a signing stamp the server just returned (MyID complete / OTP verify). */
-    function setSigning(signing: SessionSigning) {
+    /**
+     * Mirror a signing stamp the server just returned (MyID complete / OTP verify),
+     * or clear it — the server drops the signature whenever a step changes, so a
+     * poll must be able to tell us the gate has reopened.
+     */
+    function setSigning(signing: SessionSigning | null) {
       sessionData.value.signing = signing;
+    }
+
+    /** Mirror the remote-signing request state the poll just read back. */
+    function setSigningRequest(request: SessionSigningRequest | null) {
+      sessionData.value.signingRequest = request;
     }
 
     /**
@@ -261,6 +277,7 @@ export const useDealStore = defineStore(
       fresh.paymentDay = data.payment?.paymentDay ?? null;
       fresh.contractLang = data.verification?.lang ?? 'ru';
       fresh.signing = data.signing ?? null;
+      fresh.signingRequest = data.signingRequest ?? null;
 
       if (fresh.tariff && fresh.paymentDay) {
         const principal = fresh.basket.reduce(
@@ -422,6 +439,7 @@ export const useDealStore = defineStore(
       setDealSessionId,
       setFlowMode,
       setSigning,
+      setSigningRequest,
       hydrateFromSession,
       goTo,
       complete,

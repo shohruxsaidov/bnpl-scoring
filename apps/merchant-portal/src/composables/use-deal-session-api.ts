@@ -43,6 +43,22 @@ export interface SessionSigning {
   pinfl: string
   myidVerifiedAt: string
   otpVerifiedAt?: string
+  /** Digest of the terms consented to. The Deal cannot be built if they've moved since. */
+  termsHash?: string
+  /** Where the client proved themselves — our browser, or their own phone. */
+  channel?: 'counter' | 'remote'
+}
+
+/**
+ * An outstanding "sign on your phone" request. Its presence is what puts the
+ * client's app into the signing flow — the push is only a nudge, and the app
+ * finds the request by polling whether or not the notification ever lands.
+ */
+export interface SessionSigningRequest {
+  sentAt: string
+  sends: number
+  /** The client declined. Recoverable: change the terms and send again. */
+  rejectedAt?: string
 }
 
 /** Mirrors the server's SIGNING_PROOF_TTL_MS — a face-scan proves presence NOW. */
@@ -81,6 +97,7 @@ export interface SessionStepData {
   payment?: { paymentDay: number }
   verification?: { lang: 'ru' | 'uz' }
   signing?: SessionSigning
+  signingRequest?: SessionSigningRequest
   katm?: SessionKatm
   katmPending?: { status: 'pending' | 'failed'; startedAt: string; error?: string }
   scoring?: SessionScoring
@@ -157,4 +174,45 @@ export async function abandonDealSession(sessionId: string): Promise<void> {
     method: 'POST',
     body: JSON.stringify({}),
   })
+}
+
+// ── Remote signing — hand the gate to the client's own phone ─────────────────
+
+/**
+ * Ask the client to sign on their phone. Fires a push, but the request itself is
+ * what makes it real: their app polls for it, so a notification that never
+ * arrives costs seconds, not the deal.
+ *
+ * 409 `no_signing_device` means we can't reach them — fall back to signing here.
+ */
+export async function sendSigningRequest(sessionId: string): Promise<SessionSigningRequest> {
+  const res = await apiFetch<{ ok: boolean; signingRequest: SessionSigningRequest }>(
+    `/merchant/deal-sessions/${sessionId}/signing-request`,
+    { method: 'POST', body: JSON.stringify({}) },
+  )
+  return res.signingRequest
+}
+
+/**
+ * Withdraw the request and take the client through the gate here instead. Proofs
+ * they already passed on the phone are kept — same two proofs, same run.
+ */
+export async function cancelSigningRequest(sessionId: string): Promise<void> {
+  await apiFetch<{ ok: boolean }>(`/merchant/deal-sessions/${sessionId}/signing-request`, {
+    method: 'DELETE',
+  })
+}
+
+export interface SigningStatus {
+  signing: SessionSigning | null
+  signingRequest: SessionSigningRequest | null
+  myidVerified: boolean
+  otpVerified: boolean
+  /** Can we reach this client's phone at all? Gates the remote option being offered. */
+  remoteAvailable: boolean
+}
+
+/** Polled while we wait on the client's phone. Freshness is decided server-side. */
+export async function fetchSigningStatus(sessionId: string): Promise<SigningStatus> {
+  return apiFetch<SigningStatus>(`/merchant/deal-sessions/${sessionId}/signing-status`)
 }

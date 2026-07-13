@@ -13,6 +13,7 @@ import { products, users } from '@db/schema';
 import { userCreditLimits } from '@db/user-credit-limits';
 import { katm077Reports } from '@db/katm-077-reports';
 import type { CreateDealInput } from './create-deal.command';
+import { calcBasketAmount, computeTermsHash } from '../../../../deals/signing/terms';
 import {
   isSigningProofFresh,
   type DealSessionRow,
@@ -72,6 +73,17 @@ export async function createDealFromSession(session: DealSessionRow) {
     .limit(1);
   if (!clientRow || clientRow.pinfl !== signing.pinfl) throw coded('pinfl_mismatch');
 
+  // …and WHAT they consented to. The two stamps above bind a person and a moment;
+  // this binds a price. saveStep drops the signature whenever a step moves, so a
+  // wizard that walks Back can't reach here — but an API caller that never touched
+  // saveStep still could, and the client who signed on their own phone put it back
+  // in their pocket and is not watching the Agent's screen. Recomputed from the
+  // session's own snapshots, never taken from the request.
+  const termsHash = computeTermsHash(data);
+  if (!termsHash || !signing.termsHash || termsHash !== signing.termsHash) {
+    throw coded('terms_changed');
+  }
+
   // Products must still exist and be active — stale session fails hard and the
   // Agent redoes the Products step (ADR-0024)
   const productIds = productsStep.lines.map((l) => Number(l.productId));
@@ -85,21 +97,20 @@ export async function createDealFromSession(session: DealSessionRow) {
   }
 
   // Amounts from the session's price snapshots — the signed contract equals
-  // what the Client OTP-consented to, even if prices changed since
-  let amount = Number(0);
-  const basket = productsStep.lines.map((line) => {
-    amount += Number(Math.round(parseFloat(line.price) * 100)) * Number(line.quantity);
-    return {
-      productId: Number(line.productId),
-      productName: line.productName,
-      price: line.price,
-      mxikCode: line.mxikCode,
-      packageCode: line.packageCode,
-      packageName: line.packageName,
-      quantity: line.quantity,
-      labels: line.labels ?? [],
-    };
-  });
+  // what the Client OTP-consented to, even if prices changed since. Summed by the
+  // same function the terms digest uses, so the money in the Deal and the money in
+  // the hash cannot drift apart.
+  const amount = calcBasketAmount(productsStep.lines);
+  const basket = productsStep.lines.map((line) => ({
+    productId: Number(line.productId),
+    productName: line.productName,
+    price: line.price,
+    mxikCode: line.mxikCode,
+    packageCode: line.packageCode,
+    packageName: line.packageName,
+    quantity: line.quantity,
+    labels: line.labels ?? [],
+  }));
 
   const minAmount = tariff.minAmount != null ? Number(tariff.minAmount) : null;
   const maxAmount = tariff.maxAmount != null ? Number(tariff.maxAmount) : null;

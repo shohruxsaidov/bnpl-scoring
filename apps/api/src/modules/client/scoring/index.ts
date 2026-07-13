@@ -107,7 +107,7 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
       if (limit && limit.expiresAt.getTime() > Date.now()) {
         if (Number(limit.creditLimit) > 0) {
           return {
-            status: 'cached' as const,
+            status: 'scored' as const,
             creditLimit: limit.creditLimit,
             expiresAt: limit.expiresAt.toISOString(),
           };

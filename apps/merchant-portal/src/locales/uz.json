@@ -657,7 +657,20 @@
     "createDealFailed": "Shartnoma yaratishda xatolik. Qayta urinib ko'ring.",
     "stepSaveFailed": "Qadamni saqlab bo'lmadi. Qayta urinib ko'ring.",
     "contractLang": "Shartnoma tili:",
-    "activeDealExists": "Mijozda amaldagi shartnoma paydo bo'ldi. Yangisini faqat u yopilgandan so'ng rasmiylashtirish mumkin."
+    "activeDealExists": "Mijozda amaldagi shartnoma paydo bo'ldi. Yangisini faqat u yopilgandan so'ng rasmiylashtirish mumkin.",
+    "askClientToSign": "Mijoz telefoniga yuborish",
+    "awaitingClientTitle": "Mijoz telefonida imzolashni kutmoqdamiz",
+    "awaitingClientHint": "Mijozga {phone} raqamiga bildirishnoma yuborildi. U ilovada MyID dan o'tib, shartlarni tasdiqlaydi.",
+    "remoteStepMyid": "MyID orqali yuzni tekshirish",
+    "remoteStepOtp": "Shartlarni kod bilan tasdiqlash",
+    "resendRequest": "So'rovni qayta yuborish",
+    "signHereInstead": "Shu yerda imzolash",
+    "clientRejectedTitle": "Mijoz imzolashni rad etdi",
+    "clientRejectedHint": "Shartlarni o'zgartirib, so'rovni qayta yuboring — yoki shu yerda imzolang.",
+    "noSigningDevice": "Mijoz telefonida ilova yo'q. Shu yerda imzolang.",
+    "signingRequestFailed": "So'rovni yuborib bo'lmadi. Qayta urinib ko'ring.",
+    "langLocked": "Imzolashgacha qat'iylashtirildi",
+    "termsChanged": "Imzolangandan keyin shartlar o'zgardi. Mijoz qaytadan imzolashi kerak."
   },
   "stepDone": {
     "title": "Tayyor!",

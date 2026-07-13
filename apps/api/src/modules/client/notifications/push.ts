@@ -79,6 +79,28 @@ function renderPush(
   };
 }
 
+/**
+ * Where tapping the push should land the app. Only actionable types get one —
+ * news opens the inbox, which is the default with no `screen` at all.
+ *
+ * The values are a ROUTING HINT and nothing more. The app must re-fetch the
+ * request from /client/deals/to-sign and render THAT: a payload arriving from
+ * the network is not evidence a deal exists, the terms in it would be a snapshot
+ * from whenever the push was minted, and a stale tap must find nothing rather
+ * than something wrong.
+ */
+function pushRoute(
+  type: NotificationType,
+  data: Record<string, unknown>,
+): Record<string, string> {
+  if (type !== 'deal_signing_request') return {};
+  const sessionId = data['dealSessionId'];
+  return {
+    screen: 'deal_signing',
+    ...(typeof sessionId === 'string' ? { dealSessionId: sessionId } : {}),
+  };
+}
+
 async function unreadCount(userId: number): Promise<number> {
   const [r] = await db
     .select({ n: sql<number>`count(*)::int` })
@@ -135,7 +157,8 @@ export async function processNotificationPushJob(
     const res = await messaging.sendEachForMulticast({
       tokens,
       notification: { title, body },
-      data: { notificationId: row.id, type: row.type },
+      // FCM data values must all be strings — a number here is rejected at send.
+      data: { notificationId: row.id, type: row.type, ...pushRoute(row.type, payload) },
       apns: { payload: { aps: { badge: unread, sound: 'default' } } },
     });
     res.responses.forEach((r, i) => {

@@ -74,15 +74,53 @@ export interface PrepaymentStamp {
 /**
  * The Верификация step's two proofs, both stamped server-side — never written by
  * the browser. MyID (identity: this client is standing at the counter right now)
- * must come first; the OTP (акцепт: consent to the final terms) comes last, so a
- * change of terms is always re-consented. The Deal cannot be created without both,
- * fresh, and with `pinfl` matching the session's client.
+ * must come first; the OTP (акцепт: consent to the final terms) comes last. The
+ * Deal cannot be created without both, fresh, with `pinfl` matching the session's
+ * client, and with `termsHash` still matching the session's terms.
  */
 export interface SigningStamp {
   /** The PINFL that actually passed the face-scan. */
   pinfl: string;
   myidVerifiedAt: string;
   otpVerifiedAt?: string;
+  /**
+   * Digest of the terms the client actually consented to (see deals/signing/terms).
+   * Stamped WITH the акцепт, because that is the moment consent is given, and
+   * re-checked at deal creation. Without it the stamp binds a person and a moment
+   * but not a price — and an Agent could take the акцепт, walk back to Products,
+   * and build the Deal on a basket the client never saw.
+   */
+  termsHash?: string;
+  /** Which surface the client signed on. Absent on stamps predating remote signing. */
+  channel?: SigningChannel;
+}
+
+/**
+ * Where the client proves themselves. `counter` is the original flow — the scan
+ * and the code happen in the Agent's browser. `remote` hands both to the client's
+ * own phone, which they already have because the app is how they got their limit.
+ */
+export type SigningChannel = 'counter' | 'remote';
+
+/**
+ * An outstanding request for the client to sign on their own phone. A push is
+ * fired alongside it, but this row — not the push — is what makes the request
+ * real: the app discovers it by polling /client/deals/to-sign, so an undelivered
+ * notification is a slower flow, not a dead one.
+ *
+ * Cleared whenever the terms move (see saveStep), because a request to sign terms
+ * that no longer exist is worse than no request at all.
+ */
+export interface SigningRequestState {
+  sentAt: string;
+  /** How many times the Agent has pushed this run at the client. */
+  sends: number;
+  /**
+   * The client tapped Отклонить. Recoverable by design — the Agent can change the
+   * tariff and re-send — but recorded, so a run that was refused three times before
+   * it was accepted does not look like a run that was accepted first time.
+   */
+  rejectedAt?: string;
 }
 
 export interface SessionStepData {
@@ -123,6 +161,7 @@ export interface SessionStepData {
   scoring?: ScoringStamp;
   prepayment?: PrepaymentStamp;
   signing?: SigningStamp;
+  signingRequest?: SigningRequestState;
   /**
    * Which step sequence this run follows (ADR — reuse scoring). Absent ⇒ 'full'
    * (client → card → …). 'reuse' routes through the contacts step and reuses the

@@ -126,6 +126,12 @@ export const uz: Record<string, string> = {
   scoring_missing: "Sessiyada skoring natijasi yo'q",
   scoring_declined: "Skoring rad etilgan — bitim yaratib bo'lmaydi",
 
+  // deal signing (myid_not_verified / otp_not_verified / otp_attempts_exceeded above)
+  terms_changed: "Imzolangandan keyin bitim shartlari o'zgardi — mijoz qaytadan imzolashi kerak",
+  otp_send_cap: 'Ushbu bitim uchun kod yuborish chegarasiga yetildi',
+  signing_request_not_found: "Imzolash so'rovi endi faol emas",
+  no_signing_device: "Mijozda ilova o'rnatilgan qurilma yo'q",
+
   // notifications — errors
   notification_not_found: 'Bildirishnoma topilmadi',
   push_disabled: 'Push-bildirishnomalar serverda sozlanmagan',
@@ -138,4 +144,7 @@ export const uz: Record<string, string> = {
   'notification.scoring_rejected.body': 'Afsuski, hozircha kredit limiti ajratilmadi.',
   'notification.limit_updated.title': 'Kredit limiti yangilandi',
   'notification.limit_updated.body': "Sizning kredit limitingiz %{creditLimit} so'mga o'zgardi.",
+  'notification.deal_signing_request.title': 'Shartnomani imzolang',
+  'notification.deal_signing_request.body':
+    "%{merchantName} %{totalPayable} so'mlik muddatli to'lovni tasdiqlashingizni kutmoqda. Shartlarni tekshirish uchun ilovani oching.",
 };

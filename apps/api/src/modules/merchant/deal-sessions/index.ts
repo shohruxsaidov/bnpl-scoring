@@ -20,9 +20,18 @@ import {
 import { createMyidSession, exchangeMyidCode } from '../../integrations/myid/client';
 import { env } from '../../../env';
 import {
+  clearSigningRequest,
   stampMyidSigning,
   stampOtpSigning,
+  stampSigningRequest,
 } from './commands/stamp-signing/stamp-signing.handler';
+import {
+  hasPushDevice,
+  requireTerms,
+  resolveSigningContext,
+  sendSigningRequestPush,
+} from '../../deals/signing/service';
+import { issueSigningOtp, verifySigningOtp } from '../../deals/signing/otp';
 import { getActiveSession } from './queries/get-active-session/get-active-session.handler';
 import {
   loadOwnedActiveSession,
@@ -69,7 +78,6 @@ import { rejectSession } from './commands/reject-session/reject-session.handler'
 import type { GENDERS } from '../../integrations/katm/service/shared';
 import { resolveScoringModel } from '../../scoring/resolve-model';
 import { runModelAndLimit } from '../../scoring/compute-limit';
-import { createOtp, verifyOtp } from '../../auth/client/service/service.handler';
 
 type JwtPayload = {
   sub: string;
@@ -711,8 +719,152 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
   /* ── POST /:id/sign-otp — send the акцепт code to the session's client ──── */
 
+  const isProd = app.hasDecorator('isProd')
+    ? (app as any).isProd
+    : process.env['NODE_ENV'] === 'production';
+
   fastify.post(
     '/:id/sign-otp',
+    {
+      config: { rateLimit: { max: 3, timeWindow: 60 * 1000 } },
+      schema: { tags: TAGS, params: IdParams },
+      preHandler: guards,
+    },
+    async (request, reply) => {
+      const p = payload(request);
+      let ctx: Awaited<ReturnType<typeof loadSigningClient>>;
+      try {
+        ctx = await loadSigningClient(request.params.id, Number(p.sub));
+      } catch (err: any) {
+        return sessionErrorReply(reply, err);
+      }
+
+      const signing = stepDataOf(ctx.session).signing;
+      if (!isSigningProofFresh(signing?.myidVerifiedAt)) {
+        return reply.code(409).sendError('myid_not_verified');
+      }
+
+      // issueSigningOtp now owns the cooldown, the per-run send cap, and — the part
+      // this route never did at all — actually SENDING the SMS. It used to mint a
+      // code and return it as devOtp, which prod withholds: the акцепт code was
+      // being issued to nobody and signing could not complete in production.
+      const res = await issueSigningOtp(ctx.user.phone, ctx.session.id);
+      if (res.error === 'cooldown') {
+        return reply.code(429).sendError('otp_cooldown', { seconds: res.seconds });
+      }
+      if (res.error === 'send_cap') return reply.code(429).sendError('otp_send_cap');
+
+      if (!isProd) request.log.info({ phone: ctx.user.phone, code: res.code }, 'deal_signing OTP issued');
+
+      return { ok: true, ...(isProd ? {} : { devOtp: res.code }) };
+    },
+  );
+
+  /* ── POST /:id/sign-otp/verify — stamp the client's consent ─────────────── */
+
+  const SignOtpVerifyBody = Type.Object({ code: Type.String({ minLength: 1 }) });
+
+  fastify.post(
+    '/:id/sign-otp/verify',
+    {
+      config: { rateLimit: { max: 10, timeWindow: 60 * 1000 } },
+      schema: { tags: TAGS, params: IdParams, body: SignOtpVerifyBody },
+      preHandler: guards,
+    },
+    async (request, reply) => {
+      const p = payload(request);
+      let ctx: Awaited<ReturnType<typeof loadSigningClient>>;
+      try {
+        ctx = await loadSigningClient(request.params.id, Number(p.sub));
+      } catch (err: any) {
+        return sessionErrorReply(reply, err);
+      }
+
+      const signing = stepDataOf(ctx.session).signing;
+      if (!isSigningProofFresh(signing?.myidVerifiedAt)) {
+        return reply.code(409).sendError('myid_not_verified');
+      }
+
+      // A guess budget, bounded to the code it guards and burning that code when
+      // spent. A 4-digit акцепт with unlimited resends and no attempt counter was
+      // forgeable by the one party who holds both the session and the motive.
+      const result = await verifySigningOtp(ctx.user.phone, request.body.code);
+      if (result === 'attempts_exceeded') {
+        return reply.code(429).sendError('otp_attempts_exceeded');
+      }
+      if (result === 'invalid') return reply.code(400).sendError('invalid_otp');
+
+      // Consent is a stamp, not a token the browser carries: POST /merchant/deals
+      // reads it back off the session. A failed deal creation can therefore be
+      // retried without burning a second SMS.
+      return { ok: true, signing: await stampOtpSigning(ctx.session, 'counter') };
+    },
+  );
+
+  /* ── Remote signing — hand the gate to the client's own phone ────────────── */
+  //
+  // Same two proofs, same session, different surface. The Agent stays the one who
+  // creates the Deal: its failures (a product deactivated, a tariff bound moved) are
+  // fixable only at the counter, and surfacing them on a phone in someone's pocket
+  // would strand the client's акцепт with nobody able to act.
+
+  /* ── POST /:id/signing-request — ask the client to sign on their phone ───── */
+
+  fastify.post(
+    '/:id/signing-request',
+    {
+      config: { rateLimit: { max: 5, timeWindow: 60 * 1000 } },
+      schema: { tags: TAGS, params: IdParams },
+      preHandler: guards,
+    },
+    async (request, reply) => {
+      const p = payload(request);
+      let base: Awaited<ReturnType<typeof loadSigningClient>>;
+      try {
+        base = await loadSigningClient(request.params.id, Number(p.sub));
+      } catch (err: any) {
+        return sessionErrorReply(reply, err);
+      }
+
+      // Same last-free-moment gate the counter flow takes before the face-scan.
+      if (await loadBlockingDeal(base.session.userId!)) {
+        return reply.code(409).sendError('active_deal_exists');
+      }
+
+      // Reachability, not provenance. The natural-sounding gate — "did this client
+      // get their limit on mobile?" — is the wrong one: it says how they were
+      // SCORED, not whether we can reach their phone now. A client who self-scored
+      // and then uninstalled the app would pass it and never see the request; a
+      // client who registered at the counter and later installed the app would fail
+      // it for no reason.
+      if (!(await hasPushDevice(base.session.userId!))) {
+        return reply.code(409).sendError('no_signing_device');
+      }
+
+      const ctx = await resolveSigningContext(base.session, {
+        id: base.session.userId!,
+        pinfl: base.user.pinfl,
+        phone: base.user.phone,
+      });
+
+      let terms;
+      try {
+        terms = requireTerms(ctx.session);
+      } catch {
+        return reply.code(409).sendError('session_incomplete');
+      }
+
+      const signingRequest = await stampSigningRequest(ctx.session);
+      await sendSigningRequestPush(ctx, signingRequest, terms);
+
+      return { ok: true, signingRequest };
+    },
+  );
+
+  /* ── DELETE /:id/signing-request — take the client back to the counter ───── */
+
+  fastify.delete(
+    '/:id/signing-request',
     { schema: { tags: TAGS, params: IdParams }, preHandler: guards },
     async (request, reply) => {
       const p = payload(request);
@@ -723,50 +875,41 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         return sessionErrorReply(reply, err);
       }
 
-      const signing = stepDataOf(ctx.session).signing;
-      if (!isSigningProofFresh(signing?.myidVerifiedAt)) {
-        return reply.code(409).sendError('myid_not_verified');
-      }
-
-      const isProd = app.hasDecorator('isProd')
-        ? (app as any).isProd
-        : process.env['NODE_ENV'] === 'production';
-
-      const code = await createOtp(ctx.user.phone, 'deal_signing');
-      if (!isProd) request.log.info({ phone: ctx.user.phone, code }, 'deal_signing OTP issued');
-
-      return { ok: true, ...(isProd ? {} : { devOtp: code }) };
+      // Proofs already earned on the phone are KEPT — they are the same two proofs,
+      // on the same run. Falling back costs nothing and loses nothing, which is the
+      // quiet payoff of signing the SESSION rather than a Deal.
+      await clearSigningRequest(ctx.session);
+      return { ok: true };
     },
   );
 
-  /* ── POST /:id/sign-otp/verify — stamp the client's consent ─────────────── */
+  /* ── GET /:id/signing-status — the wizard polls this while it waits ──────── */
 
-  const SignOtpVerifyBody = Type.Object({ code: Type.String({ minLength: 1 }) });
-
-  fastify.post(
-    '/:id/sign-otp/verify',
-    { schema: { tags: TAGS, params: IdParams, body: SignOtpVerifyBody }, preHandler: guards },
+  fastify.get(
+    '/:id/signing-status',
+    { schema: { tags: TAGS, params: IdParams }, preHandler: guards },
     async (request, reply) => {
       const p = payload(request);
-      let ctx: Awaited<ReturnType<typeof loadSigningClient>>;
+      let session: DealSessionRow;
       try {
-        ctx = await loadSigningClient(request.params.id, Number(p.sub));
+        session = await loadOwnedActiveSession(request.params.id, Number(p.sub));
       } catch (err: any) {
         return sessionErrorReply(reply, err);
       }
 
-      const signing = stepDataOf(ctx.session).signing;
-      if (!isSigningProofFresh(signing?.myidVerifiedAt)) {
-        return reply.code(409).sendError('myid_not_verified');
-      }
-
-      const ok = await verifyOtp(ctx.user.phone, request.body.code, 'deal_signing');
-      if (!ok) return reply.code(400).sendError('invalid_otp');
-
-      // Consent is a stamp, not a token the browser carries: POST /merchant/deals
-      // reads it back off the session. A failed deal creation can therefore be
-      // retried without burning a second SMS.
-      return { ok: true, signing: await stampOtpSigning(ctx.session) };
+      const data = stepDataOf(session);
+      return {
+        signing: data.signing ?? null,
+        signingRequest: data.signingRequest ?? null,
+        myidVerified: isSigningProofFresh(data.signing?.myidVerifiedAt),
+        otpVerified: isSigningProofFresh(data.signing?.otpVerifiedAt),
+        // Whether remote signing is even on the table. Sent up-front so the wizard
+        // can offer it or not, rather than showing a button that 409s — the client
+        // who uninstalled the app is exactly the one the Agent must not be surprised
+        // by, with the customer standing in front of them.
+        remoteAvailable:
+          session.userId != null ? await hasPushDevice(session.userId) : false,
+      };
     },
   );
 

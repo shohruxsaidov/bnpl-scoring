@@ -126,6 +126,12 @@ export const ru: Record<string, string> = {
   scoring_missing: 'Результат скоринга отсутствует в сессии',
   scoring_declined: 'Скоринг отклонён — сделка не может быть создана',
 
+  // deal signing (myid_not_verified / otp_not_verified / otp_attempts_exceeded above)
+  terms_changed: 'Условия сделки изменились после подписания — клиент должен подписать заново',
+  otp_send_cap: 'Достигнут лимит отправок кода для этой сделки',
+  signing_request_not_found: 'Запрос на подписание больше не активен',
+  no_signing_device: 'У клиента нет устройства с установленным приложением',
+
   // notifications — errors
   notification_not_found: 'Уведомление не найдено',
   push_disabled: 'Push-уведомления не настроены на сервере',
@@ -138,4 +144,7 @@ export const ru: Record<string, string> = {
   'notification.scoring_rejected.body': 'К сожалению, кредитный лимит пока не одобрен.',
   'notification.limit_updated.title': 'Кредитный лимит обновлён',
   'notification.limit_updated.body': 'Ваш кредитный лимит изменён на %{creditLimit} сум.',
+  'notification.deal_signing_request.title': 'Подпишите договор',
+  'notification.deal_signing_request.body':
+    '%{merchantName} ждёт подтверждения рассрочки на %{totalPayable} сум. Откройте приложение, чтобы проверить условия.',
 };

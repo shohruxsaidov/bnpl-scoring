@@ -6,6 +6,7 @@ import clientMeRoutes from './me/index';
 import clientScoringRoutes from './scoring/index';
 import clientNotificationsRoutes from './notifications/index';
 import clientDealsRoutes from './deals/index';
+import clientDealSigningRoutes from './deals/signing';
 import clientScoringCardsRoutes from './scoring/cards';
 
 declare module 'fastify' {
@@ -47,4 +48,9 @@ export default async function clientModule(app: FastifyInstance) {
   await app.register(clientScoringCardsRoutes, { prefix: '/client/scoring/cards' });
   await app.register(clientNotificationsRoutes, { prefix: '/client/notifications' });
   await app.register(clientDealsRoutes, { prefix: '/client/deals' });
+  // Signing shares the /client/deals prefix but is a different concern: these
+  // routes act on a DEAL SESSION the client has been asked to sign, not on a Deal
+  // they already hold. Kept in its own plugin so the read-only "my credits" surface
+  // stays free of the signing state machine.
+  await app.register(clientDealSigningRoutes, { prefix: '/client/deals' });
 }

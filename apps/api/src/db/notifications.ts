@@ -20,11 +20,19 @@ import { users } from './users';
 // 'custom' is the one type NOT rendered from the i18n bundle: an admin authors
 // the text by hand on the client detail page, and it travels in `data` as
 // {titleRu, titleUz, bodyRu, bodyUz}. See renderPush() in ./notifications/push.
+//
+// 'deal_signing_request' is the one type that is a CALL TO ACTION rather than
+// news: a merchant is asking the client, standing at their counter, to sign on
+// their own phone. Its push carries a `screen` so tapping it opens the signing
+// flow — but the notification is only a nudge. GET /client/deals/to-sign is the
+// source of truth, and the app must find the request there with no push at all,
+// because FCM drops messages and a dead push would otherwise mean a dead deal.
 // ---------------------------------------------------------------------------
 export type NotificationType =
   | 'scoring_approved'
   | 'scoring_rejected'
   | 'limit_updated'
+  | 'deal_signing_request'
   | 'custom';
 
 /** Admin-authored text for a `custom` notification, carried in `data`. */

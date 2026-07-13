@@ -46,6 +46,30 @@ export async function saveStep(
   for (const later of seq.slice(idx + 1)) delete (next as Record<string, unknown>)[later];
   console.log('[saveStep] next stepData after invalidation', next);
 
+  // Any step save voids the signature. The old rule dropped `signing` only when the
+  // CLIENT changed, on the reasoning that "the OTP is the last act of the run, so
+  // new terms always get a fresh consent" — but nothing enforced that. `signing` is
+  // not a step key, so the slice above never reached it, and an Agent could take the
+  // акцепт, press Back, add a product, and walk forward to a gate still reading
+  // `ready`. The Deal was then built on a basket the client had never seen.
+  //
+  // The authoritative guard is the terms digest stamped with the акцепт and
+  // re-checked at deal creation (deals/signing/terms) — that is what stops a caller
+  // going straight at the API. Dropping the stamp here is the honest UI half of it:
+  // the Agent sees the gate reopen the moment they change something, instead of
+  // meeting `terms_changed` at the end and not knowing why.
+  if (next.signing) {
+    console.log('[saveStep] dropping signing (step changed)', step);
+    delete next.signing;
+  }
+  // An outstanding "sign on your phone" request is for terms that just moved. Pull
+  // it, so the client's app stops offering a deal that no longer exists. The Agent
+  // re-sends, which is a fresh акцепт against the new terms by construction.
+  if (next.signingRequest) {
+    console.log('[saveStep] dropping signingRequest (step changed)', step);
+    delete next.signingRequest;
+  }
+
   if (step === 'client') {
     // A (re)selected client invalidates any scoring + contacts collected for the
     // previous one, and lets the next /start re-decide the flow mode.
@@ -56,13 +80,6 @@ export async function saveStep(
     if (next.bailsmen) {
       console.log('[saveStep] dropping bailsmen (client changed)');
       delete next.bailsmen;
-    }
-    // The face-scan and OTP prove things about a PERSON — they cannot follow the
-    // session to a different one. (Terms changes need no such rule: the OTP is the
-    // last act of the run, so new terms always get a fresh consent.)
-    if (next.signing) {
-      console.log('[saveStep] dropping signing (client changed)');
-      delete next.signing;
     }
   }
   if (step === 'card') {
