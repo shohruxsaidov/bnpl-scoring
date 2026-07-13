@@ -78,7 +78,10 @@ async function getClientToken(): Promise<string> {
   try {
     const data = await myidMobileClient()
       .post('api/v1/auth/clients/access-token', {
-        body: new URLSearchParams(reqBody),
+        json: reqBody,
+        headers: {
+          'Content-Type': 'application/json',
+        },
       })
       .json<{ access_token: string; expires_in: number }>();
 
