@@ -72,6 +72,8 @@ const schema = z.object({
   OTEL_TRACES_ENDPOINT: z.string().url().optional(),
   OTEL_METRICS_ENDPOINT: z.string().url().optional(),
   OTEL_SERVICE_NAME: z.string().default('scoring-api'),
+  AUTO_PAY_BASE_URL: z.string().url(),
+  AUTO_PAY_TOKEN: z.string(),
 });
 
 export const env = schema.parse(process.env);

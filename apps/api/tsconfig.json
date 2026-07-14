@@ -13,7 +13,8 @@
       "@db/*": ["./src/db/*"],
       "@redis": ["./src/redis"],
       "@minio": ["./src/minio"],
-      "@env": ["./src/env"]
+      "@env": ["./src/env"],
+      "@lib/*": ["./src/lib/*"]
     }
   },
   "include": ["src"],
