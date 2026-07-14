@@ -12,6 +12,7 @@ export const autoPayClient = () => {
     retry: 0,
     headers: {
       Authorization: `Bearer ${env.AUTO_PAY_TOKEN}`,
+      'Content-Type': 'application/json',
     },
     hooks: {
       beforeError: [
