@@ -91,7 +91,10 @@ function payload(request: { user: unknown }) {
 }
 
 /** The session-loading failures every session-scoped route answers the same way. */
-function sessionErrorReply(reply: { code: (n: number) => { sendError: (c: string) => unknown } }, e: any) {
+function sessionErrorReply(
+  reply: { code: (n: number) => { sendError: (c: string) => unknown } },
+  e: any,
+) {
   switch (e?.code) {
     case 'session_not_found':
       return reply.code(404).sendError('session_not_found');
@@ -753,7 +756,8 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       }
       if (res.error === 'send_cap') return reply.code(429).sendError('otp_send_cap');
 
-      if (!isProd) request.log.info({ phone: ctx.user.phone, code: res.code }, 'deal_signing OTP issued');
+      if (!isProd)
+        request.log.info({ phone: ctx.user.phone, code: res.code }, 'deal_signing OTP issued');
 
       return { ok: true, ...(isProd ? {} : { devOtp: res.code }) };
     },
@@ -906,16 +910,15 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         // can offer it or not, rather than showing a button that 409s — the client
         // who uninstalled the app is exactly the one the Agent must not be surprised
         // by, with the customer standing in front of them.
-        remoteAvailable:
-          session.userId != null ? await hasPushDevice(session.userId) : false,
+        remoteAvailable: session.userId != null ? await hasPushDevice(session.userId) : false,
       };
     },
   );
 
-  /* ── GET /:id/katm-status — poll KATM result stamped on the session ─────── */
+  /* ── GET /:id/status — poll KATM result stamped on the session ─────── */
 
   fastify.get(
-    '/:id/katm-status',
+    '/:id/status',
     { schema: { tags: TAGS, params: IdParams }, preHandler: guards },
     async (request, reply) => {
       const p = payload(request);

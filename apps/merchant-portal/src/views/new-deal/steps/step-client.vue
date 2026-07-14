@@ -168,7 +168,7 @@ async function checkKatmStatus() {
   try {
     const res = await apiFetch<
       { status: string; error?: string | null; reasonCategory?: string | null } & KatmSummary
-    >(`/merchant/deal-sessions/${deal.dealSessionId}/katm-status`)
+    >(`/merchant/deal-sessions/${deal.dealSessionId}/status`)
     if (res.status === 'completed') {
       stopKatmPolling()
       katmPending.value = false
@@ -528,7 +528,7 @@ const clientFullName = computed(() =>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.passport') }}</span>
           <span class="cf-value font-mono">{{ confirmedClient!.passportSeries }}{{ confirmedClient?.passportNumber
-          }}</span>
+            }}</span>
         </div>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.birthDate') }}</span>
@@ -651,7 +651,7 @@ const clientFullName = computed(() =>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.passport') }}</span>
           <span class="cf-value font-mono">{{ confirmedClient!.passportSeries }}{{ confirmedClient?.passportNumber
-            }}</span>
+          }}</span>
         </div>
         <div class="client-field">
           <span class="cf-label">{{ $t('stepClient.birthDate') }}</span>

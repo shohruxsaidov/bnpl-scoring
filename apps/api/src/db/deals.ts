@@ -85,3 +85,5 @@ export const deals = pgTable(
       .where(sql`status in ('active', 'overdue')`),
   ],
 );
+
+export type DealInferSelect = typeof deals.$inferSelect;

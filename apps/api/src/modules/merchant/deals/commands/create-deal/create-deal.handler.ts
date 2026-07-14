@@ -19,6 +19,7 @@ import {
   type DealSessionRow,
   type SessionStepData,
 } from '../../../deal-sessions/types';
+import { onCreatedDealHandler } from '../../events/on-created-deal/on-created-deal.handler';
 
 function coded(code: string): Error & { code: string } {
   return Object.assign(new Error(code), { code });
@@ -122,7 +123,7 @@ export async function createDealFromSession(session: DealSessionRow) {
   // Prepayment amount stamped by POST /prepayment (ADR-0026). Null means no prepayment.
   const prepaymentAmount = data.prepayment ? Number(Math.round(data.prepayment.amount)) : null;
 
-  return createDeal({
+  const payload = await createDeal({
     merchantId: session.merchantId,
     branchId: session.branchId,
     agentId: session.agentId,
@@ -149,6 +150,8 @@ export async function createDealFromSession(session: DealSessionRow) {
     infoscoreRaw: katmReport?.raw ?? null,
     prepaymentAmount,
   });
+  await onCreatedDealHandler(payload);
+  return payload;
 }
 
 export async function createDeal(input: CreateDealInput) {

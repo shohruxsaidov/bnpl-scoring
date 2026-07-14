@@ -565,14 +565,12 @@ async function signSubmit() {
           <!-- The preferred path when we can reach the client: they scan their own
                face and type their own акцепт code, on the phone already in their
                hand. Signing here stays one click away — a push is not a guarantee. -->
-          <button v-if="remoteAvailable" class="btn-gradient" :disabled="sendingRequest"
-            @click="askClientToSign">
+          <button v-if="remoteAvailable" class="btn-gradient" :disabled="sendingRequest" @click="askClientToSign">
             <i v-if="sendingRequest" class="pi pi-spin pi-spinner" />
             <i v-else class="pi pi-mobile" />
             {{ $t('stepVerification.askClientToSign') }}
           </button>
-          <button class="btn-myid" :disabled="myidSignSessionMutation.isPending.value"
-            @click="startMyidSigning">
+          <button class="btn-myid" :disabled="myidSignSessionMutation.isPending.value" @click="startMyidSigning">
             <i v-if="myidSignSessionMutation.isPending.value" class="pi pi-spin pi-spinner" />
             <span v-else class="myid-logo-text">MyID</span>
             {{ $t('stepVerification.verifyMyid') }}
