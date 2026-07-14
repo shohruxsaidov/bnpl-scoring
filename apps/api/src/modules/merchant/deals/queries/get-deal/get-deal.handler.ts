@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNotNull } from 'drizzle-orm';
 import { db } from '@db';
 import { deals, dealItems, dealPaymentSchedules } from '../../../../deals/schema';
 import { users, tariffs, merchantUsers, merchants, branches } from '@db/schema';
@@ -11,7 +11,7 @@ function formatDealNumber(n: number | null | undefined): string {
   return n != null ? String(n) : '—';
 }
 
-export async function getDealById(id: string, merchantId: number) {
+export async function getDealById(id: string, merchantId?: number) {
   const rows = await db
     .select({
       deal: deals,
@@ -27,7 +27,12 @@ export async function getDealById(id: string, merchantId: number) {
     .leftJoin(merchantUsers, eq(deals.agentId, merchantUsers.id))
     .leftJoin(branches, eq(deals.branchId, branches.id))
     .leftJoin(merchants, eq(deals.merchantId, merchants.id))
-    .where(and(eq(deals.id, id), eq(deals.merchantId, merchantId)))
+    .where(
+      and(
+        eq(deals.id, id),
+        merchantId ? eq(deals.merchantId, merchantId) : isNotNull(deals.merchantId),
+      ),
+    )
     .limit(1);
 
   const row = rows[0];

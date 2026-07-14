@@ -150,7 +150,10 @@ export async function createDealFromSession(session: DealSessionRow) {
     infoscoreRaw: katmReport?.raw ?? null,
     prepaymentAmount,
   });
-  await onCreatedDealHandler(payload);
+  await onCreatedDealHandler({
+    userId: +client.userId,
+    dealId: payload.id,
+  });
   return payload;
 }
 
