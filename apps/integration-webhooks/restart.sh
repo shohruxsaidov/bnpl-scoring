@@ -1,0 +1,1 @@
+docker build -t scoring/webhook . && docker run -p 4003:4003 -d scoring/webhook

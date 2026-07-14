@@ -119,7 +119,7 @@ export async function buildApp() {
   await app.register(bullBoardPlugin);
 
   // swagger must register before routes so it can introspect their schemas
-  await app.register(swaggerPlugin);
+await app.register(swaggerPlugin);
 
   // domain modules register here as encapsulated plugins
   await app.register(healthRoutes);
