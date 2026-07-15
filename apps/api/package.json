@@ -41,6 +41,7 @@
     "@opentelemetry/sdk-metrics": "^2.7.1",
     "@opentelemetry/sdk-node": "^0.218.0",
     "@sinclair/typebox": "^0.34.49",
+    "amqp-connection-manager": "^5.0.0",
     "amqplib": "^2.0.1",
     "argon2": "^0.44.0",
     "bullmq": "^5.78.0",

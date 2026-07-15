@@ -1,4 +1,5 @@
-import { getConnection } from '@lib/rabbit-queue/connection';
+import { Channel } from './../../../../../../node_modules/.pnpm/amqp-connection-manager@5.0.0_amqplib@2.0.1/node_modules/amqp-connection-manager/dist/types/ChannelWrapper.d';
+import { getConnectionChannel } from '@lib/rabbit-queue/connection';
 import { DealInferSelect } from '@db/deals';
 import { findUserById } from '../../../../auth/client/service/service.handler';
 import { getDealById } from '../../queries/get-deal/get-deal.handler';
@@ -25,12 +26,14 @@ export const onCreatedDealHandler = async ({ userId, dealId }: Payload) => {
     },
   };
 
-  const queue = 'deal.created';
-  const channel = await getConnection();
-
-  await channel.assertQueue(queue, {
-    durable: true,
+  const queue = 'merchant-portal@deal_created';
+  const connection = getConnectionChannel();
+  const wrapper = connection.createChannel({
+    setup(ch: Channel) {
+      return ch.assertExchange(queue, 'direct', {
+        durable: true,
+      });
+    },
   });
-  channel.sendToQueue(queue, Buffer.from(JSON.stringify(data)));
-  await channel.close();
+  await wrapper.publish(queue, '', Buffer.from(JSON.stringify(data)));
 };

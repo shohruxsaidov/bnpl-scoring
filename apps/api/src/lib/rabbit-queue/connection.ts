@@ -1,12 +1,10 @@
 import { env } from '@env';
-import amqp, { type Channel } from 'amqplib';
+import amqp, { Channel as connectionChanel, AmqpConnectionManager } from 'amqp-connection-manager';
 
-export const getConnection = async () => {
-  const connection = await amqp.connect(env.RABBIT_CONNECTION_URL);
-  const channel = await connection.createChannel();
-  return channel;
+const connection = amqp.connect([env.RABBIT_CONNECTION_URL]);
+export const getConnectionChannel = () => {
+  return connection;
 };
 
-export const closeConnection = async (channel: Channel) => {
-  await channel.close();
-};
+export type Channel = connectionChanel;
+export type ConnectionManager = AmqpConnectionManager;

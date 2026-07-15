@@ -33,7 +33,10 @@ export const createClientHandler = async ({
       ],
     },
   };
-  await client('/api/v1/partners', {
+  const res = await client('/api/v1/partners', {
+    method: 'POST',
     json: body,
   });
+  console.log(`Creating client response`);
+  return res;
 };

@@ -4,14 +4,14 @@ interface Payload {
   pinfl: string;
   merchantId: string;
   loanId: string;
-  debt: string; // in so'm 100000(100min so'm)
+  debt: number; // in so'm 100000(100min so'm)
 }
 
 const assertOk = () => {};
-export const createClientHandler = async ({ merchantId, loanId, debt, pinfl }: Payload) => {
+export const createContractHandler = async ({ merchantId, loanId, debt, pinfl }: Payload) => {
   const client = autoPayClient();
   const body = {
-    method: 'client.create',
+    method: 'contract.create',
     params: {
       contracts: [
         {
@@ -23,7 +23,10 @@ export const createClientHandler = async ({ merchantId, loanId, debt, pinfl }: P
       ],
     },
   };
-  await client('/api/v1/partners', {
+  const result = await client('/api/v1/partners', {
+    method: 'post',
     json: body,
   });
+
+  console.log(`Result of creating contract`, result);
 };

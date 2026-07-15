@@ -6,6 +6,7 @@ import { loadOwnedActiveSession } from '../deal-sessions/queries/load-owned-acti
 import { listDeals } from './queries/list-deals/list-deals.handler';
 import { getDealById } from './queries/get-deal/get-deal.handler';
 import { getContractPdfUrl } from './queries/get-contract-pdf-url/get-contract-pdf-url.handler';
+import { startConsuming } from './consumers';
 
 type JwtPayload = {
   sub: string;
@@ -26,6 +27,7 @@ const TAGS = ['Merchant · Deals'];
 
 export default async function merchantDealRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
+  startConsuming();
 
   /* ── Body schemas ──────────────────────────────────────────────────────── */
 
@@ -74,8 +76,7 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
           return reply.code(409).sendError('active_deal_exists');
         // Signing proofs absent or stale — the wizard sends the agent back to the
         // MyID gate (or the OTP gate) rather than showing a dead end.
-        if (err.code === 'myid_not_verified')
-          return reply.code(409).sendError('myid_not_verified');
+        if (err.code === 'myid_not_verified') return reply.code(409).sendError('myid_not_verified');
         if (err.code === 'otp_not_verified') return reply.code(409).sendError('otp_not_verified');
         if (err.code === 'pinfl_mismatch') return reply.code(409).sendError('pinfl_mismatch');
         if (err.code === 'product_not_found') return reply.code(400).sendError('product_not_found');

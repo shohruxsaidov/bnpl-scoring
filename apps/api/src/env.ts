@@ -74,6 +74,7 @@ const schema = z.object({
   OTEL_SERVICE_NAME: z.string().default('scoring-api'),
   AUTO_PAY_BASE_URL: z.string().url(),
   AUTO_PAY_TOKEN: z.string(),
+  AUTO_PAY_MERCHANT_ID: z.string(),
   RABBIT_CONNECTION_URL: z.string().url(),
 });
 
