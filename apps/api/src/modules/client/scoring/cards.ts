@@ -97,8 +97,7 @@ export default async function clientScoringCardsRoutes(app: FastifyInstance) {
             maskedPan: item.maskedPan,
             holderName: item.holderName,
             expiry: item.expiry,
-            pcType: 'Uzcard',
-            bank: '',
+            pcType: item.pcType,
           };
         }),
       };
