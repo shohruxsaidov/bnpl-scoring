@@ -354,24 +354,27 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
       if (payload.step !== 'phone_verified' && payload.step !== 'pinfl_verified') {
         return reply.code(400).sendError('invalid_step');
       }
+      try {
+        const { pinfl, birthDate, passData } = req.body;
+        let sessionId: string;
+        if (pinfl) {
+          const myidResult = await createMobileMyidSession(pinfl);
+          sessionId = myidResult.sessionId;
+        } else if (birthDate && passData) {
+          const myidResult = await createMobileMyidSession({ passData, birthDate });
+          sessionId = myidResult.sessionId;
+        } else {
+          return reply.code(400).sendError('missing_myid_credentials');
+        }
 
-      const { pinfl, birthDate, passData } = req.body;
-      let sessionId: string;
-      if (pinfl) {
-        const myidResult = await createMobileMyidSession(pinfl);
-        sessionId = myidResult.sessionId;
-      } else if (birthDate && passData) {
-        const myidResult = await createMobileMyidSession({ passData, birthDate });
-        sessionId = myidResult.sessionId;
-      } else {
-        return reply.code(400).sendError('missing_myid_credentials');
+        const regToken = app.jwt.sign(
+          { phone: payload.phone, step: 'pinfl_verified' } satisfies RegTokenPhase2,
+          { expiresIn: REG_TOKEN_TTL },
+        );
+        return { regToken, sessionId };
+      } catch (err) {
+        return reply.code(400).sendError('invalid_passport_data');
       }
-
-      const regToken = app.jwt.sign(
-        { phone: payload.phone, step: 'pinfl_verified' } satisfies RegTokenPhase2,
-        { expiresIn: REG_TOKEN_TTL },
-      );
-      return { regToken, sessionId };
     },
   );
 
@@ -415,11 +418,11 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
           let photoId: string;
           if (req.body.photoBase64) {
             photoId = await uploadPhoto(req.body.photoBase64);
-            setUserPhotoHandler({
+            (setUserPhotoHandler({
               userId: existing.id,
-              photoId
+              photoId,
             }),
-            db
+              db);
           }
         }
       } else {

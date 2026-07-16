@@ -68,6 +68,8 @@ export const ru: Record<string, string> = {
   myid_integration_failed: 'Ошибка при работе с сервисом MyID',
   client_already_registered: 'Клиент уже зарегистрирован',
   phone_already_registered: 'Этот номер телефона уже зарегистрирован',
+  invalid_passport_data:
+    'Некорректные паспортные данные. Пожалуйста, проверьте введённую информацию и попробуйте снова.',
   client_pinfl_missing: 'У клиента отсутствует ПИНФЛ',
 
   // deals

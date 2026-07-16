@@ -68,6 +68,8 @@ export const uz: Record<string, string> = {
   myid_integration_failed: "MyID xizmati bilan bog'liq xato yuz berdi",
   client_already_registered: "Mijoz allaqachon ro'yxatdan o'tgan",
   phone_already_registered: "Bu telefon raqami allaqachon ro'yxatdan o'tgan",
+  invalid_passport_data:
+    "Noto'g'ri passport ma'lumotlari kiritilgan. Iltimos tekshirib qaytdan urinib ko'ring",
   client_pinfl_missing: 'Mijozning JSHSHIR si mavjud emas',
 
   // deals
