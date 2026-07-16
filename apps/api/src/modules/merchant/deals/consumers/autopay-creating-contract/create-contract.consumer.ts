@@ -20,7 +20,6 @@ export const createContractConsume = async (connection: ConnectionManager) => {
   wrapper.consume(queue, async (msg) => {
     const content = JSON.parse(msg.content.toString()) as any;
     await createContractHandler({
-      userId: content.client.id,
       dealId: content.deal.id,
     });
     wrapper.ack(msg);
