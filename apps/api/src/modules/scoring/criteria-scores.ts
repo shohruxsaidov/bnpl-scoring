@@ -24,7 +24,7 @@ export interface KatmCriteriaDetail {
 }
 
 export interface CardCriteriaDetail {
-  pcType: 'uzcard' | 'humo';
+  pcType: string;
   bank?: string;
   maskedPan?: string;
   holderName?: string;

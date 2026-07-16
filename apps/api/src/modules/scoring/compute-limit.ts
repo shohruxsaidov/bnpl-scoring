@@ -80,7 +80,7 @@ export interface LimitUserRow {
 }
 
 export interface LimitCard {
-  pcType: 'uzcard' | 'humo';
+  pcType: string;
   bank: string;
   maskedPan: string;
   holderName: string | null;

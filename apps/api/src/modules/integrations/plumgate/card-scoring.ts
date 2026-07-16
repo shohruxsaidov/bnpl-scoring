@@ -43,7 +43,7 @@ export interface PlumCardScoreJobData {
   scoringId: number;
   /** Plumgate's My Uzcard card id (NOT the attachment id — see user_cards). */
   plumCardId: string;
-  pcType: 'uzcard' | 'humo';
+  pcType: string;
   maskedPan: string;
 }
 

@@ -251,7 +251,6 @@ export async function applyClientStep(
   if (step.kind === 'failed') {
     return { status: 'failed', reason: step.reason };
   }
-  // gates_passed — try to finalize (needs a card). awaiting_card if none yet.
   const outcome = await finalizeClientScoringIfReady(scoring.userId!);
   return outcome ?? { status: 'failed', reason: 'Unknown error occurred' };
 }

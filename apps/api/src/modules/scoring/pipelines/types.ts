@@ -234,14 +234,14 @@ interface PlumCardSummaryBase {
 }
 
 export interface PlumCardUzcardSummary extends PlumCardSummaryBase {
-  pcType: 'uzcard';
+  pcType: string;
   scoredBall?: number;
   maxScoreBall?: number;
   criteria?: Array<{ name: string; category: string; ball: number }>;
 }
 
 export interface PlumCardHumoSummary extends PlumCardSummaryBase {
-  pcType: 'humo';
+  pcType: string;
   totalDebitScore?: number;
   totalDebitCount?: number;
   replenishmentScore?: number;
