@@ -87,8 +87,7 @@ const STATUS_COLORS: Record<Payment['status'], { fg: string; bg: string }> = {
   cancelled: { fg: 'var(--danger)', bg: 'var(--danger-bg)' },
 }
 
-function formatSomM(tiyin: number): string {
-  const som = tiyin / 100
+function formatSomM(som: number): string {
   if (som >= 1_000_000_000) return `${(som / 1_000_000_000).toFixed(1)}B`
   if (som >= 1_000_000) return `${(som / 1_000_000).toFixed(1)}M`
   if (som >= 1_000) return `${(som / 1_000).toFixed(0)}K`
@@ -168,7 +167,7 @@ async function submit() {
   try {
     await manualStore.create({
       dealId: selectedDeal.value.id,
-      amount: Math.round(Number(form.value.amount) * 100),
+      amount: Math.round(Number(form.value.amount)),
       paymentType: form.value.paymentType,
       note: form.value.note || undefined,
     })
@@ -336,7 +335,7 @@ function hideDealDropdown() {
               <template #body="{ data }">
                 <div v-if="data.status === 'partial'" class="partial-amount">
                   <MonoAmount :value="data.paidAmount" size="sm" />
-                  <span class="partial-of font-mono">/ {{ (data.amount / 100).toLocaleString('ru') }}</span>
+                  <span class="partial-of font-mono">/ {{ data.amount.toLocaleString('ru') }}</span>
                 </div>
                 <MonoAmount v-else :value="data.amount" size="sm" />
               </template>
@@ -486,7 +485,7 @@ function hideDealDropdown() {
                   <span class="deal-option-number font-mono">{{ d.dealNumber }}</span>
                   <span class="deal-option-client">{{ d.clientName }}</span>
                   <span class="deal-option-remaining">
-                    {{ $t('payments.dealRemaining', { amount: (d.remainingAmount / 100).toLocaleString('ru') }) }}
+                    {{ $t('payments.dealRemaining', { amount: d.remainingAmount.toLocaleString('ru') }) }}
                   </span>
                 </button>
               </div>
@@ -494,7 +493,7 @@ function hideDealDropdown() {
                 {{ $t('payments.dealNoResults') }}
               </p>
               <p v-if="selectedDeal" class="deal-selected-hint">
-                {{ $t('payments.dealRemaining', { amount: (selectedDeal.remainingAmount / 100).toLocaleString('ru') }) }}
+                {{ $t('payments.dealRemaining', { amount: selectedDeal.remainingAmount.toLocaleString('ru') }) }}
               </p>
             </div>
 

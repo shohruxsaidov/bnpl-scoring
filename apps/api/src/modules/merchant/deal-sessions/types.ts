@@ -66,7 +66,7 @@ export interface KatmPendingState {
 
 /** Prepayment confirmed server-side at POST /prepayment (ADR-0026). */
 export interface PrepaymentStamp {
-  /** Gap in tiyin: totalWithMarkup - effectiveLimit. Installments run on this less. */
+  /** Gap in som: totalWithMarkup - effectiveLimit. Installments run on this less. */
   amount: number;
   confirmedAt: string;
 }

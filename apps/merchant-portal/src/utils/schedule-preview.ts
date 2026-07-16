@@ -2,10 +2,10 @@ import type { DealPaymentSchedule } from '@/types'
 
 /**
  * Client-side preview of the instalment schedule shown at the To'lov kuni and
- * Верификация steps. Amounts are in tiyin: instalments are whole so'm
- * (multiples of 100) with the rounding remainder in the first payment, so the
- * rows always add up to the displayed total. The server computes its own
- * schedule at deal creation — this is display-only.
+ * Верификация steps. Amounts are in whole so'm: instalments are floored to
+ * integer so'm with the rounding remainder in the first payment, so the rows
+ * always add up to the displayed total. The server computes its own schedule
+ * at deal creation — this is display-only.
  */
 export function buildSchedulePreview(
   totalPayable: number,
@@ -14,7 +14,7 @@ export function buildSchedulePreview(
 ): DealPaymentSchedule[] {
   if (months < 1 || selectedDay < 1) return []
 
-  const perMonth = Math.floor(totalPayable / months / 100) * 100
+  const perMonth = Math.floor(totalPayable / months)
   const firstMonth = totalPayable - perMonth * (months - 1)
   const rows: DealPaymentSchedule[] = []
   const today = new Date()

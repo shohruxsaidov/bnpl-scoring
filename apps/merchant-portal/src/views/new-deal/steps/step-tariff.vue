@@ -15,10 +15,8 @@ const scoring = useClientScoringStore()
 
 onMounted(() => catalog.fetchTariffs())
 
-// platformCreditLimit is whole som; tariff min/max and MonoAmount are tiyin —
-// convert once (×100) and use limitTiyin wherever it meets a tiyin amount.
-const limit = computed(() => scoring.platformCreditLimit ?? 0)
-const limitTiyin = computed(() => limit.value * 100)
+// platformCreditLimit, tariff min/max and MonoAmount are all in som now.
+const limitSom = computed(() => scoring.platformCreditLimit ?? 0)
 
 const selectedId = ref<string | null>(deal.sessionData.tariff?.id ?? null)
 
@@ -26,7 +24,7 @@ const selectedId = ref<string | null>(deal.sessionData.tariff?.id ?? null)
 // could possibly spend under that tariff (limit × term months)
 const visibleTariffs = computed(() =>
   catalog.activeTariffs.filter(
-    (t) => t.minAmount == null || t.minAmount <= limitTiyin.value * t.termMonths,
+    (t) => t.minAmount == null || t.minAmount <= limitSom.value * t.termMonths,
   ),
 )
 
@@ -36,7 +34,7 @@ const visibleTariffs = computed(() =>
  * and the base total must not exceed the tariff's Credit Range max.
  */
 function maxProduct(t: Tariff): number {
-  const cap = Math.floor((limitTiyin.value * t.termMonths) / (1 + t.markupPercent / 100))
+  const cap = Math.floor((limitSom.value * t.termMonths) / (1 + t.markupPercent / 100))
   return t.maxAmount != null ? Math.min(cap, t.maxAmount) : cap
 }
 
@@ -89,7 +87,7 @@ async function next() {
         </div>
         <div class="lb-body">
           <span class="lb-label">{{ $t('stepTariff.approvedLimit') }}</span>
-          <MonoAmount :value="limitTiyin" size="xl" />
+          <MonoAmount :value="limitSom" size="xl" />
         </div>
       </div>
     </header>
@@ -113,7 +111,7 @@ async function next() {
         </div>
         <div class="tc-limit">
           <span class="tcl-label">{{ $t('stepTariff.limit') }}</span>
-          <MonoAmount :value="limitTiyin * t.termMonths" size="sm" :gradient="false" />
+          <MonoAmount :value="limitSom * t.termMonths" size="sm" :gradient="false" />
         </div>
         <div v-if="t.minAmount != null || t.maxAmount != null" class="tc-limit">
           <span class="tcl-label">{{ $t('stepTariff.range') }}</span>

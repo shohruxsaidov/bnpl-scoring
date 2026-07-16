@@ -12,7 +12,7 @@ import type { CreateManualPaymentInput } from './create-manual-payment.command';
 
 export async function createManualPayment(input: CreateManualPaymentInput): Promise<ManualPayment> {
   return db.transaction(async (tx) => {
-    const amountTiyin = Number(input.amount);
+    const amountSom = Number(input.amount);
 
     const unpaid = await tx
       .select()
@@ -24,7 +24,7 @@ export async function createManualPayment(input: CreateManualPaymentInput): Prom
 
     const totalRemaining = unpaid.reduce((sum, r) => sum + (r.amount - (r.paidAmount ?? 0)), 0);
 
-    if (amountTiyin > totalRemaining) {
+    if (amountSom > totalRemaining) {
       throw Object.assign(new Error('overpayment'), { statusCode: 400, code: 'OVERPAYMENT' });
     }
 
@@ -33,14 +33,14 @@ export async function createManualPayment(input: CreateManualPaymentInput): Prom
       .values({
         dealId: input.dealId,
         adminUserId: input.adminUserId,
-        amount: amountTiyin,
+        amount: amountSom,
         paymentType: input.paymentType,
         note: input.note || null,
       })
       .returning();
     const mp = mpRows[0]!;
 
-    let bucket = amountTiyin;
+    let bucket = amountSom;
     const now = new Date();
 
     for (const row of unpaid) {

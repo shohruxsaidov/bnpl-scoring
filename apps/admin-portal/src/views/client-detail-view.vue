@@ -206,7 +206,7 @@ function paymentStatusBg(status: string): string {
         <span class="limit-label">{{ $t('clientDetail.creditLimit') }}</span>
         <MonoAmount
           v-if="store.detail.creditLimit != null"
-          :value="Number(store.detail.creditLimit) * 100"
+          :value="Number(store.detail.creditLimit)"
           size="lg"
           class="limit-value"
         />

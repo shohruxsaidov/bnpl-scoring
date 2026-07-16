@@ -35,9 +35,9 @@ const filteredProducts = computed(() => {
 const tariff = computed(() => deal.sessionData.tariff)
 const total = computed(() => deal.basketTotal)
 
-/** Product base price in tiyin */
+/** Product base price in som */
 function basePrice(price: string): number {
-  return Math.round(parseFloat(price) * 100)
+  return parseFloat(price)
 }
 
 /** Price with tariff markup applied */
@@ -53,14 +53,14 @@ const totalWithMarkup = computed(() => {
   return Math.round(total.value * (1 + pct / 100))
 })
 
-/** Approved limit (tiyin) scaled by the selected tariff's term in months */
+/** Approved limit (som) scaled by the selected tariff's term in months */
 const effectiveLimit = computed(
-  () => (scoring.platformCreditLimit ?? 0) * (tariff.value?.termMonths ?? 0) * 100,
+  () => (scoring.platformCreditLimit ?? 0) * (tariff.value?.termMonths ?? 0),
 )
 
 const withinLimit = computed(() => totalWithMarkup.value <= effectiveLimit.value)
 
-/** Prepayment gap in tiyin — only positive when basket overflows the limit */
+/** Prepayment gap in som — only positive when basket overflows the limit */
 const prepaymentGap = computed(() =>
   withinLimit.value ? 0 : totalWithMarkup.value - effectiveLimit.value,
 )
@@ -72,7 +72,7 @@ const remainingLimit = computed(() =>
   Math.max(effectiveLimit.value - totalWithMarkup.value, 0),
 )
 
-/** Credit Range check on the base basket total (pre-markup, tiyin) */
+/** Credit Range check on the base basket total (pre-markup, som) */
 const rangeWarning = computed(() => {
   const t = tariff.value
   if (!t || total.value === 0) return null
@@ -405,7 +405,7 @@ async function submitPrepayment() {
         <div v-if="tariff && !withinLimit && !prepaymentConfirmed" class="bs-overlimit">
           <i class="pi pi-exclamation-triangle" />
           {{ $t('stepProducts.overLimit', {
-            amount: ((totalWithMarkup - effectiveLimit) / 100).toLocaleString('uz-UZ'),
+            amount: (totalWithMarkup - effectiveLimit).toLocaleString('uz-UZ'),
           }) }}
         </div>
         <div v-if="tariff && !withinLimit && prepaymentConfirmed" class="bs-prepay-confirmed">
@@ -416,7 +416,7 @@ async function submitPrepayment() {
         <div v-if="rangeWarning" class="bs-overlimit">
           <i class="pi pi-exclamation-triangle" />
           {{ $t(`stepProducts.${rangeWarning.key}`, {
-            amount: (rangeWarning.amount / 100).toLocaleString('uz-UZ'),
+            amount: rangeWarning.amount.toLocaleString('uz-UZ'),
           }) }}
         </div>
       </div>

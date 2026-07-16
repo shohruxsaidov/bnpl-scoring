@@ -33,7 +33,7 @@ const totalPayable = computed(() => {
 })
 
 function itemPrice(price: string, quantity: number): number {
-  const base = Math.round(parseFloat(price) * 100)
+  const base = parseFloat(price)
   const pct = sd.value.tariff?.markupPercent ?? 0
   return Math.round(base * (1 + pct / 100)) * quantity
 }

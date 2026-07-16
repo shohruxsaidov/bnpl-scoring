@@ -55,8 +55,7 @@ const stats = computed(() => ({
   volume: deals.platformVolume,
 }))
 
-function formatSomM(tiyin: number): string {
-  const som = tiyin / 100
+function formatSomM(som: number): string {
   if (som >= 1_000_000_000) return `${(som / 1_000_000_000).toFixed(1)}B`
   if (som >= 1_000_000) return `${(som / 1_000_000).toFixed(1)}M`
   if (som >= 1_000) return `${(som / 1_000).toFixed(0)}K`

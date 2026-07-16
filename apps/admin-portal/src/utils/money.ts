@@ -1,22 +1,21 @@
 /**
- * Money is stored as integers in tiyin (1/100 of a som).
- * Display helpers convert to som. We deliberately use the en-US locale
- * (comma grouping) — the uz-UZ locale renders narrow-space separators
- * that look broken inside the JetBrains Mono number style.
+ * Money amounts are already in som — these helpers only format them for
+ * display. We deliberately use the en-US locale (comma grouping) — the uz-UZ
+ * locale renders narrow-space separators that look broken inside the
+ * JetBrains Mono number style.
  */
 const somFmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 })
 
-export function formatSom(tiyin: number): string {
-  return somFmt.format(tiyin / 100) + " so'm"
+export function formatSom(som: number): string {
+  return somFmt.format(som) + " so'm"
 }
 
-export function formatSomShort(tiyin: number): string {
-  return somFmt.format(tiyin / 100)
+export function formatSomShort(som: number): string {
+  return somFmt.format(som)
 }
 
 /** Compact volume, e.g. 8.42B so'm — used in dense stat cards. */
-export function formatSomCompact(tiyin: number): string {
-  const som = tiyin / 100
+export function formatSomCompact(som: number): string {
   if (som >= 1_000_000_000) return (som / 1_000_000_000).toFixed(2) + 'B'
   if (som >= 1_000_000) return (som / 1_000_000).toFixed(1) + 'M'
   if (som >= 1_000) return (som / 1_000).toFixed(0) + 'K'

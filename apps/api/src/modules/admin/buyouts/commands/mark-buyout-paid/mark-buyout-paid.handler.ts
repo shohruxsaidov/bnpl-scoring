@@ -54,7 +54,7 @@ export async function markBuyoutPaid(id: number): Promise<BuyoutDto | null> {
     status: r.buyout.status,
     createdAt: r.buyout.createdAt.toISOString(),
     items: itemRows.map((i) => {
-      const price = Math.round(parseFloat(i.price) * 100);
+      const price = parseFloat(i.price);
       return { productName: i.productName, price, qty: i.quantity, amount: price * i.quantity };
     }),
   };

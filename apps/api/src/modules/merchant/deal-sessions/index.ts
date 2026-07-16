@@ -9,6 +9,8 @@ import { katm077Reports } from '@db/katm-077-reports';
 import { katmInpsReports } from '@db/katm-inps-reports';
 import { dealSessions } from '../../deals/schema';
 import { loadBlockingDeal } from '../../deals/blocking';
+import { calcBasketAmount } from '../../deals/signing/terms';
+import { calcTotalPayable } from '../../deals/installments';
 import {
   err as codedErr,
   isSigningProofFresh,
@@ -285,15 +287,14 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       if (!data.tariff) return reply.code(409).sendError('tariff_step_missing');
       if (!data.scoring) return reply.code(409).sendError('scoring_missing');
 
-      const basketBase = data.products.lines.reduce(
-        (sum, l) => sum + Math.round(parseFloat(l.price) * 100) * l.quantity,
-        0,
+      // All in som — the same functions the Deal and the terms hash use, so the
+      // prepayment gap cannot drift from the deal's own totalPayable.
+      const basketBase = calcBasketAmount(data.products.lines);
+      const totalWithMarkup = calcTotalPayable(basketBase, data.tariff.markupPercent);
+      const effectiveLimit = Math.round(
+        data.scoring.platformCreditLimit * data.tariff.termMonths,
       );
-      const totalWithMarkup = Math.round(basketBase * (1 + data.tariff.markupPercent / 100));
-      // platformCreditLimit is whole som; totalWithMarkup is tiyin — ×100 to compare.
-      const effectiveLimit =
-        Math.round(data.scoring.platformCreditLimit * data.tariff.termMonths) * 100;
-      const gap = totalWithMarkup - effectiveLimit;
+      const gap = Math.round((totalWithMarkup - effectiveLimit) * 100) / 100;
 
       if (gap <= 0) return reply.code(409).sendError('no_prepayment_needed');
 

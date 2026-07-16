@@ -55,7 +55,7 @@ function markupRatio(): number {
 }
 
 function itemUnitPrice(price: string): number {
-  return Math.round(Math.round(parseFloat(price) * 100) * markupRatio())
+  return Math.round(parseFloat(price) * markupRatio())
 }
 
 function basketTotal(item: { price: string; quantity: number }): number {

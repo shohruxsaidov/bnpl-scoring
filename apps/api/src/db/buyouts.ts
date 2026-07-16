@@ -1,4 +1,4 @@
-import { integer, pgTable, serial, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { integer, numeric, pgTable, serial, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { deals } from './deals';
 import { merchants } from './merchants';
 import { branches } from './branches';
@@ -20,7 +20,8 @@ export const buyouts = pgTable('buyouts', {
   branchId: integer('branch_id')
     .notNull()
     .references(() => branches.id),
-  amount: integer('amount').notNull(),
+  /** Buy-out obligation (tan narxi), in som. */
+  amount: numeric('amount', { precision: 15, scale: 2, mode: 'number' }).notNull(),
   // 'pending' | 'paid'
   status: varchar('status', { length: 10 }).notNull().default('pending'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

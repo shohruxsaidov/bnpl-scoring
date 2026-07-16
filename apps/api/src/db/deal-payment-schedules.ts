@@ -1,4 +1,14 @@
-import { boolean, date, integer, pgTable, serial, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  date,
+  integer,
+  numeric,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { deals } from './deals';
 import { manualPayments } from './manual-payments';
 
@@ -15,9 +25,10 @@ export const dealPaymentSchedules = pgTable('deal_payment_schedules', {
     .references(() => deals.id, { onDelete: 'cascade' }),
   index: integer('index').notNull(),
   dueDate: date('due_date').notNull(),
-  amount: integer('amount').notNull(),
-  /** Cumulative amount paid so far (tiyin). Fully paid when paidAmount >= amount. */
-  paidAmount: integer('paid_amount')
+  /** Instalment amount, in som. */
+  amount: numeric('amount', { precision: 15, scale: 2, mode: 'number' }).notNull(),
+  /** Cumulative amount paid so far, in som. Fully paid when paidAmount >= amount. */
+  paidAmount: numeric('paid_amount', { precision: 15, scale: 2, mode: 'number' })
     .notNull()
     .$defaultFn(() => 0),
   paid: boolean('paid').notNull().default(false),

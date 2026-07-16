@@ -12,7 +12,7 @@ const loading = ref(false)
 const error = ref(false)
 const expandedId = ref<string | null>(null)
 
-/** The amount (tiyin) the current quotes were computed for. */
+/** The amount (som) the current quotes were computed for. */
 const quotedAmount = ref<number | null>(null)
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -25,20 +25,20 @@ watch(amountSom, (value) => {
     quotedAmount.value = null
     return
   }
-  debounceTimer = setTimeout(() => fetchQuotes(Math.round(value * 100)), 350)
+  debounceTimer = setTimeout(() => fetchQuotes(Math.round(value)), 350)
 })
 
 onBeforeUnmount(() => {
   if (debounceTimer) clearTimeout(debounceTimer)
 })
 
-async function fetchQuotes(amountTiyin: number) {
+async function fetchQuotes(amountSom: number) {
   const seq = ++requestSeq
   loading.value = true
   error.value = false
   try {
     const body = await api<{ amount: number; quotes: TariffQuote[] }>(
-      `/merchant/tariffs/quote?amount=${amountTiyin}`,
+      `/merchant/tariffs/quote?amount=${amountSom}`,
     )
     if (seq !== requestSeq) return
     quotes.value = body.quotes

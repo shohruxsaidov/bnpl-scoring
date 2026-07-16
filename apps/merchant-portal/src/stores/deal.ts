@@ -85,7 +85,7 @@ interface SessionData {
   bailsmen: Bailsman[];
   tariff: Tariff | null;
   basket: BasketItem[];
-  /** Confirmed prepayment amount in tiyin (ADR-0026); null = no prepayment */
+  /** Confirmed prepayment amount in som (ADR-0026); null = no prepayment */
   prepaymentAmount: number | null;
   paymentDay: number | null;
   schedule: DealPaymentSchedule[];
@@ -152,7 +152,7 @@ export const useDealStore = defineStore(
 
     const basketTotal = computed(() =>
       sessionData.value.basket.reduce(
-        (sum, i) => sum + Math.round(parseFloat(i.product.price) * 100) * i.quantity,
+        (sum, i) => sum + parseFloat(i.product.price) * i.quantity,
         0,
       ),
     );
@@ -281,7 +281,7 @@ export const useDealStore = defineStore(
 
       if (fresh.tariff && fresh.paymentDay) {
         const principal = fresh.basket.reduce(
-          (sum, i) => sum + Math.round(parseFloat(i.product.price) * 100) * i.quantity,
+          (sum, i) => sum + parseFloat(i.product.price) * i.quantity,
           0,
         );
         const totalPayable = Math.round(principal * (1 + fresh.tariff.markupPercent / 100));

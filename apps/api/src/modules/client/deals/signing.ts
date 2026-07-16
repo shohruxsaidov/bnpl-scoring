@@ -74,13 +74,13 @@ export default async function clientDealSigningRoutes(app: FastifyInstance) {
   const BasketLine = Type.Object({
     productName: Type.String(),
     quantity: Type.Integer(),
-    total: Type.Integer(),
+    total: Type.Number(),
   });
 
   const ScheduleRow = Type.Object({
     index: Type.Integer(),
     dueDate: Type.String(),
-    amount: Type.Integer(),
+    amount: Type.Number(),
   });
 
   const SigningRequest = Type.Object({
@@ -94,10 +94,10 @@ export default async function clientDealSigningRoutes(app: FastifyInstance) {
       markupPercent: Type.Number(),
       paymentDay: Type.Integer(),
       lang: Type.String(),
-      amount: Type.Integer(),
-      totalPayable: Type.Integer(),
-      prepaymentAmount: Type.Integer(),
-      monthlyPayment: Type.Integer(),
+      amount: Type.Number(),
+      totalPayable: Type.Number(),
+      prepaymentAmount: Type.Number(),
+      monthlyPayment: Type.Number(),
       basket: Type.Array(BasketLine),
     }),
     schedule: Type.Array(ScheduleRow),

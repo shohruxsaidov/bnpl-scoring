@@ -12,7 +12,7 @@ import { loadProgressForDeals, loadDealSchedule } from './progress';
 // authenticated user (request.user.sub); a client only ever sees deals they
 // signed. Visibility is limited to states that represent a real financial
 // obligation — active/overdue/closed — so pipeline/pre-signing states
-// (draft/scoring/approved/declined) never surface here. Money is integer tiyin.
+// (draft/scoring/approved/declined) never surface here. Money is in som.
 // ---------------------------------------------------------------------------
 
 const SECURITY = [{ clientAuth: [] }];
@@ -34,10 +34,10 @@ export default async function clientDealRoutes(app: FastifyInstance) {
   const StatusEnum = Type.Union(VISIBLE_STATUSES.map((s) => Type.Literal(s)));
 
   const Progress = {
-    paidAmount: Type.Integer(),
-    remainingAmount: Type.Integer(),
+    paidAmount: Type.Number(),
+    remainingAmount: Type.Number(),
     nextDueDate: Type.Union([Type.String(), Type.Null()]),
-    nextDueAmount: Type.Union([Type.Integer(), Type.Null()]),
+    nextDueAmount: Type.Union([Type.Number(), Type.Null()]),
   };
 
   const DealListItem = Type.Object({
@@ -49,7 +49,7 @@ export default async function clientDealRoutes(app: FastifyInstance) {
     // Absolute, publicly fetchable; null when the merchant has no logo, in which
     // case the app falls back to its own placeholder.
     merchantLogoUrl: Type.Union([Type.String(), Type.Null()]),
-    totalPayable: Type.Integer(),
+    totalPayable: Type.Number(),
     termMonths: Type.Integer(),
     ...Progress,
   });
@@ -127,8 +127,8 @@ export default async function clientDealRoutes(app: FastifyInstance) {
   const ScheduleItem = Type.Object({
     index: Type.Integer(),
     dueDate: Type.String(),
-    amount: Type.Integer(),
-    paidAmount: Type.Integer(),
+    amount: Type.Number(),
+    paidAmount: Type.Number(),
     paid: Type.Boolean(),
     paidAt: Type.Union([Type.String(), Type.Null()]),
   });
@@ -143,9 +143,9 @@ export default async function clientDealRoutes(app: FastifyInstance) {
     merchantLogoUrl: Type.Union([Type.String(), Type.Null()]),
     termMonths: Type.Integer(),
     paymentDay: Type.Union([Type.Integer(), Type.Null()]),
-    amount: Type.Integer(),
-    totalPayable: Type.Integer(),
-    prepaymentAmount: Type.Integer(),
+    amount: Type.Number(),
+    totalPayable: Type.Number(),
+    prepaymentAmount: Type.Number(),
     ...Progress,
     basket: Type.Array(BasketItem),
     schedule: Type.Array(ScheduleItem),

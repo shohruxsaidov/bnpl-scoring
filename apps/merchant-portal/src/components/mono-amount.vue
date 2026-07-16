@@ -4,7 +4,7 @@ import { formatSomShort } from '@/utils/money'
 
 const props = withDefaults(
   defineProps<{
-    /** value in tiyin */
+    /** value in som */
     value: number
     gradient?: boolean
     size?: 'sm' | 'md' | 'lg' | 'xl'

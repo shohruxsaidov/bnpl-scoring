@@ -143,22 +143,22 @@ export interface ContractData {
   agentName: string;
   branchName: string;
   merchantInn: string;
-  /** tiyin */
+  /** som */
   amount: number;
-  /** tiyin */
+  /** som */
   totalPayable: number;
   termMonths: number;
   paymentDay: number;
   basket: Array<{
     productName: string;
     quantity: number;
-    /** tiyin per unit */
+    /** som per unit */
     price: number;
   }>;
   schedule: Array<{
     index: number;
     dueDate: string;
-    /** tiyin */
+    /** som */
     amount: number;
   }>;
 }
@@ -171,8 +171,8 @@ const MARGIN = 40;
 const PAGE_W = 595.28;
 const CONTENT_W = PAGE_W - MARGIN * 2;
 
-function fmt(tiyin: number): string {
-  return Math.round(tiyin / 100)
+function fmt(som: number): string {
+  return Math.round(som)
     .toLocaleString('ru-RU')
     .replace(/ /g, ' ');
 }

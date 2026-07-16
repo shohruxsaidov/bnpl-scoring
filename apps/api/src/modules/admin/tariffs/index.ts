@@ -28,7 +28,7 @@ export default async function adminTariffRoutes(app: FastifyInstance) {
 
   const IdParams = Type.Object({ id: Type.String() })
 
-  // Credit Range bounds arrive as integer tiyin; null clears a bound
+  // Credit Range bounds arrive as whole som; null clears a bound
   const AmountBound = Type.Union([Type.Integer({ minimum: 0 }), Type.Null()])
 
   const CreateBody = Type.Object({

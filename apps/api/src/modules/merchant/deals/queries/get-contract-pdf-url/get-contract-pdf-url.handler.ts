@@ -78,7 +78,7 @@ export async function getContractPdfUrl({
     basket: deal.basket.map((item) => ({
       productName: item.productName,
       quantity: item.quantity,
-      price: Math.round(parseFloat(item.price) * 100),
+      price: parseFloat(item.price),
     })),
     schedule: deal.schedule.map((s) => ({
       index: s.index,

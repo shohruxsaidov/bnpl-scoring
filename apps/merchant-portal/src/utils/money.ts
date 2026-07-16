@@ -1,15 +1,15 @@
 /**
- * Money is stored as integers in tiyin (1/100 of a som).
- * Display helper converts to som and formats with the uz-UZ locale.
+ * Money is stored as som (the API returns every amount in whole som).
+ * Display helper formats the som value with the uz-UZ locale.
  */
 const somFmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 });
 
-export function formatSom(tiyin: number): string {
-  return somFmt.format(tiyin / 100) + " so'm";
+export function formatSom(som: number): string {
+  return somFmt.format(som) + " so'm";
 }
 
-export function formatSomShort(tiyin: number): string {
-  return somFmt.format(tiyin / 100);
+export function formatSomShort(som: number): string {
+  return somFmt.format(som);
 }
 
 /** Mock async network delay wrapped in a Promise. */

@@ -61,8 +61,8 @@ const filtered = computed(() => {
   return list
 })
 
-function fmtAmount(tiyin: number) {
-  return (tiyin / 100).toLocaleString('ru-RU')
+function fmtAmount(som: number) {
+  return som.toLocaleString('ru-RU')
 }
 
 function fmtDate(iso: string) {

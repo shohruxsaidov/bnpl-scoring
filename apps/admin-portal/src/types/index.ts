@@ -36,7 +36,7 @@ export interface Tenant {
   contactEmail: string
   dealCount: number
   employeeCount: number
-  /** lifetime disbursed volume, tiyin */
+  /** lifetime disbursed volume, som */
   volume: number
   /** count of currently overdue deals */
   overdueCount: number
@@ -143,7 +143,7 @@ export type ScoreDecision = 'approved' | 'declined' | 'partial' | 'manual_review
 export interface BasketLine {
   name: string
   quantity: number
-  /** unit price, tiyin */
+  /** unit price, som */
   price: number
 }
 
@@ -151,7 +151,7 @@ export interface ScheduleRow {
   index: number
   /** ISO date string */
   date: string
-  /** tiyin */
+  /** som */
   amount: number
 }
 
@@ -170,9 +170,9 @@ export interface Deal {
   clientName: string
   clientPinfl: string
   status: DealStatus
-  /** principal, tiyin */
+  /** principal, som */
   amount: number
-  /** total payable incl. markup, tiyin */
+  /** total payable incl. markup, som */
   totalPayable: number
   score: number
   decision: ScoreDecision
@@ -192,7 +192,7 @@ export interface Tariff {
   name: string
   termMonths: number
   markupPercent: number
-  /** Credit Range bounds in tiyin; null = unbounded */
+  /** Credit Range bounds in som; null = unbounded */
   minAmount: number | null
   maxAmount: number | null
   active: boolean

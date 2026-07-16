@@ -3,14 +3,17 @@ import { findUserById } from '../../../../auth/client/service/service.handler';
 import { createClientHandler } from '../../../../integrations/autopay/commands/create-client/create-client.handler';
 import { createContractHandler as autopayCreateContractHandler } from '../../../../integrations/autopay/commands/create-contract/create-contract.handler';
 import { getDealById } from '../../queries/get-deal/get-deal.handler';
+import { db } from '../../../../../db/index';
+import { deals } from '@db/deals';
+import { users } from '@db/users';
+import { eq } from 'drizzle-orm';
 
 interface Payload {
-  userId: number;
   dealId: string;
 }
-export const createContractHandler = async ({ userId, dealId }: Payload) => {
-  const user = await findUserById(userId);
-  const deal = await getDealById(dealId);
+export const createContractHandler = async ({ dealId }: Payload) => {
+  const [deal] = await db.select().from(deals).innerJoin(users, eq(users.id, deals.userId));
+  const user = deal.users;
   const client = await createClientHandler({
     firstName: user.firstName,
     lastName: user.lastName,
@@ -21,9 +24,9 @@ export const createContractHandler = async ({ userId, dealId }: Payload) => {
   });
 
   const contract = await autopayCreateContractHandler({
-    debt: deal!.totalPayable,
-    loanId: deal!.id,
+    debt: deal!.deals.totalPayable!,
+    loanId: deal!.deals.id,
     merchantId: env.AUTO_PAY_MERCHANT_ID,
-    pinfl: deal!.clientPinfl!,
+    pinfl: user!.pinfl!,
   });
 };

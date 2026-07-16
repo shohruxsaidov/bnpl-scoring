@@ -20,14 +20,15 @@ import type { SessionStepData } from '../../merchant/deal-sessions/types';
 // rendered for the client but never hashed.
 // ---------------------------------------------------------------------------
 
-/** A basket line's contribution, in tiyin. Prices are stored as decimal som strings. */
+/** A basket line's contribution, in som. Prices are stored as decimal som strings. */
 export function lineAmount(price: string, quantity: number): number {
-  return Math.round(parseFloat(price) * 100) * quantity;
+  return parseFloat(price) * quantity;
 }
 
-/** Basket total in tiyin — the principal, before markup. */
+/** Basket total in som (2-decimal) — the principal, before markup. */
 export function calcBasketAmount(lines: Array<{ price: string; quantity: number }>): number {
-  return lines.reduce((sum, l) => sum + lineAmount(l.price, l.quantity), 0);
+  const sum = lines.reduce((acc, l) => acc + lineAmount(l.price, l.quantity), 0);
+  return Math.round(sum * 100) / 100;
 }
 
 export interface DealTerms {
@@ -37,9 +38,9 @@ export interface DealTerms {
   markupPercent: number;
   paymentDay: number;
   lang: 'ru' | 'uz';
-  /** Basket total, tiyin. */
+  /** Basket total, som. */
   amount: number;
-  /** amount × (1 + markup), tiyin. */
+  /** amount × (1 + markup), som. */
   totalPayable: number;
   /** Paid upfront (ADR-0026); 0 when there was no prepayment. */
   prepaymentAmount: number;
@@ -48,7 +49,7 @@ export interface DealTerms {
   lines: Array<{
     productId: string;
     productName: string;
-    /** Marked-up line total, tiyin — what the client sees and consents to. */
+    /** Marked-up line total, som — what the client sees and consents to. */
     total: number;
     price: string;
     quantity: number;
@@ -85,7 +86,7 @@ export function buildDealTerms(data: SessionStepData): DealTerms | null {
     lines: products.lines.map((l) => ({
       productId: l.productId,
       productName: l.productName,
-      total: Math.round(lineAmount(l.price, l.quantity) * (1 + tariff.markupPercent / 100)),
+      total: Math.round(lineAmount(l.price, l.quantity) * (1 + tariff.markupPercent / 100) * 100) / 100,
       price: l.price,
       quantity: l.quantity,
     })),

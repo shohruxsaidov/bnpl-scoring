@@ -11,9 +11,9 @@ export interface Payment {
   clientPhone: string
   contractId: string
   dealNumber: string
-  /** tiyin */
+  /** som */
   amount: number
-  /** tiyin — amount paid so far */
+  /** som — amount paid so far */
   paidAmount: number
   type: 'cash' | 'card' | 'transfer'
   status: 'confirmed' | 'pending' | 'partial' | 'cancelled'

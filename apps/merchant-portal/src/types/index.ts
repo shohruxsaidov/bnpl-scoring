@@ -95,13 +95,13 @@ export interface Tariff {
   termMonths: number;
   /** Ustama — markup percent */
   markupPercent: number;
-  /** Credit Range bounds in tiyin; null = unbounded */
+  /** Credit Range bounds in som; null = unbounded */
   minAmount: number | null;
   maxAmount: number | null;
   active: boolean;
 }
 
-/** One tariff's repayment preview from the Tariff Calculator quote endpoint. All amounts in tiyin. */
+/** One tariff's repayment preview from the Tariff Calculator quote endpoint. All amounts in som. */
 export interface TariffQuote {
   tariffId: string;
   name: string;
@@ -151,7 +151,7 @@ export interface DealPaymentSchedule {
   index: number;
   /** ISO date string — matches deal_payment_schedules.due_date */
   dueDate: string;
-  /** tiyin */
+  /** som */
   amount: number;
   paid: boolean;
   paidAt: string | null;
@@ -166,9 +166,9 @@ export interface Deal {
   tariffId: string;
   tariffName: string;
   termMonths: number;
-  /** sum of price × quantity across all DealItems, tiyin */
+  /** sum of price × quantity across all DealItems, som */
   amount: number;
-  /** amount + Ustama, tiyin */
+  /** amount + Ustama, som */
   totalPayable: number;
   /** from joined client_scorings.score_sum — included in API response */
   score: number;

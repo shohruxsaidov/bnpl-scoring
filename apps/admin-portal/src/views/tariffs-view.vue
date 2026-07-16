@@ -97,16 +97,16 @@ function openEdit(tariff: Tariff) {
     name: tariff.name,
     termMonths: tariff.termMonths,
     markupPercent: tariff.markupPercent,
-    minSom: tariff.minAmount != null ? tariff.minAmount / 100 : null,
-    maxSom: tariff.maxAmount != null ? tariff.maxAmount / 100 : null,
+    minSom: tariff.minAmount,
+    maxSom: tariff.maxAmount,
   })
   showDialog.value = true
 }
 
 const submit = handleSubmit(async (values) => {
   saving.value = true
-  const minAmount = values.minSom != null ? Math.round(values.minSom * 100) : null
-  const maxAmount = values.maxSom != null ? Math.round(values.maxSom * 100) : null
+  const minAmount = values.minSom != null ? Math.round(values.minSom) : null
+  const maxAmount = values.maxSom != null ? Math.round(values.maxSom) : null
   try {
     if (editingId.value) {
       await tariffs.update(editingId.value, {

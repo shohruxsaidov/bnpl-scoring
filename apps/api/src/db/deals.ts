@@ -51,10 +51,10 @@ export const deals = pgTable(
     // 'draft' | 'scoring' | 'approved' | 'declined' | 'active' | 'closed' | 'overdue'
     status: varchar('status', { length: 20 }).notNull().default('draft'),
     // Denormalized financials — stored at creation so list queries need no heavy joins
-    /** Sum of dealItems.price × quantity in tiyin */
-    amount: integer('amount'),
-    /** amount × (1 + markupPercent / 100), tiyin */
-    totalPayable: integer('total_payable'),
+    /** Sum of dealItems.price × quantity, in som */
+    amount: numeric('amount', { precision: 15, scale: 2, mode: 'number' }),
+    /** amount × (1 + markupPercent / 100), in som */
+    totalPayable: numeric('total_payable', { precision: 15, scale: 2, mode: 'number' }),
     /** Copied from tariffs.term_months at creation time */
     termMonths: integer('term_months'),
     // Scoring result — copied from scoring_histories at deal activation
@@ -62,8 +62,8 @@ export const deals = pgTable(
     scoringDecision: varchar('scoring_decision', { length: 20 }),
     // Avansoviy to'lov — recorded at deal creation when the client paid a gap amount
     // upfront so the installment schedule covers only (totalPayable - prepaymentAmount).
-    // Null means no prepayment was made. ADR-0026.
-    prepaymentAmount: integer('prepayment_amount'),
+    // Null means no prepayment was made. ADR-0026. In som.
+    prepaymentAmount: numeric('prepayment_amount', { precision: 15, scale: 2, mode: 'number' }),
     // Kontrakt language selected at Wizard verification step
     lang: varchar('lang', { length: 5 }).notNull().default('ru'),
     // Human-readable sequential identifier — plain integer starting at 1000

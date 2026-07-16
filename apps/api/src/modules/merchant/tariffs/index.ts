@@ -34,7 +34,7 @@ export default async function merchantTariffRoutes(app: FastifyInstance) {
   /* ── GET /quote — Tariff Calculator: quote one amount across all tariffs ── */
 
   const QuoteQuery = Type.Object({
-    amount: Type.Integer({ minimum: 1 }), // tiyin
+    amount: Type.Integer({ minimum: 1 }), // som (whole)
   });
 
   fastify.get(

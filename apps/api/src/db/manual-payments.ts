@@ -1,11 +1,11 @@
-import { integer, pgTable, serial, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { integer, numeric, pgTable, serial, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { deals } from './deals';
 import { adminUsers } from './admin-users';
 
 // ---------------------------------------------------------------------------
 // manual_payments
 // A single Platform Admin payment event that settles one or more instalments
-// FIFO by dueDate. Amount stored in tiyin.
+// FIFO by dueDate. Amount stored in som.
 // ---------------------------------------------------------------------------
 export const manualPayments = pgTable('manual_payments', {
   id: serial('id').primaryKey(),
@@ -13,7 +13,8 @@ export const manualPayments = pgTable('manual_payments', {
     .notNull()
     .references(() => deals.id, { onDelete: 'cascade' }),
   adminUserId: integer('admin_user_id').references(() => adminUsers.id),
-  amount: integer('amount').notNull(),
+  /** Payment amount, in som. */
+  amount: numeric('amount', { precision: 15, scale: 2, mode: 'number' }).notNull(),
   paymentType: text('payment_type').notNull().default('mib'),
   note: text('note'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

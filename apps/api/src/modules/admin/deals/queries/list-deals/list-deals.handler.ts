@@ -63,7 +63,7 @@ export async function listAdminDeals(filters: ListAdminDealsQuery = {}) {
     const basket = (basketByDeal.get(deal.id) ?? []).map((i) => ({
       name: i.productName,
       quantity: i.quantity,
-      price: Math.round(parseFloat(i.price) * 100),
+      price: parseFloat(i.price),
     }))
     const schedule = (scheduleByDeal.get(deal.id) ?? []).map((s) => ({
       index: s.index,

@@ -10,7 +10,7 @@ export interface OverdueCard {
   merchantName: string
   clientName: string
   clientPhone: string
-  /** tiyin */
+  /** som */
   principal: number
   missedCount: number
   daysOverdue: number
