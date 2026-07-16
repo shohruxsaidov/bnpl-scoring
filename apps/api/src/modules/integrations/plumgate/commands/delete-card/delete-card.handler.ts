@@ -12,7 +12,7 @@ import type { DeleteCardCommand } from './delete-card.command';
 // treated as success so the caller can proceed to delete the local row
 export async function deleteCard(params: DeleteCardCommand): Promise<void> {
   const client = makePlumClient();
-  const reqParams = { id: params.id };
+  const reqParams = { userCardId: params.id };
 
   const requestTimestamp = new Date();
   try {
