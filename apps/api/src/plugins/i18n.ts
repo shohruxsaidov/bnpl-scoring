@@ -27,7 +27,7 @@ export default fp(async function i18nPlugin(app) {
     const code = statusCode >= 500 ? 'internal_error' : err.message || 'internal_error';
     const args = err.args ?? {};
     const lang = resolveLang(request.headers['x-lang'] as string | undefined);
-    const message = translate('ru', code, args);
+    const message = translate(lang, code, args);
 
     app.log.error({ err, code }, 'request error');
     reply.code(statusCode).send({ code, message, args });
