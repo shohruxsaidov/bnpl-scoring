@@ -8,6 +8,7 @@ import { addCard } from '../../integrations/plumgate/commands/add-card/add-card.
 import { confirmCard } from '../../integrations/plumgate/commands/confirm-card/confirm-card.handler';
 import { deleteCard } from '../../integrations/plumgate/commands/delete-card/delete-card.handler';
 import { finalizeClientScoringIfReady } from '../scoring/finalize';
+import { listCards } from '../../integrations/plumgate/queries/list-cards/list-cards.handler';
 
 // Client (mobile) card management. user_cards is the local source of truth for the
 // card list; Plumgate is the rail for OTP add + remote delete. Reads never hit
@@ -88,13 +89,20 @@ export default async function clientScoringCardsRoutes(app: FastifyInstance) {
       preHandler: guards,
     },
     async (request) => {
-      const userId = Number(request.user.sub);
-      const rows = await db
-        .select()
-        .from(userCards)
-        .where(eq(userCards.userId, userId))
-        .orderBy(desc(userCards.createdAt));
-      return { cards: rows.map(toCardDto) };
+      const cards = await listCards(request.user.sub);
+
+      return {
+        cards: cards.map((item) => {
+          return {
+            id: item.plumCardId,
+            maskedPan: item.maskedPan,
+            holderName: item.holderName,
+            expiry: item.expiry,
+            pcType: 'Uzcard',
+            bank: '',
+          };
+        }),
+      };
     },
   );
 
