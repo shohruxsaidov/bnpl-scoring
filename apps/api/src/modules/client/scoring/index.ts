@@ -23,6 +23,8 @@ import {
   REJECT_REASON_CATEGORY,
   type ScoringRejectReasonCode,
 } from '../../scoring/pipelines/types';
+import { resolveLang } from '../../../i18n/index';
+import { reasonMessage } from '../../../i18n/reason-codes';
 import type { GENDERS } from '../../integrations/katm/service/shared';
 import { applyClientStep, finalizeClientScoringIfReady } from './finalize';
 
@@ -64,6 +66,7 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
     expiresAt: Type.Optional(Type.String()),
     reasonCode: Type.Optional(Type.String()),
     reasonCategory: Type.Optional(Type.String()),
+    reasonMessage: Type.Optional(Type.String()),
     missingFields: Type.Optional(Type.Array(Type.String())),
     reason: Type.Optional(Type.String()),
   });
@@ -84,6 +87,7 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
     },
     async (request, reply) => {
       const userId = Number(request.user.sub);
+      const lang = resolveLang(request.headers['x-lang'] as string | undefined);
 
       // One Active Deal — the client's limit was consumed by the deal they are
       // still paying off. Answered before a run is opened: the block lifts the day
@@ -95,6 +99,7 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
           status: 'rejected' as const,
           reasonCode: 'active_deal_exists',
           reasonCategory: reasonCategory('active_deal_exists'),
+          reasonMessage: reasonMessage(lang, 'active_deal_exists'),
         };
       }
 
@@ -122,6 +127,7 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
           status: 'rejected' as const,
           reasonCode,
           reasonCategory: reasonCategory(reasonCode),
+          reasonMessage: reasonMessage(lang, reasonCode),
         };
       }
 
@@ -140,6 +146,7 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
             status: 'rejected' as const,
             reasonCode: outcome.reasonCode,
             reasonCategory: reasonCategory(outcome.reasonCode),
+            reasonMessage: reasonMessage(lang, outcome.reasonCode),
           };
         }
         return { status: 'awaiting_card' as const };
@@ -156,6 +163,7 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
           status: 'rejected' as const,
           reasonCode: 'data_missing',
           reasonCategory: 'data_missing',
+          reasonMessage: reasonMessage(lang, 'data_missing'),
           missingFields: missing,
         };
       }
@@ -211,14 +219,17 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
             status: 'rejected' as const,
             reasonCode: outcome.reasonCode,
             reasonCategory: reasonCategory(outcome.reasonCode),
+            reasonMessage: reasonMessage(lang, outcome.reasonCode),
             ...(outcome.missingFields ? { missingFields: outcome.missingFields } : {}),
           };
         case 'failed':
-          return { status: 'rejected' as const, reason: outcome.reason };
+          // Codeless operational failure — keep the internal `reason` string and
+          // give the client the generic message rather than a raw reasonCode.
+          return { status: 'rejected' as const, reason: outcome.reason, reasonMessage: reasonMessage(lang) };
         case 'scored':
           return { status: 'scored' as const, creditLimit: outcome.creditLimit };
         case 'error':
-          return { status: 'error' as const };
+          return { status: 'error' as const, reasonMessage: reasonMessage(lang) };
       }
     },
   );
@@ -239,6 +250,7 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
     // True once the stored limit is past its TTL — the app offers a refresh.
     expired: Type.Boolean(),
     reasonCode: Type.Union([Type.String(), Type.Null()]),
+    reasonMessage: Type.Union([Type.String(), Type.Null()]),
   });
 
   fastify.get(
@@ -255,6 +267,7 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
     },
     async (request) => {
       const userId = Number(request.user.sub);
+      const lang = resolveLang(request.headers['x-lang'] as string | undefined);
       const [scoring, [limit], blocking] = await Promise.all([
         loadLatestClientScoring(userId),
         db.select().from(userCreditLimits).where(eq(userCreditLimits.userId, userId)).limit(1),
@@ -272,6 +285,7 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
           expiresAt: null,
           expired: false,
           reasonCode: 'active_deal_exists',
+          reasonMessage: reasonMessage(lang, 'active_deal_exists'),
         };
       }
 
@@ -287,12 +301,16 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
                 ? ('rejected' as const)
                 : ('error' as const);
 
+      const reasonCode =
+        scoring?.status === 'rejected' ? (scoring.rejectReasonCode ?? null) : null;
+
       return {
         status,
         creditLimit: limit ? limit.creditLimit : null,
         expiresAt: limit ? limit.expiresAt.toISOString() : null,
         expired: limit ? limit.expiresAt.getTime() <= Date.now() : false,
-        reasonCode: scoring?.status === 'rejected' ? (scoring.rejectReasonCode ?? null) : null,
+        reasonCode,
+        reasonMessage: status === 'rejected' ? reasonMessage(lang, reasonCode ?? undefined) : null,
       };
     },
   );
