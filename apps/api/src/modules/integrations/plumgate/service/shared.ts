@@ -51,7 +51,7 @@ export interface PlumCardItem {
   number: string;
   owner: string;
   expireDate: string;
-  pcType: string;
+  pcType: number;
   status: number;
   isTrusted: boolean;
   isPrimary: boolean;
@@ -145,8 +145,7 @@ export interface PlumCard {
   maskedPan: string;
   holderName: string;
   expiry: string;
-  bank: 'Uzcard' | 'Humo';
-  pcType: 'uzcard' | 'humo';
+  pcType: string; // uzcard;  humo
 }
 
 export interface PlumAddCardResult {
@@ -188,15 +187,13 @@ export function normalisePcType(raw: string): 'uzcard' | 'humo' {
 }
 
 export function toPlumCard(r: PlumCardItem): PlumCard {
-  const pcType = normalisePcType(`${r.pcType}`);
   return {
     id: r.id,
     plumCardId: r.cardId,
     maskedPan: r.number,
     holderName: r.owner,
     expiry: formatExpiry(r.expireDate),
-    bank: pcType === 'humo' ? 'Humo' : 'Uzcard',
-    pcType,
+    pcType: r.pcType === 1 ? 'Humo' : 'Uzcard',
   };
 }
 

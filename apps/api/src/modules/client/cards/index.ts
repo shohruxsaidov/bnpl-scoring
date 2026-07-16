@@ -8,7 +8,10 @@ import { addCard } from '../../integrations/plumgate/commands/add-card/add-card.
 import { confirmCard } from '../../integrations/plumgate/commands/confirm-card/confirm-card.handler';
 import { deleteCard } from '../../integrations/plumgate/commands/delete-card/delete-card.handler';
 import { finalizeClientScoringIfReady } from '../scoring/finalize';
-import { listCards } from '../../integrations/plumgate/queries/list-cards/list-cards.handler';
+import {
+  listCards,
+  PlumCard,
+} from '../../integrations/plumgate/queries/list-cards/list-cards.handler';
 
 // Client (mobile) card management. user_cards is the local source of truth for the
 // card list; Plumgate is the rail for OTP add + remote delete. Reads never hit
@@ -89,12 +92,14 @@ export default async function clientCardsRoutes(app: FastifyInstance) {
       preHandler: guards,
     },
     async (request) => {
-      const cards = await listCards(request.user.sub);
+      const cards = await listCards(request.user.sub).catch(() => {
+        return [];
+      });
 
       return {
         cards: cards.map((item) => {
           return {
-            id: item.plumCardId,
+            id: item.id,
             maskedPan: item.maskedPan,
             holderName: item.holderName,
             expiry: item.expiry,
@@ -170,6 +175,7 @@ export default async function clientCardsRoutes(app: FastifyInstance) {
         .values({
           userId,
           plumId: card.id,
+          plumCardId: card.plumCardId,
           maskedPan: card.maskedPan,
           holderName: card.holderName,
           expiry: card.expiry,
@@ -183,13 +189,6 @@ export default async function clientCardsRoutes(app: FastifyInstance) {
         .where(and(eq(userCards.userId, userId), eq(userCards.plumId, card.id)))
         .limit(1);
       if (!row) return reply.code(500).sendError('card_persist_failed');
-
-      // Client Scoring completion gate: a run whose KATM gates already cleared is
-      // waiting on a card. Now that one exists, finalize it (model + limit).
-      // Best-effort — a failure here must not fail the card add.
-      finalizeClientScoringIfReady(userId).catch((err) =>
-        request.log.warn({ err }, 'finalizeClientScoringIfReady after card confirm failed'),
-      );
 
       return { card: toCardDto(row) };
     },
@@ -218,7 +217,7 @@ export default async function clientCardsRoutes(app: FastifyInstance) {
       const [row] = await db
         .select()
         .from(userCards)
-        .where(and(eq(userCards.id, id), eq(userCards.userId, userId)))
+        .where(and(eq(userCards.plumId, id), eq(userCards.userId, userId)))
         .limit(1);
       if (!row) return reply.code(404).sendError('card_not_found');
 

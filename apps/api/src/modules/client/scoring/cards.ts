@@ -89,12 +89,14 @@ export default async function clientScoringCardsRoutes(app: FastifyInstance) {
       preHandler: guards,
     },
     async (request) => {
-      const cards = await listCards(request.user.sub);
+      const cards = await listCards(request.user.sub).catch(() => {
+        return [];
+      });
 
       return {
         cards: cards.map((item) => {
           return {
-            id: item.plumCardId,
+            id: item.id,
             maskedPan: item.maskedPan,
             holderName: item.holderName,
             expiry: item.expiry,
@@ -187,13 +189,6 @@ export default async function clientScoringCardsRoutes(app: FastifyInstance) {
         .limit(1);
       if (!row) return reply.code(500).sendError('card_persist_failed');
 
-      // Client Scoring completion gate: a run whose KATM gates already cleared is
-      // waiting on a card. Now that one exists, finalize it (model + limit).
-      // Best-effort — a failure here must not fail the card add.
-      finalizeClientScoringIfReady(userId).catch((err) =>
-        request.log.warn({ err }, 'finalizeClientScoringIfReady after card confirm failed'),
-      );
-
       return { card: toCardDto(row) };
     },
   );
@@ -221,7 +216,7 @@ export default async function clientScoringCardsRoutes(app: FastifyInstance) {
       const [row] = await db
         .select()
         .from(userCards)
-        .where(and(eq(userCards.id, id), eq(userCards.userId, userId)))
+        .where(and(eq(userCards.plumId, id), eq(userCards.userId, userId)))
         .limit(1);
       if (!row) return reply.code(404).sendError('card_not_found');
 

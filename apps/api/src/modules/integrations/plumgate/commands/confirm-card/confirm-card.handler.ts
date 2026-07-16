@@ -41,7 +41,7 @@ export async function confirmCard(params: ConfirmCardCommand): Promise<PlumCard>
       number: data.result.card.number,
       owner: data.result.card.owner,
       expireDate: data.result.card.expireDate,
-      pcType: data.result.card.pcType === 1 ? 'humo' : 'uzcard',
+      pcType: data.result.card.pcType,
       status: data.result.card.status,
       isTrusted: data.result.card.isTrusted,
       isPrimary: data.result.card.isOwn,

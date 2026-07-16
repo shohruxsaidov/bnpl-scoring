@@ -24,7 +24,7 @@ export const userCards = pgTable(
     maskedPan: varchar('masked_pan', { length: 25 }).notNull(),
     holderName: varchar('holder_name', { length: 100 }),
     expiry: varchar('expiry', { length: 5 }).notNull(), // "08/27"
-    pcType: varchar('pc_type', { length: 10 }).notNull().$type<'uzcard' | 'humo'>(),
+    pcType: varchar('pc_type', { length: 10 }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (t) => ({
