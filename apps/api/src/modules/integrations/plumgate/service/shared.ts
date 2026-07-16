@@ -141,6 +141,7 @@ export interface PlumConfirmUserCardCreateResponse {
 
 export interface PlumCard {
   id: number;
+  plumId: number;
   plumCardId: string;
   maskedPan: string;
   holderName: string;
@@ -187,12 +188,15 @@ export function normalisePcType(raw: string): 'uzcard' | 'humo' {
 }
 
 export function toPlumCard(r: PlumCardItem): PlumCard {
+  const expireMonth = r.expireDate.slice(0, 2);
+  const expireYear = r.expireDate.slice(2);
   return {
     id: r.id,
+    plumId: r.id,
     plumCardId: r.cardId,
     maskedPan: r.number,
     holderName: r.owner,
-    expiry: formatExpiry(r.expireDate),
+    expiry: `${expireMonth}${expireYear}`,
     pcType: r.pcType === 1 ? 'Humo' : 'Uzcard',
   };
 }

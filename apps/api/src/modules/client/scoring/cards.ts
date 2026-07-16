@@ -16,7 +16,7 @@ import { listCards } from '../../integrations/plumgate/queries/list-cards/list-c
 
 function toCardDto(c: typeof userCards.$inferSelect) {
   return {
-    id: c.id.toString(),
+    id: c.plumId,
     maskedPan: c.maskedPan,
     holderName: c.holderName,
     expiry: c.expiry,
@@ -31,7 +31,7 @@ const ERROR = { $ref: 'ErrorResponse#' };
 // `examples` entry is what Swagger UI renders as the sample response body.
 const Card = Type.Object(
   {
-    id: Type.String(),
+    id: Type.Number(),
     maskedPan: Type.String(),
     holderName: Type.Union([Type.String(), Type.Null()]),
     expiry: Type.String(),
