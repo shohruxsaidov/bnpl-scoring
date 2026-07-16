@@ -152,4 +152,5 @@ export const uz: Record<string, string> = {
   'plumIntegrationErrors.-113': 'OTP amal qilish muddati yakunlangan',
   'plumIntegrationErrors.-108': "Ushbu karta allaqachon sistemaga qo'shilgan",
   'plumIntegrationErrors.-101': "Karta ma'lumotlari noto'g'ri kiritilgan",
+  'plumIntegrationErrors.-102': "Noto'g'ri otp kod kiritildi",
 };

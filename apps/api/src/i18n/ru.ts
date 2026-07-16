@@ -152,4 +152,5 @@ export const ru: Record<string, string> = {
   'plumIntegrationErrors.-113': 'Время OTP истек',
   'plumIntegrationErrors.-108': 'Данная карта уже добавлен в системе',
   'plumIntegrationErrors.-101': 'Данные карты введены неправильно',
+  'plumIntegrationErrors.-102': 'Неправильный ОТП код',
 };
