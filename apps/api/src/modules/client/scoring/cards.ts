@@ -21,7 +21,6 @@ function toCardDto(c: typeof userCards.$inferSelect) {
     holderName: c.holderName,
     expiry: c.expiry,
     pcType: c.pcType,
-    bank: c.pcType === 'humo' ? 'Humo' : 'Uzcard',
   };
 }
 
@@ -37,7 +36,6 @@ const Card = Type.Object(
     holderName: Type.Union([Type.String(), Type.Null()]),
     expiry: Type.String(),
     pcType: Type.String(),
-    bank: Type.String(),
   },
   {
     examples: [
@@ -47,7 +45,6 @@ const Card = Type.Object(
         holderName: 'ALISHER KARIMOV',
         expiry: '08/27',
         pcType: 'uzcard',
-        bank: 'Uzcard',
       },
     ],
   },
