@@ -205,15 +205,18 @@ export function delay(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-export async function parsePlumError(err: unknown): Promise<IntegrationError | Error> {
+export async function parsePlumError(err: unknown) {
   if (err instanceof HTTPError) {
-    let body: unknown = null;
+    let body: any = null;
     try {
       body = (err as any).data;
     } catch {
       body = await err.response.text().catch(() => null);
     }
-    return new IntegrationError('plumgate', err.response.status, body);
+    return {
+      message: `plumIntegrationErrors.${body?.error?.errorCode || 'undefined'}`,
+      statusCode: 400,
+    };
   }
   return err instanceof Error ? err : new Error(String(err));
 }

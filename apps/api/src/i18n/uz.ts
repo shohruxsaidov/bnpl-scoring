@@ -149,4 +149,7 @@ export const uz: Record<string, string> = {
   'notification.deal_signing_request.title': 'Shartnomani imzolang',
   'notification.deal_signing_request.body':
     "%{merchantName} %{totalPayable} so'mlik muddatli to'lovni tasdiqlashingizni kutmoqda. Shartlarni tekshirish uchun ilovani oching.",
+  'plumIntegrationErrors.-113': 'OTP amal qilish muddati yakunlangan',
+  'plumIntegrationErrors.-108': "Ushbu karta allaqachon sistemaga qo'shilgan",
+  'plumIntegrationErrors.-101': "Karta ma'lumotlari noto'g'ri kiritilgan",
 };

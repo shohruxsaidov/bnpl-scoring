@@ -149,4 +149,7 @@ export const ru: Record<string, string> = {
   'notification.deal_signing_request.title': 'Подпишите договор',
   'notification.deal_signing_request.body':
     '%{merchantName} ждёт подтверждения рассрочки на %{totalPayable} сум. Откройте приложение, чтобы проверить условия.',
+  'plumIntegrationErrors.-113': 'Время OTP истек',
+  'plumIntegrationErrors.-108': 'Данная карта уже добавлен в системе',
+  'plumIntegrationErrors.-101': 'Данные карты введены неправильно',
 };
