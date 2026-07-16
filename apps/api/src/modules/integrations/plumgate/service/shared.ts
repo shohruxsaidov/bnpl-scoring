@@ -216,6 +216,7 @@ export async function parsePlumError(err: unknown) {
     return {
       message: `plumIntegrationErrors.${body?.error?.errorCode || 'undefined'}`,
       statusCode: 400,
+      body,
     };
   }
   return err instanceof Error ? err : new Error(String(err));
