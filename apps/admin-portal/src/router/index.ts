@@ -122,9 +122,10 @@ const routes: RouteRecordRaw[] = [
           titleKey: 'routeTitle.settings',
           breadcrumbKeys: ['breadcrumb.settings'],
           // The hub is a menu: reachable if any card on it is. Scoring settings
-          // is gated on manage_scoring_model, so an admin holding only that
-          // would otherwise be bounced off the page that links to it.
-          anyFeature: ['manage_settings', 'manage_scoring_model'],
+          // is gated on manage_scoring_model and app-versions on view_app_versions,
+          // so an admin holding only one of those would otherwise be bounced off
+          // the page that links to it.
+          anyFeature: ['manage_settings', 'manage_scoring_model', 'view_app_versions'],
         },
       },
       {
@@ -145,6 +146,19 @@ const routes: RouteRecordRaw[] = [
           titleKey: 'routeTitle.settingsPublicOffer',
           breadcrumbKeys: ['breadcrumb.settings', 'breadcrumb.settingsPublicOffer'],
           feature: 'manage_settings',
+        },
+      },
+      {
+        // Gated by view_app_versions (read) at the route; the publish form
+        // inside enforces manage_app_versions (write). Its own feature, not
+        // manage_settings: publishing a floor can lock every client out at once.
+        path: 'settings/app-versions',
+        name: 'settings-app-versions',
+        component: () => import('@/views/settings-app-versions-view.vue'),
+        meta: {
+          titleKey: 'routeTitle.settingsAppVersions',
+          breadcrumbKeys: ['breadcrumb.settings', 'breadcrumb.settingsAppVersions'],
+          feature: 'view_app_versions',
         },
       },
       {

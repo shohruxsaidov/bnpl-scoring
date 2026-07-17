@@ -29,7 +29,7 @@ const allNav = computed<NavItem[]>(() => [
   { label: t('nav.allDeals'), icon: 'pi pi-credit-card', to: '/deals', feature: 'view_deals' },
   { label: t('nav.tariffs'), icon: 'pi pi-percentage', to: '/tariffs', feature: 'view_tariffs' },
   { label: t('nav.employees'), icon: 'pi pi-users', to: '/employees', feature: 'manage_employees' },
-  { label: t('nav.settings'), icon: 'pi pi-cog', to: '/settings', anyFeature: ['manage_settings', 'manage_scoring_model'] },
+  { label: t('nav.settings'), icon: 'pi pi-cog', to: '/settings', anyFeature: ['manage_settings', 'manage_scoring_model', 'view_app_versions'] },
   { label: t('nav.categories'), icon: 'pi pi-tag', to: '/categories', feature: 'manage_global_categories' },
   { label: t('nav.blacklist'), icon: 'pi pi-ban', to: '/blacklist', feature: 'manage_blacklist' },
   { label: t('nav.buyout'), icon: 'pi pi-shopping-bag', to: '/buyout', feature: 'manage_buyout' },

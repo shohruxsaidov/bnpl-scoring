@@ -45,7 +45,8 @@
     "integrationLogs": "Integratsiya loglari",
     "categories": "Kategoriyalar",
     "settingsPublicOffer": "Ommaviy oferta",
-    "settingsScoring": "Skoring sozlamalari"
+    "settingsScoring": "Skoring sozlamalari",
+    "settingsAppVersions": "Ilova versiyasi"
   },
   "breadcrumb": {
     "overview": "Umumiy ko'rinish",
@@ -71,7 +72,8 @@
     "integrationLogs": "Integratsiya loglari",
     "categories": "Kategoriyalar",
     "settingsPublicOffer": "Ommaviy oferta",
-    "settingsScoring": "Skoring"
+    "settingsScoring": "Skoring",
+    "settingsAppVersions": "Ilova versiyasi"
   },
   "topbar": {
     "scoring": "Skoring",
@@ -1009,7 +1011,9 @@
     "publicOffer": "Ommaviy oferta",
     "publicOfferDesc": "Ro'yxatdan o'tishda qabul qilinadigan PDF oferta va uning versiyalari",
     "scoring": "Skoring sozlamalari",
-    "scoringDesc": "Skoring vaqtida qaysi tekshiruvlar bajariladi"
+    "scoringDesc": "Skoring vaqtida qaysi tekshiruvlar bajariladi",
+    "appVersion": "Ilova versiyasi",
+    "appVersionDesc": "Mobil ilova uchun majburiy yangilanish siyosati"
   },
   "orgWarning": {
     "title": "Tashkilot rekvizitlari to'ldirilmagan",
@@ -1246,6 +1250,54 @@
     "district": "Tuman",
     "selectDistrict": "Tumanni tanlang",
     "optional": "ixtiyoriy"
+  },
+  "appVersion": {
+    "platform": "Platforma",
+    "platformHint": "Sozlamalar tanlangan platforma uchun qo'llaniladi",
+    "current": "Joriy siyosat",
+    "currentHint": "Ilova ishga tushganda tekshiriladigan amaldagi versiya siyosati",
+    "minSupported": "Minimal qo'llab-quvvatlanadigan versiya",
+    "latest": "Oxirgi versiya",
+    "storeUrl": "Do'kon havolasi",
+    "updatedBy": "Oxirgi o'zgartirish",
+    "noneForPlatform": "Bu platforma uchun hali siyosat yo'q",
+    "publishNew": "Yangi siyosat joylash",
+    "publishHint": "Joylangandan so'ng darhol faollashadi (5 daqiqagacha keshlanadi)",
+    "forceHint": "Bundan past versiyalar majburiy yangilanadi — ilovaga kirib bo'lmaydi",
+    "softHint": "Bundan past, lekin minimaldan yuqori — yangilash taklifi (o'tkazib yuborsa bo'ladi)",
+    "messageUz": "Xabar (o'zbekcha)",
+    "messageRu": "Xabar (ruscha)",
+    "messageHint": "Yangilash ekranida ko'rsatiladi. Ikkala til ham majburiy.",
+    "label": "Izoh (ixtiyoriy)",
+    "labelPlaceholder": "Masalan: OTP tuzatishi uchun floor ko'tarildi",
+    "impactTitle": "Ta'sir doirasi",
+    "checkImpact": "Ta'sirni tekshirish",
+    "impactHeadline": "Minimal versiyani ko'tarish {total} ta faol qurilmadan {count} tasini ({percent}%) bloklaydi (oxirgi {days} kun).",
+    "impactUnknown": "{count} ta qurilmaning versiyasi aniqlanmadi — ular bloklangan deb hisoblanmaydi.",
+    "impactCaveat": "Versiya tekshiruvisiz eski ilovalar bu so'rovni yubormaydi, shuning uchun bu son ta'sirni oshirib ko'rsatishi mumkin.",
+    "impactPrompt": "Minimal versiyani kiriting va bloklanadigan qurilmalar sonini ko'rish uchun tekshiring.",
+    "impactFailed": "Ta'sirni hisoblab bo'lmadi",
+    "colAppVersion": "Ilova versiyasi",
+    "colDevices": "Qurilmalar",
+    "colVerdict": "Holat",
+    "verdictLocked": "Bloklanadi",
+    "verdictOk": "OK",
+    "confirmTitle": "{platform} siyosati joylansinmi?",
+    "confirmMsg": "Minimal versiya {min} qilib o'rnatiladi. Bundan past versiyadagi foydalanuvchilar ilovaga kira olmaydi.",
+    "confirmMsgWithImpact": "Minimal versiya {min} qilib o'rnatiladi va {count} ta faol qurilma ({percent}%) darhol bloklanadi. Davom etilsinmi?",
+    "publishAnyway": "Baribir joylash",
+    "publish": "Joylash",
+    "published": "Yangi siyosat joylandi",
+    "publishFailed": "Siyosatni joylab bo'lmadi",
+    "errMinAboveLatest": "Minimal versiya oxirgi versiyadan yuqori bo'la olmaydi",
+    "errInvalidVersion": "Versiya formati noto'g'ri — MAJOR.MINOR.PATCH (masalan 1.4.0)",
+    "history": "Siyosatlar tarixi",
+    "colVersion": "Versiya",
+    "colMin": "Minimal",
+    "colLatest": "Oxirgi",
+    "colLabel": "Izoh",
+    "colDate": "Sana",
+    "colAuthor": "Muallif"
   },
   "publicOffer": {
     "current": "Joriy versiya",

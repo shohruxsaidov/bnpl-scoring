@@ -38,6 +38,21 @@ const auth = useAuthStore()
       <i class="pi pi-chevron-right hub-arrow" />
     </router-link>
 
+    <router-link
+      v-if="auth.can('view_app_versions')"
+      class="surface-card hub-card"
+      :to="{ name: 'settings-app-versions' }"
+    >
+      <div class="hub-icon">
+        <i class="pi pi-mobile" />
+      </div>
+      <div class="hub-text">
+        <span class="hub-title">{{ $t('settings.appVersion') }}</span>
+        <span class="hub-desc">{{ $t('settings.appVersionDesc') }}</span>
+      </div>
+      <i class="pi pi-chevron-right hub-arrow" />
+    </router-link>
+
     <!-- manage_settings is not enough to reach this one — see the route's feature gate. -->
     <router-link
       v-if="auth.can('manage_scoring_model')"
