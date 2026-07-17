@@ -17,8 +17,9 @@ const loading = ref(true)
 const saving = ref<Record<string, boolean>>({})
 
 const ICONS: Record<ConfigurablePipeline, string> = {
+  active_deal: 'pi pi-file-check',
   myid: 'pi pi-id-card',
-  katm_mib: 'pi pi-gavel',
+  katm_mib: 'pi pi-building-columns',
   katm_077: 'pi pi-chart-line',
   katm_inps: 'pi pi-wallet',
   plum_card: 'pi pi-credit-card',
@@ -147,27 +148,63 @@ onMounted(async () => {
 
 <style scoped>
 .settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   max-width: 760px;
 }
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: none;
+  width: fit-content;
+}
+.back-link:hover {
+  color: var(--text-primary);
+}
+.back-link .pi {
+  font-size: 0.75rem;
+}
+.panel {
+  padding: 0;
+  overflow: hidden;
+}
 .panel-head {
-  margin-bottom: 1.1rem;
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.section-title {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+.section-hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
 }
 .pipeline-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
 }
 .pipeline-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--border-color, #e5e7eb);
-  border-radius: 0.75rem;
+  gap: 0.9rem;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--border-subtle);
   transition: opacity 0.12s ease;
+}
+.pipeline-row:last-child {
+  border-bottom: none;
 }
 .pipeline-row.off {
   opacity: 0.62;
@@ -222,22 +259,24 @@ onMounted(async () => {
   white-space: nowrap;
 }
 .tag-gate {
-  background: color-mix(in srgb, #10b981 14%, transparent);
-  color: #047857;
+  background: var(--success-bg);
+  color: var(--success);
 }
 .tag-source {
-  background: color-mix(in srgb, #6366f1 14%, transparent);
-  color: #4338ca;
+  background: color-mix(in srgb, var(--accent-1) 16%, transparent);
+  color: var(--text-accent);
 }
 .tag-limit {
-  background: color-mix(in srgb, #f59e0b 18%, transparent);
-  color: #b45309;
+  background: var(--warning-bg);
+  color: var(--warning);
 }
 .tag-default {
   background: color-mix(in srgb, var(--text-secondary) 12%, transparent);
   color: var(--text-secondary);
 }
 .empty {
+  margin: 0;
+  padding: 1rem 1.1rem;
   font-size: 0.85rem;
   color: var(--text-secondary);
 }

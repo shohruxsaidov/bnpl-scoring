@@ -271,7 +271,13 @@ export interface Organization {
   updatedAt: string
 }
 
-export type ConfigurablePipeline = 'myid' | 'katm_mib' | 'katm_077' | 'katm_inps' | 'plum_card'
+export type ConfigurablePipeline =
+  | 'active_deal'
+  | 'myid'
+  | 'katm_mib'
+  | 'katm_077'
+  | 'katm_inps'
+  | 'plum_card'
 
 // The global ops kill-switch for one scoring pipeline. `isDefault` means no row
 // has ever been stored — `enabled` is the catalog default, not an admin choice.

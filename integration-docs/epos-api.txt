@@ -1,0 +1,1002 @@
+Руководство по интеграции Universal Communicator
+Версия Universal Communicator 2.0.1.4
+Версия FiscalDriveAPI 8.01
+________________
+Оглавление
+РУКОВОДСТВО ПРОГРАММИСТА ВИРТУАЛЬНОЙ КАССЫ        1
+Оглавление        2
+ОСНОВНЫЕ ЗАПРОСЫ        4
+Open Z report        4
+Sale        4
+Refund        7
+Close Z report        7
+Get Z report info by number        7
+Get Z report info        9
+ВСПОМОГАТЕЛЬНЫЕ ЗАПРОСЫ        9
+Check status        9
+Get Z report Count        9
+Get Version        10
+Get Device ID        10
+Print Last Paycheck        11
+Set Cash Number        11
+Send receipt        11
+Acknowledge        12
+Rescan receipts        12
+Get Receipt Info        12
+Send Z report by number        13
+Get Unsent Count        14
+Get Acknowledge count        14
+Get Z report Status        14
+Get receipts info by date        15
+Get fiscals list        16
+Get status        16
+Get last registered receipt        17
+Get receipt count        17
+Resend Unsent        18
+ОШИБКИ ПРОГРАММЫ        18
+________________
+
+
+
+
+
+
+Виртуальная касса Communicator обеспечивает доступ к ФМ, и служат фискализацией чека. У ПО Communicator есть основные запросы так и вспомогательные запросы. Основные запросы необходимо интегрировать к систему для обеспечение нормальной работы кассы. Вспомогательные запросы можно интегрировать по желанию клиента. 
+Базовый адрес для запросов является Localhost с портом 8347 и конечном путём /uzpos
+http://localhost:8347/uzpos
+Токен для запросов остаётся неизменном: “DXJFX32CN1296678504F2”
+Тестовый адрес для запросов: http://integration.epos.uz:8347/uzpos 
+
+
+Все запросы отправляется POST формате. В примере показаны тело запроса. 
+1. ОСНОВНЫЕ ЗАПРОСЫ
+   1. Open Z report 
+Открытие Z отчёта. 
+Request
+ {
+    "token": "DXJFX32CN1296678504F2",
+    "method": "openZreport"
+}
+Поле
+	Тип
+	Описание
+	token
+	String
+	Обязательное 
+	Токен не меняется
+DXJFX32CN1296678504F2
+	method 
+	String
+	Обязательное
+	Метод запроса
+	Response 
+{
+    "error": false,
+    "message": "SUCCESS"
+}
+Поле
+	Тип
+	Описание
+	error
+	Boolean
+	Обязательное
+	Проверка на ошибку
+	message
+	String
+	Обязательное
+	Информация на ошибку
+	   2. Sale 
+Отправка запроса на покупку. Отправка суммы должны соблюдать правило
+
+Request
+{
+    "token": "DXJFX32CN1296678504F2",
+    "method": "sale",
+    "companyName": "Humo MCHJ",
+    "companyAddress": "Tashkent",
+    "companyINN": "123456",  
+    "staffName": "Abdulazizov Shakhboz",
+    "printerSize": 80,
+    "params": {
+        "discountCard": {
+            "available": 12345,
+            "addition": 12345,
+            "subtraction": 12345,
+            "remainder": 12345
+        },
+        "paycheckNumber": "7654321",
+        "items": [
+            {
+                "discount": 250000,
+                "price": 519199,
+                "barcode": "98743154313",
+                "amount": 2000,   
+                "vatPercent": 15,   
+                "vat": 103839,   
+                "name": "AAAAAAAAAAAAAA",   
+                "label": "qwertyuuuuuuiopasdfghjklzxcvbnm",
+                "classCode": "08510003002000000",
+                  "other": 9199 
+            },
+            {
+                "discount": 250000,   
+                "price": 519199,   
+                "barcode":"23412334321",
+                "amount": 2000,
+                "vatPercent": 15,
+                "vat": 103839,
+                "name": "BBBBBBBBBB",  
+                "classCode": "08510003002000000",  
+                "other": 9199  
+            }
+        ],
+        "receivedCash": 260000,  
+        "receivedCard": 260000, 
+        "extraInfos": { 
+            "extra1": "Bla",  
+            "extra2": "BlaBla",
+            "extra3": "BlaBlaBla"
+        }
+    }
+}
+Поле
+	Тип
+	Описание
+	token
+	Boolean
+	Обязательное
+	Проверка на ошибку
+	method
+	String
+	Обязательное
+	Информация на ошибку
+	companyName
+	String 
+	Обязательное
+	Название компании. Убедитесь, чтобы в чеке идёт правильные адреса
+	companyINN
+	Integer
+	Обязательное
+	
+
+	staffName
+	String
+	Обязательное
+	Инициалы кассира
+	printerSize
+	
+
+	Не обязательное
+	Размер формирование чека: поддерживается 58 или 80 мм 
+	params 
+	Object 
+	
+
+	
+
+	discountCard 
+	Object 
+	Не обязательное
+	Данные дисконтных карт для выведения в чеке 
+	available
+	Integer
+	Не обязательное
+	Доступные средства 
+	addition
+	Integer
+	Не обязательное
+	Прибавление к карте 
+	subtraction
+	Integer
+	Не обязательное
+	Снимаемая сумма
+	remainder
+	Integer
+	Не обязательное
+	Остаток суммы
+	paycheckNumber 
+	String
+	Не обязательное
+	Номер чека для вывода в чеке. Если не указать номер чека номер присваивается со стороны фискального номера
+	items
+	Object 
+	Обязательное
+	Список товаров закупленных товаров
+	discount
+	Integer
+	Обязательное
+	Скидки для товаров Значение указывается в тийинах. 
+250000 тийин = 2500 сум 
+	price
+	Integer
+	Обязательное
+	Общая сумма товара учитывая количество товара. Значение указывается в тийинах. 
+250000 тийин = 2500 сум
+	barcode 
+	String 
+	Обязательное 
+	Штрих код товара 
+	amount
+	Integer
+	Обязательное
+	Количество товара 
+Количество товара указывается умноженным на 1000 
+1 шт = 1000 
+Таким образом можно указать кг, км и др. значение 
+	vatPercent
+	Integer 
+	Обязательное 
+	Процентная ставка НДС
+	vat
+	Integer
+	Обязательное 
+	НДС сумма. Значение указывается в тийинах. 
+250000 тийин = 2500 сум
+	name 
+	String 
+	Обязательное 
+	Наименование товара
+	classCode
+	String
+	Обязательное 
+	Код ИКПУ
+	label
+	String
+	Не обязательное*
+	Код маркировки товара. Для товаров с маркировками считается обязательным
+	commissionTIN
+	String 
+	Не обязательно *
+	ИНН комитента. Для товаров с комиссионе.laра обязательно для указывание 
+	other 
+	Integer 
+	Обязательное 
+	Прочие скидки (Оплата по страховки и др.)
+	receivedCash
+	Integer 
+	Обязательное
+	Наличная сумма, полученная от продажи в тийинах.
+	receivedCard
+	Integer
+	Обязательное 
+	Безналичная сумма, полученная от продажи в тийинах
+	extraInfos
+	Object
+	Не обязательное 
+	Дополнительные данные для вывода данных в чеках
+	Response 
+{
+    "error": false,
+    "paycheck": "JVBERi0xLjcKJeLjz9MKNSAwIG9iago8PC9GaW … RmxhdGVEZWNvZGUv+fdsfsd",
+    "info": {
+        "terminalId": "UZ191211501033",
+        "receiptSeq": "559",
+        "fiscalSign": "336289559214",
+        "qrCodeURL": "https://ofd.soliq.uz/check?t=UZ191211501033&r=559&c=20211109170634&s=336289559214",
+        "dateTime": "20211109170634"
+    }
+}
+Поле
+	Тип
+	Описание
+	error
+	Boolean
+	Проверка на ошибки 
+	paycheck 
+	base64
+	Чек в формате pdf кодированном в base64
+	info
+	Object 
+	Фискальные данные чека
+	terminalId
+	String
+	Серийный номер ФМ
+	receiptSeq
+	String 
+	Номер онлайн чека 
+	fiscalSign
+	String 
+	Фискальный признак чека
+	qrCodeURL
+	String
+	URL адрес ссылки для проверки чека. Должен быть напечатан в виде QR-кода на чеке
+	dateTime
+	String
+	Время регистрации чека (формат ГГГГММДДЧСМНСК)
+	   3. Refund
+Отправка запроса на возврат.  JSON RPC v2 запрос аналогичен Sale (см. Раздел 1.2), но поле method должно содержать значение “refund”. 
+JSON RPC v2 ответ аналогичен с ответом Sale (см. Раздел 1.2)
+   4. Close Z report
+Закрытие Z отчёта. При закрытие убедитесь, что Z отчёт не пустой. 
+Request
+{
+    "token": "DXJFX32CN1296678504F2",   
+    "method": "closeZreport"   
+}
+Поле
+	Тип
+	Описание
+	token
+	String
+	Обязательное 
+	Токен не меняется
+DXJFX32CN1296678504F2
+	method 
+	String
+	Обязательное
+	Метод запроса
+	Response 
+{
+    "error": false,
+    "message": "SUCCESS"
+}
+Поле
+	Тип
+	Описание
+	error
+	Boolean 
+	Токен не меняется DXJFX32CN1296678504F2
+	message
+	String
+	Сообщение о итоги операции
+	   5. Get Z report info by number
+Получить состав Z отчёта по порядковому номеру, указанному в поле Number. Номер = 1 - первый Z отчёт, Номер = 2 - второй Z отчёт, и т.д.
+Request
+{
+    "token": "DXJFX32CN1296678504F2",
+    "method": "getZReportInfoByNumber",
+    "printerSize": 80,
+    "zReportId": 1
+}
+Поле
+	Тип
+	Описание
+	token
+	String
+	Обязательное 
+	Токен не меняется
+DXJFX32CN1296678504F2
+	method 
+	String
+	Обязательное
+	Метод запроса
+	printerSize
+	Integer
+	Не обязательное
+	Размер формирование чека: поддерживается 58 или 80 мм
+	zReportId
+	Integer
+	Обязательное 
+	Номер Z отчёта 
+	Response 
+{
+    "error": false,
+    "message": {
+        "paycheck": "JVBERi0xLjcKJeLjz9MK....CiUlRU9GCg==",
+        "number": 1,
+        "count": 365,
+        "totalRefundCount": 0,
+        "firstReceiptSeq": "1",
+        "lastReceiptSeq": "5",
+        "totalSaleCount": 5,
+        "totalRefundCash": 0,
+        "totalRefundCard": 0,
+        "totalRefundVAT": 0,
+        "openTime": "2020-07-16 14:57:44",
+        "terminalID": "UZ191211501031",
+        "totalSaleCard": 0,
+        "closeTime": "2020-07-16 15:23:12",
+        "appletVersion": "0302",
+        "totalSaleCash": 982560200,
+        "totalSaleVAT": 128160026
+    }
+}
+Поле
+	Тип
+	Описание
+	error
+	Boolean 
+	Токен не меняется DXJFX32CN1296678504F2
+	message
+	Object
+	Данные о Z отчёте в JSON формате
+	paycheck
+	Base64
+	Чек в формате pdf кодировано в base64
+	number 
+	Integer
+	Порядковый номер Z отчёта
+	count 
+	Integer
+	Кол-во открытых/закрытых (включая текущий) Z отчёта.
+	totalRefundCount
+	Integer
+	Кол-во операций возврата в данном Z отчёте (от 1 до 9999)
+	firstReceiptSeq
+	String
+	Номер первого зарегистрированного чека в данном Z отчёте после ее открытия
+	lastReceiptSeq
+	String
+	Номер последнего зарегистрированного чека в данном Z отчёте
+	totalSaleCount 
+	Integer
+	Кол-во операций продаж в данном Z отчёте (от 1 до 9999)
+	totalRefundCash
+	Integer
+	Сумма наличности по возвратам в данном Z отчёте (от 0 до 999999999999) в тийинах
+	totalRefundCard
+	Integer
+	Сумма без наличности по возвратам в данном Z отчёте (от 0 до 999999999999) в тийинах
+	totalRefundVAT
+	Integer
+	Сумма НДС по продажам в данном Z отчёте (от 0 до 999999999999) в тийинах
+	openTime 
+	String
+	Дата время открытия Z отчёта (формат ГГГГ-ММ-ДД ЧС-МН-СК). Если пустой, то Z отчёт не был открыт
+	terminalID
+	String
+	Серийный номер ФМ
+	totalSaleCard
+	Integer
+	Сумма без наличности по продажам в данном Z отчёте (от 0 до 999999999999) в тийинах
+	closeTime
+	String
+	Дата время закрытия Z отчёта (формат ГГГГ-ММ-ДД ЧС-МН-СК). Если пустой, то Z отчёт не был закрыт
+	appletVersion
+	String
+	Версия апплета в ФМ
+	totalSaleCash
+	
+
+	Сумма наличности по продажам в данном Z отчёте (от 0 до 999999999999) в тийинах
+	
+
+   6. Get Z report info 
+Получить состав Z отчёта по индексу, указанному в поле Number. Индекс = 0 – текущий Z отчёт (X отчёт), Индекс = 1 – предыдущий Z отчёт, и т.д.
+Request 
+{
+    "token": "DXJFX32CN1296678504F2",
+    "method": "getZreportInfo",
+    "printerSize": 80,
+    "zReportId":0
+}
+Поле
+	Тип
+	Описание
+	token
+	String
+	Обязательное 
+	Токен не меняется
+DXJFX32CN1296678504F2
+	method 
+	String
+	Обязательное
+	Метод запроса
+	printerSize
+	Integer
+	Не обязательное
+	Размер формирование чека: поддерживается 58 или 80 мм
+	zReportId
+	Integer
+	Обязательное 
+	Номер Z отчёта 
+	Response
+JSON RPC v2 ответ см. Раздел 1.5.
+2. ВСПОМОГАТЕЛЬНЫЕ ЗАПРОСЫ
+   1. Check status
+Проверка статуса программы.
+Request
+{
+    "token": "DXJFX32CN1296678504F2",
+    "method": "checkStatus”
+}
+Response 
+{
+    "error": false,
+    "message": "OK!"
+}
+Поле
+	Тип
+	Описание
+	error
+	Boolean
+	Обязательное
+	Проверка на ошибку
+	message
+	String
+	Обязательное
+	Информация на ошибку
+	   2. Get Z report Count
+Кол-во открытых/закрытых (включая текущий) Z отчётов. При закрытии и открытии нового Z отчёта, увеличивается на единицу.
+Request
+{
+    "token": "DXJFX32CN1296678504F2",
+    "method": "getZReportCount"
+}
+Response 
+{
+    "error": false,
+    "message": {
+        "AppletVersion": "0302",
+        "Count": 365
+    }
+}
+Поле
+	Тип
+	Описание
+	error
+	Boolean 
+	Проверка на ошибку
+	message
+	String
+	Информация на ошибку
+	AppletVersion
+	String
+	Версия апплета ФМ
+	Count
+	Integer
+	Номер 
+	   3. Get Version
+Получить версию программы
+Request
+{
+    "token": "DXJFX32CN1296678504F2", 
+    "method": "getVersion" 
+}
+Response
+{
+    "error": false,
+    "message": "2.0.0.9 -- UniversalTray"
+}
+   4. Get Device ID 
+Получить уникальный id девайса. При регистрации программы в системе “E-POS Systems” используется уникальный код.  
+Request 
+{
+    "token": "DXJFX32CN1296678504F2", 
+    "method": "getDeviceId" 
+}
+Request 
+{
+    "error": false,
+    "message": "66cc03cf2335842953a832e0cba3026330cf7be806f737fba41d66829a942ba1"
+}
+   5. Print Last Paycheck
+Получить последний пробитый чек. 
+Request
+{
+    "token": "DXJFX32CN1296678504F2",   
+    "method": "printLastPaycheck"   
+}
+Response 
+Отправка запроса на возврат. JSON RPC v2 запрос аналогичен Sale (см. Раздел 1.2.), но поле method должно содержать значение “refund”.
+   6. Set Cash Number 
+Взять регистрационный номер ключа. Если программа зарегистрирована в системе “E-POS Systems” с помощью запроса можно взять регистрационный номер. 
+Request
+{
+    "token": "DXJFX32CN1296678504F2", 
+    "method": "setCashNumber"   
+}
+Response
+{
+    "error": false,
+    "message": "707327"
+}
+   7. Send receipt
+Отправка (суммы) чека из памяти ФМ на сервер ОФД. Функция вызывается только в том случае если файл БД, хранящий информации полного чека стерся или был поврежден. Если чек не будет отправлен в течении 1 дня, то ФМ заблокируется. Функция отправляет чек в ОФД, получает файл подтверждения и передает его в ФМ, тем самым разблокирует ФМ.
+Request 
+{
+    "token": "DXJFX32CN1296678504F2",
+    "method": "sendReceipt"
+}
+Response 
+{
+    "error": false,
+    "message": {
+        "AppletVersion": "0302",
+        "QueuedToSendCount": 1
+    }
+}
+Поле
+	Тип
+	Описание
+	error
+	Boolean 
+	Проверка на ошибку
+	message
+	String
+	Информация на ошибку
+	AppletVersion
+	String
+	Версия апплета ФМ
+	QueuedToSendCount
+	Integer
+	Кол-во сформированных файлов чеков, ожидающих отправки
+	   8. Acknowledge
+Acknowledge - файл подтверждения о получения чека после принятия чека сервером ОФД. Acknowledge после получения хранится в файле БД. Через определенный интервал Acknowledge передается в ФМ для удаления чека из памяти ФМ.
+Request
+{
+    "token": "DXJFX32CN1296678504F2",
+    "method": "acknowledge"
+}
+Response 
+{
+    "error": false,
+    "message": {
+        "Errors": [],
+        "AppletVersion": "",
+        "SuccessCount": 0,
+        "ErrorCount": 0
+    }
+}
+   9. Rescan receipts 
+Пересчитать память ФМ и определить дату первого неотправленного чека.
+Request
+{
+    "token": "DXJFX32CN1296678504F2",
+    "method": "rescanReceipts"
+}
+Response
+{
+    "error": false,
+    "message": {
+        "AppletVersion": "0302",
+        "FirstReceiptTime": "2021-11-13 11:10:11"
+    }
+}
+   10. Get Receipt Info
+Получить состав чека (только суммы) из памяти ФМ по порядковому номеру в поле “number”.
+Request
+{
+    "token": "DXJFX32CN1296678504F2",
+    "method": "getReceiptInfo",
+    "number":1
+}
+Response
+{
+    "error": false,
+    "message": {
+        "Sale": true,
+        "TransactionTime": "2021-11-13 11:11:21",
+        "AppletVersion": "0302",
+        "Number": 1,
+        "TotalVAT": 207678,
+        "TotalCard": 260000,
+        "TotalCash": 260000,
+        "TerminalID": "UZ191211501031",
+        "Count": 1,
+        "ReceiptSeq": "2627"
+    }
+}
+Поле
+	Тип
+	Описание
+	error
+	Boolean 
+	Проверка на ошибку
+	message
+	Object 
+	
+
+	AppletVersion
+	string
+	Версия апплета в ФМ
+	TerminalID
+	string
+	Серийный номер ФМ
+	Number
+	integer
+	Порядковый номер чека
+	Count
+	integer
+	Кол-во не отправленных чеков
+	transactionTime
+	string
+	Дата время регистрации чека (формат ГГГГ-ММ-ДД ЧС-МН-СК)
+	Sale 
+	boolean 
+	Продажа = true, Возврат = false
+	ReceiptSeq
+	string 
+	Номер чека
+	TotalCash
+	Integer
+	Сумма наличности в тийин
+	TotalCard
+	Integer
+	Сумма безналичности в тийин
+	TotalVAT
+	Integer
+	Сумма НДС в тийин
+	   11. Send Z report by number
+Ручная отправка закрытого Z отчета с заданным порядковым номером в поле Number. Сервис Communicator при закрытии автоматически отправит неотправленные Z отчёта. Функция применяется только для тестирования
+Request
+{
+    "token": "DXJFX32CN1296678504F2",
+    "method": "sendZReportByNumber",
+    "number": 72
+}
+   12. Get Unsent Count
+Получить кол-во хранящихся в БД но пока еще не отправленных файлов в ОФД. Не нулевое кол-во может означать что, либо время отправки для только что созданного файла не наступило, либо сервис Communicator не мог установить соединение с серверами ОФД по причине отсутствия интернет-соединения или недоступности серверов ОФД.
+Request
+{
+    "token": "DXJFX32CN1296678504F2",
+    "method": "getUnsentCount"
+}
+Response 
+{
+    "error": false,
+    "message": {
+        "TerminalID": {
+            "UZ191211501031": 1
+        },
+        "Count": 1
+    }
+}
+   13. Get Acknowledge count
+Получить кол-во “acknowledge” файлов, ожидающих отправки в ФМ.
+Request
+{
+    "token": "DXJFX32CN1296678504F2",
+    "method": "getAckCount"
+}
+Response 
+{
+    "error": false,
+    "message": {
+        "TerminalID": {},
+        "Count": 0
+    }
+}
+   14. Get Z report Status 
+Получить кол-во закрытых, неотправленных в ОФД Z отчёта и 16 первых номеров неотправленных в ОФД Z отчёта.
+Request
+{
+    "token": "DXJFX32CN1296678504F2",
+    "method": "getZReportsStats"
+}
+Response 
+{
+    "error": false,
+    "message": {
+        "TotalClosedUnAckZReportsCount": 0,
+        "AppletVersion": "0302",
+        "LastUnAckZReportsNumbers": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+        ],
+        "TotalClosedZReportsCount": 364
+    }
+}
+   15. Get receipts info by date 
+Получить фискальные данные чека с БД, по определённый промежутки времени.
+Request
+{
+    "token": "DXJFX32CN1296678504F2",
+    "method": "getReceiptsInfoByDate",
+    "startDate": "20210901110000",
+    "endDate": "20210919112700"
+}
+Response
+{
+    "error": false,
+    "message": [
+        {
+            "terminalId": "UZ191211501031",
+            "receiptSeq": "2624",
+            "fiscalSign": "230084336577",
+            "qrCodeURL": "https://ofd.soliq.uz/check?t=UZ191211501031&r=2624&c=20211110142338&s=230084336577",
+            "dateTime": "2021-11-10 14:23:38.0"
+        },
+        {
+            "terminalId": "UZ191211501031",
+            "receiptSeq": "2625",
+            "fiscalSign": "481239451500",
+            "qrCodeURL": "https://ofd.soliq.uz/check?t=UZ191211501031&r=2625&c=20211113105752&s=481239451500",
+            "dateTime": "2021-11-13 10:57:52.0"
+        },
+        {
+            "terminalId": "UZ191211501031",
+            "receiptSeq": "2626",
+            "fiscalSign": "083306860386",
+            "qrCodeURL": "https://ofd.soliq.uz/check?t=UZ191211501031&r=2626&c=20211113111011&s=083306860386",
+            "dateTime": "2021-11-13 11:10:11.0"
+        },
+        {
+            "terminalId": "UZ191211501031",
+            "receiptSeq": "2627",
+            "fiscalSign": "592435754475",
+            "qrCodeURL": "https://ofd.soliq.uz/check?t=UZ191211501031&r=2627&c=20211113111121&s=592435754475",
+            "dateTime": "2021-11-13 11:11:21.0"
+        }
+}
+   16. Get fiscals list
+Определение заводского номера фискального номера. 
+Request
+{
+    "token": "DXJFX32CN1296678504F2",
+    "method": "getFiscalsList"
+}
+Response
+{
+    "error": false,
+    "message": {
+        "FactoryID": [
+            "00120000010b02056a200014002b002f4090"
+        ]
+    }
+}
+   17. Get status
+Получить дополнительную информацию от сервиса Communicator.
+Request
+{
+    "token": "DXJFX32CN1296678504F2",
+    "method": "getStatus"
+}
+Response
+{
+    "error": false,
+    "message": {
+        "Sender": {
+            "LastOnlineTime": "2021-11-13T10:58:16.7845408+05:00",
+            "ZReportFilesSent": {
+                "UZ191211501031": 1
+            },
+            "AdvanceReceiptFilesSent": {},
+            "TotalAckFilesReceived": {
+                "UZ191211501031": 5
+            },
+            "EncodedFullReceiptBodyFilesSent": {},
+            "FullReceiptFilesSent": {
+                "UZ191211501031": 4
+            },
+            "TotalFilesSent": {
+                "UZ191211501031": 5
+            },
+            "LastSendReceiveDuration": "230.9869ms",
+            "ReceiptFilesSent": {},
+            "LiveAddress": "s0.ofd.uz:3447",
+            "CreditReceiptFilesSent": {}
+        },
+        "StartTime": "2021-11-13 10:57:46",
+        "DB": {
+            "ArchivedFiles": {
+                "2021-11": 1,
+                "2021-10": 0
+            }
+        }
+    }
+}
+   18. Get last registered receipt
+Получить JSON RPC v2 ответ от последнего зарегистрированного чека.
+Request
+{
+    "token": "DXJFX32CN1296678504F2",
+    "method": "getLastRegisteredReceipt"
+}
+Response 
+{
+    "error": false,
+    "message": {
+        "AppletVersion": "0302",
+        "QRCodeURL": "https://ofd.soliq.uz/check?t=UZ191211501031&r=2628&c=20211113112502&s=221423418375",
+        "TerminalID": "UZ191211501031",
+        "ReceiptSeq": "2628",
+        "DateTime": "20211113112502",
+        "FiscalSign": "221423418375"
+    }
+}
+   19. Get receipt count
+Получить кол-во неотправленных чеков в памяти ФМ
+Request
+{
+    "token": "DXJFX32CN1296678504F2",
+    "method": "getReceiptCount"
+}
+Response 
+{
+    "error": false,
+    "message": {
+        "AppletVersion": "0302",
+        "Count": 0
+    }
+}
+   20. Resend Unsent 
+Ручная отправка файлов на сервер ОФД. Сервис Communicator по определенному интервалу автоматически отправит не отправленные файлы. Функция применяется только для тестирования или для срочной отправки файлов, не дожидаясь автоматической отправки.
+Request
+{
+    "token": "DXJFX32CN1296678504F2",
+    "method": "resendUnsent"
+}
+3. ОШИБКИ ПРОГРАММЫ 
+Ответ
+	Описание ответа
+	SUCCESS 
+	Успешно
+	ERROR_RECEIPT_COUNT_ZERO 
+	Количество чеков равно нулю
+	ERROR_RECEIPT_INDEX_OUT_OF_BOUNDS 
+	Номер чека не правильный
+	ERROR_RECEIPT_NOT_FOUND 
+	Чек не найден
+	ERROR_RECEIPT_TOTAL_PRICE_OVERFLOW 
+	Общая сумма превышает максимального значение
+	ERROR_RECEIPT_TOTAL_PRICE_MISMATCH 
+	Общая сумма превышает стоимость по товарным позициям
+	ERROR_RECEIPT_MEMORY_FULL 
+	Память чека заполнена
+	ERROR_RECEIPT_TIME_PAST 
+	Время чека старое
+	ERROR_RECEIPT_STORE_DAYS_LIMIT_EXCEEDED 
+	Кол-во дней хранения чеков превышено, следует отправить чеки
+	DISCOUNT SUM IS GRATER THEN PRICE SUM
+	Сумма скидка больше, чем сумма товара
+	ERROR_ZREPORT_SPACE_IS_FULL 
+	Память Z-отчет заполнена
+	ERROR_ZREPORT_INDEX_OUT_OF_BOUNDS 
+	Номер Z-отчёт не правильный
+	ERROR_LOCKED_FOREVER 
+	Фискальный модуль заблокирован
+	ERROR_CURRENT_ZREPORT_IS_EMPTY 
+	Текущий Z-отчёт пустой
+	ERROR_RECEIPT_TOTAL_PRICE_ZERO 
+	Общая сумма чека не может быть нулем
+	ERROR_ZREPORT_IS_NOT_OPEN 
+	Z-отчет не открыт
+	ERROR_SALE_REFUND_COUNT_OVERFLOW 
+	Превышено кол-во операций (продажи и возврата) в Z-отчете
+	ERROR_ZREPORT_IS_ALREADY_OPEN 
+	Z-отчёт уже открыт
+	ERROR_NOT_ENOUGH_CASH_FOR_REFUND 
+	Недостаточно средств для возврата (наличка)
+	ERROR_NOT_ENOUGH_CARD_FOR_REFUND 
+	Недостаточно средств для возврата (пластик)
+	ERROR_NOT_ENOUGH_VAT_FOR_REFUND 
+	Недостаточно средств для возврата (НДС)
+	ERROR_MAINTENANCE_REQUIRED 
+	Требуется обслуживание со стороны ОФД
+	SUM MISMATCH
+cannot encode receipt
+	Сумма не совпадает по формуле
+
+	UNSUPPORTED_REQUEST_FORMAT
+	Неподдерживаемый формат запроса. Не все поля соответствует к запросу
+	WRONG_TOKEN
+	Неправильный токен
+	CASH_REGISTERER_NUMBER_NOT_AVAILABLE
+	Касса не было зарегистрировано в реестре E-POS. Обращайтесь к службе поддержки 
+	ZREPORT_ID_NOT_PROVIDED
+	При проведении запроса не было указано номер Z отчета
+	RECEIPT_NUMBER_NOT_PROVIDED
+	При проведении запроса не было указано номер онлайн чека
+	PERIOD_NOT_PROVIDED
+	Период не было указано
+	COULD_NOT_SEND_PAYCHECK
+	Данные были отравлены
+	NO_SUCH_METHOD_AVAILABLE
+	Такой метод недоступен
+	FISCAL_DRIVE_IS_NOT_WORKING
+	фискальный драйвер не работает
+	cannot select applet
+	Не удалось выбрать апплет, ФМ поврежден
+	cannot connect card
+	Не удалось подключится к ФМ, ФМ не подключен или не найден по указанному заводскому номеру.
+	try later
+	Другие ошибки. Подробности ошибки смотрите в лог файле сервиса Communicator.
+	illegal argument 
+	Передан недействительный параметр в JSON.
+	fiscal drive locked
+	Сервер ОФД заблокировал принятия чеков от ФМ, обратитесь в ОФД. После разблокировки ФМ в ОФД, подождите определенное время (10 минут), затем перезапустите сервис FiscalDriveAPI для продолжения работы.
