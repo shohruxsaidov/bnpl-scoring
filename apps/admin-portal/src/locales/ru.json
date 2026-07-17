@@ -763,7 +763,10 @@
     "merchantActivated": "Мерчант активирован",
     "loadFailed": "Не удалось загрузить мерчантов",
     "createFailed": "Не удалось создать мерчанта",
-    "updateFailed": "Не удалось обновить мерчанта"
+    "updateFailed": "Не удалось обновить мерчанта",
+    "visibleInApp": "В приложении",
+    "merchantHidden": "Мерчант скрыт из приложения",
+    "merchantShown": "Мерчант показан в приложении"
   },
   "merchantDetail": {
     "backToMerchants": "Назад к мерчантам",
@@ -911,7 +914,11 @@
     "deleteEmployee": "Удалить сотрудника",
     "deleteEmployeeTitle": "Удалить сотрудника",
     "deleteEmployeeConfirm": "Вы уверены, что хотите удалить «{name}»? Это действие необратимо.",
-    "employeeDeleted": "Сотрудник удалён"
+    "employeeDeleted": "Сотрудник удалён",
+    "visibleInApp": "В приложении",
+    "visibleInAppHint": "Показывать мерчанта в каталоге клиентского приложения. Не влияет на его работу и активные сделки.",
+    "merchantHidden": "Мерчант скрыт из приложения",
+    "merchantShown": "Мерчант показан в приложении"
   },
   "deals": {
     "status": "Статус",

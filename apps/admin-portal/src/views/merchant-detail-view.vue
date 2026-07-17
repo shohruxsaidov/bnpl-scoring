@@ -222,6 +222,24 @@ async function toggleMerchant() {
   }
 }
 
+// Catalog visibility, deliberately separate from suspension: an operator hiding a
+// merchant from the client app should not have to suspend them to do it.
+async function toggleVisibility() {
+  if (!merchant.value) return
+  const was = merchant.value.visibleInClientApp
+  try {
+    await merchants.update(merchant.value.id, { visibleInClientApp: !was })
+    toast.add({
+      severity: was ? 'warn' : 'success',
+      summary: was ? t('merchantDetail.merchantHidden') : t('merchantDetail.merchantShown'),
+      detail: merchant.value.name,
+      life: 2000,
+    })
+  } catch {
+    notifyError('merchantDetail.updateFailed')
+  }
+}
+
 // --- Branches ----------------------------------------------------------------
 const showBranch = ref(false)
 const branchForm = ref({ name: '', address: '', phone: '', regionId: null as number | null })
@@ -921,10 +939,19 @@ async function assignScoringModel(radioValue: number) {
           {{ merchant.active ? $t('merchantDetail.active') : $t('merchantDetail.suspended') }}
         </span>
       </div>
-      <button :class="merchant.active ? 'btn-ghost' : 'btn-gradient'" @click="toggleMerchant">
-        <i :class="merchant.active ? 'pi pi-ban' : 'pi pi-check'" />
-        {{ merchant.active ? $t('merchantDetail.suspend') : $t('merchantDetail.activate') }}
-      </button>
+      <div class="t-header-actions">
+        <label class="t-visibility" :title="$t('merchantDetail.visibleInAppHint')">
+          <span class="muted">{{ $t('merchantDetail.visibleInApp') }}</span>
+          <ToggleSwitch
+            :model-value="merchant.visibleInClientApp"
+            @update:model-value="toggleVisibility"
+          />
+        </label>
+        <button :class="merchant.active ? 'btn-ghost' : 'btn-gradient'" @click="toggleMerchant">
+          <i :class="merchant.active ? 'pi pi-ban' : 'pi pi-check'" />
+          {{ merchant.active ? $t('merchantDetail.suspend') : $t('merchantDetail.activate') }}
+        </button>
+      </div>
     </header>
 
     <!-- Bank info card -->
@@ -1693,6 +1720,21 @@ async function assignScoringModel(radioValue: number) {
   display: flex;
   align-items: center;
   gap: 0.85rem;
+}
+
+.t-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.t-visibility {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  white-space: nowrap;
 }
 
 .t-avatar {

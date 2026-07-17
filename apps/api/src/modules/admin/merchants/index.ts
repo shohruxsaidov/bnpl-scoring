@@ -78,6 +78,9 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
       address: Type.String({ minLength: 1 }),
       contractNumber: Type.String(),
       active: Type.Boolean(),
+      // Hides the merchant from the client app's catalog without suspending them
+      // operationally — see db/merchants.ts and modules/client/merchants.
+      visibleInClientApp: Type.Boolean(),
       mfo: Type.String({ pattern: "^\\d{5}$" }),
       accountNumber: Type.String({ pattern: "^\\d{20}$" }),
       bankName: Type.String({ minLength: 1 }),

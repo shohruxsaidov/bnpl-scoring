@@ -22,6 +22,11 @@ export const merchants = pgTable('merchants', {
   // ADR-0023: optional Scoring Model assignment; null = the Global Model.
   scoringModelId: integer('scoring_model_id').references(() => scoringModels.id),
   active: boolean('active').notNull().default(true),
+  // Whether the merchant appears in the client app's catalog. Separate from
+  // `active` so a merchant can be pulled from the storefront without suspending
+  // them operationally, which would kill their live deals. Defaults true: this is
+  // a kill-switch, not an onboarding gate.
+  visibleInClientApp: boolean('visible_in_client_app').notNull().default(true),
   kybStatus: varchar('kyb_status', { length: 20 }).notNull().default('verified'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });

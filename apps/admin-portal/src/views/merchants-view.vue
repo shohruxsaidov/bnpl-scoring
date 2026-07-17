@@ -46,6 +46,28 @@ async function toggleStatus(merchant: Merchant) {
     })
   }
 }
+
+// Catalog visibility is a separate lever from `active`: it pulls the merchant
+// out of the client app without touching their ability to trade.
+async function toggleVisibility(merchant: Merchant) {
+  try {
+    await merchants.update(merchant.id, { visibleInClientApp: !merchant.visibleInClientApp })
+    toast.add({
+      severity: 'info',
+      summary: merchant.visibleInClientApp
+        ? t('merchants.merchantHidden')
+        : t('merchants.merchantShown'),
+      detail: merchant.name,
+      life: 2000,
+    })
+  } catch {
+    toast.add({
+      severity: 'error',
+      summary: t('merchants.updateFailed'),
+      life: 3000,
+    })
+  }
+}
 </script>
 
 <template>
@@ -92,6 +114,14 @@ async function toggleStatus(merchant: Merchant) {
             <ToggleSwitch
               :model-value="data.active"
               @update:model-value="toggleStatus(data)"
+            />
+          </template>
+        </Column>
+        <Column :header="$t('merchants.visibleInApp')">
+          <template #body="{ data }">
+            <ToggleSwitch
+              :model-value="data.visibleInClientApp"
+              @update:model-value="toggleVisibility(data)"
             />
           </template>
         </Column>

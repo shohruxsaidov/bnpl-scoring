@@ -134,6 +134,13 @@
       "when": 1784123170211,
       "tag": "0018_icy_iron_lad",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1784271212268,
+      "tag": "0019_gigantic_nightshade",
+      "breakpoints": true
     }
   ]
 }

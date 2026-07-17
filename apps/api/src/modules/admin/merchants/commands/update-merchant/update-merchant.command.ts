@@ -8,6 +8,7 @@ export interface UpdateMerchantCommand {
     address: string
     contractNumber: string
     active: boolean
+    visibleInClientApp: boolean
     mfo: string
     accountNumber: string
     bankName: string

@@ -105,6 +105,7 @@ export async function callKatm<T>(
     }
     return data;
   } catch (err) {
+    console.log((err as any).data);
     const oneIdLocked =
       err instanceof HTTPError &&
       typeof (err.data as any)?.errorMessage === 'string' &&

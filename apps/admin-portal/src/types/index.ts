@@ -245,6 +245,10 @@ export interface Merchant {
   regionId: number | null
   scoringModelId: number | null
   active: boolean
+  // Whether the merchant is listed in the client app's catalog. Independent of
+  // `active`: hiding a merchant from the storefront must not suspend them
+  // operationally, which would kill their live deals.
+  visibleInClientApp: boolean
   createdAt: string
 }
 

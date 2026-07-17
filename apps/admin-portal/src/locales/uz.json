@@ -755,7 +755,10 @@
     "merchantActivated": "Merchant faollashtirildi",
     "loadFailed": "Merchantlarni yuklab bo'lmadi",
     "createFailed": "Merchant yaratib bo'lmadi",
-    "updateFailed": "Merchantni yangilab bo'lmadi"
+    "updateFailed": "Merchantni yangilab bo'lmadi",
+    "visibleInApp": "Ilovada",
+    "merchantHidden": "Merchant ilovadan yashirildi",
+    "merchantShown": "Merchant ilovada ko'rsatildi"
   },
   "merchantDetail": {
     "backToMerchants": "Merchantlarga qaytish",
@@ -903,7 +906,11 @@
     "deleteEmployee": "Xodimni o'chirish",
     "deleteEmployeeTitle": "Xodimni o'chirish",
     "deleteEmployeeConfirm": "«{name}» ni o'chirishni tasdiqlaysizmi? Bu amalni qaytarib bo'lmaydi.",
-    "employeeDeleted": "Xodim o'chirildi"
+    "employeeDeleted": "Xodim o'chirildi",
+    "visibleInApp": "Ilovada",
+    "visibleInAppHint": "Merchantni mijoz ilovasi katalogida ko'rsatish. Uning ishlashiga va faol shartnomalariga ta'sir qilmaydi.",
+    "merchantHidden": "Merchant ilovadan yashirildi",
+    "merchantShown": "Merchant ilovada ko'rsatildi"
   },
   "deals": {
     "status": "Holat",

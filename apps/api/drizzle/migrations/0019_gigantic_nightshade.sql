@@ -1,0 +1,1 @@
+ALTER TABLE "merchants" ADD COLUMN "visible_in_client_app" boolean DEFAULT true NOT NULL;
