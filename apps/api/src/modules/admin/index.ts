@@ -15,6 +15,7 @@ import adminCollectionBoardRoutes from "./collectionBoard/index"
 import adminBuyoutRoutes from "./buyouts/index"
 import adminClientsRoutes from "./clients/index"
 import adminNotificationsRoutes from "./notifications/index"
+import adminAppRatingRoutes from "./appRatings/index"
 import mxikRoutes from "../mxik/index"
 import adminBankRoutes from "./banks/index"
 import adminOrganizationRoutes from "./organization/index"
@@ -23,6 +24,7 @@ import adminScoringSettingsRoutes from "./scoringSettings/index"
 import adminScoringRoutes from "./scorings/index"
 import adminIntegrationLogRoutes from "./integrationLogs/index"
 import adminPublicOfferRoutes from "./publicOffers/index"
+import adminAppVersionRoutes from "./appVersions/index"
 import regionRoutes from "../regions/index"
 
 interface FeatureMap {
@@ -57,12 +59,26 @@ export default async function adminModule(app: FastifyInstance) {
   // guarded module — see /admin/notifications.
   await app.register(guarded(adminClientsRoutes, { read: "view_clients" }), { prefix: "/admin/clients" })
   await app.register(guarded(adminNotificationsRoutes, { read: "send_client_push", write: "send_client_push" }), { prefix: "/admin/notifications" })
+  // Read-only by design, same trap as /admin/clients above: requirePermissionByMethod
+  // skips the check entirely when no `write` feature is mapped, so a POST added
+  // here would be reachable by any admin holding read-only view_app_ratings.
+  // Ratings are written by clients via /client/ratings and by nobody else.
+  await app.register(guarded(adminAppRatingRoutes, { read: "view_app_ratings" }), { prefix: "/admin/app-ratings" })
   await app.register(guarded(adminUsersRoutes, { read: "manage_admins", write: "manage_admins" }), { prefix: "/admin/users" })
   await app.register(adminPermissionsRoutes, { prefix: "/admin/permissions" })
   await app.register(mxikRoutes, { prefix: "/admin/mxik", preHandler: app.verifyAdminJwt })
   await app.register(adminBankRoutes, { prefix: "/admin/banks" })
   await app.register(guarded(adminOrganizationRoutes, { read: "manage_settings", write: "manage_settings" }), { prefix: "/admin/organization" })
   await app.register(guarded(adminPublicOfferRoutes, { read: "manage_settings", write: "manage_settings" }), { prefix: "/admin/public-offers" })
+  // Gated by its own features, not manage_settings: publishing a policy can lock
+  // every client out of the app at once, which should not ride along with the
+  // org-requisites / public-offer grant. Read is split from write so support can
+  // see the floor and the blast-radius preview during an incident without being
+  // able to move it — the two are checked independently, so a role that publishes
+  // needs BOTH grants. `write` must stay mapped: requirePermissionByMethod skips
+  // the check entirely when it is absent, which would leave POST open to any
+  // holder of read-only view_app_versions.
+  await app.register(guarded(adminAppVersionRoutes, { read: "view_app_versions", write: "manage_app_versions" }), { prefix: "/admin/app-versions" })
   await app.register(guarded(adminScoringModelRoutes, { read: "manage_scoring_model", write: "manage_scoring_model" }), { prefix: "/admin/scoring-model" })
   // Gated by manage_scoring_model, not manage_settings: disabling a pipeline can
   // weaken platform-wide risk controls, so it belongs with model authoring rather

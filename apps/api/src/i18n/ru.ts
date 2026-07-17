@@ -138,6 +138,13 @@ export const ru: Record<string, string> = {
   signing_request_not_found: 'Запрос на подписание больше не активен',
   no_signing_device: 'У клиента нет устройства с установленным приложением',
 
+  // app version / force update
+  invalid_version:
+    'Неверный формат версии приложения — ожидается MAJOR.MINOR.PATCH (например 1.4.0)',
+  min_above_latest:
+    'Минимальная версия не может быть выше последней — пользователям будет нечего установить',
+  version_confirmation_mismatch: 'Повторите минимальную версию в точности для подтверждения',
+
   // notifications — errors
   notification_not_found: 'Уведомление не найдено',
   push_disabled: 'Push-уведомления не настроены на сервере',

@@ -39,6 +39,7 @@
     "payments": "To'lovlar",
     "changePassword": "Parolni o'zgartirish",
     "clients": "Mijozlar",
+    "appRatings": "Ilova reytingi",
     "scoringModel": "Skoring modeli · #{version}",
     "scorings": "Skoringlar",
     "integrationLogs": "Integratsiya loglari",
@@ -66,6 +67,7 @@
     "scorings": "Skoringlar",
     "payments": "To'lovlar",
     "clients": "Mijozlar",
+    "appRatings": "Ilova reytingi",
     "integrationLogs": "Integratsiya loglari",
     "categories": "Kategoriyalar",
     "settingsPublicOffer": "Ommaviy oferta",
@@ -95,6 +97,7 @@
     "logout": "Chiqish",
     "toggleSidebar": "Yon panelni almashtirish",
     "clients": "Mijozlar",
+    "appRatings": "Ilova reytingi",
     "integrationLogs": "Integratsiya loglari",
     "categories": "Kategoriyalar"
   },
@@ -297,7 +300,8 @@
       "roles": "Rollar",
       "admins": "Administratorlar",
       "integrationLogs": "Integratsiya loglari",
-      "clients": "Mijozlar"
+      "clients": "Mijozlar",
+      "appRatings": "Ilova reytingi"
     }
   },
   "scorings": {
@@ -1264,6 +1268,13 @@
     "colDate": "Sana",
     "colAuthor": "Muallif",
     "colFiles": "Fayllar"
+  },
+  "appRatings": {
+    "title": "Ilova reytingi",
+    "hint": "Mijozlar mobil ilovani 1 dan 5 gacha baholaydi. Har bir mijozdan faqat bitta joriy baho hisobga olinadi.",
+    "ratingCount": "{count} ta baho",
+    "emptyTitle": "Hozircha baholar yo'q",
+    "emptyHint": "Mijozlar ilovani baholagach, bu yerda ko'rinadi."
   },
   "scoringSettings": {
     "title": "Skoring bosqichlari",

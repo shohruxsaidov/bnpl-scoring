@@ -39,6 +39,7 @@
     "payments": "Платежи",
     "changePassword": "Смена пароля",
     "clients": "Клиенты",
+    "appRatings": "Рейтинг приложения",
     "scoringModel": "Модель скоринга · #{version}",
     "scorings": "Скоринги",
     "integrationLogs": "Логи интеграций",
@@ -66,6 +67,7 @@
     "scorings": "Скоринги",
     "payments": "Платежи",
     "clients": "Клиенты",
+    "appRatings": "Рейтинг приложения",
     "integrationLogs": "Логи интеграций",
     "categories": "Категории",
     "settingsPublicOffer": "Публичная оферта",
@@ -95,6 +97,7 @@
     "logout": "Выйти",
     "toggleSidebar": "Переключить панель",
     "clients": "Клиенты",
+    "appRatings": "Рейтинг приложения",
     "integrationLogs": "Логи интеграций",
     "categories": "Категории"
   },
@@ -305,7 +308,8 @@
       "roles": "Роли",
       "admins": "Администраторы",
       "integrationLogs": "Логи интеграций",
-      "clients": "Клиенты"
+      "clients": "Клиенты",
+      "appRatings": "Рейтинг приложения"
     }
   },
   "scorings": {
@@ -1276,6 +1280,13 @@
     "colDate": "Дата",
     "colAuthor": "Автор",
     "colFiles": "Файлы"
+  },
+  "appRatings": {
+    "title": "Рейтинг приложения",
+    "hint": "Клиенты оценивают мобильное приложение от 1 до 5. От каждого клиента учитывается только одна текущая оценка.",
+    "ratingCount": "Оценок: {count}",
+    "emptyTitle": "Пока нет оценок",
+    "emptyHint": "Оценки появятся здесь, как только клиенты оценят приложение."
   },
   "scoringSettings": {
     "title": "Этапы скоринга",

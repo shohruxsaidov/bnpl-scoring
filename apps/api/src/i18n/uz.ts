@@ -138,6 +138,13 @@ export const uz: Record<string, string> = {
   signing_request_not_found: "Imzolash so'rovi endi faol emas",
   no_signing_device: "Mijozda ilova o'rnatilgan qurilma yo'q",
 
+  // app version / force update
+  invalid_version:
+    "Ilova versiyasi noto'g'ri formatda — MAJOR.MINOR.PATCH bo'lishi kerak (masalan 1.4.0)",
+  min_above_latest:
+    "Minimal versiya oxirgi versiyadan yuqori bo'lishi mumkin emas — foydalanuvchilar yangilay olmaydi",
+  version_confirmation_mismatch: 'Tasdiqlash uchun minimal versiyani aynan takrorlang',
+
   // notifications — errors
   notification_not_found: 'Bildirishnoma topilmadi',
   push_disabled: 'Push-bildirishnomalar serverda sozlanmagan',

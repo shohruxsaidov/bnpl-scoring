@@ -9,6 +9,7 @@ import clientDealsRoutes from './deals/index';
 import clientDealSigningRoutes from './deals/signing';
 import clientScoringCardsRoutes from './scoring/cards';
 import clientMerchantsRoutes from './merchants/index';
+import clientRatingsRoutes from './ratings/index';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -49,6 +50,7 @@ export default async function clientModule(app: FastifyInstance) {
   await app.register(clientScoringCardsRoutes, { prefix: '/client/scoring/cards' });
   await app.register(clientNotificationsRoutes, { prefix: '/client/notifications' });
   await app.register(clientMerchantsRoutes, { prefix: '/client/merchants' });
+  await app.register(clientRatingsRoutes, { prefix: '/client/ratings' });
   await app.register(clientDealsRoutes, { prefix: '/client/deals' });
   // Signing shares the /client/deals prefix but is a different concern: these
   // routes act on a DEAL SESSION the client has been asked to sign, not on a Deal

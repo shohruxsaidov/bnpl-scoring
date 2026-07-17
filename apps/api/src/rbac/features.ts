@@ -19,6 +19,7 @@ export const ADMIN_FEATURES = [
   'view_overview',
   'view_clients',
   'send_client_push',
+  'view_app_ratings',
   'view_merchants',
   'manage_merchants',
   'onboard_merchants',
@@ -35,6 +36,14 @@ export const ADMIN_FEATURES = [
   'manage_payments',
   'manage_buyout',
   'manage_settings',
+  // Split from manage_app_versions so seeing the force-update floor (and the
+  // blast-radius preview) does not imply being able to move it — reading is
+  // what support needs during an incident, publishing is what strands a fleet.
+  'view_app_versions',
+  // Deliberately NOT folded into manage_settings: publishing a policy can lock
+  // every client out of the mobile app at once, and that blast radius should
+  // not ride along with the org-requisites / public-offer grant.
+  'manage_app_versions',
   'manage_roles',
   'manage_admins',
   'manage_scoring_model',

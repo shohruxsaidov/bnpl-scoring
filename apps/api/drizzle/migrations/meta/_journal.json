@@ -148,6 +148,13 @@
       "when": 1784280523564,
       "tag": "0020_perpetual_white_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1784295480681,
+      "tag": "0021_giant_dorian_gray",
+      "breakpoints": true
     }
   ]
 }
