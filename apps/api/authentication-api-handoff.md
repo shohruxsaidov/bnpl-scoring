@@ -126,6 +126,25 @@ Backend: - Verify hashed PIN. - Check lock status. - Issue JWT tokens.
 POST /auth/refresh
 ```
 
+``` json
+{
+  "sessionToken": "..."
+}
+```
+
+Response:
+
+``` json
+{
+  "accessToken": "...",
+  "sessionToken": "..."
+}
+```
+
+The session token is rotated on every refresh: the one sent in the request
+is revoked and a new one is returned. The client must persist the returned
+`sessionToken` and send that one next time, or it will be logged out.
+
 ## Logout
 
 ``` http

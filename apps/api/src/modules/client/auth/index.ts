@@ -17,12 +17,12 @@ import {
   findDeviceByDeviceId,
   findUserById,
   findUserByPhone,
-  refreshAccessToken,
   registerDeviceKey,
   revokeAllUserSessions,
   revokeDeviceSessions,
   revokeSession,
   revokeUserSessionsExcept,
+  rotateSession,
   setUserPassword,
   setUserPin,
   upsertDevice,
@@ -1179,7 +1179,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
     },
   );
 
-  /* ── Refresh (durable session token → fresh access token) ────────────────── */
+  /* ── Refresh (durable session token → fresh access + session token) ──────── */
 
   fastify.post(
     '/refresh',
@@ -1187,11 +1187,15 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Refresh access token',
+        description:
+          'Exchanges a durable session token for a fresh access token and a new ' +
+          'session token. The supplied session token is revoked, so the client must ' +
+          'persist the returned sessionToken and use it for the next refresh.',
         body: Type.Object({
           sessionToken: Type.String({ minLength: 1, examples: ['sess_4b8e1d0a9c'] }),
         }),
         response: {
-          200: Type.Object({ accessToken: Type.String() }),
+          200: Type.Object({ accessToken: Type.String(), sessionToken: Type.String() }),
           400: ERROR,
           401: ERROR,
         },
@@ -1200,7 +1204,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
     async (request, reply) => {
       if (!request.deviceId) return reply.code(400).sendError('missing_device_id');
 
-      const result = await refreshAccessToken(request.body.sessionToken, request.deviceId);
+      const result = await rotateSession(request.body.sessionToken, request.deviceId);
       if (!result) return reply.code(401).sendError('invalid_session');
 
       const accessToken = app.jwt.sign(
@@ -1208,7 +1212,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
         { expiresIn: ACCESS_TOKEN_TTL },
       );
 
-      return { accessToken };
+      return { accessToken, sessionToken: result.sessionToken };
     },
   );
 

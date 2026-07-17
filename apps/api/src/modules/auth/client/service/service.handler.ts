@@ -280,12 +280,11 @@ export async function revokeSession(sessionToken: string): Promise<void> {
 /**
  * Exchange a durable session token for a freshly-minted one: validate the old
  * token, verify it belongs to the requesting device, revoke it, and issue a new
- * session bound to the same device. Reserved for boundary events that should
- * deliberately rotate the durable token; the hot-path refresh uses
- * refreshAccessToken instead, which leaves the token in place. `expectedDeviceId`
- * is the caller's raw x-device-id; the new token is pinned to it so a leaked
- * token cannot be replayed elsewhere. Returns undefined when the token is
- * invalid/expired/revoked or the device does not match.
+ * session bound to the same device. Backs the refresh endpoint, so every refresh
+ * rotates the durable token and the caller must persist the new one.
+ * `expectedDeviceId` is the caller's raw x-device-id; the new token is pinned to
+ * it so a leaked token cannot be replayed elsewhere. Returns undefined when the
+ * token is invalid/expired/revoked or the device does not match.
  */
 export async function rotateSession(
   oldToken: string,
@@ -300,29 +299,6 @@ export async function rotateSession(
   await revokeSession(oldToken);
   const { sessionToken } = await createSession(current.user.id, current.session.deviceId);
   return { user: current.user, sessionToken };
-}
-
-/**
- * Hot-path refresh: validate a durable session token and confirm it belongs to
- * the requesting device, without rotating it. Returns the session's user so the
- * caller can mint a fresh short-lived access token; the session token is left in
- * place (it keeps its original expiry). Boundary events that must rotate the
- * durable token use rotateSession instead. `expectedDeviceId` is the caller's
- * raw x-device-id, pinning the refresh to the device the session was issued to
- * so a leaked session token cannot be replayed from elsewhere. Returns undefined
- * when the token is invalid/expired/revoked or the device does not match.
- */
-export async function refreshAccessToken(
-  sessionToken: string,
-  expectedDeviceId: string,
-): Promise<{ user: typeof users.$inferSelect } | undefined> {
-  const current = await verifySession(sessionToken);
-  if (!current) return undefined;
-
-  const device = await findDeviceById(current.session.deviceId);
-  if (!device || device.deviceId !== expectedDeviceId) return undefined;
-
-  return { user: current.user };
 }
 
 /**
