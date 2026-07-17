@@ -141,6 +141,13 @@
       "when": 1784271212268,
       "tag": "0019_gigantic_nightshade",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1784280523564,
+      "tag": "0020_perpetual_white_tiger",
+      "breakpoints": true
     }
   ]
 }

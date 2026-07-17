@@ -42,6 +42,7 @@ export const ru: Record<string, string> = {
   file_required: 'Требуется файл',
   invalid_file_type: 'Допускаются только PDF-файлы',
   invalid_image_type: 'Допускаются только изображения PNG, JPEG или WebP',
+  invalid_document_type: 'Допускаются только файлы PDF, PNG или JPEG',
   file_too_large: 'Размер файла слишком большой',
   merchant_logo_not_found: 'Логотип мерчанта не найден',
   invalid_coordinates: 'Широта и долгота должны быть указаны вместе',
@@ -85,6 +86,9 @@ export const ru: Record<string, string> = {
   // payments
   overpayment: 'Сумма превышает остаток по договору',
   OVERPAYMENT: 'Сумма превышает остаток по договору',
+
+  // buyouts
+  buyout_already_paid: 'Этот выкуп уже оплачен',
 
   // clients
   client_not_found: 'Клиент не найден',

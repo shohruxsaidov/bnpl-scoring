@@ -1205,7 +1205,21 @@
     "productName": "MAHSULOT",
     "price": "NARX",
     "qty": "MIQDOR",
-    "itemAmount": "SUMMA"
+    "itemAmount": "SUMMA",
+    "payTitle": "To'langan deb belgilash",
+    "payHint": "To'lovni tasdiqlovchi hujjatni biriktiring. Bu amalni bekor qilib bo'lmaydi.",
+    "document": "HUJJAT",
+    "documentLabel": "To'lov hujjati",
+    "browse": "Faylni tanlang (PDF, PNG, JPEG)",
+    "paidAt": "TO'LANGAN SANA",
+    "paidBy": "KIM TO'LAGAN",
+    "openDocument": "Hujjatni ochish",
+    "confirmPay": "To'lovni tasdiqlash",
+    "paying": "Saqlanmoqda...",
+    "errFileRequired": "Hujjatni biriktiring",
+    "errFileType": "Faqat PDF, PNG yoki JPEG fayllar qabul qilinadi",
+    "errFileTooLarge": "Fayl hajmi 15 MB dan katta",
+    "errAlreadyPaid": "Bu sotib olish allaqachon to'langan"
   },
   "changePassword": {
     "title": "Parolni o'zgartirish",

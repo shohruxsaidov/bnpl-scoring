@@ -1,7 +1,8 @@
 import { desc, eq, inArray } from "drizzle-orm"
 import { db } from "@db"
 import { buyouts, deals, dealItems } from "../../../../deals/schema"
-import { merchants, branches, merchantUsers, users } from '@db/schema'
+import { merchants, branches, merchantUsers, users, adminUsers } from '@db/schema'
+import { getDownloadUrls } from "../../../../../lib/file-storage"
 import type { ListBuyoutsInput } from "./list-buyouts.query"
 
 export interface BuyoutItemDto {
@@ -24,6 +25,10 @@ export interface BuyoutDto {
   amount: number
   status: string
   createdAt: string
+  /** Presigned link to the proof of payment; null until the buyout is paid. */
+  documentUrl: string | null
+  paidAt: string | null
+  paidByName: string | null
   items: BuyoutItemDto[]
 }
 
@@ -42,6 +47,7 @@ export async function listBuyouts(
       branch: { name: branches.name },
       agent: { fullName: merchantUsers.fullName },
       client: { firstName: users.firstName, lastName: users.lastName, phone: users.phone },
+      paidByName: adminUsers.fullName,
     })
     .from(buyouts)
     .leftJoin(deals, eq(buyouts.dealId, deals.id))
@@ -49,6 +55,7 @@ export async function listBuyouts(
     .leftJoin(branches, eq(buyouts.branchId, branches.id))
     .leftJoin(merchantUsers, eq(deals.agentId, merchantUsers.id))
     .leftJoin(users, eq(deals.userId, users.id))
+    .leftJoin(adminUsers, eq(buyouts.paidBy, adminUsers.id))
     .orderBy(desc(buyouts.createdAt))
     .$dynamic()
 
@@ -73,6 +80,12 @@ export async function listBuyouts(
     itemsByDeal.set(item.dealId, arr)
   }
 
+  // One batch presign for the whole page rather than one per paid row.
+  const documentUrls = await getDownloadUrls(
+    db,
+    rows.map((r) => r.buyout.documentFileId).filter((id): id is number => id != null),
+  )
+
   return rows.map((r) => ({
     id: String(r.buyout.id),
     dealId: r.buyout.dealId,
@@ -86,6 +99,11 @@ export async function listBuyouts(
     amount: Number(r.buyout.amount),
     status: r.buyout.status,
     createdAt: r.buyout.createdAt.toISOString(),
+    documentUrl: r.buyout.documentFileId
+      ? (documentUrls.get(r.buyout.documentFileId) ?? null)
+      : null,
+    paidAt: r.buyout.paidAt?.toISOString() ?? null,
+    paidByName: r.paidByName ?? null,
     items: (itemsByDeal.get(r.buyout.dealId) ?? []).map((i) => {
       const price = parseFloat(i.price)
       return { productName: i.productName, price, qty: i.quantity, amount: price * i.quantity }

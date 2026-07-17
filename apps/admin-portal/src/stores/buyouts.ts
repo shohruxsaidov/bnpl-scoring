@@ -23,6 +23,9 @@ export interface Buyout {
   amount: number
   status: 'pending' | 'paid'
   createdAt: string
+  documentUrl: string | null
+  paidAt: string | null
+  paidByName: string | null
   items: BuyoutItem[]
 }
 
@@ -49,8 +52,15 @@ export const useBuyoutsStore = defineStore('buyouts', () => {
     }
   }
 
-  async function markPaid(id: string) {
-    const data = await apiFetch<{ buyout: Buyout }>(`/admin/buyouts/${id}/pay`, { method: 'PATCH' })
+  // The proof of payment is required and rides the same request: apiFetch sends
+  // FormData as multipart and lets the browser set the boundary.
+  async function markPaid(id: string, document: File) {
+    const form = new FormData()
+    form.append('file', document)
+    const data = await apiFetch<{ buyout: Buyout }>(`/admin/buyouts/${id}/pay`, {
+      method: 'PATCH',
+      body: form,
+    })
     const idx = buyouts.value.findIndex((b) => b.id === id)
     if (idx !== -1) buyouts.value[idx] = data.buyout
     return data.buyout

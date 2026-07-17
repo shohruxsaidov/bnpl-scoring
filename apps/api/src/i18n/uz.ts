@@ -42,6 +42,7 @@ export const uz: Record<string, string> = {
   file_required: 'Fayl talab qilinadi',
   invalid_file_type: 'Faqat PDF fayllar qabul qilinadi',
   invalid_image_type: 'Faqat PNG, JPEG yoki WebP rasmlar qabul qilinadi',
+  invalid_document_type: 'Faqat PDF, PNG yoki JPEG fayllar qabul qilinadi',
   file_too_large: 'Fayl hajmi juda katta',
   merchant_logo_not_found: 'Merchant logotipi topilmadi',
   invalid_coordinates: "Kenglik va uzunlik birgalikda ko'rsatilishi kerak",
@@ -85,6 +86,9 @@ export const uz: Record<string, string> = {
   // payments
   overpayment: "To'lov qolgan summadan oshib ketdi",
   OVERPAYMENT: "To'lov qolgan summadan oshib ketdi",
+
+  // buyouts
+  buyout_already_paid: "Bu sotib olish allaqachon to'langan",
 
   // clients
   client_not_found: 'Mijoz topilmadi',

@@ -1217,7 +1217,21 @@
     "productName": "ТОВАР",
     "price": "ЦЕНА",
     "qty": "КОЛ-ВО",
-    "itemAmount": "СУММА"
+    "itemAmount": "СУММА",
+    "payTitle": "Отметить как оплаченное",
+    "payHint": "Прикрепите документ, подтверждающий оплату. Действие необратимо.",
+    "document": "ДОКУМЕНТ",
+    "documentLabel": "Документ об оплате",
+    "browse": "Выберите файл (PDF, PNG, JPEG)",
+    "paidAt": "ОПЛАЧЕНО",
+    "paidBy": "КЕМ ОПЛАЧЕНО",
+    "openDocument": "Открыть документ",
+    "confirmPay": "Подтвердить оплату",
+    "paying": "Сохранение...",
+    "errFileRequired": "Прикрепите документ",
+    "errFileType": "Допускаются только файлы PDF, PNG или JPEG",
+    "errFileTooLarge": "Файл больше 15 МБ",
+    "errAlreadyPaid": "Этот выкуп уже оплачен"
   },
   "changePassword": {
     "title": "Смена пароля",
