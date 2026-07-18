@@ -1,4 +1,4 @@
-import Fastify from 'fastify';
+import Fastify, { type FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
 import compress from '@fastify/compress';
 import helmet from '@fastify/helmet';
@@ -68,6 +68,18 @@ const logger = {
     return { traceId, spanId };
   },
   serializers: {
+    // default serializer reports `remoteAddress: req.ip`, which silently falls back to the
+    // socket peer (the proxy) when X-Forwarded-For never arrives — keep both so the two
+    // cases are distinguishable in the logs
+    req: (req: FastifyRequest) => ({
+      method: req.method,
+      url: req.url,
+      host: req.host,
+      remoteAddress: req.ip,
+      socketAddress: req.socket?.remoteAddress,
+      forwardedFor: req.headers['x-forwarded-for'],
+      remotePort: req.socket?.remotePort,
+    }),
     err: (err: Error & { body?: unknown; statusCode?: number }) => {
       const base = pino.stdSerializers.err(err);
       if (err.body !== undefined) {
