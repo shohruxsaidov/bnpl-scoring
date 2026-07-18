@@ -27,7 +27,7 @@ import {
 } from './modules/index.js';
 import { env } from './env.js';
 
-const isDev = env.NODE_ENV !== 'production';
+const isDev = env.NODE_ENV === 'local';
 
 function buildTransport() {
   if (isDev) {
@@ -119,7 +119,7 @@ export async function buildApp() {
   await app.register(bullBoardPlugin);
 
   // swagger must register before routes so it can introspect their schemas
-await app.register(swaggerPlugin);
+  await app.register(swaggerPlugin);
 
   // domain modules register here as encapsulated plugins
   await app.register(healthRoutes);
