@@ -23,7 +23,7 @@ import type { CriteriaScores } from './criteria-scores';
 type RejectedResult = Extract<ScoringResult, { rejected: true }>;
 type PassedResult = Extract<ScoringResult, { rejected: false }>;
 
-export const BRV_UZS = 340_000;
+export const BRV_UZS = 412_000;
 
 // Credit-limit index by total scoring score (Балл). Half-open [From, To): From
 // inclusive, To exclusive. The index scales the applicant's monthly disposable
