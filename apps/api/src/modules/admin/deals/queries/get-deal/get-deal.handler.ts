@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm"
 import { db } from "@db"
-import { deals, dealItems, dealPaymentSchedules } from "../../../../deals/schema"
+import { deals, dealItems, dealPaymentSchedules, dealReceipts } from "../../../../deals/schema"
 import { users, tariffs, merchantUsers, merchants, dealSessions } from '@db/schema'
 
 function formatDealNumber(n: number | null | undefined): string {
@@ -31,14 +31,17 @@ export async function getAdminDeal(id: string) {
 
   const { deal, client, tariff, agent, merchant, session } = row
 
-  const [itemRows, scheduleRows] = await Promise.all([
+  const [itemRows, scheduleRows, receiptRows] = await Promise.all([
     db.select().from(dealItems).where(eq(dealItems.dealId, id)).orderBy(dealItems.id),
     db
       .select()
       .from(dealPaymentSchedules)
       .where(eq(dealPaymentSchedules.dealId, id))
       .orderBy(dealPaymentSchedules.index),
+    db.select().from(dealReceipts).where(eq(dealReceipts.dealId, id)).limit(1),
   ])
+
+  const receiptRow = receiptRows[0]
 
   return {
     id: deal.id,
@@ -75,6 +78,19 @@ export async function getAdminDeal(id: string) {
       paid: s.paid,
       paidAt: s.paidAt?.toISOString() ?? null,
     })),
+    // null when no receipt has been issued. A 'pending' receipt carries no
+    // payload — it means the last attempt died mid-call and EPOS may hold a
+    // receipt we never recorded.
+    receipt: receiptRow
+      ? {
+          status: receiptRow.status,
+          receiptSeq: receiptRow.payload?.receiptSeq ?? null,
+          fiscalSign: receiptRow.payload?.fiscalSign ?? null,
+          datetime: receiptRow.payload?.datetime ?? null,
+          qrCodeUrl: receiptRow.payload?.qrCodeUrl ?? null,
+          createdAt: receiptRow.createdAt.toISOString(),
+        }
+      : null,
     factors: [],
     bailsmen: ((session?.stepData as Record<string, unknown> | null)?.bailsmen as Array<{ relation: string; phone: string }> | undefined) ?? [],
   }

@@ -24,6 +24,11 @@ export const ADMIN_FEATURES = [
   'manage_merchants',
   'onboard_merchants',
   'view_deals',
+  // Deliberately NOT folded into manage_payments: issuing a fiscal receipt
+  // files an irreversible document with the tax authority under the platform's
+  // own INN. That blast radius should not ride along with the grant that also
+  // lets someone post a comment on a deal.
+  'create_deal_receipt',
   'manage_employees',
   'view_tariffs',
   'manage_tariffs',

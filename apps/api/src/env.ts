@@ -77,7 +77,9 @@ const schema = z.object({
   AUTO_PAY_MERCHANT_ID: z.string(),
   RABBIT_CONNECTION_URL: z.string().url(),
   EPOS_API_URL: z.string().url(),
-  EPOS_TOKEN: z.string().default(''),
+  // No default: an empty token fails every receipt at runtime instead of
+  // failing the service at boot, and each failure is an irreversible attempt.
+  EPOS_TOKEN: z.string().min(1),
 });
 
 export const env = schema.parse(process.env);

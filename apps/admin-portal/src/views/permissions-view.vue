@@ -52,7 +52,7 @@ const MODULE_CONFIG: Record<Platform, ModuleDef[]> = {
     { key: 'clients', icon: 'users', features: ['view_clients', 'send_client_push'] },
     { key: 'appRatings', icon: 'star', features: ['view_app_ratings'] },
     { key: 'merchants', icon: 'building', features: ['view_merchants', 'manage_merchants', 'onboard_merchants'] },
-    { key: 'deals', icon: 'file-edit', features: ['view_deals'] },
+    { key: 'deals', icon: 'file-edit', features: ['view_deals', 'create_deal_receipt'] },
     { key: 'employees', icon: 'users', features: ['manage_employees'] },
     { key: 'tariffs', icon: 'percentage', features: ['view_tariffs', 'manage_tariffs'] },
     { key: 'products', icon: 'box', features: ['manage_products'] },

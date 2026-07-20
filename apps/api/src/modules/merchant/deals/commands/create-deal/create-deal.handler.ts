@@ -89,10 +89,13 @@ export async function createDealFromSession(session: DealSessionRow) {
   // Agent redoes the Products step (ADR-0024)
   const productIds = productsStep.lines.map((l) => Number(l.productId));
   const productRows = await db
-    .select({ id: products.id, active: products.active })
+    .select({ id: products.id, active: products.active, vatPercent: products.vatPercent })
     .from(products)
     .where(inArray(products.id, productIds));
   const alive = new Set(productRows.filter((p) => p.active).map((p) => p.id.toString()));
+  // Snapshotted onto deal_items so a fiscal receipt issued months later states
+  // the rate that applied to the sale, not the Product's current one.
+  const vatByProduct = new Map(productRows.map((p) => [p.id, p.vatPercent ?? 12]));
   for (const line of productsStep.lines) {
     if (!alive.has(line.productId)) throw coded('product_not_found');
   }
@@ -109,6 +112,7 @@ export async function createDealFromSession(session: DealSessionRow) {
     mxikCode: line.mxikCode,
     packageCode: line.packageCode,
     packageName: line.packageName,
+    vatPercent: vatByProduct.get(Number(line.productId)) ?? 12,
     quantity: line.quantity,
     labels: line.labels ?? [],
   }));
@@ -197,6 +201,7 @@ export async function createDeal(input: CreateDealInput) {
             mxikCode: item.mxikCode,
             packageCode: item.packageCode,
             packageName: item.packageName,
+            vatPercent: item.vatPercent,
             quantity: item.quantity,
             labels: item.labels ?? [],
           })),

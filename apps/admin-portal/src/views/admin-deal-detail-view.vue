@@ -4,11 +4,13 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import StatusBadge from '@/components/status-badge.vue'
 import { formatDate, formatDateTime, formatSomShort } from '@/utils/money'
-import { useAdminDealQuery, useDealCommentsQuery, useAddDealComment } from '@/composables/use-admin-deals-api'
+import { useAdminDealQuery, useDealCommentsQuery, useAddDealComment, useCreateDealReceipt } from '@/composables/use-admin-deals-api'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
+const auth = useAuthStore()
 
 const dealId = computed(() => route.params.id as string)
 const { data: deal, isLoading, isError } = useAdminDealQuery(dealId)
@@ -38,6 +40,30 @@ function submitComment() {
     onSuccess: () => { newComment.value = '' },
   })
 }
+
+// ── Fiscal receipt (чек) ───────────────────────────────────────────────────
+
+// A receipt records a completed sale, so unsigned deals can never have one.
+const RECEIPT_ALLOWED_STATUSES = ['active', 'closed']
+
+const { mutate: createReceipt, isPending: isCreatingReceipt, error: receiptError } =
+  useCreateDealReceipt(dealId)
+
+const canCreateReceipt = computed(() => auth.can('create_deal_receipt'))
+const receipt = computed(() => deal.value?.receipt ?? null)
+const receiptStatusAllowed = computed(
+  () => !!deal.value && RECEIPT_ALLOWED_STATUSES.includes(deal.value.status),
+)
+
+// Surfaces the server's error code so the operator sees *why* (missing МХИК,
+// basket/amount drift) rather than a generic failure.
+const receiptErrorMessage = computed(() => {
+  const err = receiptError.value as { message?: string } | null
+  if (!err) return null
+  const key = `dealDetail.receiptError.${err.message ?? 'receiptFailed'}`
+  const translated = t(key)
+  return translated === key ? t('dealDetail.receiptError.receiptFailed') : translated
+})
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -580,6 +606,54 @@ function formatDateShort(iso: string): string {
         </div>
       </div>
 
+      <!-- Fiscal receipt — issuing one files an irreversible document with the
+           tax authority, so the result lives here rather than in a toast. -->
+      <div v-if="canCreateReceipt" class="section">
+        <h4 class="section-title">{{ $t('dealDetail.receiptTitle') }}</h4>
+
+        <!-- Issued -->
+        <div v-if="receipt?.status === 'created'" class="receipt-card">
+          <div class="receipt-grid">
+            <div class="rc-field">
+              <span class="rc-label">{{ $t('dealDetail.receiptSeq') }}</span>
+              <span class="rc-val font-mono">{{ receipt.receiptSeq ?? '—' }}</span>
+            </div>
+            <div class="rc-field">
+              <span class="rc-label">{{ $t('dealDetail.receiptFiscalSign') }}</span>
+              <span class="rc-val font-mono">{{ receipt.fiscalSign ?? '—' }}</span>
+            </div>
+            <div class="rc-field">
+              <span class="rc-label">{{ $t('dealDetail.receiptDatetime') }}</span>
+              <span class="rc-val font-mono">{{ receipt.datetime ?? formatDateTime(receipt.createdAt) }}</span>
+            </div>
+          </div>
+          <a v-if="receipt.qrCodeUrl" class="btn-ghost rc-qr" :href="receipt.qrCodeUrl" target="_blank" rel="noopener noreferrer">
+            <i class="pi pi-qrcode" /> {{ $t('dealDetail.receiptOpenQr') }}
+          </a>
+        </div>
+
+        <!-- Stranded mid-call: EPOS may hold a receipt we never recorded. -->
+        <div v-else-if="receipt?.status === 'pending'" class="receipt-card warn">
+          <i class="pi pi-exclamation-triangle" />
+          <p>{{ $t('dealDetail.receiptPendingWarning') }}</p>
+        </div>
+
+        <!-- Not yet issued -->
+        <div v-else class="receipt-card">
+          <p class="rc-empty">{{ $t('dealDetail.receiptNone') }}</p>
+          <button
+            class="btn-primary"
+            :disabled="!receiptStatusAllowed || isCreatingReceipt"
+            @click="createReceipt()"
+          >
+            <i :class="isCreatingReceipt ? 'pi pi-spin pi-spinner' : 'pi pi-receipt'" />
+            {{ $t('dealDetail.receiptCreate') }}
+          </button>
+          <p v-if="!receiptStatusAllowed" class="rc-hint">{{ $t('dealDetail.receiptStatusBlocked') }}</p>
+          <p v-else-if="receiptErrorMessage" class="rc-error">{{ receiptErrorMessage }}</p>
+        </div>
+      </div>
+
       <div class="section">
         <h4 class="section-title">{{ $t('dealDetail.transactions') }}</h4>
         <div v-if="ledger.length === 0" class="empty-state">
@@ -908,6 +982,18 @@ function formatDateShort(iso: string): string {
 .state-card p { margin: 0; font-weight: 600; color: var(--text-secondary); }
 
 /* ── Empty state ──────────────────────────────────────────────────────────── */
+.receipt-card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 1.1rem 1.2rem; display: flex; flex-direction: column; gap: 0.8rem; align-items: flex-start; }
+.receipt-card.warn { border-color: color-mix(in srgb, var(--warning) 40%, transparent); flex-direction: row; align-items: center; gap: 0.7rem; }
+.receipt-card.warn i { color: var(--warning); font-size: 1.2rem; }
+.receipt-card.warn p { margin: 0; font-size: 0.88rem; font-weight: 600; }
+.receipt-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.9rem; width: 100%; }
+.rc-field { display: flex; flex-direction: column; gap: 0.25rem; }
+.rc-label { font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.03em; }
+.rc-val { font-size: 0.92rem; font-weight: 700; word-break: break-all; }
+.rc-qr { align-self: flex-start; }
+.rc-empty { margin: 0; font-size: 0.88rem; color: var(--text-secondary); }
+.rc-hint { margin: 0; font-size: 0.82rem; color: var(--text-secondary); }
+.rc-error { margin: 0; font-size: 0.82rem; font-weight: 600; color: var(--danger); }
 .empty-state { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; padding: 3rem 2rem; color: var(--text-secondary); text-align: center; }
 .empty-state i { font-size: 2rem; opacity: 0.5; }
 .empty-state p { margin: 0; font-weight: 600; font-size: 0.92rem; }

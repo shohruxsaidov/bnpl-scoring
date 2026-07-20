@@ -169,6 +169,13 @@
       "when": 1784544831942,
       "tag": "0023_aromatic_slayback",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1784549943542,
+      "tag": "0024_tricky_salo",
+      "breakpoints": true
     }
   ]
 }

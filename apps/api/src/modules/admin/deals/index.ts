@@ -5,6 +5,7 @@ import { listAdminDeals } from "./queries/list-deals/list-deals.handler"
 import { getAdminDeal } from "./queries/get-deal/get-deal.handler"
 import { listDealComments } from "./queries/list-deal-comments/list-deal-comments.handler"
 import { createDealComment } from "./commands/create-deal-comment/create-deal-comment.handler"
+import { createDealReceipt } from "./commands/create-deal-receipt/create-deal-receipt.handler"
 
 const TAGS = ["Admin · Deals"]
 
@@ -54,6 +55,41 @@ export default async function adminDealRoutes(app: FastifyInstance) {
         text: request.body.text,
       })
       return reply.code(201).send({ comment })
+    },
+  )
+
+  // Guarded more tightly than the rest of this plugin: the plugin-level write
+  // grant is manage_payments, which is too broad for filing a fiscal document.
+  const RECEIPT_STATUS_CODES: Record<string, number> = {
+    deal_not_found: 404,
+    invalid_deal_status: 409,
+    receipt_already_exists: 409,
+    receipt_pending: 409,
+    deal_has_no_items: 422,
+    missing_mxik_code: 422,
+    label_count_mismatch: 422,
+    amount_mismatch: 422,
+  }
+
+  fastify.post(
+    "/:id/receipt",
+    {
+      schema: { tags: TAGS, params: IdParams },
+      preHandler: [preHandler, app.requirePermissionByMethod({ write: "create_deal_receipt" })],
+    },
+    async (request, reply) => {
+      try {
+        const receipt = await createDealReceipt(request.params.id)
+        return reply.code(201).send({ receipt })
+      } catch (err) {
+        const code = (err as { code?: string }).code
+        const status = code ? RECEIPT_STATUS_CODES[code] : undefined
+        if (status && code) return reply.code(status).sendError(code)
+        // Anything else is an EPOS/transport failure — details are in
+        // integration_logs, and the pending row (if any) is already cleaned up.
+        request.log.error({ err, dealId: request.params.id }, "epos receipt failed")
+        return reply.code(502).sendError("receipt_failed")
+      }
     },
   )
 }

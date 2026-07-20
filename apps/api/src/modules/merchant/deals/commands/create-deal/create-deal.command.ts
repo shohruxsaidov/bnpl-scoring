@@ -12,6 +12,8 @@ export interface CreateDealInput {
     mxikCode: string | null;
     packageCode: number | null;
     packageName: string | null;
+    /** Snapshot of products.vat_percent at Deal creation. */
+    vatPercent: number;
     quantity: number;
     labels: string[];
   }>;
