@@ -1029,6 +1029,7 @@
     "action": "Заполнить"
   },
   "dealDetail": {
+    "bailsmen": "Kontaktlar",
     "backToDeals": "Все сделки",
     "tabDeals": "Сделка",
     "tabStatus": "Статус",

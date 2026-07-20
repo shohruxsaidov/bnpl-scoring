@@ -76,6 +76,8 @@ const schema = z.object({
   AUTO_PAY_TOKEN: z.string(),
   AUTO_PAY_MERCHANT_ID: z.string(),
   RABBIT_CONNECTION_URL: z.string().url(),
+  EPOS_API_URL: z.string().url(),
+  EPOS_TOKEN: z.string().default(''),
 });
 
 export const env = schema.parse(process.env);
