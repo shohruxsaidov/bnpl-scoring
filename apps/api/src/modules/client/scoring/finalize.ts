@@ -75,7 +75,6 @@ async function loadLatestCard(
   if (!row) return null;
   return {
     pcType: row.pcType,
-    bank: row.pcType === 'humo' ? 'Humo' : 'Uzcard',
     maskedPan: row.maskedPan,
     holderName: row.holderName,
     plumCardId: row.plumCardId,

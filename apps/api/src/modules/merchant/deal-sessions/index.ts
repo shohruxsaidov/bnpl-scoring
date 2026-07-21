@@ -291,9 +291,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       // prepayment gap cannot drift from the deal's own totalPayable.
       const basketBase = calcBasketAmount(data.products.lines);
       const totalWithMarkup = calcTotalPayable(basketBase, data.tariff.markupPercent);
-      const effectiveLimit = Math.round(
-        data.scoring.platformCreditLimit * data.tariff.termMonths,
-      );
+      const effectiveLimit = Math.round(data.scoring.platformCreditLimit * data.tariff.termMonths);
       const gap = Math.round((totalWithMarkup - effectiveLimit) * 100) / 100;
 
       if (gap <= 0) return reply.code(409).sendError('no_prepayment_needed');
@@ -1096,9 +1094,8 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
 
   const ScoreCardBody = Type.Object({
     plumCardId: Type.String({ minLength: 1 }),
-    pcType: Type.Union([Type.Literal('uzcard'), Type.Literal('humo')]),
+    pcType: Type.String(),
     maskedPan: Type.String({ minLength: 1 }),
-    bank: Type.String({ minLength: 1 }),
     holderName: Type.String(),
     expiry: Type.String({ minLength: 1 }),
     bailsmen: Type.Optional(Type.Array(BailsmanItemSchema, { minItems: 1, maxItems: 5 })),
@@ -1109,7 +1106,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
     { schema: { tags: TAGS, params: IdParams, body: ScoreCardBody }, preHandler: guards },
     async (request, reply) => {
       const p = payload(request);
-      const { plumCardId, pcType, maskedPan, bank, holderName, expiry } = request.body;
+      const { plumCardId, pcType, maskedPan, holderName, expiry } = request.body;
 
       let session;
       try {
@@ -1153,7 +1150,6 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           cardId: plumCardId,
           maskedPan,
           pcType,
-          bank,
           holderName,
           expiry,
         });
@@ -1218,7 +1214,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         userRow: userRow ?? null,
         katm,
         inps,
-        card: { pcType, bank, maskedPan, holderName },
+        card: { pcType, maskedPan, holderName },
       });
 
       // model_score is a pure execution marker: the row is 'passed' whenever the
@@ -1249,7 +1245,6 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         cardId: plumCardId,
         maskedPan,
         pcType,
-        bank,
         holderName,
         expiry,
       });

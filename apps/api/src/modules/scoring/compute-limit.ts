@@ -81,7 +81,6 @@ export interface LimitUserRow {
 
 export interface LimitCard {
   pcType: string;
-  bank: string;
   maskedPan: string;
   holderName: string | null;
 }
@@ -137,8 +136,8 @@ export function runModelAndLimit(input: LimitComputationInput): LimitComputation
       address: userRow.address || '',
     }),
     ...(inps && {
-      // incomeSum: (inps.incomesAllSumma ?? 0) / 12,
-      // incomeSumInBrv: (inps.incomesAllSumma ?? 0) / 12 / BRV_UZS,
+      incomeSum: (inps.incomesAllSumma ?? 0) / 12,
+      incomeSumInBrv: (inps.incomesAllSumma ?? 0) / 12 / BRV_UZS,
       workExperienceMonths: monthsBetween(inps.periodBegin ?? '', inps.periodEnd ?? ''),
       // // TODO
       // incomeSum: 8000000,
@@ -206,7 +205,6 @@ export function runModelAndLimit(input: LimitComputationInput): LimitComputation
       card: {
         detail: {
           pcType: card.pcType,
-          bank: card.bank,
           maskedPan: card.maskedPan,
           holderName: card.holderName ?? undefined,
         },
