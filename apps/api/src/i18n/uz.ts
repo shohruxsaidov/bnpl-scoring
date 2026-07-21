@@ -75,6 +75,8 @@ export const uz: Record<string, string> = {
 
   // deals
   deal_not_found: 'Shartnoma topilmadi',
+  deal_not_payable: "Ushbu shartnoma bo'yicha to'lanadigan qarz yo'q",
+  payme_not_configured: "Payme orqali to'lov vaqtincha mavjud emas",
   invalid_signing_purpose: "Imzolash maqsadi noto'g'ri",
   invalid_signing_session: "Imzolash sessiyasi noto'g'ri",
 
@@ -157,6 +159,8 @@ export const uz: Record<string, string> = {
   'notification.scoring_rejected.body': 'Afsuski, hozircha kredit limiti ajratilmadi.',
   'notification.limit_updated.title': 'Kredit limiti yangilandi',
   'notification.limit_updated.body': "Sizning kredit limitingiz %{creditLimit} so'mga o'zgardi.",
+  'notification.payment_received.title': "To'lov qabul qilindi",
+  'notification.payment_received.body': "Sizning %{amount} so'mlik to'lovingiz qabul qilindi.",
   'notification.deal_signing_request.title': 'Shartnomani imzolang',
   'notification.deal_signing_request.body':
     "%{merchantName} %{totalPayable} so'mlik muddatli to'lovni tasdiqlashingizni kutmoqda. Shartlarni tekshirish uchun ilovani oching.",

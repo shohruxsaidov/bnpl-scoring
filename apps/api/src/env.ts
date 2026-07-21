@@ -80,6 +80,28 @@ const schema = z.object({
   // No default: an empty token fails every receipt at runtime instead of
   // failing the service at boot, and each failure is an irreversible attempt.
   EPOS_TOKEN: z.string().min(1),
+  // Payme Merchant API (inbound — Payme calls us at POST /api/v1/webhook/payme).
+  // Test and production cashboxes have DIFFERENT merchant ids and keys; the
+  // environment is the switch, so there is no runtime test/prod toggle and a
+  // test key can never reach production data.
+  //
+  // Dark-launch guard. Off by default: the route answers -32504 until a cashbox
+  // is actually provisioned for this environment, so a misconfigured cashbox
+  // gets a protocol refusal rather than half-working against real deals.
+  PAYME_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
+  PAYME_MERCHANT_ID: z.string().optional(),
+  // The cashbox key — the Basic auth password (login is always 'Paycom').
+  // Optional so local dev boots without it; the route refuses every call while
+  // it is unset rather than failing the service at startup.
+  PAYME_KEY: z.string().optional(),
+  PAYME_CHECKOUT_URL: z.string().url().default('https://checkout.paycom.uz'),
+  // Comma-separated. The webhook opts out of the global rate limiter, so this is
+  // the flood guard in its place. Empty means allow-any — fine locally, wrong in
+  // every deployed environment.
+  PAYME_ALLOWED_IPS: z.string().optional(),
 });
 
 export const env = schema.parse(process.env);

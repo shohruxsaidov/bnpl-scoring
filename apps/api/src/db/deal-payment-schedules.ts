@@ -10,13 +10,18 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { deals } from './deals';
-import { manualPayments } from './manual-payments';
+import { dealPayments } from './deal-payments';
 
 // ---------------------------------------------------------------------------
 // deal_payment_schedules
 // One row per instalment. Used by the Collection Board / Aging Bucket queries.
 // Aging: dueDate <= today AND paid = false → determines Days Overdue.
-// manualPaymentId is set when the row was settled by a Manual Payment event.
+//
+// manualPaymentId points at the LAST payment to touch this instalment (the
+// column predates deal_payments and keeps its old name to avoid a rename on a
+// live table). It is lossy by construction — a second payment overwrites the
+// first — so it is a convenience pointer, never an audit trail. The exact split
+// lives in payment_allocations.
 // ---------------------------------------------------------------------------
 export const dealPaymentSchedules = pgTable('deal_payment_schedules', {
   id: serial('id').primaryKey(),
@@ -34,7 +39,7 @@ export const dealPaymentSchedules = pgTable('deal_payment_schedules', {
   paid: boolean('paid').notNull().default(false),
   paidAt: timestamp('paid_at', { withTimezone: true }),
   manualPaymentId: integer('manual_payment_id').references(
-    () => manualPayments.id,
+    () => dealPayments.id,
   ),
   paymentProvider: text('payment_provider').array(),
 });

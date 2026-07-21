@@ -24,6 +24,7 @@ import {
   adminModule,
   clientModule,
   publicModule,
+  webhookModule,
 } from './modules/index.js';
 import { env } from './env.js';
 
@@ -131,6 +132,7 @@ export async function buildApp() {
   await app.register(adminModule, { prefix: '/api/v1' });
   await app.register(clientModule, { prefix: '/api/v1' });
   await app.register(publicModule, { prefix: '/api/v1' });
+  await app.register(webhookModule, { prefix: '/api/v1' });
 
   return app;
 }

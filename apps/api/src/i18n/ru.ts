@@ -75,6 +75,8 @@ export const ru: Record<string, string> = {
 
   // deals
   deal_not_found: 'Договор не найден',
+  deal_not_payable: 'По этому договору нет задолженности к оплате',
+  payme_not_configured: 'Оплата через Payme временно недоступна',
   invalid_signing_purpose: 'Неверное назначение токена подписи',
   invalid_signing_session: 'Неверная сессия подписи',
 
@@ -157,6 +159,8 @@ export const ru: Record<string, string> = {
   'notification.scoring_rejected.body': 'К сожалению, кредитный лимит пока не одобрен.',
   'notification.limit_updated.title': 'Кредитный лимит обновлён',
   'notification.limit_updated.body': 'Ваш кредитный лимит изменён на %{creditLimit} сум.',
+  'notification.payment_received.title': 'Платёж получен',
+  'notification.payment_received.body': 'Мы получили ваш платёж на %{amount} сум.',
   'notification.deal_signing_request.title': 'Подпишите договор',
   'notification.deal_signing_request.body':
     '%{merchantName} ждёт подтверждения рассрочки на %{totalPayable} сум. Откройте приложение, чтобы проверить условия.',

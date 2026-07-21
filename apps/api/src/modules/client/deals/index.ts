@@ -5,6 +5,8 @@ import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '@db';
 import { deals, dealItems, merchants } from '@db/schema';
 import { buildMerchantLogoUrl } from '../../../lib/merchant-logo';
+import { buildPaymeCheckoutUrl } from '../../integrations/payme/checkout';
+import { PAYME_MIN_PAYMENT_SOM } from '../../integrations/payme/account';
 import { loadProgressForDeals, loadDealSchedule } from './progress';
 
 // ---------------------------------------------------------------------------
@@ -222,6 +224,77 @@ export default async function clientDealRoutes(app: FastifyInstance) {
           schedule: sched.schedule,
         },
       };
+    },
+  );
+
+  /* ── GET /client/deals/:id/payme-link — checkout URL for this deal ─────── */
+
+  const PaymeLink = Type.Object({
+    url: Type.String(),
+    // What we prefilled, in som. The payer can change it on Payme's screen —
+    // this is a convenience, never a commitment. CheckPerformTransaction is the
+    // only place an amount is actually agreed to.
+    suggestedAmount: Type.Number(),
+  });
+
+  fastify.get(
+    '/:id/payme-link',
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Payme checkout link',
+        description:
+          "A Payme checkout URL for one of the caller's own deals, prefilled with the deal " +
+          'number and the next instalment. Deep-links into the Payme app when installed. ' +
+          'Stateless — nothing is reserved by calling this.',
+        security: SECURITY,
+        params: IdParams,
+        response: { 200: PaymeLink, 401: ERROR, 404: ERROR, 409: ERROR },
+      },
+      preHandler: guards,
+    },
+    async (request, reply) => {
+      const userId = Number(request.user.sub);
+
+      const rows = await db
+        .select({
+          id: deals.id,
+          dealNumber: deals.dealNumber,
+          status: deals.status,
+          lang: deals.lang,
+        })
+        .from(deals)
+        .where(and(eq(deals.id, request.params.id), eq(deals.userId, userId)))
+        .limit(1);
+
+      const deal = rows[0];
+      if (!deal) return reply.code(404).sendError('deal_not_found');
+      // Only a deal carrying debt can be paid. A closed one is a 409 rather than
+      // a 404 — the client can see it in their list, so pretending it is missing
+      // would be more confusing than saying there is nothing to pay.
+      if (deal.status !== 'active' && deal.status !== 'overdue') {
+        return reply.code(409).sendError('deal_not_payable');
+      }
+
+      const sched = await loadDealSchedule(deal.id);
+      const { nextDueAmount, remainingAmount } = sched.progress;
+
+      // Prefill the next instalment, which is what all but a handful of payers
+      // want. Fall back to the whole remaining debt when the next instalment is
+      // a stub below the minimum we accept — offering an amount that
+      // CheckPerformTransaction would reject is worse than offering none.
+      const suggested =
+        nextDueAmount && nextDueAmount >= PAYME_MIN_PAYMENT_SOM ? nextDueAmount : remainingAmount;
+
+      const url = buildPaymeCheckoutUrl({
+        dealNumber: deal.dealNumber,
+        amountSom: suggested,
+        lang: deal.lang === 'uz' ? 'uz' : 'ru',
+      });
+      // Null means no cashbox is configured for this environment.
+      if (!url) return reply.code(409).sendError('payme_not_configured');
+
+      return { url, suggestedAmount: suggested };
     },
   );
 }

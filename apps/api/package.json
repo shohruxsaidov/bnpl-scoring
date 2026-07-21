@@ -16,6 +16,7 @@
     "seed:regions": "tsx src/scripts/seed-regions.ts",
     "seed:scoring-model": "tsx src/scripts/seed-scoring-model.ts",
     "seed:users": "tsx src/scripts/seed-users.ts",
+    "seed:payme-fixtures": "tsx src/scripts/seed-payme-fixtures.ts",
     "backfill:scoring-models": "tsx src/scripts/backfill-scoring-models.ts"
   },
   "dependencies": {

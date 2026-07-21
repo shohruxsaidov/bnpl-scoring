@@ -26,6 +26,12 @@ import {
   type NotificationPushJobData,
 } from '../modules/client/notifications/push';
 import {
+  PAYME_SWEEP_QUEUE,
+  PAYME_SWEEP_INTERVAL_MS,
+  PAYME_SWEEP_JOB_ID,
+  processPaymeSweepJob,
+} from '../modules/integrations/payme/sweep';
+import {
   PLUM_CARD_SCORE_QUEUE,
   handlePlumCardScoreFailure,
   processPlumCardScoreJob,
@@ -38,6 +44,7 @@ declare module 'fastify' {
     katmPollQueue: Queue<KatmPollJobData>;
     katmClaimRejectQueue: Queue<ClaimRejectJobData>;
     dealSessionSweepQueue: Queue;
+    paymeSweepQueue: Queue;
     notificationsPushQueue: Queue<NotificationPushJobData>;
     plumCardScoreQueue: Queue<PlumCardScoreJobData>;
     // Every Queue created by this plugin, in registration order. The bull-board
@@ -77,6 +84,20 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
   });
   setPlumCardScoreQueue(plumCardScoreQueue);
 
+  // Payme pending-transaction timeout. A repeatable job with a fixed jobId, so
+  // every boot upserts the same schedule instead of stacking another one.
+  const paymeSweepQueue: Queue = new Queue(PAYME_SWEEP_QUEUE, { connection });
+  await paymeSweepQueue.add(
+    'sweep',
+    {},
+    {
+      jobId: PAYME_SWEEP_JOB_ID,
+      repeat: { every: PAYME_SWEEP_INTERVAL_MS },
+      removeOnComplete: true,
+      removeOnFail: 50,
+    },
+  );
+
   // Registry consumed by the bull-board dashboard. Push each new queue here.
   const queues: Queue[] = [
     queue,
@@ -84,6 +105,7 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
     sweepQueue,
     notificationsPushQueue,
     plumCardScoreQueue,
+    paymeSweepQueue,
   ];
 
   const worker = new Worker<KatmPollJobData>(
@@ -152,6 +174,24 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
     }
   });
 
+  // Payme timeout sweep. Frees deals whose payer abandoned checkout — without
+  // it, one dead pending transaction blocks the deal's one-pending slot forever,
+  // because an abandoned transaction never receives the call that would expire
+  // it lazily.
+  const paymeSweepWorker = new Worker(
+    PAYME_SWEEP_QUEUE,
+    async () => {
+      const expired = await processPaymeSweepJob();
+      if (expired > 0) app.log.info({ expired }, 'payme pending transactions expired');
+      return expired;
+    },
+    { connection, concurrency: 1 },
+  );
+
+  paymeSweepWorker.on('failed', (job, err) => {
+    app.log.warn({ jobId: job?.id, err }, 'payme transaction sweep failed');
+  });
+
   worker.on('failed', (job, err) => {
     if (!job) return;
     const exhausted = job.attemptsMade >= (job.opts.attempts ?? 1);
@@ -169,16 +209,19 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
   app.decorate('katmClaimRejectQueue', claimRejectQueue);
   app.decorate('notificationsPushQueue', notificationsPushQueue);
   app.decorate('plumCardScoreQueue', plumCardScoreQueue);
+  app.decorate('paymeSweepQueue', paymeSweepQueue);
   app.decorate('queues', queues);
   app.addHook('onClose', async () => {
     await worker.close();
     await claimRejectWorker.close();
     await notificationsPushWorker.close();
     await plumCardScoreWorker.close();
+    await paymeSweepWorker.close();
     await queue.close();
     await claimRejectQueue.close();
     await notificationsPushQueue.close();
     await plumCardScoreQueue.close();
+    await paymeSweepQueue.close();
     await redis.quit().catch(() => null);
   });
 });

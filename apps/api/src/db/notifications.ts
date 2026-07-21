@@ -32,6 +32,7 @@ export type NotificationType =
   | 'scoring_approved'
   | 'scoring_rejected'
   | 'limit_updated'
+  | 'payment_received'
   | 'deal_signing_request'
   | 'custom';
 
