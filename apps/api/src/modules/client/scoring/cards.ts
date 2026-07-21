@@ -160,7 +160,7 @@ export default async function clientScoringCardsRoutes(app: FastifyInstance) {
       const userId = Number(request.user.sub);
       const { sessionId, otp } = request.body;
 
-      const card = await confirmCard({ sessionId, otp });
+      const card = await confirmCard({ sessionId, otp: otp.toLowerCase() });
 
       // Re-adding the same card is idempotent (unique on user_id + plum_id).
       // Both Plumgate ids are stored: plumId (the attachment) is what deleteUserCard

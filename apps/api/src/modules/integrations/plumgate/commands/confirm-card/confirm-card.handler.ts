@@ -14,7 +14,11 @@ export type { PlumCard };
 
 export async function confirmCard(params: ConfirmCardCommand): Promise<PlumCard> {
   const client = makePlumClient();
-  const reqBody = { session: params.sessionId, otp: params.otp, cardName: 'Default card name' };
+  const reqBody = {
+    session: params.sessionId,
+    otp: params.otp.toLowerCase(),
+    cardName: 'Default card name',
+  };
 
   const requestTimestamp = new Date();
   try {
