@@ -75,7 +75,7 @@ export default async function adminPaymentRoutes(app: FastifyInstance) {
   const CreateBody = Type.Object({
     dealId: Type.String({ format: 'uuid' }),
     amount: Type.Integer({ minimum: 1 }),
-    paymentType: Type.Union([Type.Literal('mib'), Type.Literal('transfer')]),
+    paymentType: Type.Union([Type.Literal('replenishment'), Type.Literal('writing_off')]),
     note: Type.Optional(Type.String()),
   });
 

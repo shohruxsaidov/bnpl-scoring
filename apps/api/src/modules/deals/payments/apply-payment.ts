@@ -44,7 +44,7 @@ export interface ApplyPaymentInput {
   /** In som. */
   amount: number;
   source: DealPaymentSource;
-  /** Human sub-kind for manual rows ('mib' | 'transfer'); rails write their own name. */
+  /** Human sub-kind for manual rows ('replenishment' | 'writing_off'); rails write their own name. */
   paymentType: string;
   /** The admin who recorded it. Null for machine-booked payments. */
   adminUserId?: number | null;

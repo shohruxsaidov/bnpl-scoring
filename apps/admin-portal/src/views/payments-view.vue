@@ -105,7 +105,7 @@ const dealResults = ref<DealSearchResult[]>([])
 const selectedDeal = ref<DealSearchResult | null>(null)
 const showDealDropdown = ref(false)
 
-const form = ref({ amount: '', paymentType: 'mib', note: '' })
+const form = ref({ amount: '', paymentType: 'replenishment', note: '' })
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -116,7 +116,7 @@ function openDialog() {
   dealResults.value = []
   selectedDeal.value = null
   showDealDropdown.value = false
-  form.value = { amount: '', paymentType: 'mib', note: '' }
+  form.value = { amount: '', paymentType: 'replenishment', note: '' }
 }
 
 function closeDialog() {
@@ -149,8 +149,8 @@ function selectDeal(deal: DealSearchResult) {
 }
 
 const paymentTypeOptions = [
-  { label: t('payments.typeMib'), value: 'mib' },
-  { label: t('payments.typeTransfer'), value: 'transfer' },
+  { label: t('payments.typeReplenishment'), value: 'replenishment' },
+  { label: t('payments.typeWritingOff'), value: 'writing_off' },
 ]
 
 const formValid = computed(
@@ -183,7 +183,13 @@ async function submit() {
   }
 }
 
-const TYPE_LABEL: Record<string, string> = { mib: 'МИБ', transfer: 'Перевод' }
+// 'mib' / 'transfer' are retired, but rows booked under them still exist.
+const TYPE_LABEL = computed<Record<string, string>>(() => ({
+  replenishment: t('payments.typeReplenishment'),
+  writing_off: t('payments.typeWritingOff'),
+  mib: 'МИБ',
+  transfer: 'Перевод',
+}))
 
 function hideDealDropdown() {
   setTimeout(() => { showDealDropdown.value = false }, 150)

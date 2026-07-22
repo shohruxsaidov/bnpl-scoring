@@ -14,9 +14,11 @@ import { adminUsers } from './admin-users';
 //   'payme'  — a client paid through Payme; booked by PerformTransaction, so
 //              adminUserId is null and no human is accountable for the row.
 //
-// `paymentType` stays the human sub-kind of a manual payment ('mib' |
-// 'transfer'); machine rails write their own name into it so a single-column
-// read still tells an operator what happened.
+// `paymentType` stays the human sub-kind of a manual payment
+// ('replenishment' | 'writing_off' — both are money-in labels, they only say
+// how the operator booked it); machine rails write their own name into it so a
+// single-column read still tells an operator what happened. Rows written before
+// 2026-07-22 carry the retired 'mib' / 'transfer' labels.
 // ---------------------------------------------------------------------------
 export type DealPaymentSource = 'manual' | 'payme';
 
