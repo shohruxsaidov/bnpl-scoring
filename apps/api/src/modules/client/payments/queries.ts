@@ -51,6 +51,7 @@ export async function listClientPayments(input: ListClientPaymentsInput) {
       merchantName: merchants.name,
       amount: dealPayments.amount,
       source: dealPayments.source,
+      paymentType: dealPayments.paymentType,
       createdAt: dealPayments.createdAt,
     })
     .from(dealPayments)

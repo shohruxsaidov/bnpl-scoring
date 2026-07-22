@@ -36,6 +36,12 @@ export default async function clientPaymentRoutes(app: FastifyInstance) {
     // How the money was initiated, not how it arrived: 'payme' is a client-side
     // checkout, 'manual' an admin recording a transfer they received.
     source: Type.Union([Type.Literal('manual'), Type.Literal('payme')]),
+    // The sub-kind behind `source`: 'mib' | 'transfer' for a manual row, or the
+    // rail's own name ('payme') for a machine-booked one. Left open as a string
+    // rather than a union — the column is free text, and a new rail must not
+    // make an existing payment fail response validation and vanish from the
+    // history.
+    paymentType: Type.String(),
     createdAt: Type.String(),
   });
 
@@ -120,6 +126,7 @@ export default async function clientPaymentRoutes(app: FastifyInstance) {
           merchantName: r.merchantName ?? '—',
           amount: Number(r.amount),
           source: r.source,
+          paymentType: r.paymentType,
           createdAt: r.createdAt.toISOString(),
         })),
         total,
