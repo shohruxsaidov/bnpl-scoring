@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, lte, sql } from 'drizzle-orm';
 import { db } from '@db';
 import { dealPayments, deals, merchants } from '@db/schema';
 
@@ -83,6 +83,110 @@ export async function listClientPayments(input: ListClientPaymentsInput) {
     total,
     // Floored at 1: a client with no payments is on "page 1 of 1", not the
     // broken-looking "page 1 of 0".
+    lastPage: Math.max(1, Math.ceil(total / input.limit)),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// The same money-in events, projected per credit instead of as one flat feed:
+// [{ deal, payments[] }]. Not a variant of the query above — it pages over
+// DEALS, so a returned deal always carries its COMPLETE payment history. That
+// is the whole point: a group split across two pages would show the same credit
+// twice with a different "paid so far" each time.
+//
+// Deliberately no date window. `paidTotal` is a lifetime figure read against
+// `totalPayable`; a filter would make the same field mean two things depending
+// on query params, and the flat feed above already owns "what did I pay in July".
+// ---------------------------------------------------------------------------
+
+export interface ListClientPaymentsByDealInput {
+  userId: number;
+  /** 1-based, over deals. */
+  page: number;
+  limit: number;
+}
+
+/**
+ * A deal earns a place here by having money against it — nothing else. No
+ * status filter (same reasoning as the flat feed: a real payment must never be
+ * concealed), and no zero-payment deals, which on a payments screen are noise.
+ */
+const HAS_PAYMENT = sql`exists (select 1 from ${dealPayments} where ${dealPayments.dealId} = ${deals.id})`;
+
+export async function listClientPaymentsByDeal(input: ListClientPaymentsByDealInput) {
+  const where = and(ownedBy(input.userId), HAS_PAYMENT);
+
+  const dealRows = await db
+    .select({
+      dealId: deals.id,
+      dealNumber: deals.dealNumber,
+      status: deals.status,
+      merchantName: merchants.name,
+      totalPayable: deals.totalPayable,
+    })
+    .from(deals)
+    .leftJoin(merchants, eq(deals.merchantId, merchants.id))
+    .where(where)
+    // dealNumber is a unique monotonic identity, so this is newest-credit-first
+    // AND a totally deterministic paging key with no tie-break needed. Ordering
+    // by "most recent payment" instead would reshuffle the list on every
+    // payment and let a client paging through miss a deal entirely.
+    .orderBy(desc(deals.dealNumber))
+    .limit(input.limit)
+    .offset((input.page - 1) * input.limit);
+
+  // Counted separately rather than with count(*) over (): a page past the end
+  // returns no rows, and a window function on zero rows yields no total at all
+  // — which would report lastPage 1 for a client who has twelve deals.
+  const [totals] = await db
+    .select({ total: sql<number>`count(*)::int` })
+    .from(deals)
+    .where(where);
+
+  const total = totals?.total ?? 0;
+
+  // One fetch for the whole page — never per deal.
+  const payments = dealRows.length
+    ? await db
+        .select({
+          id: dealPayments.id,
+          dealId: dealPayments.dealId,
+          amount: dealPayments.amount,
+          source: dealPayments.source,
+          paymentType: dealPayments.paymentType,
+          createdAt: dealPayments.createdAt,
+        })
+        .from(dealPayments)
+        .where(inArray(dealPayments.dealId, dealRows.map((d) => d.dealId)))
+        // Same order as the flat feed, so a payment does not appear to move
+        // when the user switches between the two screens.
+        .orderBy(desc(dealPayments.createdAt), desc(dealPayments.id))
+    : [];
+
+  const byDeal = new Map<string, typeof payments>();
+  for (const p of payments) {
+    const list = byDeal.get(p.dealId) ?? [];
+    list.push(p);
+    byDeal.set(p.dealId, list);
+  }
+
+  const rows = dealRows.map((d) => {
+    // Every deal here has payments by construction, but a concurrent delete
+    // could empty one between the two queries; [] keeps the shape honest.
+    const list = byDeal.get(d.dealId) ?? [];
+    return {
+      ...d,
+      // Summed in JS, not SQL: the group is never truncated, so this is exactly
+      // the sum of what the client is looking at — no aggregate can disagree
+      // with the list rendered beneath it.
+      paidTotal: list.reduce((sum, p) => sum + Number(p.amount), 0),
+      payments: list,
+    };
+  });
+
+  return {
+    rows,
+    total,
     lastPage: Math.max(1, Math.ceil(total / input.limit)),
   };
 }
