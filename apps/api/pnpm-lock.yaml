@@ -107,6 +107,9 @@ importers:
       ky:
         specifier: ^2.0.2
         version: 2.0.2
+      migrator:
+        specifier: link:drizzle-orm/node-postgres/migrator
+        version: link:drizzle-orm/node-postgres/migrator
       minio:
         specifier: ^8.0.7
         version: 8.0.7

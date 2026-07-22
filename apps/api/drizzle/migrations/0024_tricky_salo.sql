@@ -1,4 +1,4 @@
-CREATE TABLE "deal_receipts" (
+CREATE TABLE if not exists "deal_receipts" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"deal_id" uuid NOT NULL,
 	"status" varchar(20) DEFAULT 'pending' NOT NULL,

@@ -53,6 +53,7 @@
     "firebase-admin": "^13.10.0",
     "ioredis": "^5.11.0",
     "ky": "^2.0.2",
+    "migrator": "link:drizzle-orm/node-postgres/migrator",
     "minio": "^8.0.7",
     "pdfkit": "^0.18.0",
     "pino": "^10.3.1",
