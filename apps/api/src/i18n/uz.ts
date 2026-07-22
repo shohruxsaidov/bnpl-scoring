@@ -86,6 +86,7 @@ export const uz: Record<string, string> = {
   client_step_missing: 'Mijoz tanlanmagan',
 
   // payments
+  invalid_date_range: "Boshlanish sanasi tugash sanasidan keyin bo'lishi mumkin emas",
   overpayment: "To'lov qolgan summadan oshib ketdi",
   OVERPAYMENT: "To'lov qolgan summadan oshib ketdi",
 

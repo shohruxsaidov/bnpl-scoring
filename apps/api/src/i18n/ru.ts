@@ -86,6 +86,7 @@ export const ru: Record<string, string> = {
   client_step_missing: 'Клиент не выбран',
 
   // payments
+  invalid_date_range: 'Дата начала периода не может быть позже даты окончания',
   overpayment: 'Сумма превышает остаток по договору',
   OVERPAYMENT: 'Сумма превышает остаток по договору',
 
