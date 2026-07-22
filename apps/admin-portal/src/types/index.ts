@@ -119,9 +119,9 @@ export type ClientNotificationType =
 export interface ClientNotificationRow {
   id: string
   type: ClientNotificationType
-  /** Set only for admin-authored (`custom`) rows; system rows render from `type`. */
-  titleRu: string | null
-  bodyRu: string | null
+  /** Rendered server-side in the admin's language — set for every type. */
+  title: string
+  body: string
   /** Authoring admin's name; null for system-generated notifications. */
   sentByName: string | null
   readAt: string | null

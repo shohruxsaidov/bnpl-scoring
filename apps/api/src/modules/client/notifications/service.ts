@@ -1,7 +1,9 @@
 import { and, desc, eq, isNull, sql } from 'drizzle-orm';
 import { db } from '@db';
 import { notifications, type NotificationType } from '@db/notifications';
+import type { SupportedLang } from '../../../i18n/index';
 import { enqueueNotificationPush } from './push';
+import { renderNotificationText } from './render';
 
 export interface NotifyInput {
   userId: number;
@@ -50,11 +52,25 @@ export async function notify(input: NotifyInput): Promise<string | null> {
   }
 }
 
-export function toNotificationDto(row: typeof notifications.$inferSelect) {
+/**
+ * Row → inbox item, with the text rendered server-side in the caller's language
+ * (see ./render). `type` and `data` stay on the wire: they are machine-readable
+ * routing, not presentation — the app switches on `type` for the icon and reads
+ * `data.dealSessionId` to open the signing flow, exactly as the push does.
+ */
+export function toNotificationDto(
+  row: typeof notifications.$inferSelect,
+  lang: SupportedLang,
+  warn?: (reason: string) => void,
+) {
+  const data = (row.data ?? {}) as Record<string, unknown>;
+  const { title, body } = renderNotificationText(row.type, lang, data, warn);
   return {
     id: row.id,
     type: row.type,
-    data: (row.data ?? {}) as Record<string, unknown>,
+    data,
+    title,
+    body,
     readAt: row.readAt ? row.readAt.toISOString() : null,
     createdAt: row.createdAt.toISOString(),
   };

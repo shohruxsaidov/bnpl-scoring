@@ -26,6 +26,10 @@ export async function apiFetch<T = any>(path: string, opts: RequestInit = {}): P
       credentials: 'include',
       headers: {
         ...(opts.body != null && !isFormData ? { 'Content-Type': 'application/json' } : {}),
+        // Same key vue-i18n was initialised from in main.ts — server-rendered
+        // text (error messages, notification title/body) comes back in the
+        // language the portal is actually showing.
+        'x-lang': localStorage.getItem('lang') || 'uz',
         ...(opts.headers ?? {}),
       },
     })

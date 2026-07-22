@@ -4,8 +4,9 @@ import type { FastifyBaseLogger } from 'fastify';
 import { db } from '@db';
 import { notifications, type NotificationType } from '@db/notifications';
 import { userDevices } from '@db/user-devices';
-import { translate, type SupportedLang } from '../../../i18n/index';
+import type { SupportedLang } from '../../../i18n/index';
 import { messaging } from '../../../lib/firebase';
+import { renderNotificationText } from './render';
 
 // ---------------------------------------------------------------------------
 // notifications-push (BullMQ) — delivers the FCM push mirroring an inbox row.
@@ -54,30 +55,6 @@ const DEAD_TOKEN_CODES = new Set([
   'messaging/invalid-registration-token',
   'messaging/invalid-argument',
 ]);
-
-// `custom` rows carry admin-authored text in `data` instead of an i18n key. The
-// route requires all four fields, but this is not the only way a row can reach
-// the queue — so fall back across languages rather than letting an `undefined`
-// title reach FCM, which would render literally as "undefined" on the device.
-function pickText(data: Record<string, unknown>, lang: SupportedLang, field: 'title' | 'body'): string {
-  const suffixed = lang === 'uz' ? `${field}Uz` : `${field}Ru`;
-  const candidates = [data[suffixed], data[`${field}Ru`], data[`${field}Uz`]];
-  return (candidates.find((v) => typeof v === 'string' && v.trim() !== '') as string | undefined) ?? '';
-}
-
-function renderPush(
-  type: NotificationType,
-  lang: SupportedLang,
-  data: Record<string, unknown>,
-): { title: string; body: string } {
-  if (type === 'custom') {
-    return { title: pickText(data, lang, 'title'), body: pickText(data, lang, 'body') };
-  }
-  return {
-    title: translate(lang, `notification.${type}.title`, data),
-    body: translate(lang, `notification.${type}.body`, data),
-  };
-}
 
 /**
  * Where tapping the push should land the app. Only actionable types get one —
@@ -149,7 +126,9 @@ export async function processNotificationPushJob(
 
   const deadTokens: string[] = [];
   for (const [lang, tokens] of byLang) {
-    const { title, body } = renderPush(row.type, lang, payload);
+    const { title, body } = renderNotificationText(row.type, lang, payload, (reason) =>
+      log.warn({ notificationId: row.id, type: row.type, lang }, reason),
+    );
     // sendEachForMulticast resolves with per-token results (it does not throw on
     // partial failure). A total failure (FCM unreachable) rejects and BullMQ
     // retries the whole job. Partial transient failures are left best-effort —

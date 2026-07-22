@@ -122,10 +122,10 @@ async function submitPush() {
 }
 
 // ── Notifications tab ───────────────────────────────────────────────────────
+// The API renders title/body for every type now, so there is nothing to build
+// here — the type label is only a fallback for a row the server could not render.
 function notificationTitle(row: ClientNotificationRow): string {
-  // Custom rows carry admin-authored text; system rows are rendered by the mobile
-  // app from `type`, so all we can show here is what the type means.
-  return row.titleRu ?? t(`clientDetail.notifType_${row.type}`)
+  return row.title || t(`clientDetail.notifType_${row.type}`)
 }
 
 function goToDeals(dealId: string) {
@@ -454,7 +454,7 @@ function paymentStatusBg(status: string): string {
           <Column :header="$t('clientDetail.notifMessage')">
             <template #body="{ data }">
               <span class="t-name-sm">{{ notificationTitle(data) }}</span>
-              <span v-if="data.bodyRu" class="muted notif-body">{{ data.bodyRu }}</span>
+              <span v-if="data.body" class="muted notif-body">{{ data.body }}</span>
             </template>
           </Column>
           <Column :header="$t('clientDetail.notifSender')">

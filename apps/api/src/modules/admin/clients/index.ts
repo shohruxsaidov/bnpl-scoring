@@ -5,6 +5,7 @@ import { listUserDeals } from "./queries/list-client-deals/list-client-deals.han
 import { listUserScoring } from "./queries/list-client-scoring/list-client-scoring.handler"
 import { listUserPayments } from "./queries/list-client-payments/list-client-payments.handler"
 import { listUserNotifications } from "./queries/list-client-notifications/list-client-notifications.handler"
+import { resolveLang } from "../../../i18n/index"
 
 export default async function adminClientsRoutes(app: FastifyInstance) {
   const TAGS = ["Admin · Clients"]
@@ -51,7 +52,8 @@ export default async function adminClientsRoutes(app: FastifyInstance) {
 
   app.get<{ Params: { id: string } }>("/:id/notifications", { schema: { tags: TAGS } }, async (req) => {
     const id = Number(req.params.id)
-    const notifications = await listUserNotifications(id)
+    const lang = resolveLang(req.headers["x-lang"] as string | undefined)
+    const notifications = await listUserNotifications(id, lang)
     return { notifications }
   })
 }
