@@ -25,8 +25,9 @@ function ownedBy(userId: number) {
 
 export interface ListClientPaymentsInput {
   userId: number;
+  /** 1-based. The offset is derived here so no caller can compute it differently. */
+  page: number;
   limit: number;
-  offset: number;
   /** Inclusive lower bound on createdAt. */
   from?: Date;
   /** Inclusive upper bound on createdAt. */
@@ -59,11 +60,12 @@ export async function listClientPayments(input: ListClientPaymentsInput) {
     .leftJoin(merchants, eq(deals.merchantId, merchants.id))
     .where(where)
     // id breaks ties: two payments can share a createdAt, and without a
-    // deterministic order a client paging with limit/offset sees duplicates and
-    // skips rows.
+    // deterministic order a client paging through sees duplicates and skips rows.
     .orderBy(desc(dealPayments.createdAt), desc(dealPayments.id))
     .limit(input.limit)
-    .offset(input.offset);
+    // A page past the end yields an offset past the end, which Postgres answers
+    // with zero rows. That empty page is the intended response — see the route.
+    .offset((input.page - 1) * input.limit);
 
   // Counts what the window matched, not the whole history — otherwise a filtered
   // month showing 3 payments would report pagination for the entire credit.
@@ -73,5 +75,13 @@ export async function listClientPayments(input: ListClientPaymentsInput) {
     .innerJoin(deals, eq(dealPayments.dealId, deals.id))
     .where(where);
 
-  return { rows, total: totals?.total ?? 0 };
+  const total = totals?.total ?? 0;
+
+  return {
+    rows,
+    total,
+    // Floored at 1: a client with no payments is on "page 1 of 1", not the
+    // broken-looking "page 1 of 0".
+    lastPage: Math.max(1, Math.ceil(total / input.limit)),
+  };
 }

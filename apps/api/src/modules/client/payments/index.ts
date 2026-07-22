@@ -45,8 +45,10 @@ export default async function clientPaymentRoutes(app: FastifyInstance) {
     // Both bounds are inclusive.
     from: Type.Optional(Type.String({ format: 'date-time' })),
     to: Type.Optional(Type.String({ format: 'date-time' })),
+    // 1-based paging. This endpoint takes `page`, never `offset` — the sibling
+    // client endpoints still speak offset, but there is one way to page here.
+    page: Type.Optional(Type.Integer({ minimum: 1 })),
     limit: Type.Optional(Type.Integer({ minimum: 1, maximum: MAX_LIMIT })),
-    offset: Type.Optional(Type.Integer({ minimum: 0 })),
   });
 
   /* ── GET /client/payments — the authenticated client's payment history ─── */
@@ -61,12 +63,20 @@ export default async function clientPaymentRoutes(app: FastifyInstance) {
           "Every payment the authenticated client has made, across all their credits, " +
           'newest first. One row per money-in event — not per instalment; for the ' +
           'schedule of what is still owed, use GET /client/deals/:id. `from`/`to` are ' +
-          'inclusive ISO date-times carrying the caller’s UTC offset. Amounts are in som.',
+          'inclusive ISO date-times carrying the caller’s UTC offset. Amounts are in som. ' +
+          'Paged 1-based via `page`: the response echoes the requested `page` and reports ' +
+          '`lastPage`, so a page past the end returns an empty list with page > lastPage ' +
+          'rather than silently re-serving the final page.',
         security: SECURITY,
         querystring: ListQuery,
         response: {
           200: Type.Object({
             payments: Type.Array(PaymentItem),
+            // Echoes the page actually requested — including one past the end,
+            // where `payments` is empty and page > lastPage.
+            page: Type.Integer(),
+            // Always >= 1, so an empty history reads "1 of 1", not "1 of 0".
+            lastPage: Type.Integer(),
             // Matches the filter, not the whole history.
             total: Type.Integer(),
           }),
@@ -90,15 +100,19 @@ export default async function clientPaymentRoutes(app: FastifyInstance) {
         return reply.code(400).sendError('invalid_date_range');
       }
 
-      const { rows, total } = await listClientPayments({
+      const page = request.query.page ?? 1;
+
+      const { rows, total, lastPage } = await listClientPayments({
         userId,
+        page,
         limit: request.query.limit ?? DEFAULT_LIMIT,
-        offset: request.query.offset ?? 0,
         from: fromDate,
         to: toDate,
       });
 
       return {
+        page,
+        lastPage,
         payments: rows.map((r) => ({
           id: r.id.toString(),
           dealId: r.dealId,
