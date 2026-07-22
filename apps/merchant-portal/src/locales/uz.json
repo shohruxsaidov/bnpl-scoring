@@ -168,6 +168,29 @@
     "agent": "Agent",
     "term": "Muddat"
   },
+  "dealSessions": {
+    "title": "Rasmiylashtirish sessiyalari",
+    "subtitle": "Rasmiylashtirish ustasining ishga tushirishlari — shartnomaga aylanmaganlari ham",
+    "search": "Mijoz yoki agent bo‘yicha qidirish",
+    "allStatuses": "Barcha holatlar",
+    "branch": "Filial",
+    "step": "Bosqich",
+    "updated": "Yangilangan",
+    "empty": "Sessiyalar yo‘q",
+    "noClientYet": "Mijoz tanlanmagan",
+    "truncated": "Oxirgi {n} ta sessiya ko‘rsatilmoqda. Qolganini ko‘rish uchun filtrni aniqlashtiring.",
+    "justNow": "hozirgina",
+    "minutesAgo": "{n} daqiqa oldin",
+    "hoursAgo": "{n} soat oldin",
+    "daysAgo": "{n} kun oldin",
+    "status": {
+      "active": "Jarayonda",
+      "completed": "Yakunlangan",
+      "rejected": "Rad etilgan",
+      "abandoned": "To‘xtatilgan",
+      "expired": "Muddati o‘tgan"
+    }
+  },
   "status": {
     "draft": "Qoralama",
     "scoring": "Skoring",

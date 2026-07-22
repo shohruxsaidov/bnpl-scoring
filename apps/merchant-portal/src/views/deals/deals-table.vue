@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
@@ -12,6 +12,10 @@ import SkeletonTable from '@/components/skeleton-table.vue'
 import { formatDate } from '@/utils/money'
 import { useDealsQuery, type DealListItem, type DealSortField, type DealSortOrder } from '@/composables/use-deals-api'
 import type { DealStatus } from '@/types'
+
+// The page header lives in the shell, above the tabs — so the count that
+// belongs in its subtitle has to travel up from whichever panel is showing.
+const emit = defineEmits<{ count: [number] }>()
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -62,6 +66,8 @@ const visibleDeals = computed<DealListItem[]>(() => {
   })
 })
 
+watch(visibleDeals, (d) => emit('count', d.length), { immediate: true })
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function openDeal(deal: DealListItem) {
   router.push(`/deals/${deal.id}`)
@@ -69,7 +75,7 @@ function openDeal(deal: DealListItem) {
 </script>
 
 <template>
-  <div class="deals-page">
+  <div class="deals-panel">
     <!-- ── Loading skeleton ─────────────────────────────────────────────── -->
     <template v-if="isLoading">
       <SkeletonTable :rows="8" :cols="6" :has-actions="true" :has-header="true" />
@@ -83,17 +89,6 @@ function openDeal(deal: DealListItem) {
     </div>
 
     <template v-else>
-      <!-- ── Header ────────────────────────────────────────────────────── -->
-      <div class="page-header">
-        <div>
-          <h1 class="page-title">{{ t('dealsPage.title') }}</h1>
-          <p class="page-sub">{{ t('dealsPage.subtitle', { count: visibleDeals.length }) }}</p>
-        </div>
-        <button v-if="auth.isAgent" class="btn-gradient" @click="router.push('/deals/create')">
-          <i class="pi pi-plus" /> {{ t('dashboard.newDeal') }}
-        </button>
-      </div>
-
       <!-- ── Filters ────────────────────────────────────────────────────── -->
       <div class="surface-card filters-bar">
         <span class="p-input-icon-left search-wrap">
@@ -177,30 +172,10 @@ function openDeal(deal: DealListItem) {
 </template>
 
 <style scoped>
-.deals-page {
+.deals-panel {
   display: flex;
   flex-direction: column;
-  gap: 1.4rem;
-}
-
-/* ── Page header ────────────────────────────────────────────────────────────*/
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
   gap: 1rem;
-}
-
-.page-title {
-  margin: 0 0 0.2rem;
-  font-size: 1.55rem;
-  font-weight: 800;
-}
-
-.page-sub {
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
 }
 
 /* ── Filters bar ────────────────────────────────────────────────────────────*/
@@ -368,13 +343,5 @@ function openDeal(deal: DealListItem) {
   margin: 0;
   font-weight: 600;
   color: var(--text-secondary);
-}
-
-/* ── Responsive ─────────────────────────────────────────────────────────────*/
-@media (max-width: 600px) {
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
 }
 </style>

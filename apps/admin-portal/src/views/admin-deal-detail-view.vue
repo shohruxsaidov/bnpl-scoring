@@ -78,12 +78,13 @@ function basketItemTotal(item: { price: string; quantity: number }): number {
 
 // ── Payment schedule ───────────────────────────────────────────────────────
 
-type RowStatus = 'paid' | 'pending' | 'overdue'
+type RowStatus = 'paid' | 'partial' | 'pending' | 'overdue'
 
 interface ScheduleEntry {
   index: number
   date: string
   amount: number
+  paidAmount: number
   status: RowStatus
 }
 
@@ -96,15 +97,18 @@ const schedule = computed((): ScheduleEntry[] => {
   if (d.schedule?.length) {
     return d.schedule.map((row) => {
       const due = new Date(row.dueDate)
+      const paidAmount = row.paidAmount ?? 0
       let status: RowStatus
       if (row.paid) {
         status = 'paid'
+      } else if (paidAmount > 0) {
+        status = 'partial'
       } else if (due < TODAY) {
         status = d.status === 'overdue' ? 'overdue' : 'paid'
       } else {
         status = 'pending'
       }
-      return { index: row.index, date: row.dueDate, amount: row.amount, status }
+      return { index: row.index, date: row.dueDate, amount: row.amount, paidAmount, status }
     })
   }
 
@@ -118,18 +122,19 @@ const schedule = computed((): ScheduleEntry[] => {
     if (d.status === 'closed') status = 'paid'
     else if (isPast) status = d.status === 'overdue' ? 'overdue' : 'paid'
     else status = 'pending'
+    const amount = i === d.termMonths - 1 ? d.totalPayable - monthly * (d.termMonths - 1) : monthly
     return {
       index: i + 1,
       date: payDate.toISOString(),
-      amount: i === d.termMonths - 1 ? d.totalPayable - monthly * (d.termMonths - 1) : monthly,
+      amount,
+      paidAmount: status === 'paid' ? amount : 0,
       status,
     }
   })
 })
 
-const paidTotal = computed(() =>
-  schedule.value.filter((r) => r.status === 'paid').reduce((s, r) => s + r.amount, 0),
-)
+// Counts partials too — a half-paid instalment still lowers the balance.
+const paidTotal = computed(() => schedule.value.reduce((s, r) => s + r.paidAmount, 0))
 const remainingBalance = computed(() => (deal.value ? deal.value.totalPayable - paidTotal.value : 0))
 
 // ── Status timeline ────────────────────────────────────────────────────────
@@ -758,6 +763,7 @@ function formatDateShort(iso: string): string {
         <h4 class="section-title" style="margin:0">{{ $t('dealDetail.paymentSchedule') }}</h4>
         <div class="grafik-legend">
           <span class="leg paid">{{ $t('dealDetail.legendPaid') }}</span>
+          <span class="leg partial">{{ $t('dealDetail.legendPartial') }}</span>
           <span class="leg overdue">{{ $t('dealDetail.legendOverdue') }}</span>
           <span class="leg pending">{{ $t('dealDetail.legendPending') }}</span>
         </div>
@@ -776,12 +782,19 @@ function formatDateShort(iso: string): string {
             <tr v-for="row in schedule" :key="row.index">
               <td class="font-mono muted">{{ row.index }}</td>
               <td class="font-mono">{{ formatDateShort(row.date) }}</td>
-              <td class="font-mono">{{ formatSomShort(row.amount) }} {{ $t('dealDetail.som') }}</td>
+              <td class="font-mono">
+                {{ formatSomShort(row.amount) }} {{ $t('dealDetail.som') }}
+                <div v-if="row.status === 'partial'" class="row-paid-hint">
+                  {{ $t('dealDetail.paidOf', { paid: formatSomShort(row.paidAmount) }) }}
+                </div>
+              </td>
               <td>
                 <span class="row-pill" :class="row.status">
                   {{
                     row.status === 'paid'
                       ? $t('dealDetail.pillPaid')
+                      : row.status === 'partial'
+                      ? $t('dealDetail.pillPartial')
                       : row.status === 'overdue'
                       ? $t('dealDetail.pillOverdue')
                       : $t('dealDetail.pillPending')
@@ -966,11 +979,14 @@ function formatDateShort(iso: string): string {
 .leg { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.78rem; font-weight: 600; }
 .leg::before { content: ''; width: 8px; height: 8px; border-radius: 2px; }
 .leg.paid::before { background: var(--success); }
+.leg.partial::before { background: var(--info, #38bdf8); }
 .leg.overdue::before { background: var(--danger); }
 .leg.pending::before { background: var(--warning); }
 .row-pill { display: inline-flex; padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
 .row-pill.paid { background: color-mix(in srgb, var(--success) 15%, transparent); color: var(--success); }
+.row-pill.partial { background: color-mix(in srgb, var(--info, #38bdf8) 15%, transparent); color: var(--info, #38bdf8); }
 .row-pill.overdue { background: var(--danger-bg); color: var(--danger); }
+.row-paid-hint { margin-top: 0.15rem; font-size: 0.72rem; color: var(--info, #38bdf8); }
 .row-pill.pending { background: var(--warning-bg); color: var(--warning); }
 .grafik-footer { display: flex; gap: 2.5rem; background: var(--bg-surface); }
 .gf-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.88rem; }

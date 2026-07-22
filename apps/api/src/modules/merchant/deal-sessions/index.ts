@@ -35,6 +35,7 @@ import {
 } from '../../deals/signing/service';
 import { issueSigningOtp, verifySigningOtp } from '../../deals/signing/otp';
 import { getActiveSession } from './queries/get-active-session/get-active-session.handler';
+import { listSessions } from './queries/list-sessions/list-sessions.handler';
 import {
   loadOwnedActiveSession,
   loadOwnedSession,
@@ -191,6 +192,37 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
     const session = await getActiveSession(Number(p.sub));
     return { session: session ? await toSessionDto(session) : null };
   });
+
+  /* ── GET / — the Wizard-run board ─────────────────────────────────────── */
+
+  // Role-scoped the same way as GET /merchant/deals: an admin sees the whole
+  // merchant, an agent only their own runs. Deliberately NOT behind
+  // create_deal — a merchant admin supervises runs without creating them.
+  const SESSION_STATUSES = [
+    'active',
+    'completed',
+    'rejected',
+    'abandoned',
+    'expired',
+  ] as const;
+
+  const ListSessionsQuery = Type.Object({
+    status: Type.Optional(Type.Union(SESSION_STATUSES.map((s) => Type.Literal(s)))),
+    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 500, default: 200 })),
+  });
+
+  fastify.get(
+    '/',
+    { schema: { tags: TAGS, querystring: ListSessionsQuery }, preHandler: app.verifyMerchantJwt },
+    async (request) => {
+      const p = payload(request);
+      const { status, limit } = request.query;
+      return listSessions(Number(p.merchantId), p.role === 'agent' ? Number(p.sub) : undefined, {
+        status,
+        limit: limit ?? 200,
+      });
+    },
+  );
 
   /* ── POST / — open a new Wizard run (auto-supersedes the old one) ──────── */
 

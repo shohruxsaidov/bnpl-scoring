@@ -18,6 +18,8 @@ export interface AdminDealScheduleRow {
   index: number
   dueDate: string
   amount: number
+  /** Cumulative amount paid against this instalment, in som. */
+  paidAmount: number
   paid: boolean
   paidAt: string | null
 }
