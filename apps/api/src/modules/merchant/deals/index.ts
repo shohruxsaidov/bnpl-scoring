@@ -1,4 +1,5 @@
 import { Type } from '@sinclair/typebox';
+import { StringEnum } from '@lib/typebox';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { createDealFromSession } from './commands/create-deal/create-deal.handler';
@@ -42,10 +43,8 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
   const IdParams = Type.Object({ id: Type.String() });
 
   const ListDealsQuery = Type.Object({
-    sortBy: Type.Optional(
-      Type.Union([Type.Literal('status'), Type.Literal('amount'), Type.Literal('createdAt')]),
-    ),
-    sortOrder: Type.Optional(Type.Union([Type.Literal('asc'), Type.Literal('desc')])),
+    sortBy: Type.Optional(StringEnum(['status', 'amount', 'createdAt'] as const)),
+    sortOrder: Type.Optional(StringEnum(['asc', 'desc'] as const)),
   });
 
   /* ── POST / — create deal ─────────────────────────────────────────────── */

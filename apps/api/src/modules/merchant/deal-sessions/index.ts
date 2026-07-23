@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Type } from '@sinclair/typebox';
+import { StringEnum } from '@lib/typebox';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { eq } from 'drizzle-orm';
@@ -207,7 +208,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
   ] as const;
 
   const ListSessionsQuery = Type.Object({
-    status: Type.Optional(Type.Union(SESSION_STATUSES.map((s) => Type.Literal(s)))),
+    status: Type.Optional(StringEnum(SESSION_STATUSES)),
     limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 500, default: 200 })),
   });
 

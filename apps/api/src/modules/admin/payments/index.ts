@@ -1,4 +1,5 @@
 import { Type } from '@sinclair/typebox';
+import { StringEnum } from '@lib/typebox';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { listPayments } from './queries/list-payments/list-payments.handler';
@@ -38,7 +39,7 @@ export default async function adminPaymentRoutes(app: FastifyInstance) {
   // Despite the path, this lists every money-in event — a Payme payment settles
   // the same instalments and belongs in the same register. `source` filters.
   const PaymentsQuery = Type.Object({
-    source: Type.Optional(Type.Union([Type.Literal('manual'), Type.Literal('payme')])),
+    source: Type.Optional(StringEnum(['manual', 'payme'] as const)),
   });
 
   fastify.get(

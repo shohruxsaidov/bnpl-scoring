@@ -1,4 +1,5 @@
 import { Type } from "@sinclair/typebox"
+import { StringEnum } from "@lib/typebox"
 import type { TypeBoxTypeProvider } from "@fastify/type-provider-typebox"
 import type { FastifyInstance } from "fastify"
 import {
@@ -41,7 +42,7 @@ export default async function adminPermissionsRoutes(app: FastifyInstance) {
   })
 
   const ListQuery = Type.Object({
-    platform: Type.Optional(Type.Union([Type.Literal("merchant"), Type.Literal("admin")])),
+    platform: Type.Optional(StringEnum(["merchant", "admin"] as const)),
   })
 
   fastify.get("/roles", { schema: { tags: TAGS, querystring: ListQuery }, preHandler }, async (request) => {
