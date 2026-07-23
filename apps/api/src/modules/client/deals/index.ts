@@ -22,7 +22,7 @@ const ERROR = { $ref: 'ErrorResponse#' };
 
 // The one visibility rule shared by list and detail. A deal outside this set —
 // or belonging to another user — is invisible through BOTH endpoints.
-const VISIBLE_STATUSES = ['active', 'overdue', 'closed'] as const;
+const VISIBLE_STATUSES = ['active', 'overdue', 'closed', 'declined'] as const;
 
 function formatDealNumber(n: number | null | undefined): string {
   return n != null ? String(n) : '—';
@@ -159,7 +159,8 @@ export default async function clientDealRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Get my deal',
-        description: "One of the authenticated client's own credits, with basket and payment schedule.",
+        description:
+          "One of the authenticated client's own credits, with basket and payment schedule.",
         security: SECURITY,
         params: IdParams,
         response: { 200: Type.Object({ deal: DealDetail }), 401: ERROR, 404: ERROR },
