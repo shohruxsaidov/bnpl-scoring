@@ -199,13 +199,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
   // Role-scoped the same way as GET /merchant/deals: an admin sees the whole
   // merchant, an agent only their own runs. Deliberately NOT behind
   // create_deal — a merchant admin supervises runs without creating them.
-  const SESSION_STATUSES = [
-    'active',
-    'completed',
-    'rejected',
-    'abandoned',
-    'expired',
-  ] as const;
+  const SESSION_STATUSES = ['active', 'completed', 'rejected', 'abandoned', 'expired'] as const;
 
   const ListSessionsQuery = Type.Object({
     status: Type.Optional(StringEnum(SESSION_STATUSES)),
@@ -219,7 +213,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       const p = payload(request);
       const { status, limit } = request.query;
       return listSessions(Number(p.merchantId), p.role === 'agent' ? Number(p.sub) : undefined, {
-        status,
+        status: status as string,
         limit: limit ?? 200,
       });
     },

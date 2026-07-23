@@ -46,7 +46,7 @@ export default async function adminPermissionsRoutes(app: FastifyInstance) {
   })
 
   fastify.get("/roles", { schema: { tags: TAGS, querystring: ListQuery }, preHandler }, async (request) => {
-    const rolesList = await listRoles(request.query.platform)
+    const rolesList = await listRoles(request.query.platform as any)
     return { roles: rolesList }
   })
 

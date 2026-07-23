@@ -79,7 +79,7 @@ export default async function clientDealRoutes(app: FastifyInstance) {
       const { status } = request.query;
 
       const statusFilter = status
-        ? eq(deals.status, status)
+        ? eq(deals.status, status as string)
         : inArray(deals.status, [...VISIBLE_STATUSES]);
 
       const rows = await db
