@@ -33,7 +33,14 @@ export default async function clientDealRoutes(app: FastifyInstance) {
   const TAGS = ['Client · Deals'];
   const guards = [app.verifyClientJwt];
 
-  const StatusEnum = Type.Union(VISIBLE_STATUSES.map((s) => Type.Literal(s)));
+  // A plain `enum` schema (not a Union of literals). TypeBox serializes a union
+  // of literals to `anyOf: [{const}, …]`, which Swagger UI's parameter dropdown
+  // can't render — it collapses to a single option. `enum` renders every value
+  // and validates identically. `Type.Unsafe` keeps the precise TS inference.
+  const StatusEnum = Type.Unsafe<(typeof VISIBLE_STATUSES)[number]>({
+    type: 'string',
+    enum: [...VISIBLE_STATUSES],
+  });
 
   const Progress = {
     paidAmount: Type.Number(),
