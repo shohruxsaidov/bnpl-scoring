@@ -182,9 +182,9 @@ function openDeal(deal: Deal) {
             </template>
           </Column>
 
-          <Column :header="$t('deals.amount')" field="amount" sortable style="width:160px">
+          <Column :header="$t('deals.amount')" field="totalPayable" sortable style="width:160px">
             <template #body="{ data }">
-              <MonoAmount :value="data.amount" size="sm" />
+              <MonoAmount :value="data.totalPayable" size="sm" />
             </template>
           </Column>
 

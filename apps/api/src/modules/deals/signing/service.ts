@@ -127,7 +127,7 @@ export async function sendSigningRequestPush(
       dealSessionId: ctx.session.id,
       merchantName: ctx.merchantName,
       // Whole som, grouped — this lands in a push body, not in a calculation.
-      totalPayable: Math.round(terms.totalPayable / 100).toLocaleString('ru-RU'),
+      totalPayable: Math.round(terms.totalPayable).toLocaleString('ru-RU'),
     },
     dedupeKey: `deal_signing:${ctx.session.id}:${request.sends}`,
   });
