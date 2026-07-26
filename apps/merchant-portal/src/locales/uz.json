@@ -500,6 +500,10 @@
         "phone": "Telefon"
       }
     },
+    "phone": "Telefon",
+    "passport": "Pasport",
+    "birthDate": "Tug'ilgan sana",
+    "address": "Manzil",
     "reuseLimitTitle": "Mijozda amaldagi limit mavjud",
     "reuseLimitExpiry": "{date} gacha amal qiladi",
     "reuseLimitCurrency": "so'm",

@@ -603,13 +603,37 @@ const clientFullName = computed(() =>
          returning client from one just verified through MyID. -->
     <template v-if="phase === 'found' || phase === 'myid_done' || phase === 'katm'">
       <div class="client-banner">
-        <i class="pi pi-user" />
-        <span>
-          <strong>{{ clientFullName }}</strong>
-          <span class="font-mono ml-1 text-secondary">{{ confirmedClient!.pinfl }}</span>
-        </span>
-        <span v-if="isNewClient" class="tag tag-accent tag-sm">{{ $t('stepClient.newMyidVerified') }}</span>
-        <span v-else class="tag tag-success tag-sm">{{ $t('stepClient.existingClient') }}</span>
+        <div class="client-banner-head">
+          <i class="pi pi-user" />
+          <span>
+            <strong>{{ clientFullName }}</strong>
+            <span class="font-mono ml-1 text-secondary">{{ confirmedClient!.pinfl }}</span>
+          </span>
+          <span v-if="isNewClient" class="tag tag-accent tag-sm">{{ $t('stepClient.newMyidVerified') }}</span>
+          <span v-else class="tag tag-success tag-sm">{{ $t('stepClient.existingClient') }}</span>
+        </div>
+
+        <!-- Identity detail the agent checks against the physical document -->
+        <div class="client-details">
+          <div class="cd-field">
+            <span class="cd-label">{{ $t('stepClient.phone') }}</span>
+            <span class="cd-value font-mono">{{ confirmedClient!.phone }}</span>
+          </div>
+          <div class="cd-field">
+            <span class="cd-label">{{ $t('stepClient.passport') }}</span>
+            <span class="cd-value font-mono">
+              {{ confirmedClient!.passportSeries }}{{ confirmedClient!.passportNumber }}
+            </span>
+          </div>
+          <div class="cd-field">
+            <span class="cd-label">{{ $t('stepClient.birthDate') }}</span>
+            <span class="cd-value">{{ confirmedClient!.birthDate }}</span>
+          </div>
+          <div v-if="confirmedClient!.address" class="cd-field cd-field--full">
+            <span class="cd-label">{{ $t('stepClient.address') }}</span>
+            <span class="cd-value">{{ confirmedClient!.address }}</span>
+          </div>
+        </div>
       </div>
 
       <!-- Reuse path — the client already carries a valid limit, so scoring will
@@ -1127,22 +1151,60 @@ const clientFullName = computed(() =>
   margin-bottom: 0.8rem;
 }
 
-/* ── Client banner (katm phase) ── */
+/* ── Client banner (found / myid_done / katm) ── */
 .client-banner {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
   margin: 1.8rem 0 1.2rem;
   background: var(--bg-surface);
   padding: 0.9rem 1.2rem;
   border-radius: 12px;
   font-size: 0.9rem;
+}
+
+.client-banner-head {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
   flex-wrap: wrap;
 }
 
 .client-banner i {
   color: var(--accent-1);
   font-size: 1.1rem;
+}
+
+.client-details {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.8rem 1.4rem;
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.cd-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.cd-field--full {
+  grid-column: 1 / -1;
+}
+
+.cd-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cd-value {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
 }
 
 .text-secondary {
@@ -1419,6 +1481,10 @@ const clientFullName = computed(() =>
 }
 
 @media (max-width: 600px) {
+  .client-details {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .search-row {
     flex-direction: column;
   }

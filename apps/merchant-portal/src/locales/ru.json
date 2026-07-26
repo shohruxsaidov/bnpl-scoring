@@ -500,6 +500,10 @@
         "phone": "Телефон"
       }
     },
+    "phone": "Телефон",
+    "passport": "Паспорт",
+    "birthDate": "Дата рождения",
+    "address": "Адрес",
     "reuseLimitTitle": "Клиент уже имеет действующий лимит",
     "reuseLimitExpiry": "Действует до {date}",
     "reuseLimitCurrency": "сум",
