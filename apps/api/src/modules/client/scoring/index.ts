@@ -94,14 +94,15 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
       // that deal closes, so it must not cost them a scoring row or a cooldown.
       // The active_deal pipeline stage is the authority (and catches the merchant
       // path); this is just the cheap early exit, as data_missing is below.
-      if (await loadBlockingDeal(userId)) {
-        return {
-          status: 'rejected' as const,
-          reasonCode: 'active_deal_exists',
-          reasonCategory: reasonCategory('active_deal_exists'),
-          reasonMessage: reasonMessage(lang, 'active_deal_exists'),
-        };
-      }
+      // TODO need ot uncommit before production
+      // if (await loadBlockingDeal(userId)) {
+      //   return {
+      //     status: 'rejected' as const,
+      //     reasonCode: 'active_deal_exists',
+      //     reasonCategory: reasonCategory('active_deal_exists'),
+      //     reasonMessage: reasonMessage(lang, 'active_deal_exists'),
+      //   };
+      // }
 
       // Reuse a still-valid limit — no fresh bureau charge within the TTL.
       const [limit] = await db
