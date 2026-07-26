@@ -70,7 +70,7 @@ function pushRoute(type: NotificationType, data: Record<string, unknown>): Recor
   if (type !== 'deal_signing_request') return {};
   const sessionId = data['dealSessionId'];
   return {
-    action_type: 'deal_signing',
+    action_type: 'deal_signing_request',
     ...(typeof sessionId === 'string' ? { dealSessionId: sessionId } : {}),
   };
 }
