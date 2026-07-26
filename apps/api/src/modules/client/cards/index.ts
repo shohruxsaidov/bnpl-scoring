@@ -8,6 +8,7 @@ import { addCard } from '../../integrations/plumgate/commands/add-card/add-card.
 import { confirmCard } from '../../integrations/plumgate/commands/confirm-card/confirm-card.handler';
 import { deleteCard } from '../../integrations/plumgate/commands/delete-card/delete-card.handler';
 import { finalizeClientScoringIfReady } from '../scoring/finalize';
+import { recordAction, vendorReasonCode } from '../actions/service';
 import {
   listCards,
   PlumCard,
@@ -167,7 +168,19 @@ export default async function clientCardsRoutes(app: FastifyInstance) {
       const userId = Number(request.user.sub);
       const { sessionId, otp } = request.body;
 
-      const card = await confirmCard({ sessionId, otp });
+      let card;
+      try {
+        card = await confirmCard({ sessionId, otp });
+      } catch (err) {
+        await recordAction({
+          userId,
+          action: 'card_add',
+          status: 'failed',
+          reasonCode: vendorReasonCode(err, 'card_confirm_failed'),
+          actorType: 'client',
+        });
+        throw err;
+      }
 
       // Re-adding the same card is idempotent (unique on user_id + plum_id).
       await db
@@ -189,6 +202,17 @@ export default async function clientCardsRoutes(app: FastifyInstance) {
         .where(and(eq(userCards.userId, userId), eq(userCards.plumId, card.id)))
         .limit(1);
       if (!row) return reply.code(500).sendError('card_persist_failed');
+
+      // Keyed on the card row, so a re-add of a card the client already holds
+      // (the insert above is a no-op conflict) does not write a second row.
+      await recordAction({
+        userId,
+        action: 'card_add',
+        status: 'success',
+        actorType: 'client',
+        userCardId: row.id,
+        dedupeKey: `card_add:${row.id}`,
+      });
 
       return { card: toCardDto(row) };
     },
@@ -225,6 +249,17 @@ export default async function clientCardsRoutes(app: FastifyInstance) {
       // failure throws and the local row is kept, so the two stay in sync.
       await deleteCard({ id: row.plumId });
       await db.delete(userCards).where(eq(userCards.id, row.id));
+
+      // userCardId is intentionally left null: the row it would point at was
+      // just deleted, and the FK is ON DELETE SET NULL anyway. The masked PAN
+      // is not copied here — this table records that an action happened, not
+      // the card details, and «кто удалил мою карту?» is answered by actorType.
+      await recordAction({
+        userId,
+        action: 'card_delete',
+        status: 'success',
+        actorType: 'client',
+      });
 
       return { ok: true };
     },

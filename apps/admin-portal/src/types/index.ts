@@ -96,6 +96,36 @@ export interface ClientScoringEntry {
   score: number
   limit: number
   scoredAt: string
+  /** Set when the run was knocked out; translated via `scorings.rejectReason.*`. */
+  rejectReasonCode: string | null
+}
+
+export type ClientActionType =
+  | 'registration'
+  | 'card_add'
+  | 'card_delete'
+  | 'scoring'
+  | 'deal_sign_myid'
+  | 'deal_sign_otp'
+  | 'deal_sign_reject'
+
+export interface ClientActionRow {
+  id: number
+  action: ClientActionType
+  status: 'success' | 'failed'
+  /** Why a failure failed. Vendor codes arrive untranslated and render raw. */
+  reasonCode: string | null
+  actorType: 'client' | 'agent' | 'system'
+  /** Merchant employee's name when an agent acted for the client; else null. */
+  actorName: string | null
+  merchantName: string | null
+  /** Signing only: which surface the client proved themselves on. */
+  channel: 'counter' | 'remote' | null
+  dealId: string | null
+  scoringId: number | null
+  occurredAt: string
+  /** Reconstructed by the backfill script rather than observed — actor is inferred. */
+  backfilled: boolean
 }
 
 export interface ClientPaymentRow {

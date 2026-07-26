@@ -1,4 +1,15 @@
-import { integer, numeric, pgTable, serial, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import {
+  date,
+  integer,
+  numeric,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+} from 'drizzle-orm/pg-core';
 import { deals } from './deals';
 import { adminUsers } from './admin-users';
 
@@ -13,6 +24,12 @@ import { adminUsers } from './admin-users';
 //   'manual' — a Platform Admin recorded it by hand (adminUserId set)
 //   'payme'  — a client paid through Payme; booked by PerformTransaction, so
 //              adminUserId is null and no human is accountable for the row.
+//
+// `paymentDate` is the VALUE date — the day the money actually moved, which for
+// a manual row is whatever the operator read off the MIB statement, not when
+// they typed it in. `createdAt` remains the booking instant, so the two diverge
+// exactly when a human backdated and that gap is the audit signal. Machine rails
+// book synchronously, so their two dates always agree.
 //
 // `paymentType` stays the human sub-kind of a manual payment
 // ('replenishment' | 'writing_off' — both are money-in labels, they only say
@@ -31,6 +48,14 @@ export const dealPayments = pgTable('deal_payments', {
   adminUserId: integer('admin_user_id').references(() => adminUsers.id),
   /** Payment amount, in som. */
   amount: numeric('amount', { precision: 15, scale: 2, mode: 'number' }).notNull(),
+  /**
+   * Value date, `YYYY-MM-DD`. A plain date, not a timestamp: an operator copying
+   * a bank statement knows the day and nothing finer, and this stays the same
+   * type as deal_payment_schedules.dueDate so "paid on time?" needs no timezone
+   * reasoning. The DB default only covers the migration of pre-existing rows —
+   * applyPayment always sends a value.
+   */
+  paymentDate: date('payment_date').notNull().default(sql`CURRENT_DATE`),
   source: varchar('source', { length: 20 })
     .$type<DealPaymentSource>()
     .notNull()

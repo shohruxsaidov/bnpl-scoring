@@ -8,6 +8,7 @@ import { addCard } from '../../integrations/plumgate/commands/add-card/add-card.
 import { confirmCard } from '../../integrations/plumgate/commands/confirm-card/confirm-card.handler';
 import { deleteCard } from '../../integrations/plumgate/commands/delete-card/delete-card.handler';
 import { finalizeClientScoringIfReady } from '../scoring/finalize';
+import { recordAction, vendorReasonCode } from '../actions/service';
 import { listCards } from '../../integrations/plumgate/queries/list-cards/list-cards.handler';
 
 // Client (mobile) card management. user_cards is the local source of truth for the
@@ -160,7 +161,19 @@ export default async function clientScoringCardsRoutes(app: FastifyInstance) {
       const userId = Number(request.user.sub);
       const { sessionId, otp } = request.body;
 
-      const card = await confirmCard({ sessionId, otp: otp.toLowerCase() });
+      let card;
+      try {
+        card = await confirmCard({ sessionId, otp: otp.toLowerCase() });
+      } catch (err) {
+        await recordAction({
+          userId,
+          action: 'card_add',
+          status: 'failed',
+          reasonCode: vendorReasonCode(err, 'card_confirm_failed'),
+          actorType: 'client',
+        });
+        throw err;
+      }
 
       // Re-adding the same card is idempotent (unique on user_id + plum_id).
       // Both Plumgate ids are stored: plumId (the attachment) is what deleteUserCard
@@ -184,6 +197,17 @@ export default async function clientScoringCardsRoutes(app: FastifyInstance) {
         .where(and(eq(userCards.userId, userId), eq(userCards.plumId, card.id)))
         .limit(1);
       if (!row) return reply.code(500).sendError('card_persist_failed');
+
+      // Same dedupe key as the standalone card route on purpose: a client who
+      // adds the same card here and there has added one card, not two.
+      await recordAction({
+        userId,
+        action: 'card_add',
+        status: 'success',
+        actorType: 'client',
+        userCardId: row.id,
+        dedupeKey: `card_add:${row.id}`,
+      });
 
       return { card: toCardDto(row) };
     },
@@ -220,6 +244,13 @@ export default async function clientScoringCardsRoutes(app: FastifyInstance) {
       // failure throws and the local row is kept, so the two stay in sync.
       await deleteCard({ id: row.plumId });
       await db.delete(userCards).where(eq(userCards.id, row.id));
+
+      await recordAction({
+        userId,
+        action: 'card_delete',
+        status: 'success',
+        actorType: 'client',
+      });
 
       return { ok: true };
     },

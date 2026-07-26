@@ -77,6 +77,9 @@ export default async function adminPaymentRoutes(app: FastifyInstance) {
     dealId: Type.String({ format: 'uuid' }),
     amount: Type.Integer({ minimum: 1 }),
     paymentType: Type.Union([Type.Literal('replenishment'), Type.Literal('writing_off')]),
+    // Shape only. The real bounds — not future, not before the deal existed —
+    // depend on the deal row, so the handler enforces them.
+    paymentDate: Type.String({ format: 'date' }),
     note: Type.Optional(Type.String()),
   });
 
@@ -86,8 +89,8 @@ export default async function adminPaymentRoutes(app: FastifyInstance) {
       const payment = await createManualPayment({ ...request.body, adminUserId });
       return reply.status(201).send({ payment });
     } catch (err: any) {
-      if (err.code === 'OVERPAYMENT') {
-        return reply.status(400).send({ code: 'OVERPAYMENT', message: err.message });
+      if (err.code === 'OVERPAYMENT' || err.code === 'INVALID_PAYMENT_DATE') {
+        return reply.status(400).send({ code: err.code, message: err.message });
       }
       throw err;
     }

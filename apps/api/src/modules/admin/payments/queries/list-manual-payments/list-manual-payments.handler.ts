@@ -17,6 +17,8 @@ export interface ManualPayment {
   source: DealPaymentSource
   paymentType: string
   note: string | null
+  /** Value date, `YYYY-MM-DD` — when the money moved. Differs from createdAt only if backdated. */
+  paymentDate: string
   createdAt: string
   adminName: string | null
 }
@@ -31,6 +33,7 @@ export async function listManualPayments(source?: DealPaymentSource): Promise<Ma
       source: dealPayments.source,
       paymentType: dealPayments.paymentType,
       note: dealPayments.note,
+      paymentDate: dealPayments.paymentDate,
       createdAt: dealPayments.createdAt,
       firstName: users.firstName,
       lastName: users.lastName,
@@ -42,7 +45,10 @@ export async function listManualPayments(source?: DealPaymentSource): Promise<Ma
     .innerJoin(users, eq(users.id, deals.userId))
     .leftJoin(adminUsers, eq(dealPayments.adminUserId, adminUsers.id))
     .where(source ? eq(dealPayments.source, source) : undefined)
-    .orderBy(desc(dealPayments.createdAt))
+    // Value date first — collections staff reconcile against statements, so the day
+    // the money moved is the axis they read. id breaks ties: a bare date sorts
+    // unstably for same-day rows, which shuffles the list between reads.
+    .orderBy(desc(dealPayments.paymentDate), desc(dealPayments.id))
 
   return rows.map((r) => ({
     id: r.id.toString(),
@@ -54,6 +60,7 @@ export async function listManualPayments(source?: DealPaymentSource): Promise<Ma
     source: r.source,
     paymentType: r.paymentType,
     note: r.note,
+    paymentDate: r.paymentDate,
     createdAt: r.createdAt.toISOString(),
     adminName: r.adminName ?? null,
   }))

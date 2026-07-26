@@ -5,10 +5,14 @@ import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
 import { usePaymentsStore, type Payment } from '@/stores/payments'
-import { useManualPaymentsStore, type DealSearchResult } from '@/stores/manual-payments'
+import {
+  useManualPaymentsStore,
+  type DealSearchResult,
+  type ManualPayment,
+} from '@/stores/manual-payments'
 import { useMerchantsStore } from '@/stores/merchants'
 import MonoAmount from '@/components/mono-amount.vue'
-import { formatDate } from '@/utils/money'
+import { formatDate, formatIsoDate } from '@/utils/money'
 
 const store = usePaymentsStore()
 const manualStore = useManualPaymentsStore()
@@ -105,7 +109,12 @@ const dealResults = ref<DealSearchResult[]>([])
 const selectedDeal = ref<DealSearchResult | null>(null)
 const showDealDropdown = ref(false)
 
-const form = ref({ amount: '', paymentType: 'replenishment', note: '' })
+/** Today as `YYYY-MM-DD`, matching how the server bounds the value date. */
+function todayIsoDate(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+const form = ref({ amount: '', paymentType: 'replenishment', paymentDate: todayIsoDate(), note: '' })
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -116,7 +125,14 @@ function openDialog() {
   dealResults.value = []
   selectedDeal.value = null
   showDealDropdown.value = false
-  form.value = { amount: '', paymentType: 'replenishment', note: '' }
+  form.value = {
+    amount: '',
+    paymentType: 'replenishment',
+    // Defaults to today on the assumption that most payments are booked the day
+    // they arrive; an operator entering last week's statement edits it.
+    paymentDate: todayIsoDate(),
+    note: '',
+  }
 }
 
 function closeDialog() {
@@ -153,11 +169,26 @@ const paymentTypeOptions = [
   { label: t('payments.typeWritingOff'), value: 'writing_off' },
 ]
 
+// The value date window: never in the future, never before the deal existed. The
+// server enforces both — these only keep the picker from offering invalid days.
+const paymentDateMax = computed(() => todayIsoDate())
+const paymentDateMin = computed(() => selectedDeal.value?.openedOn ?? '')
+
+// Picking a deal can invalidate a date already chosen — an older deal widens the
+// window, a newer one narrows it past what is in the field.
+watch(selectedDeal, (deal) => {
+  if (!deal) return
+  if (form.value.paymentDate < deal.openedOn) form.value.paymentDate = deal.openedOn
+})
+
 const formValid = computed(
   () =>
     selectedDeal.value !== null &&
     Number(form.value.amount) > 0 &&
-    form.value.paymentType !== '',
+    form.value.paymentType !== '' &&
+    form.value.paymentDate !== '' &&
+    form.value.paymentDate <= paymentDateMax.value &&
+    form.value.paymentDate >= paymentDateMin.value,
 )
 
 async function submit() {
@@ -169,12 +200,15 @@ async function submit() {
       dealId: selectedDeal.value.id,
       amount: Math.round(Number(form.value.amount)),
       paymentType: form.value.paymentType,
+      paymentDate: form.value.paymentDate,
       note: form.value.note || undefined,
     })
     closeDialog()
   } catch (err: any) {
     if (err?.message === 'OVERPAYMENT') {
       saveError.value = t('payments.errorOverpayment')
+    } else if (err?.message === 'INVALID_PAYMENT_DATE') {
+      saveError.value = t('payments.errorPaymentDate')
     } else {
       saveError.value = t('common.error')
     }
@@ -190,6 +224,15 @@ const TYPE_LABEL = computed<Record<string, string>>(() => ({
   mib: 'МИБ',
   transfer: 'Перевод',
 }))
+
+/**
+ * True when the money moved on a different day than the row was booked. Compares
+ * against createdAt's UTC date part, which is the same basis the server used to
+ * decide the value date was in the past.
+ */
+function isBackdated(p: ManualPayment): boolean {
+  return p.paymentDate !== p.createdAt.slice(0, 10)
+}
 
 function hideDealDropdown() {
   setTimeout(() => { showDealDropdown.value = false }, 150)
@@ -437,9 +480,17 @@ function hideDealDropdown() {
                 <span class="muted" style="font-size:.82rem">{{ data.note ?? '—' }}</span>
               </template>
             </Column>
-            <Column :header="$t('payments.colDate')" field="createdAt" sortable style="width:120px">
+            <!-- Value date, with the booking date surfaced only when they disagree:
+                 for most rows the two match, so showing both always would bury the
+                 backdated ones an operator actually needs to notice. -->
+            <Column :header="$t('payments.colDate')" field="paymentDate" sortable style="width:150px">
               <template #body="{ data }">
-                <span class="font-mono muted">{{ formatDate(data.createdAt) }}</span>
+                <div class="date-cell">
+                  <span class="font-mono">{{ formatIsoDate(data.paymentDate) }}</span>
+                  <span v-if="isBackdated(data)" class="font-mono booked-at">
+                    {{ $t('payments.bookedAt', { date: formatDate(data.createdAt) }) }}
+                  </span>
+                </div>
               </template>
             </Column>
           </DataTable>
@@ -516,6 +567,19 @@ function hideDealDropdown() {
                 />
                 <span class="amount-suffix">so'm</span>
               </div>
+            </div>
+
+            <!-- Value date -->
+            <div class="field">
+              <label class="field-label">{{ $t('payments.paymentDateLabel') }}</label>
+              <input
+                v-model="form.paymentDate"
+                type="date"
+                class="date-input date-input-block"
+                :min="paymentDateMin || undefined"
+                :max="paymentDateMax"
+              />
+              <p class="field-hint">{{ $t('payments.paymentDateHint') }}</p>
             </div>
 
             <!-- Payment type -->
@@ -626,6 +690,8 @@ function hideDealDropdown() {
   width: 138px;
 }
 .date-input:focus { border-color: var(--accent-2); }
+/* The 138px above is sized for the inline filter row; a dialog field fills it. */
+.date-input-block { width: 100%; }
 .date-sep { font-size: 0.88rem; color: var(--text-secondary); }
 
 /* Tables */
@@ -665,6 +731,8 @@ function hideDealDropdown() {
   border: 1px solid color-mix(in srgb, currentColor 28%, transparent);
 }
 
+.date-cell { display: flex; flex-direction: column; gap: 0.15rem; }
+.booked-at { font-size: 0.7rem; color: var(--text-secondary); }
 .partial-amount { display: flex; align-items: baseline; gap: 0.3rem; }
 .partial-of { font-size: 0.72rem; color: var(--text-secondary); }
 .provider-list { display: flex; flex-wrap: wrap; gap: 0.3rem; }

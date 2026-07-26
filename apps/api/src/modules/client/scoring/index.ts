@@ -225,7 +225,11 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
         case 'failed':
           // Codeless operational failure — keep the internal `reason` string and
           // give the client the generic message rather than a raw reasonCode.
-          return { status: 'rejected' as const, reason: outcome.reason, reasonMessage: reasonMessage(lang) };
+          return {
+            status: 'rejected' as const,
+            reason: outcome.reason,
+            reasonMessage: reasonMessage(lang),
+          };
         case 'scored':
           return { status: 'scored' as const, creditLimit: outcome.creditLimit };
         case 'error':
@@ -289,7 +293,7 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
         };
       }
 
-      const status = !scoring
+      let status = !scoring
         ? ('none' as const)
         : scoring.status === 'in_progress'
           ? ('pending' as const)
@@ -301,8 +305,10 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
                 ? ('rejected' as const)
                 : ('error' as const);
 
-      const reasonCode =
-        scoring?.status === 'rejected' ? (scoring.rejectReasonCode ?? null) : null;
+      const reasonCode = scoring?.status === 'rejected' ? (scoring.rejectReasonCode ?? null) : null;
+      if (status === 'scored' && !limit.creditLimit) {
+        status = 'none';
+      }
 
       return {
         status,

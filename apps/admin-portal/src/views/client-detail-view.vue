@@ -12,7 +12,7 @@ import { useAuthStore } from '@/stores/auth'
 import MonoAmount from '@/components/mono-amount.vue'
 import StatusBadge from '@/components/status-badge.vue'
 import { formatDate, formatDateTime } from '@/utils/money'
-import type { ClientNotificationRow } from '@/types'
+import type { ClientActionRow, ClientNotificationRow } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -23,7 +23,10 @@ const auth = useAuthStore()
 
 const clientId = route.params.id as string
 
-const tabs = ['Overview', 'Deals', 'Scoring', 'Payments', 'Notifications'] as const
+// Actions goes LAST: the order tracks business importance (Deals is the money),
+// and this is support tooling you go looking for deliberately. Appending also
+// leaves every existing tab where an admin's muscle memory expects it.
+const tabs = ['Overview', 'Deals', 'Scoring', 'Payments', 'Notifications', 'Actions'] as const
 type Tab = (typeof tabs)[number]
 
 const activeTab = ref<Tab>('Overview')
@@ -34,6 +37,7 @@ const TAB_LABEL_KEYS: Record<Tab, string> = {
   Scoring: 'clientDetail.tabScoring',
   Payments: 'clientDetail.tabPayments',
   Notifications: 'clientDetail.tabNotifications',
+  Actions: 'clientDetail.tabActions',
 }
 
 function tabLabel(tab: Tab): string {
@@ -47,7 +51,57 @@ watch(activeTab, (tab) => {
   else if (tab === 'Scoring') store.fetchDetailScoring(clientId)
   else if (tab === 'Payments') store.fetchDetailPayments(clientId)
   else if (tab === 'Notifications') store.fetchDetailNotifications(clientId)
+  else if (tab === 'Actions') store.fetchDetailActions(clientId)
 })
+
+// ── Actions tab ─────────────────────────────────────────────────────────────
+
+function actionLabel(action: string): string {
+  return t(`clientDetail.action_${action}`, action)
+}
+
+function actorLabel(row: ClientActionRow): string {
+  // An agent's name is the answer to «кто добавил эту карту?», so show it when
+  // we have it and fall back to the bare role when we don't (backfilled rows).
+  const role = t(`clientDetail.actor_${row.actorType}`, row.actorType)
+  if (row.actorType === 'agent' && row.actorName) return `${row.actorName} · ${role}`
+  return role
+}
+
+function sourceText(row: ClientActionRow): string {
+  const parts: string[] = []
+  if (row.channel) parts.push(t(`clientDetail.actionChannel_${row.channel}`, row.channel))
+  if (row.merchantName) parts.push(row.merchantName)
+  return parts.join(' · ')
+}
+
+/**
+ * Reject codes come from three vocabularies: the scoring pipeline's (already
+ * translated under `scorings.rejectReason`), a couple of our own, and raw vendor
+ * codes from Plumgate/MyID that nobody has translated. An untranslated code is
+ * rendered VERBATIM on purpose — `plumgate_400` still tells support which vendor
+ * refused, where a blank cell or «Неизвестно» would throw away the only thing
+ * the row knew.
+ */
+function reasonLabel(code: string | null): string {
+  if (!code) return '—'
+  const own = t(`clientDetail.reason_${code}`, '')
+  if (own) return own
+  return t(`scorings.rejectReason.${code}`, code)
+}
+
+/** Where a row can be opened in full. Signing rows only become clickable once
+ *  the run produced a Deal — deal sessions have no admin page. */
+function actionTarget(row: ClientActionRow) {
+  if (row.dealId) return { name: 'deal-detail', params: { id: row.dealId } }
+  if (row.scoringId) return { name: 'scoring-detail', params: { id: String(row.scoringId) } }
+  return null
+}
+
+function openAction(row: ClientActionRow) {
+  const target = actionTarget(row)
+  if (target) router.push(target)
+}
 
 // ── Send push ───────────────────────────────────────────────────────────────
 const TITLE_MAX = 120
@@ -438,7 +492,7 @@ function paymentStatusBg(status: string): string {
     </section>
 
     <!-- Notifications tab -->
-    <section v-else class="tab-body">
+    <section v-else-if="activeTab === 'Notifications'" class="tab-body">
       <div class="surface-card table-wrap">
         <DataTable
           :value="store.detailNotifications"
@@ -474,6 +528,69 @@ function paymentStatusBg(status: string): string {
               >
                 {{ data.readAt ? $t('clientDetail.notifRead') : $t('clientDetail.notifUnread') }}
               </span>
+            </template>
+          </Column>
+        </DataTable>
+      </div>
+    </section>
+
+    <!-- Actions tab -->
+    <section v-else class="tab-body">
+      <div class="surface-card table-wrap">
+        <DataTable
+          :value="store.detailActions"
+          data-key="id"
+          size="small"
+          class="clickable-rows"
+          :empty-message="$t('clientDetail.noActions')"
+          @row-click="(e: any) => openAction(e.data)"
+        >
+          <Column :header="$t('clientDetail.actionDate')">
+            <template #body="{ data }">
+              <span class="font-mono muted">{{ formatDateTime(data.occurredAt) }}</span>
+            </template>
+          </Column>
+          <Column :header="$t('clientDetail.actionName')">
+            <template #body="{ data }">
+              <span class="t-name-sm">{{ actionLabel(data.action) }}</span>
+              <!-- Reconstructed rows carry an inferred actor, so say so rather
+                   than let the Кто column read as something we observed. -->
+              <span
+                v-if="data.backfilled"
+                class="muted notif-body"
+                :title="$t('clientDetail.actionBackfilled')"
+              >
+                {{ $t('clientDetail.actionBackfilled') }}
+              </span>
+            </template>
+          </Column>
+          <Column :header="$t('clientDetail.actionStatus')">
+            <template #body="{ data }">
+              <span
+                class="status-chip"
+                :style="{
+                  color: data.status === 'success' ? 'var(--success)' : 'var(--danger)',
+                  background: data.status === 'success' ? 'var(--success-bg)' : 'var(--danger-bg)',
+                }"
+              >
+                {{ $t(`clientDetail.actionStatus_${data.status}`) }}
+              </span>
+            </template>
+          </Column>
+          <Column :header="$t('clientDetail.actionActor')">
+            <template #body="{ data }">
+              <span>{{ actorLabel(data) }}</span>
+            </template>
+          </Column>
+          <Column :header="$t('clientDetail.actionSource')">
+            <template #body="{ data }">
+              <span v-if="sourceText(data)" class="muted">{{ sourceText(data) }}</span>
+              <span v-else class="muted">—</span>
+            </template>
+          </Column>
+          <Column :header="$t('clientDetail.actionReason')">
+            <template #body="{ data }">
+              <span class="muted">{{ reasonLabel(data.reasonCode) }}</span>
             </template>
           </Column>
         </DataTable>

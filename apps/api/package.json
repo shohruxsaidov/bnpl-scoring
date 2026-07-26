@@ -17,7 +17,8 @@
     "seed:scoring-model": "tsx src/scripts/seed-scoring-model.ts",
     "seed:users": "tsx src/scripts/seed-users.ts",
     "seed:payme-fixtures": "tsx src/scripts/seed-payme-fixtures.ts",
-    "backfill:scoring-models": "tsx src/scripts/backfill-scoring-models.ts"
+    "backfill:scoring-models": "tsx src/scripts/backfill-scoring-models.ts",
+    "backfill:client-actions": "tsx src/scripts/backfill-client-actions.ts"
   },
   "dependencies": {
     "@bull-board/api": "8.0.1",

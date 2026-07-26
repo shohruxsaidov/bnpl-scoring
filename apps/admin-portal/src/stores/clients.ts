@@ -10,6 +10,7 @@ import type {
   ClientScoringEntry,
   ClientPaymentRow,
   ClientNotificationRow,
+  ClientActionRow,
   SendPushInput,
 } from '@/types'
 
@@ -23,6 +24,7 @@ export const useClientsStore = defineStore('clients', () => {
   const detailScoring = ref<ClientScoringEntry[]>([])
   const detailPayments = ref<ClientPaymentRow[]>([])
   const detailNotifications = ref<ClientNotificationRow[]>([])
+  const detailActions = ref<ClientActionRow[]>([])
 
   const detailLoading = ref(false)
 
@@ -30,6 +32,7 @@ export const useClientsStore = defineStore('clients', () => {
   const scoringLoaded = ref(false)
   const paymentsLoaded = ref(false)
   const notificationsLoaded = ref(false)
+  const actionsLoaded = ref(false)
 
   const hasDetail = computed(() => detail.value !== null)
 
@@ -54,11 +57,13 @@ export const useClientsStore = defineStore('clients', () => {
     detailScoring.value = []
     detailPayments.value = []
     detailNotifications.value = []
+    detailActions.value = []
 
     dealsLoaded.value = false
     scoringLoaded.value = false
     paymentsLoaded.value = false
     notificationsLoaded.value = false
+    actionsLoaded.value = false
 
     detailLoading.value = true
 
@@ -113,6 +118,17 @@ export const useClientsStore = defineStore('clients', () => {
     notificationsLoaded.value = true
   }
 
+  async function fetchDetailActions(id: string): Promise<void> {
+    if (actionsLoaded.value) return
+
+    const body = await api<{ actions: ClientActionRow[] }>(
+      `/admin/clients/${id}/actions`,
+    )
+
+    detailActions.value = body.actions
+    actionsLoaded.value = true
+  }
+
   /**
    * Send a hand-written push to this client. The backend rejects up front when
    * push is unconfigured (503 push_disabled) or the client has no device holding
@@ -141,6 +157,7 @@ export const useClientsStore = defineStore('clients', () => {
     detailScoring,
     detailPayments,
     detailNotifications,
+    detailActions,
 
     detailLoading,
 
@@ -148,6 +165,7 @@ export const useClientsStore = defineStore('clients', () => {
     scoringLoaded,
     paymentsLoaded,
     notificationsLoaded,
+    actionsLoaded,
 
     hasDetail,
 
@@ -157,6 +175,7 @@ export const useClientsStore = defineStore('clients', () => {
     fetchDetailScoring,
     fetchDetailPayments,
     fetchDetailNotifications,
+    fetchDetailActions,
     sendPush,
   }
 })

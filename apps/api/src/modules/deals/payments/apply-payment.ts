@@ -49,8 +49,20 @@ export interface ApplyPaymentInput {
   /** The admin who recorded it. Null for machine-booked payments. */
   adminUserId?: number | null;
   note?: string | null;
+  /**
+   * Value date (`YYYY-MM-DD`) — the day the money actually moved. Omit and it
+   * defaults to today, which is correct for any rail that books synchronously;
+   * only a human recording a payment they learned about late passes a past date.
+   * This, not the wall clock, is what stamps `paidAt` on settled instalments.
+   */
+  paymentDate?: string;
   /** Tag appended to deal_payment_schedules.paymentProvider on every touched row. */
   provider: string;
+}
+
+/** Today as `YYYY-MM-DD`. UTC, matching how the Collection Board derives today. */
+export function todayIsoDate(): string {
+  return new Date().toISOString().slice(0, 10);
 }
 
 export interface ApplyPaymentResult {
@@ -104,6 +116,8 @@ export async function applyPayment(tx: Tx, input: ApplyPaymentInput): Promise<Ap
   const remaining = round2(unpaid.reduce((sum, r) => sum + (r.amount - (r.paidAmount ?? 0)), 0));
   if (amount > remaining) throw new OverpaymentError(amount, remaining);
 
+  const paymentDate = input.paymentDate ?? todayIsoDate();
+
   const [payment] = await tx
     .insert(dealPayments)
     .values({
@@ -113,12 +127,17 @@ export async function applyPayment(tx: Tx, input: ApplyPaymentInput): Promise<Ap
       source: input.source,
       paymentType: input.paymentType,
       note: input.note || null,
+      paymentDate,
     })
     .returning();
   const booked = payment!;
 
   let bucket = amount;
-  const now = new Date();
+  // Instalments are settled AS OF the value date, not the moment of booking, so a
+  // payment recorded three days late still records that the client paid on time.
+  // Midnight UTC is how a bare date becomes an instant everywhere here — see the
+  // dueDate fallback in list-payments.
+  const settledAt = new Date(`${paymentDate}T00:00:00.000Z`);
 
   for (const row of unpaid) {
     if (bucket <= 0) break;
@@ -134,7 +153,7 @@ export async function applyPayment(tx: Tx, input: ApplyPaymentInput): Promise<Ap
       .set({
         paidAmount: newPaid,
         paid: fullyPaid,
-        paidAt: fullyPaid ? now : null,
+        paidAt: fullyPaid ? settledAt : null,
         manualPaymentId: booked.id,
         paymentProvider: sql`array_append(COALESCE(${dealPaymentSchedules.paymentProvider}, ARRAY[]::text[]), ${input.provider})`,
       })

@@ -12,6 +12,8 @@ export interface ManualPayment {
   amount: number
   paymentType: string
   note: string | null
+  /** Value date, `YYYY-MM-DD`. Diverges from createdAt only when an operator backdated. */
+  paymentDate: string
   createdAt: string
   adminName: string | null
 }
@@ -22,6 +24,8 @@ export interface DealSearchResult {
   clientName: string
   clientPhone: string
   remainingAmount: number
+  /** Day the deal was opened, `YYYY-MM-DD` — the earliest valid value date. */
+  openedOn: string
 }
 
 export const useManualPaymentsStore = defineStore('manualPayments', () => {
@@ -55,13 +59,17 @@ export const useManualPaymentsStore = defineStore('manualPayments', () => {
     dealId: string
     amount: number
     paymentType: string
+    paymentDate: string
     note?: string
   }): Promise<ManualPayment> {
     const data = await apiFetch<{ payment: ManualPayment }>('/admin/payments/manual', {
       method: 'POST',
       body: JSON.stringify(payload),
     })
-    payments.value.unshift(data.payment)
+    // Refetch rather than prepend: the list is ordered by value date, so a
+    // backdated payment does not belong at the top and an optimistic unshift
+    // would put it somewhere the server never would.
+    await fetch()
     return data.payment
   }
 

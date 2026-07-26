@@ -77,6 +77,7 @@ import { enqueuePlumCardScore } from '../../integrations/plumgate/card-scoring';
 import { listCards } from '../../integrations/plumgate/queries/list-cards/list-cards.handler';
 import { addCard } from '../../integrations/plumgate/commands/add-card/add-card.handler';
 import { confirmCard } from '../../integrations/plumgate/commands/confirm-card/confirm-card.handler';
+import { recordAction, vendorReasonCode } from '../../client/actions/service';
 import { stampScoring } from './commands/stamp-scoring/stamp-scoring.handler';
 import { rejectSession } from './commands/reject-session/reject-session.handler';
 import type { GENDERS } from '../../integrations/katm/service/shared';
@@ -1091,8 +1092,9 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
     { schema: { tags: TAGS, params: IdParams, body: ConfirmCardBody }, preHandler: guards },
     async (request, reply) => {
       const p = payload(request);
+      let session;
       try {
-        await loadOwnedActiveSession(request.params.id, Number(p.sub));
+        session = await loadOwnedActiveSession(request.params.id, Number(p.sub));
       } catch (err: any) {
         if (err.code === 'session_not_found') return reply.code(404).sendError('session_not_found');
         if (err.code === 'session_not_active')
@@ -1101,7 +1103,45 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       }
 
       const { sessionId, otp } = request.body;
-      const card = await confirmCard({ sessionId, otp });
+
+      // The Клиент step precedes the Карта step, so the run has a user by now —
+      // but a run that somehow reaches here without one has no client page to
+      // record against, and this table is client-keyed. Skip rather than invent.
+      const actorFields = {
+        actorType: 'agent' as const,
+        actorId: session.agentId,
+        merchantId: session.merchantId,
+        dealSessionId: session.id,
+      };
+
+      let card;
+      try {
+        card = await confirmCard({ sessionId, otp });
+      } catch (err) {
+        if (session.userId) {
+          await recordAction({
+            userId: session.userId,
+            action: 'card_add',
+            status: 'failed',
+            reasonCode: vendorReasonCode(err, 'card_confirm_failed'),
+            ...actorFields,
+          });
+        }
+        throw err;
+      }
+
+      // No userCardId and no dedupe key: unlike the two mobile routes, this one
+      // never writes a user_cards row — the wizard keeps the card on the session
+      // — so there is no local card to point at and nothing to key on.
+      if (session.userId) {
+        await recordAction({
+          userId: session.userId,
+          action: 'card_add',
+          status: 'success',
+          ...actorFields,
+        });
+      }
+
       return { card };
     },
   );

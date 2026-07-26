@@ -9,6 +9,12 @@ export interface DealSearchResult {
   clientName: string
   clientPhone: string
   remainingAmount: number
+  /**
+   * Day the deal was opened, `YYYY-MM-DD`. The floor on a manual payment's value
+   * date — money cannot have arrived against a deal that did not exist — so the
+   * dialog can clamp its date input to the same window the handler enforces.
+   */
+  openedOn: string
 }
 
 export async function searchDealsForManualPayment(q: string): Promise<DealSearchResult[]> {
@@ -19,6 +25,7 @@ export async function searchDealsForManualPayment(q: string): Promise<DealSearch
     .select({
       id: deals.id,
       dealNumber: deals.dealNumber,
+      createdAt: deals.createdAt,
       firstName: users.firstName,
       lastName: users.lastName,
       phone: users.phone,
@@ -53,6 +60,7 @@ export async function searchDealsForManualPayment(q: string): Promise<DealSearch
         clientName: `${d.firstName} ${d.lastName}`,
         clientPhone: d.phone,
         remainingAmount: remaining,
+        openedOn: d.createdAt.toISOString().slice(0, 10),
       }
     }),
   )

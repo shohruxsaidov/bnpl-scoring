@@ -7,6 +7,8 @@ import { and, desc, eq } from 'drizzle-orm';
 import { db } from '@db';
 import { scorings } from '@db/scorings';
 import { scoringPipelines } from '@db/scoring-pipelines';
+import { dealSessions } from '@db/deal-sessions';
+import { recordAction } from '../../client/actions/service';
 import type { CriteriaScores } from '../criteria-scores';
 import type {
   PipelineStatus,
@@ -177,12 +179,58 @@ export async function loadPipeline(
   return row ?? null;
 }
 
+/**
+ * Write the client-actions row for a run that has just reached a terminal state.
+ *
+ * Only the VERDICT is recorded, never the kickoff: a run that opens and resolves
+ * is one thing the client did, and logging both would double every scoring in the
+ * admin tab. Keyed on the run id, so a retrying KATM poller that re-marks the same
+ * run cannot write a second row.
+ *
+ * Merchant runs are attributed to the Agent who drove the wizard, which costs one
+ * lookup per terminal transition — once per run, not per pipeline.
+ */
+async function recordScoringOutcome(
+  row: ScoringRow | undefined,
+  status: 'success' | 'failed',
+  reasonCode: string | null,
+): Promise<void> {
+  if (!row?.userId) return;
+
+  let actorType: 'client' | 'agent' = row.origin === 'client' ? 'client' : 'agent';
+  let actorId: number | null = null;
+  let merchantId: number | null = null;
+
+  if (actorType === 'agent' && row.dealSessionId) {
+    const [session] = await db
+      .select({ agentId: dealSessions.agentId, merchantId: dealSessions.merchantId })
+      .from(dealSessions)
+      .where(eq(dealSessions.id, row.dealSessionId))
+      .limit(1);
+    actorId = session?.agentId ?? null;
+    merchantId = session?.merchantId ?? null;
+  }
+
+  await recordAction({
+    userId: row.userId,
+    action: 'scoring',
+    status,
+    reasonCode,
+    actorType,
+    actorId,
+    merchantId,
+    scoringId: row.id,
+    dealSessionId: row.dealSessionId,
+    dedupeKey: `scoring:${row.id}`,
+  });
+}
+
 /** Terminal: a pipeline knockout or a model-stage rejection. */
 export async function markRejected(
   scoringId: number,
   reasonCode: ScoringRejectReasonCode,
 ): Promise<void> {
-  await db
+  const [row] = await db
     .update(scorings)
     .set({
       status: 'rejected',
@@ -190,7 +238,9 @@ export async function markRejected(
       rejectReasonCode: reasonCode,
       updatedAt: new Date(),
     })
-    .where(eq(scorings.id, scoringId));
+    .where(eq(scorings.id, scoringId))
+    .returning();
+  await recordScoringOutcome(row, 'failed', reasonCode);
 }
 
 /** All knockout pipelines passed — the model may now run. */
@@ -206,7 +256,7 @@ export async function markScored(
   scoringId: number,
   result: { score: number; creditLimit: string; criteriaScores: CriteriaScores },
 ): Promise<void> {
-  await db
+  const [row] = await db
     .update(scorings)
     .set({
       status: 'scored',
@@ -216,13 +266,19 @@ export async function markScored(
       criteriaScores: result.criteriaScores as Record<string, unknown>,
       updatedAt: new Date(),
     })
-    .where(eq(scorings.id, scoringId));
+    .where(eq(scorings.id, scoringId))
+    .returning();
+  await recordScoringOutcome(row, 'success', null);
 }
 
 /** A vendor/system failure that is neither a clean pass nor a business reject. */
 export async function markError(scoringId: number): Promise<void> {
-  await db
+  const [row] = await db
     .update(scorings)
     .set({ status: 'error', currentPipeline: null, updatedAt: new Date() })
-    .where(eq(scorings.id, scoringId));
+    .where(eq(scorings.id, scoringId))
+    .returning();
+  // 'scoring_error' rather than a null reason: the tab must distinguish "the
+  // bureau said no" from "the bureau did not answer" — only one is the client's.
+  await recordScoringOutcome(row, 'failed', 'scoring_error');
 }

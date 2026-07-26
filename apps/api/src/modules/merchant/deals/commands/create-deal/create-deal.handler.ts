@@ -14,6 +14,7 @@ import { userCreditLimits } from '@db/user-credit-limits';
 import { katm077Reports } from '@db/katm-077-reports';
 import type { CreateDealInput } from './create-deal.command';
 import { calcBasketAmount, computeTermsHash } from '../../../../deals/signing/terms';
+import { stampDealOnSigningActions } from '../../../../client/actions/service';
 import {
   isSigningProofFresh,
   type DealSessionRow,
@@ -244,6 +245,11 @@ export async function createDeal(input: CreateDealInput) {
           .update(dealSessions)
           .set({ status: 'completed', updatedAt: now })
           .where(eq(dealSessions.id, input.dealSessionId));
+
+        // The signing rows were written against a session, because the Deal did
+        // not exist yet. Point them at it now — deal sessions have no admin page,
+        // so this is what makes those rows clickable on the client's Действия tab.
+        await stampDealOnSigningActions(tx, input.dealSessionId, deal.id);
       }
 
       // The limit is a one-shot ticket and this deal just spent it — whatever the

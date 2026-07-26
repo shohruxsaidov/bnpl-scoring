@@ -36,6 +36,18 @@ export function formatDate(iso: string): string {
   })
 }
 
+/**
+ * Format a bare `YYYY-MM-DD` as `DD/MM/YYYY`.
+ *
+ * Deliberately string surgery rather than `new Date()`: a calendar date has no
+ * instant, and parsing one produces UTC midnight, which any browser behind UTC
+ * then renders as the previous day.
+ */
+export function formatIsoDate(date: string): string {
+  const [y, m, d] = date.split('-')
+  return y && m && d ? `${d}/${m}/${y}` : date
+}
+
 export function formatDateTime(iso: string | null): string {
   if (!iso) return '—'
   const d = new Date(iso)

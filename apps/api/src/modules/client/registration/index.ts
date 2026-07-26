@@ -14,6 +14,7 @@ import {
   findUserByPhone,
 } from '../../auth/client/service/service.handler';
 import { createUserHandler } from '../../id/users';
+import { recordActionTx } from '../actions/service';
 import { sendOtpSms } from '../../../lib/sms';
 import { getCurrentPublicOffer, findCurrentPublicOfferById } from './public-offers';
 import { pinFailKey } from '../auth/index';
@@ -466,6 +467,16 @@ export default async function clientRegistrationRoutes(app: FastifyInstance) {
           await tx
             .insert(userPublicOfferAcceptances)
             .values({ userId: created!.id, publicOfferId: req.body.publicOfferId });
+          // In the transaction on purpose: this is the account's birth record,
+          // and it is consent-adjacent. Success-only by construction — every
+          // registration failure happens before the users row exists.
+          await recordActionTx(tx, {
+            userId: created!.id,
+            action: 'registration',
+            status: 'success',
+            actorType: 'client',
+            dedupeKey: `registration:${created!.id}`,
+          });
           return created!;
         });
       }

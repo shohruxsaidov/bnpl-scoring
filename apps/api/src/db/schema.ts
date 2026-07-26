@@ -8,6 +8,7 @@ export * from './blacklist';
 export * from './branches';
 export * from './buyouts';
 export * from './categories';
+export * from './client-actions';
 export * from './user-cards';
 export * from './user-credit-limits';
 export * from './user-devices';
