@@ -111,17 +111,18 @@ export async function finalizeClientScoringIfReady(
   // back — leaving the client holding an open deal AND a reusable limit, which is
   // the one state the rule exists to forbid. So the gate is asked again, last,
   // where the answer is the one that matters.
-  const blocking = await loadBlockingDeal(userId);
-  if (blocking) {
-    await recordPipeline(scoring.id, 'active_deal', {
-      status: 'rejected',
-      rejectReasonCode: 'active_deal_exists',
-      summary: { hasActiveDeal: true, blockingDealNumber: blocking.dealNumber },
-      raw: blocking,
-    });
-    await markRejected(scoring.id, 'active_deal_exists');
-    return { status: 'rejected', reasonCode: 'active_deal_exists' };
-  }
+  //TODO need to uncommit code below
+  // const blocking = await loadBlockingDeal(userId);
+  // if (blocking) {
+  //   await recordPipeline(scoring.id, 'active_deal', {
+  //     status: 'rejected',
+  //     rejectReasonCode: 'active_deal_exists',
+  //     summary: { hasActiveDeal: true, blockingDealNumber: blocking.dealNumber },
+  //     raw: blocking,
+  //   });
+  //   await markRejected(scoring.id, 'active_deal_exists');
+  //   return { status: 'rejected', reasonCode: 'active_deal_exists' };
+  // }
 
   const card = await loadLatestCard(userId);
 
