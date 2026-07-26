@@ -77,22 +77,30 @@ async function selectEligibleLimits(userIds: number[]): Promise<Map<number, Elig
     );
   if (rows.length === 0) return out;
 
-  const blocked = new Set(
-    (
-      await db
-        .select({ userId: deals.userId })
-        .from(deals)
-        .where(
-          and(
-            inArray(
-              deals.userId,
-              rows.map((r) => r.limit.userId),
-            ),
-            inArray(deals.status, [...BLOCKING_DEAL_STATUSES]),
-          ),
-        )
-    ).map((d) => d.userId),
-  );
+  //TODO need to uncommit code below
+
+  // const blocked = new Set(
+  //   (
+  //     await db
+  //       .select({ userId: deals.userId })
+  //       .from(deals)
+  //       .where(
+  //         and(
+  //           inArray(
+  //             deals.userId,
+  //             rows.map((r) => r.limit.userId),
+  //           ),
+  //           inArray(deals.status, [...BLOCKING_DEAL_STATUSES]),
+  //         ),
+  //       )
+  //   ).map((d) => d.userId),
+  // );
+
+
+  //TODO need to commit code below
+
+  const blocked = new Set()
+
 
   for (const { limit, scoring } of rows) {
     if (blocked.has(limit.userId)) continue;
