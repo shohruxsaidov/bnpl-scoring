@@ -10,15 +10,28 @@ import { createMyidSession, exchangeMyidCode } from '../../integrations/myid/cli
 import { env } from '../../../env';
 import { createUserHandler } from '../../id/users';
 import { findUsersHandler } from '../../id/users/queries/find-user/find-user.handler';
+import { loadReusableLimits } from '../deal-sessions/queries/reusable-limit/reusable-limit.handler';
 
 const UZBEKISTAN_CITIZENSHIP_ID = '182';
 
-function toClientDto(c: typeof users.$inferSelect) {
+/**
+ * A client's standing reuse-eligible limit, or null. Preview only — `/start` is
+ * what actually grants it, and the client may consume the limit elsewhere in
+ * between (see loadReusableLimits).
+ */
+interface ReusableLimitDto {
+  /** Per-month credit limit in whole som. */
+  creditLimit: number;
+  expiresAt: string;
+}
+
+function toClientDto(c: typeof users.$inferSelect, reusableLimit: ReusableLimitDto | null = null) {
   let photoUrl: string | null = null;
   if (c.photoId) {
     photoUrl = `https://${env.MINIO_PUBLIC_ENDPOINT}/public/${c.photoId}`;
   }
   return {
+    reusableLimit,
     id: c.id.toString(),
     pinfl: c.pinfl,
     firstName: c.firstName,
@@ -83,7 +96,18 @@ export default async function merchantClientRoutes(app: FastifyInstance) {
     { schema: { tags: TAGS, querystring: SearchQuery }, preHandler: app.verifyMerchantJwt },
     async (request) => {
       const results = await findUsersHandler({ query: request.query.q });
-      return { clients: results.map(toClientDto) };
+      // Batched so the agent sees who already carries a limit before picking a
+      // row — one query for the page, not one per client.
+      const limits = await loadReusableLimits(results.map((c) => c.id));
+      return {
+        clients: results.map((c) => {
+          const l = limits.get(c.id);
+          return toClientDto(
+            c,
+            l ? { creditLimit: l.creditLimit, expiresAt: l.expiresAt.toISOString() } : null,
+          );
+        }),
+      };
     },
   );
 

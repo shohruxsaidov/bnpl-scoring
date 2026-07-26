@@ -105,16 +105,18 @@ const rejected = ref(false)
 // the template can show why and, for data_missing, which fields to fix.
 const rejectReason = ref<{ code: string; category: string; missingFields: string[] } | null>(null)
 
-// Reuse path — set when /start returns a valid cached limit (scoring skipped).
-// Drives the "existing limit" panel; the agent confirms to move to contacts.
-const reuseCached = ref<{ creditLimit: number; expiresAt: string } | null>(null)
+// Reuse path (reuse scoring) — a returning client may already carry a valid
+// limit, which /client/search hands back alongside their details. We preview it
+// here so the agent knows before pressing Continue; /start remains the authority
+// and can still reject (e.g. the client opened a deal elsewhere meanwhile).
+const reusableLimit = computed(() => confirmedClient.value?.reusableLimit ?? null)
 
 const reuseLimitText = computed(() =>
-  reuseCached.value ? new Intl.NumberFormat('ru-RU').format(reuseCached.value.creditLimit) : '',
+  reusableLimit.value ? new Intl.NumberFormat('ru-RU').format(reusableLimit.value.creditLimit) : '',
 )
 const reuseExpiryText = computed(() => {
-  if (!reuseCached.value?.expiresAt) return ''
-  const d = new Date(reuseCached.value.expiresAt)
+  if (!reusableLimit.value?.expiresAt) return ''
+  const d = new Date(reusableLimit.value.expiresAt)
   return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('ru-RU')
 })
 
@@ -359,16 +361,12 @@ async function queryKatm(): Promise<boolean> {
       }),
     })
     // Reuse path — the client already holds a valid cached limit; scoring is
-    // skipped and the wizard routes through the contacts step. Show the limit
-    // panel and wait for the agent to confirm before advancing.
+    // skipped and the wizard routes through the contacts step. The agent saw
+    // and accepted the limit back on the `found` screen, so advance straight
+    // through rather than making them confirm the same number twice.
     if (result.status === 'cached') {
       deal.setFlowMode('reuse')
-      reuseCached.value = {
-        creditLimit: result.creditLimit ?? 0,
-        expiresAt: result.expiresAt ?? '',
-      }
-      katmDone.value = true
-      return false
+      return true
     }
     // Any non-cached outcome means we're on the full scoring path.
     deal.setFlowMode('full')
@@ -499,46 +497,16 @@ const clientFullName = computed(() =>
             <span class="result-name">{{ c.firstName }} {{ c.lastName }}</span>
             <span class="result-pinfl font-mono">{{ c.pinfl }}</span>
           </div>
+          <!-- Reuse scoring — flags who already carries a limit, before selecting -->
+          <span v-if="c.reusableLimit" class="tag tag-success tag-sm result-limit-tag">
+            <i class="pi pi-check-circle" /> {{ $t('stepClient.hasLimitBadge') }}
+          </span>
           <i class="pi pi-chevron-right result-arrow" />
         </li>
       </ul>
       <button class="btn-link mt-1" @click="phase = 'not_found'">
         <i class="pi pi-user-plus" /> {{ $t('stepClient.clientNotInList') }}
       </button>
-    </div>
-
-    <!-- ── PHASE: found ──────────────────────────────────────────────────── -->
-    <div v-else-if="phase === 'found'" class="client-card found">
-      <div class="client-card-header">
-        <span class="tag tag-success"><i class="pi pi-check-circle" /> {{ $t('stepClient.existingFound') }}</span>
-      </div>
-      <div class="client-grid">
-        <div class="client-field">
-          <span class="cf-label">{{ $t('stepClient.fullName') }}</span>
-          <span class="cf-value">{{ clientFullName }}</span>
-        </div>
-        <div class="client-field">
-          <span class="cf-label">{{ $t('stepClient.pinfl') }}</span>
-          <span class="cf-value font-mono">{{ confirmedClient!.pinfl }}</span>
-        </div>
-        <div class="client-field">
-          <span class="cf-label">{{ $t('stepClient.phone') }}</span>
-          <span class="cf-value font-mono">{{ confirmedClient!.phone }}</span>
-        </div>
-        <div class="client-field">
-          <span class="cf-label">{{ $t('stepClient.passport') }}</span>
-          <span class="cf-value font-mono">{{ confirmedClient!.passportSeries }}{{ confirmedClient?.passportNumber
-            }}</span>
-        </div>
-        <div class="client-field">
-          <span class="cf-label">{{ $t('stepClient.birthDate') }}</span>
-          <span class="cf-value">{{ confirmedClient!.birthDate }}</span>
-        </div>
-        <div v-if="confirmedClient!.address" class="client-field client-field--full">
-          <span class="cf-label">{{ $t('stepClient.address') }}</span>
-          <span class="cf-value">{{ confirmedClient!.address }}</span>
-        </div>
-      </div>
     </div>
 
     <!-- ── PHASE: not_found ──────────────────────────────────────────────── -->
@@ -630,43 +598,10 @@ const clientFullName = computed(() =>
       </button>
     </div>
 
-    <!-- ── PHASE: myid_done ──────────────────────────────────────────────── -->
-    <div v-else-if="phase === 'myid_done'" class="client-card new">
-      <div class="client-card-header">
-        <span class="tag tag-accent"><i class="pi pi-id-card" /> {{ $t('stepClient.newClientVerified') }}</span>
-      </div>
-      <div class="client-grid">
-        <div class="client-field">
-          <span class="cf-label">{{ $t('stepClient.fullName') }}</span>
-          <span class="cf-value">{{ clientFullName }}</span>
-        </div>
-        <div class="client-field">
-          <span class="cf-label">{{ $t('stepClient.pinfl') }}</span>
-          <span class="cf-value font-mono">{{ confirmedClient!.pinfl }}</span>
-        </div>
-        <div class="client-field">
-          <span class="cf-label">{{ $t('stepClient.phone') }}</span>
-          <span class="cf-value font-mono">{{ confirmedClient!.phone }}</span>
-        </div>
-        <div class="client-field">
-          <span class="cf-label">{{ $t('stepClient.passport') }}</span>
-          <span class="cf-value font-mono">{{ confirmedClient!.passportSeries }}{{ confirmedClient?.passportNumber
-          }}</span>
-        </div>
-        <div class="client-field">
-          <span class="cf-label">{{ $t('stepClient.birthDate') }}</span>
-          <span class="cf-value">{{ confirmedClient!.birthDate }}</span>
-        </div>
-        <div v-if="confirmedClient!.address" class="client-field client-field--full">
-          <span class="cf-label">{{ $t('stepClient.address') }}</span>
-          <span class="cf-value">{{ confirmedClient!.address }}</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── PHASE: katm (KATM consent + query) ───────────────────────────── -->
-    <template v-if="phase === 'katm'">
-      <!-- Compact client banner -->
+    <!-- ── Confirmed client (found | myid_done | katm) ───────────────────── -->
+    <!-- One identity surface for the rest of the step; the tag distinguishes a
+         returning client from one just verified through MyID. -->
+    <template v-if="phase === 'found' || phase === 'myid_done' || phase === 'katm'">
       <div class="client-banner">
         <i class="pi pi-user" />
         <span>
@@ -677,26 +612,31 @@ const clientFullName = computed(() =>
         <span v-else class="tag tag-success tag-sm">{{ $t('stepClient.existingClient') }}</span>
       </div>
 
+      <!-- Reuse path — the client already carries a valid limit, so scoring will
+           be skipped. A preview: /start still has the final say. -->
       <transition name="fade">
-        <div v-if="katmDone && !reuseCached" class="katm-result">
-          <i class="pi pi-check-circle" />
-          {{ $t('stepClient.katmResult') }}
-        </div>
-      </transition>
-
-      <!-- Reuse path — existing valid limit; scoring skipped -->
-      <transition name="fade">
-        <div v-if="reuseCached" class="reuse-limit-panel">
+        <div v-if="phase === 'found' && reusableLimit" class="reuse-limit-panel">
           <i class="pi pi-check-circle reuse-limit-icon" />
           <div class="reuse-limit-body">
             <p class="reuse-limit-title">{{ $t('stepClient.reuseLimitTitle') }}</p>
             <p class="reuse-limit-amount font-mono">
               {{ reuseLimitText }} {{ $t('stepClient.reuseLimitCurrency') }}
+              <span class="reuse-limit-period">{{ $t('stepClient.reuseLimitPerMonth') }}</span>
             </p>
             <p class="reuse-limit-expiry">
               {{ $t('stepClient.reuseLimitExpiry', { date: reuseExpiryText }) }}
             </p>
           </div>
+        </div>
+      </transition>
+    </template>
+
+    <!-- ── PHASE: katm (KATM consent + query) ───────────────────────────── -->
+    <template v-if="phase === 'katm'">
+      <transition name="fade">
+        <div v-if="katmDone" class="katm-result">
+          <i class="pi pi-check-circle" />
+          {{ $t('stepClient.katmResult') }}
         </div>
       </transition>
 
@@ -893,56 +833,8 @@ const clientFullName = computed(() =>
   font-size: 0.8rem;
 }
 
-/* ── Client card (found / myid_done) ── */
-.client-card {
-  margin: 1.8rem 0;
-  border-radius: 16px;
-  padding: 1.4rem;
-  border: 1.5px solid transparent;
-}
-
-.client-card.found {
-  background: var(--success-bg);
-  border-color: var(--success);
-}
-
-.client-card.new {
-  background: var(--bg-surface);
-  border-color: var(--accent-1);
-}
-
-.client-card-header {
-  margin-bottom: 1.1rem;
-}
-
-.client-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.9rem 1.4rem;
-}
-
-.client-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-
-.client-field--full {
-  grid-column: 1 / -1;
-}
-
-.cf-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.cf-value {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text-primary);
+.result-limit-tag {
+  flex-shrink: 0;
 }
 
 .mt-1 {
@@ -1330,6 +1222,14 @@ const clientFullName = computed(() =>
   color: var(--text-primary);
 }
 
+/* The limit is a per-month figure, not a purchase ceiling — say so, or it reads
+   as "you can buy something worth this much". */
+.reuse-limit-period {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
 .reuse-limit-expiry {
   margin: 0;
   font-size: 0.8rem;
@@ -1519,10 +1419,6 @@ const clientFullName = computed(() =>
 }
 
 @media (max-width: 600px) {
-  .client-grid {
-    grid-template-columns: 1fr;
-  }
-
   .search-row {
     flex-direction: column;
   }

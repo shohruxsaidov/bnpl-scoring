@@ -1,8 +1,9 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, gt, inArray, isNotNull, sql } from 'drizzle-orm';
 import { db } from '@db';
 import { userCreditLimits } from '@db/user-credit-limits';
 import { scorings } from '@db/scorings';
-import { loadBlockingDeal } from '../../../../deals/blocking';
+import { deals } from '@db/deals';
+import { BLOCKING_DEAL_STATUSES } from '../../../../deals/blocking';
 import { creditLimitIndexForScore } from '../../../../scoring/compute-limit';
 import type { ScoringStamp } from '../../types';
 
@@ -16,6 +17,12 @@ import type { ScoringStamp } from '../../types';
 // `coefficient` isn't persisted on `scorings`, so we recompute it from the score
 // band (createDeal doesn't store it anyway — it's only carried for parity with
 // the full-path stamp).
+//
+// Eligibility lives in exactly one place — `selectEligibleLimits` below. The
+// merchant portal previews the limit on the client-search screen while `/start`
+// is what actually grants it; if those two ever disagreed, an agent would read a
+// number aloud that the wizard then refuses to honour. Both go through the same
+// query so they cannot.
 // ---------------------------------------------------------------------------
 
 export interface ReusableLimit {
@@ -26,50 +33,108 @@ export interface ReusableLimit {
   stamp: ScoringStamp;
 }
 
+/** A limit that passed every reuse guard, minus the (costlier) stamp rehydration. */
+export interface EligibleLimit {
+  /** Per-month credit limit in whole som. */
+  creditLimit: number;
+  expiresAt: Date;
+  scoring: typeof scorings.$inferSelect;
+}
+
 /**
- * The client's reusable limit, or null when they must be scored from scratch
- * (no row, expired, zero/rejected, the source run is missing, or an open deal
- * has already consumed it). Only a valid, positive, unexpired limit qualifies.
+ * The reuse-eligible limits for `userIds`, keyed by user id. Absent from the map
+ * means the client must be scored from scratch: no row, expired, zero/rejected,
+ * the source run is missing, or an open deal has already consumed it.
  *
  * The open-deal check is what keeps the One Active Deal rule enforceable at all:
  * a reuse hit skips the scoring pipeline outright, so without it the wizard
  * would sail past the active_deal stage and straight into a second deal. Falling
- * through to null routes the client down the full path instead, where stage 0
- * rejects them with a reason the agent can read.
+ * through routes the client down the full path instead, where stage 0 rejects
+ * them with a reason the agent can read.
+ *
+ * Two set-based queries regardless of how many ids come in — client search asks
+ * about a whole result page at once.
+ */
+async function selectEligibleLimits(userIds: number[]): Promise<Map<number, EligibleLimit>> {
+  const out = new Map<number, EligibleLimit>();
+  if (userIds.length === 0) return out;
+
+  // The join drops rows whose source scoring vanished; the predicates drop
+  // expired and non-positive ones.
+  const rows = await db
+    .select({ limit: userCreditLimits, scoring: scorings })
+    .from(userCreditLimits)
+    .innerJoin(scorings, eq(scorings.id, userCreditLimits.scoringId))
+    .where(
+      and(
+        inArray(userCreditLimits.userId, userIds),
+        isNotNull(userCreditLimits.scoringId),
+        gt(userCreditLimits.expiresAt, sql`now()`),
+        // credit_limit is a varchar of whole som — cast, or '0' would compare
+        // lexicographically.
+        sql`${userCreditLimits.creditLimit}::numeric > 0`,
+      ),
+    );
+  if (rows.length === 0) return out;
+
+  const blocked = new Set(
+    (
+      await db
+        .select({ userId: deals.userId })
+        .from(deals)
+        .where(
+          and(
+            inArray(
+              deals.userId,
+              rows.map((r) => r.limit.userId),
+            ),
+            inArray(deals.status, [...BLOCKING_DEAL_STATUSES]),
+          ),
+        )
+    ).map((d) => d.userId),
+  );
+
+  for (const { limit, scoring } of rows) {
+    if (blocked.has(limit.userId)) continue;
+    const creditLimit = Number(limit.creditLimit);
+    if (!Number.isFinite(creditLimit) || creditLimit <= 0) continue;
+    out.set(limit.userId, { creditLimit, expiresAt: limit.expiresAt, scoring });
+  }
+  return out;
+}
+
+/**
+ * The client's reusable limit with its scoring block rehydrated, or null when
+ * they must be scored from scratch. This is the authoritative path — `/start`
+ * grants exactly what this returns.
  */
 export async function loadReusableLimit(userId: number): Promise<ReusableLimit | null> {
-  if (await loadBlockingDeal(userId)) return null;
+  const hit = (await selectEligibleLimits([userId])).get(userId);
+  if (!hit) return null;
 
-  const [limit] = await db
-    .select()
-    .from(userCreditLimits)
-    .where(eq(userCreditLimits.userId, userId))
-    .limit(1);
-
-  if (!limit) return null;
-  if (limit.expiresAt.getTime() <= Date.now()) return null;
-
-  const creditLimit = Number(limit.creditLimit);
-  if (!Number.isFinite(creditLimit) || creditLimit <= 0) return null;
-  if (limit.scoringId == null) return null;
-
-  const [source] = await db
-    .select()
-    .from(scorings)
-    .where(eq(scorings.id, limit.scoringId))
-    .limit(1);
-  if (!source) return null;
-
-  const scoreSum = source.score ?? 0;
+  const scoreSum = hit.scoring.score ?? 0;
   const stamp: ScoringStamp = {
     cardId: '',
-    scoringId: source.id.toString(),
+    scoringId: hit.scoring.id.toString(),
     scoreSum,
     coefficient: creditLimitIndexForScore(scoreSum),
     decision: 'approve',
-    platformCreditLimit: creditLimit,
-    criteriaScores: (source.criteriaScores ?? {}) as Record<string, unknown>,
+    platformCreditLimit: hit.creditLimit,
+    criteriaScores: (hit.scoring.criteriaScores ?? {}) as Record<string, unknown>,
   };
 
-  return { creditLimit, expiresAt: limit.expiresAt, stamp };
+  return { creditLimit: hit.creditLimit, expiresAt: hit.expiresAt, stamp };
+}
+
+/**
+ * Display-only view of the same rule, for showing a client's standing limit
+ * before the wizard commits to anything. No stamp is built — nothing reads it.
+ */
+export async function loadReusableLimits(
+  userIds: number[],
+): Promise<Map<number, { creditLimit: number; expiresAt: Date }>> {
+  const eligible = await selectEligibleLimits(userIds);
+  return new Map(
+    [...eligible].map(([id, { creditLimit, expiresAt }]) => [id, { creditLimit, expiresAt }]),
+  );
 }

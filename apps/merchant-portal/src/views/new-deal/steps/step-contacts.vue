@@ -127,7 +127,10 @@ async function next() {
       <i class="pi pi-check-circle" />
       <span>
         {{ $t('stepContacts.reusedLimit') }}
-        <strong class="font-mono">{{ limitText }} {{ $t('stepClient.reuseLimitCurrency') }}</strong>
+        <strong class="font-mono">
+          {{ limitText }} {{ $t('stepClient.reuseLimitCurrency') }}
+          {{ $t('stepClient.reuseLimitPerMonth') }}
+        </strong>
       </span>
     </div>
 

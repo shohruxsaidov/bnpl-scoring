@@ -417,13 +417,6 @@
     "pinflInvalid": "ПИНФЛ должен содержать ровно 14 цифр",
     "resultsFound": "Найдено клиентов: {count}",
     "clientNotInList": "Клиента нет в списке — добавить нового",
-    "existingFound": "Существующий клиент найден",
-    "fullName": "Полное имя",
-    "pinfl": "ПИНФЛ",
-    "phone": "Телефон",
-    "passport": "Паспорт",
-    "birthDate": "Дата рождения",
-    "address": "Адрес",
     "noClientFound": "Клиент не найден",
     "noClientSub": "Если клиент новый, зарегистрируйте его ниже.",
     "registerNewClient": "Зарегистрировать нового клиента",
@@ -450,7 +443,6 @@
     "waitingMyid": "Ожидание открытия приложения MyID клиентом…",
     "biometricInProgress": "Биометрическая проверка в процессе…",
     "identityVerified": "Личность подтверждена",
-    "newClientVerified": "Новый клиент — личность подтверждена через MyID",
     "newMyidVerified": "Новый · MyID подтверждён",
     "existingClient": "Существующий клиент",
     "katmConsent": "Клиент даёт {katm} (разрешение на запрос в бюро по закону №301)",
@@ -510,7 +502,9 @@
     },
     "reuseLimitTitle": "Клиент уже имеет действующий лимит",
     "reuseLimitExpiry": "Действует до {date}",
-    "reuseLimitCurrency": "сум"
+    "reuseLimitCurrency": "сум",
+    "reuseLimitPerMonth": "/ в месяц",
+    "hasLimitBadge": "Есть лимит"
   },
   "stepCard": {
     "title": "Карта",

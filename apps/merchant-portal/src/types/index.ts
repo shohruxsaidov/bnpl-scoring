@@ -75,6 +75,12 @@ export interface Client {
   katmRegionCode?: string | null;
   katmDistrictCode?: string | null;
   docType?: number | null;
+  /**
+   * The client's standing reuse-eligible limit (reuse scoring), or null when
+   * they must be scored from scratch. Preview only — `/start` is the authority
+   * and can still reject, e.g. if the client opened a deal elsewhere meanwhile.
+   */
+  reusableLimit?: { creditLimit: number; expiresAt: string } | null;
 }
 
 export interface Card {

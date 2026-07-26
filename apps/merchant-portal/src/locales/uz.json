@@ -417,13 +417,6 @@
     "pinflInvalid": "PINFL aniq 14 ta raqamdan iborat bo'lishi kerak",
     "resultsFound": "{count} ta mijoz topildi",
     "clientNotInList": "Mijoz ro'yxatda yo'q — yangi qo'shish",
-    "existingFound": "Mavjud mijoz topildi",
-    "fullName": "To'liq ism",
-    "pinfl": "PINFL",
-    "phone": "Telefon",
-    "passport": "Pasport",
-    "birthDate": "Tug'ilgan sana",
-    "address": "Manzil",
     "noClientFound": "Mijoz topilmadi",
     "noClientSub": "Agar mijoz yangi bo'lsa, quyida ro'yxatdan o'tkazing.",
     "registerNewClient": "Yangi mijozni ro'yxatdan o'tkazish",
@@ -450,7 +443,6 @@
     "waitingMyid": "Mijoz MyID ilovasini ochishi kutilmoqda…",
     "biometricInProgress": "Biometrik tekshiruv jarayonda…",
     "identityVerified": "Shaxs tasdiqlandi",
-    "newClientVerified": "Yangi mijoz — shaxs MyID orqali tasdiqlangan",
     "newMyidVerified": "Yangi · MyID tasdiqlangan",
     "existingClient": "Mavjud mijoz",
     "katmConsent": "Mijoz {katm} beradi (301-sonli qonun bo'yicha byuro so'rovi uchun ruxsat)",
@@ -510,7 +502,9 @@
     },
     "reuseLimitTitle": "Mijozda amaldagi limit mavjud",
     "reuseLimitExpiry": "{date} gacha amal qiladi",
-    "reuseLimitCurrency": "so'm"
+    "reuseLimitCurrency": "so'm",
+    "reuseLimitPerMonth": "/ oyiga",
+    "hasLimitBadge": "Limit bor"
   },
   "stepCard": {
     "title": "Karta",
