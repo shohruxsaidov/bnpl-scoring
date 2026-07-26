@@ -283,16 +283,17 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
       // would read the stale 'scored' run left behind by the very scoring that
       // funded the deal, next to the limit row createDeal deleted, and render
       // "approved — for nothing".
-      if (blocking) {
-        return {
-          status: 'rejected' as const,
-          creditLimit: null,
-          expiresAt: null,
-          expired: false,
-          reasonCode: 'active_deal_exists',
-          reasonMessage: reasonMessage(lang, 'active_deal_exists'),
-        };
-      }
+      // TODO need to uncommit code below 
+      // if (blocking) {
+      //   return {
+      //     status: 'rejected' as const,
+      //     creditLimit: null,
+      //     expiresAt: null,
+      //     expired: false,
+      //     reasonCode: 'active_deal_exists',
+      //     reasonMessage: reasonMessage(lang, 'active_deal_exists'),
+      //   };
+      // }
 
       let status = !scoring
         ? ('none' as const)
