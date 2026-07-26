@@ -306,7 +306,7 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
                 : ('error' as const);
 
       const reasonCode = scoring?.status === 'rejected' ? (scoring.rejectReasonCode ?? null) : null;
-      if (status === 'scored' && !limit.creditLimit) {
+      if (status === 'scored' && (!limit || !limit.creditLimit)) {
         status = 'none';
       }
 
