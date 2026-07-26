@@ -66,14 +66,11 @@ const DEAD_TOKEN_CODES = new Set([
  * from whenever the push was minted, and a stale tap must find nothing rather
  * than something wrong.
  */
-function pushRoute(
-  type: NotificationType,
-  data: Record<string, unknown>,
-): Record<string, string> {
+function pushRoute(type: NotificationType, data: Record<string, unknown>): Record<string, string> {
   if (type !== 'deal_signing_request') return {};
   const sessionId = data['dealSessionId'];
   return {
-    screen: 'deal_signing',
+    action_type: 'deal_signing',
     ...(typeof sessionId === 'string' ? { dealSessionId: sessionId } : {}),
   };
 }

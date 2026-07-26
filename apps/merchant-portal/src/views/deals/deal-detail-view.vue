@@ -89,9 +89,6 @@ function basketTotal(item: { price: string; quantity: number }): number {
           <i :class="pdfLoading ? 'pi pi-spin pi-spinner' : 'pi pi-file-pdf'" />
           {{ $t('dealDetail.contractPdf') }}
         </button>
-        <button class="btn-cancel btn-sm">
-          <i class="pi pi-times-circle" /> {{ $t('dealDetail.cancel') }}
-        </button>
       </div>
     </div>
 
@@ -169,21 +166,6 @@ function basketTotal(item: { price: string; quantity: number }): number {
             </tr>
           </tbody>
         </table>
-      </div>
-
-      <div class="section">
-        <h4 class="section-title">{{ $t('dealDetail.fiscalReceipt') }}</h4>
-        <div class="receipt-rows">
-          <div class="receipt-row">
-            <span class="fl">{{ $t('dealDetail.marking') }}</span>
-            <span class="receipt-val danger">{{ $t('dealDetail.no') }}</span>
-          </div>
-          <div class="receipt-row">
-            <span class="fl">{{ $t('dealDetail.fiscalReceiptLabel') }}</span>
-            <span class="receipt-val muted">{{ $t('dealDetail.notCreated') }}</span>
-          </div>
-        </div>
-        <button class="link-btn">{{ $t('dealDetail.createFiscalReceipt') }}</button>
       </div>
 
       <div class="section">
@@ -272,14 +254,6 @@ function basketTotal(item: { price: string; quantity: number }): number {
   border-radius: 10px;
   transition: all 0.15s ease;
 }
-
-.btn-cancel {
-  background: transparent;
-  border: 1.5px solid var(--danger);
-  color: var(--danger);
-}
-
-.btn-cancel:hover { background: var(--danger-bg); }
 
 .deal-card { padding: 0; overflow: hidden; }
 
@@ -371,29 +345,7 @@ function basketTotal(item: { price: string; quantity: number }): number {
 
 .data-table tbody tr:last-child td { border-bottom: none; }
 
-.receipt-rows { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.8rem; }
-
-.receipt-row { display: flex; align-items: center; gap: 0.6rem; font-size: 0.88rem; }
-
-.receipt-val { font-weight: 600; }
-
-.link-btn {
-  background: transparent;
-  border: none;
-  color: var(--success);
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0;
-  font-family: inherit;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.link-btn:hover { opacity: 0.8; }
-
 .muted { color: var(--text-secondary); }
-.danger { color: var(--danger); }
 
 .not-found {
   padding: 4rem;
