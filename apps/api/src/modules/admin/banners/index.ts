@@ -16,6 +16,7 @@ import {
 } from '@db/banners';
 import { adminUsers } from '@db/admin-users';
 import { readImageSize, sniffImageMime } from '@lib/image-type';
+import { StringEnum } from '@lib/typebox';
 import { getDownloadUrls, recordFile } from '../../../lib/file-storage';
 import { filterVisibleMerchantIds } from '../../client/merchants/queries';
 
@@ -73,12 +74,15 @@ export default async function adminBannerRoutes(app: FastifyInstance) {
     mimeType: Type.String({ minLength: 1 }),
   });
 
-  // Spelled with an explicit type argument rather than left to inference: this
-  // schema is reused across three bodies, and a widened `string` here would let a
-  // bare cast decide what reaches the action_type column.
-  const ActionType = Type.Unsafe<BannerActionType>({
-    type: 'string',
-    enum: [...BANNER_ACTION_TYPES],
+  // `{ type: 'string', enum: […] }` rather than a union of literals, so Swagger UI
+  // renders every value (see lib/typebox#StringEnum).
+  //
+  // The handlers below re-assert BannerActionType on the way in: the installed
+  // @fastify/type-provider-typebox (v6, built against the `typebox` v1 package)
+  // cannot read the static type off a Type.Unsafe minted by @sinclair/typebox
+  // 0.34, so this field alone arrives as `unknown` however it is declared here.
+  // The value is still validated against this enum by ajv before a handler runs.
+  const ActionType = StringEnum(BANNER_ACTION_TYPES, {
     description:
       'What tapping the banner does. `actionValue` is the target: an https URL for ' +
       "'external_url', a merchant id for 'merchant', and must be omitted for 'none'.",
@@ -238,7 +242,9 @@ export default async function adminBannerRoutes(app: FastifyInstance) {
     },
     async (request, reply) => {
       const body = request.body;
-      const actionType = body.actionType ?? 'none';
+      // Narrowed, not trusted: ajv has already rejected anything outside the
+      // enum — see ActionType.
+      const actionType = (body.actionType as BannerActionType | undefined) ?? 'none';
 
       const actionError = await validateAction(actionType, body.actionValue ?? null);
       if (actionError) return reply.code(400).sendError(actionError);
@@ -319,7 +325,8 @@ export default async function adminBannerRoutes(app: FastifyInstance) {
       // The action is a pair, so it is validated as a pair against the state the
       // row will be in — patching only the type of an existing merchant banner
       // must not leave a URL sitting in action_value.
-      const actionType = body.actionType ?? existing.banner.actionType;
+      const actionType =
+        (body.actionType as BannerActionType | undefined) ?? existing.banner.actionType;
       const actionValue =
         body.actionValue !== undefined ? body.actionValue : existing.banner.actionValue;
       const actionError = await validateAction(actionType, actionValue);

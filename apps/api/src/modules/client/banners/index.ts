@@ -125,15 +125,16 @@ export default async function clientBannerRoutes(app: FastifyInstance) {
         security: SECURITY,
         parameters: XLANG,
         params: IdParams,
-        // No 204 entry: an empty body has nothing to serialize, and declaring a
-        // schema for it is how fastify ends up writing "null" into it.
-        response: { 401: ERROR },
+        // The 204 entry exists so the typed reply admits the status code at all.
+        // Nothing of it reaches the wire: fastify strips the body (and the
+        // content-type and content-length headers with it) for a 204.
+        response: { 204: Type.Null(), 401: ERROR },
       },
       preHandler: guards,
     },
     async (request, reply) => {
       await countBannerView(Number(request.params.id));
-      return reply.code(204).send();
+      return reply.code(204).send(null);
     },
   );
 }
