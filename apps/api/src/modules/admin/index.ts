@@ -15,7 +15,6 @@ import adminCollectionBoardRoutes from "./collectionBoard/index"
 import adminBuyoutRoutes from "./buyouts/index"
 import adminClientsRoutes from "./clients/index"
 import adminNotificationsRoutes from "./notifications/index"
-import adminAppRatingRoutes from "./appRatings/index"
 import adminBannerRoutes from "./banners/index"
 import mxikRoutes from "../mxik/index"
 import adminBankRoutes from "./banks/index"
@@ -60,11 +59,6 @@ export default async function adminModule(app: FastifyInstance) {
   // guarded module — see /admin/notifications.
   await app.register(guarded(adminClientsRoutes, { read: "view_clients" }), { prefix: "/admin/clients" })
   await app.register(guarded(adminNotificationsRoutes, { read: "send_client_push", write: "send_client_push" }), { prefix: "/admin/notifications" })
-  // Read-only by design, same trap as /admin/clients above: requirePermissionByMethod
-  // skips the check entirely when no `write` feature is mapped, so a POST added
-  // here would be reachable by any admin holding read-only view_app_ratings.
-  // Ratings are written by clients via /client/ratings and by nobody else.
-  await app.register(guarded(adminAppRatingRoutes, { read: "view_app_ratings" }), { prefix: "/admin/app-ratings" })
   await app.register(guarded(adminBannerRoutes, { read: "manage_banners", write: "manage_banners" }), { prefix: "/admin/banners" })
   await app.register(guarded(adminUsersRoutes, { read: "manage_admins", write: "manage_admins" }), { prefix: "/admin/users" })
   await app.register(adminPermissionsRoutes, { prefix: "/admin/permissions" })

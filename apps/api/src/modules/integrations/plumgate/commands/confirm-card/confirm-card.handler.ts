@@ -22,7 +22,6 @@ export async function confirmCard(params: ConfirmCardCommand): Promise<PlumCard>
 
   const requestTimestamp = new Date();
   try {
-    // TODO adjust to actual response shape once tested against live API
     const data = await client
       .post('UserCard/confirmUserCardCreate', { json: reqBody })
       .json<{ result: PlumConfirmUserCardCreateResponse }>();

@@ -14,7 +14,6 @@ export async function registerClaim(params: RegisterClaimCommand): Promise<Regis
   const now = new Date();
   const creditEndDate = new Date(now);
   creditEndDate.setMonth(creditEndDate.getMonth() + TERM_MONTH);
-//TODO need to region codes replace 
   const data = await callKatm<Record<string, unknown> & { clientId?: string }>(
     'v1/claim/registration',
     {

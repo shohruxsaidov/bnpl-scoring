@@ -75,16 +75,6 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: 'app-ratings',
-        name: 'app-ratings',
-        component: () => import('@/views/app-ratings-view.vue'),
-        meta: {
-          titleKey: 'routeTitle.appRatings',
-          breadcrumbKeys: ['breadcrumb.appRatings'],
-          feature: 'view_app_ratings',
-        },
-      },
-      {
         path: 'banners',
         name: 'banners',
         component: () => import('@/views/banners-view.vue'),

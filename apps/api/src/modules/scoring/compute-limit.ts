@@ -139,9 +139,6 @@ export function runModelAndLimit(input: LimitComputationInput): LimitComputation
       incomeSum: (inps.incomesAllSumma ?? 0) / 12,
       incomeSumInBrv: (inps.incomesAllSumma ?? 0) / 12 / BRV_UZS,
       workExperienceMonths: monthsBetween(inps.periodBegin ?? '', inps.periodEnd ?? ''),
-      // // TODO
-      // incomeSum: 8000000,
-      // incomeSumInBrv: 8000000 / 12 / BRV_UZS,
     }),
     allDebts: 0,
   };

@@ -1,7 +1,6 @@
 export * from './admin-sessions';
 export * from './admin-users';
 export * from './agreements';
-export * from './app-ratings';
 export * from './app-version-policies';
 export * from './bank-mfo-cache';
 export * from './banners';

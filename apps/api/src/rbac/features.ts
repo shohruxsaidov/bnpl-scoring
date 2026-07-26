@@ -19,7 +19,6 @@ export const ADMIN_FEATURES = [
   'view_overview',
   'view_clients',
   'send_client_push',
-  'view_app_ratings',
   // Deliberately NOT folded into manage_settings: banners are marketing art on
   // every client's home screen, edited on a campaign cadence by people who have
   // no business editing the platform's bank requisites or publishing a public
