@@ -9,8 +9,6 @@ import DatePicker from 'primevue/datepicker'
 import ToggleSwitch from 'primevue/toggleswitch'
 import { useToast } from 'primevue/usetoast'
 import {
-  BANNER_ASPECT_RATIO,
-  BANNER_ASPECT_TOLERANCE,
   MIN_BANNER_IMAGE_WIDTH,
   useBannersStore,
   type Banner,
