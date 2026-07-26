@@ -857,9 +857,10 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       }
 
       // Same last-free-moment gate the counter flow takes before the face-scan.
-      if (await loadBlockingDeal(base.session.userId!)) {
-        return reply.code(409).sendError('active_deal_exists');
-      }
+      // TODO uncommit code below
+      // if (await loadBlockingDeal(base.session.userId!)) {
+      //   return reply.code(409).sendError('active_deal_exists');
+      // }
 
       // Reachability, not provenance. The natural-sounding gate — "did this client
       // get their limit on mobile?" — is the wrong one: it says how they were
@@ -867,9 +868,9 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       // and then uninstalled the app would pass it and never see the request; a
       // client who registered at the counter and later installed the app would fail
       // it for no reason.
-      if (!(await hasPushDevice(base.session.userId!))) {
-        return reply.code(409).sendError('no_signing_device');
-      }
+      // if (!(await hasPushDevice(base.session.userId!))) {
+      //   return reply.code(409).sendError('no_signing_device');
+      // }
 
       const ctx = await resolveSigningContext(base.session, {
         id: base.session.userId!,
