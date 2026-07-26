@@ -46,7 +46,8 @@
     "categories": "Категории",
     "settingsPublicOffer": "Публичная оферта",
     "settingsScoring": "Настройки скоринга",
-    "settingsAppVersions": "Версия приложения"
+    "settingsAppVersions": "Версия приложения",
+    "banners": "Баннеры"
   },
   "breadcrumb": {
     "overview": "Обзор",
@@ -73,7 +74,9 @@
     "categories": "Категории",
     "settingsPublicOffer": "Публичная оферта",
     "settingsScoring": "Скоринг",
-    "settingsAppVersions": "Версия приложения"
+    "settingsAppVersions": "Версия приложения",
+    "banners": "Баннеры",
+    "new": "Новый"
   },
   "topbar": {
     "scoring": "Скоринг",
@@ -101,7 +104,8 @@
     "clients": "Клиенты",
     "appRatings": "Рейтинг приложения",
     "integrationLogs": "Логи интеграций",
-    "categories": "Категории"
+    "categories": "Категории",
+    "banners": "Баннеры"
   },
   "categories": {
     "searchPlaceholder": "Поиск по названию…",
@@ -311,7 +315,8 @@
       "admins": "Администраторы",
       "integrationLogs": "Логи интеграций",
       "clients": "Клиенты",
-      "appRatings": "Рейтинг приложения"
+      "appRatings": "Рейтинг приложения",
+      "banners": "Баннеры"
     }
   },
   "scorings": {
@@ -1407,6 +1412,79 @@
         "name": "Плам · Скоринг по карте",
         "desc": "Поведение по карте (Uzcard DATA-SET / Humo). Только сбор данных — модель их не использует и решение не меняется."
       }
+    }
+  },
+  "banners": {
+    "create": "Создать баннер",
+    "empty": "Баннеров пока нет",
+    "loadFailed": "Не удалось загрузить баннеры",
+    "saveFailed": "Не удалось сохранить",
+    "saved": "Баннер сохранён",
+    "created": "Баннер создан",
+    "showInactive": "Показывать неактивные",
+    "views": "просмотров",
+    "crowded": "Сейчас активно {n} баннеров — до последних почти никто не долистывает",
+    "moveUp": "Выше",
+    "moveDown": "Ниже",
+    "activate": "Включить",
+    "deactivate": "Отключить",
+    "activated": "Баннер включён",
+    "deactivated": "Баннер отключён",
+    "deactivateConfirmTitle": "Отключить баннер?",
+    "deactivateConfirmMsg": "«{title}» пропадёт с главного экрана. Баннеры не удаляются — его можно включить обратно.",
+    "windowAlways": "Без ограничения по времени",
+    "actionNone": "Без действия",
+    "actionMerchantId": "Мерчант #{id}",
+    "state": {
+      "live": "В эфире",
+      "scheduled": "Запланирован",
+      "expired": "Завершён",
+      "inactive": "Отключён"
+    },
+    "backToList": "К списку баннеров",
+    "artwork": "Изображения",
+    "artworkHint": "По одному готовому изображению на язык, 2:1 (например, 1440×720). Текст и кнопка — часть картинки.",
+    "image_uz": "Изображение (UZ)",
+    "image_ru": "Изображение (RU)",
+    "chooseImage": "Выбрать изображение",
+    "settings": "Настройки",
+    "title": "Название",
+    "titleHint": "Например: Летняя акция 2026 (видно только администраторам)",
+    "actionLabel": "Действие по нажатию",
+    "action": {
+      "none": "Ничего",
+      "externalUrl": "Открыть ссылку",
+      "merchant": "Открыть мерчанта"
+    },
+    "url": "Ссылка",
+    "merchant": "Мерчант",
+    "merchantId": "ID мерчанта",
+    "pickMerchant": "Выберите мерчанта",
+    "startsAt": "Начало показа",
+    "endsAt": "Конец показа",
+    "immediately": "Сразу",
+    "noEnd": "Бессрочно",
+    "sortOrder": "Порядок",
+    "active": "Активен",
+    "createdBy": "Создал: {name}",
+    "errTitleRequired": "Укажите название",
+    "errBothImages": "Нужны оба изображения — UZ и RU",
+    "errActionValue": "Укажите цель для выбранного действия",
+    "errHttps": "Ссылка должна начинаться с https://",
+    "errWindow": "Дата окончания должна быть позже даты начала",
+    "errImageType": "Допускаются только PNG, JPEG или WebP",
+    "errImageUnreadable": "Не удалось прочитать изображение",
+    "errTooSmall": "Изображение слишком маленькое: нужна ширина от {min}px",
+    "errAspect": "Нужно соотношение 2:1, а это {w}×{h}",
+    "apiError": {
+      "invalid_aspect_ratio": "Соотношение сторон должно быть 2:1 (например, 1440×720)",
+      "image_too_small": "Изображение слишком маленькое: ширина от 640px",
+      "invalid_image_type": "Допускаются только PNG, JPEG или WebP",
+      "file_too_large": "Файл слишком большой (максимум 5 МБ)",
+      "merchant_not_found": "Мерчант недоступен в каталоге приложения: скрыт, отключён или без активных филиалов",
+      "invalid_action_url": "Ссылка должна начинаться с https://",
+      "action_value_required": "Укажите цель для выбранного действия",
+      "invalid_banner_window": "Дата окончания должна быть позже даты начала"
     }
   }
 }

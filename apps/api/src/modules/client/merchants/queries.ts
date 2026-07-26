@@ -1,4 +1,4 @@
-import { and, asc, eq, ilike, sql } from 'drizzle-orm';
+import { and, asc, eq, ilike, inArray, sql } from 'drizzle-orm';
 import { db } from '@db';
 import { branches, merchants } from '@db/schema';
 
@@ -82,6 +82,23 @@ export async function getVisibleMerchant(id: number) {
     .where(and(eq(merchants.id, id), visibleMerchant()))
     .limit(1);
   return row;
+}
+
+// Which of `ids` are actually in the client catalog, as a set. Exists so other
+// client surfaces that merely POINT at a merchant — banners deep-linking to one,
+// today — can honour the same visibility rule without restating it. A banner
+// whose merchant is missing from this set must be dropped: tapping it would land
+// on a detail endpoint that answers 404.
+export async function filterVisibleMerchantIds(ids: number[]): Promise<Set<number>> {
+  const unique = [...new Set(ids)];
+  if (unique.length === 0) return new Set();
+
+  const rows = await db
+    .select({ id: merchants.id })
+    .from(merchants)
+    .where(and(inArray(merchants.id, unique), visibleMerchant()));
+
+  return new Set(rows.map((r) => r.id));
 }
 
 export async function listActiveBranches(merchantId: number) {

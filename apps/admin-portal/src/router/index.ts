@@ -85,6 +85,37 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'banners',
+        name: 'banners',
+        component: () => import('@/views/banners-view.vue'),
+        meta: {
+          titleKey: 'routeTitle.banners',
+          breadcrumbKeys: ['breadcrumb.banners'],
+          feature: 'manage_banners',
+        },
+      },
+      {
+        // Before the :id route, or 'new' would be parsed as a banner id.
+        path: 'banners/new',
+        name: 'banner-new',
+        component: () => import('@/views/banner-detail-view.vue'),
+        meta: {
+          titleKey: 'routeTitle.banners',
+          breadcrumbKeys: ['breadcrumb.banners', 'breadcrumb.new'],
+          feature: 'manage_banners',
+        },
+      },
+      {
+        path: 'banners/:id',
+        name: 'banner-detail',
+        component: () => import('@/views/banner-detail-view.vue'),
+        meta: {
+          titleKey: 'routeTitle.banners',
+          breadcrumbKeys: ['breadcrumb.banners', 'breadcrumb.detail'],
+          feature: 'manage_banners',
+        },
+      },
+      {
         path: 'deals',
         name: 'deals',
         component: () => import('@/views/deals-view.vue'),

@@ -4,6 +4,7 @@ export * from './agreements';
 export * from './app-ratings';
 export * from './app-version-policies';
 export * from './bank-mfo-cache';
+export * from './banners';
 export * from './blacklist';
 export * from './branches';
 export * from './buyouts';

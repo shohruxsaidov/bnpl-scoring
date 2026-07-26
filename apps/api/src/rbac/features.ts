@@ -20,6 +20,12 @@ export const ADMIN_FEATURES = [
   'view_clients',
   'send_client_push',
   'view_app_ratings',
+  // Deliberately NOT folded into manage_settings: banners are marketing art on
+  // every client's home screen, edited on a campaign cadence by people who have
+  // no business editing the platform's bank requisites or publishing a public
+  // offer. Read and write are one grant — inspecting the banner list has no
+  // standalone support value the way the force-update floor does.
+  'manage_banners',
   'view_merchants',
   'manage_merchants',
   'onboard_merchants',

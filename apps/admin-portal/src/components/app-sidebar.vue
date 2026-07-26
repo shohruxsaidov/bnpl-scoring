@@ -26,6 +26,7 @@ const allNav = computed<NavItem[]>(() => [
   { label: t('nav.merchants'), icon: 'pi pi-building', to: '/merchants', feature: 'view_merchants' },
   { label: t('nav.clients'), icon: 'pi pi-users', to: '/clients', feature: 'view_clients' },
   { label: t('nav.appRatings'), icon: 'pi pi-star', to: '/app-ratings', feature: 'view_app_ratings' },
+  { label: t('nav.banners'), icon: 'pi pi-images', to: '/banners', feature: 'manage_banners' },
   { label: t('nav.allDeals'), icon: 'pi pi-credit-card', to: '/deals', feature: 'view_deals' },
   { label: t('nav.tariffs'), icon: 'pi pi-percentage', to: '/tariffs', feature: 'view_tariffs' },
   { label: t('nav.employees'), icon: 'pi pi-users', to: '/employees', feature: 'manage_employees' },

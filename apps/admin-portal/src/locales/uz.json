@@ -46,7 +46,8 @@
     "categories": "Kategoriyalar",
     "settingsPublicOffer": "Ommaviy oferta",
     "settingsScoring": "Skoring sozlamalari",
-    "settingsAppVersions": "Ilova versiyasi"
+    "settingsAppVersions": "Ilova versiyasi",
+    "banners": "Bannerlar"
   },
   "breadcrumb": {
     "overview": "Umumiy ko'rinish",
@@ -73,7 +74,9 @@
     "categories": "Kategoriyalar",
     "settingsPublicOffer": "Ommaviy oferta",
     "settingsScoring": "Skoring",
-    "settingsAppVersions": "Ilova versiyasi"
+    "settingsAppVersions": "Ilova versiyasi",
+    "banners": "Bannerlar",
+    "new": "Yangi"
   },
   "topbar": {
     "scoring": "Skoring",
@@ -101,7 +104,8 @@
     "clients": "Mijozlar",
     "appRatings": "Ilova reytingi",
     "integrationLogs": "Integratsiya loglari",
-    "categories": "Kategoriyalar"
+    "categories": "Kategoriyalar",
+    "banners": "Bannerlar"
   },
   "categories": {
     "searchPlaceholder": "Nom bo'yicha qidirish…",
@@ -303,7 +307,8 @@
       "admins": "Administratorlar",
       "integrationLogs": "Integratsiya loglari",
       "clients": "Mijozlar",
-      "appRatings": "Ilova reytingi"
+      "appRatings": "Ilova reytingi",
+      "banners": "Bannerlar"
     }
   },
   "scorings": {
@@ -1394,6 +1399,79 @@
         "name": "Plum · Karta skoringi",
         "desc": "Karta bo'yicha xatti-harakat (Uzcard DATA-SET / Humo). Faqat ma'lumot yig'ish — model foydalanmaydi, qaror o'zgarmaydi."
       }
+    }
+  },
+  "banners": {
+    "create": "Banner yaratish",
+    "empty": "Hozircha bannerlar yo'q",
+    "loadFailed": "Bannerlarni yuklab bo'lmadi",
+    "saveFailed": "Saqlab bo'lmadi",
+    "saved": "Banner saqlandi",
+    "created": "Banner yaratildi",
+    "showInactive": "Faol bo'lmaganlarni ko'rsatish",
+    "views": "ko'rishlar",
+    "crowded": "Hozir {n} ta banner faol — oxirgilarigacha deyarli hech kim yetib bormaydi",
+    "moveUp": "Yuqoriga",
+    "moveDown": "Pastga",
+    "activate": "Yoqish",
+    "deactivate": "O'chirish",
+    "activated": "Banner yoqildi",
+    "deactivated": "Banner o'chirildi",
+    "deactivateConfirmTitle": "Banner o'chirilsinmi?",
+    "deactivateConfirmMsg": "«{title}» bosh ekrandan yo'qoladi. Bannerlar butunlay o'chirilmaydi — uni qayta yoqish mumkin.",
+    "windowAlways": "Vaqt cheklovisiz",
+    "actionNone": "Amalsiz",
+    "actionMerchantId": "Merchant #{id}",
+    "state": {
+      "live": "Efirda",
+      "scheduled": "Rejalashtirilgan",
+      "expired": "Tugagan",
+      "inactive": "O'chirilgan"
+    },
+    "backToList": "Bannerlar ro'yxatiga",
+    "artwork": "Rasmlar",
+    "artworkHint": "Har bir til uchun bitta tayyor rasm, 2:1 (masalan, 1440×720). Matn va tugma rasm ichida.",
+    "image_uz": "Rasm (UZ)",
+    "image_ru": "Rasm (RU)",
+    "chooseImage": "Rasm tanlash",
+    "settings": "Sozlamalar",
+    "title": "Nomi",
+    "titleHint": "Masalan: Yozgi aksiya 2026 (faqat adminlarga ko'rinadi)",
+    "actionLabel": "Bosilganda",
+    "action": {
+      "none": "Hech nima",
+      "externalUrl": "Havolani ochish",
+      "merchant": "Merchantni ochish"
+    },
+    "url": "Havola",
+    "merchant": "Merchant",
+    "merchantId": "Merchant ID",
+    "pickMerchant": "Merchantni tanlang",
+    "startsAt": "Boshlanish vaqti",
+    "endsAt": "Tugash vaqti",
+    "immediately": "Darhol",
+    "noEnd": "Muddatsiz",
+    "sortOrder": "Tartib",
+    "active": "Faol",
+    "createdBy": "Yaratdi: {name}",
+    "errTitleRequired": "Nomini kiriting",
+    "errBothImages": "Ikkala rasm ham kerak — UZ va RU",
+    "errActionValue": "Tanlangan amal uchun manzilni ko'rsating",
+    "errHttps": "Havola https:// bilan boshlanishi kerak",
+    "errWindow": "Tugash vaqti boshlanish vaqtidan keyin bo'lishi kerak",
+    "errImageType": "Faqat PNG, JPEG yoki WebP qabul qilinadi",
+    "errImageUnreadable": "Rasmni o'qib bo'lmadi",
+    "errTooSmall": "Rasm juda kichik: kengligi {min}px dan kam bo'lmasin",
+    "errAspect": "Nisbat 2:1 bo'lishi kerak, bu esa {w}×{h}",
+    "apiError": {
+      "invalid_aspect_ratio": "Rasm nisbati 2:1 bo'lishi kerak (masalan, 1440×720)",
+      "image_too_small": "Rasm juda kichik: kengligi 640px dan kam bo'lmasin",
+      "invalid_image_type": "Faqat PNG, JPEG yoki WebP qabul qilinadi",
+      "file_too_large": "Fayl juda katta (maksimum 5 MB)",
+      "merchant_not_found": "Merchant ilova katalogida mavjud emas: yashirilgan, o'chirilgan yoki faol filiali yo'q",
+      "invalid_action_url": "Havola https:// bilan boshlanishi kerak",
+      "action_value_required": "Tanlangan amal uchun manzilni ko'rsating",
+      "invalid_banner_window": "Tugash vaqti boshlanish vaqtidan keyin bo'lishi kerak"
     }
   }
 }

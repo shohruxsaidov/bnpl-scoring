@@ -16,6 +16,7 @@ import adminBuyoutRoutes from "./buyouts/index"
 import adminClientsRoutes from "./clients/index"
 import adminNotificationsRoutes from "./notifications/index"
 import adminAppRatingRoutes from "./appRatings/index"
+import adminBannerRoutes from "./banners/index"
 import mxikRoutes from "../mxik/index"
 import adminBankRoutes from "./banks/index"
 import adminOrganizationRoutes from "./organization/index"
@@ -64,6 +65,7 @@ export default async function adminModule(app: FastifyInstance) {
   // here would be reachable by any admin holding read-only view_app_ratings.
   // Ratings are written by clients via /client/ratings and by nobody else.
   await app.register(guarded(adminAppRatingRoutes, { read: "view_app_ratings" }), { prefix: "/admin/app-ratings" })
+  await app.register(guarded(adminBannerRoutes, { read: "manage_banners", write: "manage_banners" }), { prefix: "/admin/banners" })
   await app.register(guarded(adminUsersRoutes, { read: "manage_admins", write: "manage_admins" }), { prefix: "/admin/users" })
   await app.register(adminPermissionsRoutes, { prefix: "/admin/permissions" })
   await app.register(mxikRoutes, { prefix: "/admin/mxik", preHandler: app.verifyAdminJwt })

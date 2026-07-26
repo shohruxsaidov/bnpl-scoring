@@ -10,6 +10,7 @@ import clientDealSigningRoutes from './deals/signing';
 import clientScoringCardsRoutes from './scoring/cards';
 import clientMerchantsRoutes from './merchants/index';
 import clientRatingsRoutes from './ratings/index';
+import clientBannersRoutes from './banners/index';
 import clientPaymentsRoutes from './payments/index';
 import clientPaymentsByDealRoutes from './payments/by-deal';
 
@@ -53,6 +54,7 @@ export default async function clientModule(app: FastifyInstance) {
   await app.register(clientNotificationsRoutes, { prefix: '/client/notifications' });
   await app.register(clientMerchantsRoutes, { prefix: '/client/merchants' });
   await app.register(clientRatingsRoutes, { prefix: '/client/ratings' });
+  await app.register(clientBannersRoutes, { prefix: '/client/banners' });
   await app.register(clientPaymentsRoutes, { prefix: '/client/payments' });
   // Same payments, projected per credit. Its own plugin because it pages over
   // deals rather than payments — see payments/by-deal.ts.
