@@ -5,13 +5,15 @@ import swaggerUi from '@fastify/swagger-ui'
 import { env } from '../env'
 
 /**
- * Interactive API docs — non-production only. Split into three audience docs:
+ * Interactive API docs — non-production only. Split into four audience docs:
  *   /docs/admin     — admin portal endpoints
  *   /docs/merchant  — merchant portal endpoints
  *   /docs/client    — client portal endpoints
+ *   /docs/public    — unauthenticated endpoints (no session, no x-device-id)
  *
  * One @fastify/swagger instance generates the full spec; each UI instance below
- * filters it to its audience via `transformSpecification` (by path prefix).
+ * filters it to its audience via `transformSpecification` — the first three by
+ * path prefix, the public doc by tag (see `isPublic`).
  *
  * Spec is generated live by introspecting registered route schemas. Inputs
  * (body/params/querystring) are already typed via TypeBox and document
@@ -40,6 +42,10 @@ const DEVICE_ID_PARAM = {
 
 const HTTP_METHODS = ['get', 'post', 'put', 'patch', 'delete', 'options', 'head'] as const
 
+// Every route under publicModule is tagged 'Public · <area>'; /docs/public is
+// assembled from that convention rather than from a path prefix.
+const PUBLIC_TAG_PREFIX = 'Public · '
+
 // Append `param` to every operation under a path item, returning fresh objects
 // so the shared (un-cloned) spec is never mutated.
 function withParam(item: Record<string, any>, param: unknown) {
@@ -52,14 +58,15 @@ function withParam(item: Record<string, any>, param: unknown) {
 }
 
 // Registers an encapsulated swagger-ui that serves only the paths matching
-// `include`. Encapsulation keeps the three @fastify/static instances (one per
+// `include`. Encapsulation keeps the four @fastify/static instances (one per
 // UI) from colliding on shared decorators. When `injectParam` is set, it is
-// added to every operation in this doc.
+// added to every operation in this doc. `authScheme` is omitted for docs whose
+// endpoints take no credentials — the Authorize dialog then disappears.
 function audienceDocs(
   routePrefix: string,
   title: string,
-  include: (path: string) => boolean,
-  authScheme: string,
+  include: (path: string, item: Record<string, any>) => boolean,
+  authScheme?: string,
   injectParam?: unknown,
 ) {
   return async function (scope: FastifyInstance) {
@@ -70,7 +77,7 @@ function audienceDocs(
       transformSpecification(spec) {
         const paths: Record<string, unknown> = {}
         for (const [path, item] of Object.entries(spec.paths ?? {})) {
-          if (!include(path)) continue
+          if (!include(path, item as Record<string, any>)) continue
           // Only the enforced client routes advertise the header — not /health.
           const inject = injectParam && path.startsWith('/api/v1/client')
           paths[path] = inject ? withParam(item as Record<string, any>, injectParam) : item
@@ -78,9 +85,8 @@ function audienceDocs(
         // Show only this audience's auth scheme in the Authorize dialog, so the
         // client doc offers clientAuth alone (not merchantAuth/adminAuth too).
         const allSchemes = spec.components?.securitySchemes ?? {}
-        const securitySchemes = allSchemes[authScheme]
-          ? { [authScheme]: allSchemes[authScheme] }
-          : {}
+        const securitySchemes =
+          authScheme && allSchemes[authScheme] ? { [authScheme]: allSchemes[authScheme] } : {}
         return {
           ...spec,
           info: { ...spec.info, title },
@@ -168,9 +174,19 @@ export default fp(async function swaggerPlugin(app: FastifyInstance) {
     p.startsWith('/api/v1/merchant') || p.startsWith('/api/v1/auth/merchant') || p === '/health'
   const isClient = (p: string) => p.startsWith('/api/v1/client') || p === '/health'
 
+  // publicModule's routes share no path prefix — they sit at /api/v1/app-version,
+  // /api/v1/offer* and /api/v1/public/* — so this doc selects on the tag every
+  // one of them carries instead. A new public route joins the doc by being
+  // tagged 'Public · <area>'; nothing here needs editing.
+  const isPublic = (p: string, item: Record<string, any>) =>
+    p === '/health' ||
+    HTTP_METHODS.some((m) => item[m]?.tags?.some((t: string) => t.startsWith(PUBLIC_TAG_PREFIX)))
+
   await app.register(audienceDocs('/docs/admin', 'Scoring API — Admin', isAdmin, 'adminAuth'))
   await app.register(audienceDocs('/docs/merchant', 'Scoring API — Merchant', isMerchant, 'merchantAuth'))
   await app.register(
     audienceDocs('/docs/client', 'Scoring API — Client', isClient, 'clientAuth', DEVICE_ID_PARAM),
   )
+  // No security scheme: these endpoints take no credentials by definition.
+  await app.register(audienceDocs('/docs/public', 'Scoring API — Public', isPublic))
 }, { name: 'swagger', dependencies: [] })

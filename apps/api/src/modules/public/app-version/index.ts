@@ -4,6 +4,7 @@ import type { FastifyInstance } from 'fastify';
 import { desc, eq } from 'drizzle-orm';
 import { db } from '@db';
 import { appVersionPolicies } from '@db/app-version-policies';
+import { StringEnum } from '@lib/typebox';
 import { resolveLang, type SupportedLang } from '../../../i18n/index';
 import { compareSemver, parseSemver, MAX_VERSION_LENGTH } from '../../../lib/semver';
 
@@ -51,7 +52,7 @@ export default async function publicAppVersionRoutes(app: FastifyInstance) {
   const TAGS = ['Public · App'];
 
   const Query = Type.Object({
-    platform: Type.Union([Type.Literal('ios'), Type.Literal('android')]),
+    platform: StringEnum(['ios', 'android'] as const),
     version: Type.String({
       minLength: 1,
       maxLength: MAX_VERSION_LENGTH,
@@ -62,7 +63,7 @@ export default async function publicAppVersionRoutes(app: FastifyInstance) {
 
   const Response = Type.Object(
     {
-      status: Type.Union([Type.Literal('ok'), Type.Literal('soft'), Type.Literal('force')], {
+      status: StringEnum(['ok', 'soft', 'force'] as const, {
         description:
           "'force' — block the app with a non-dismissible screen. 'soft' — dismissible " +
           "update nudge. 'ok' — proceed.",
@@ -75,7 +76,9 @@ export default async function publicAppVersionRoutes(app: FastifyInstance) {
           'if this is ever null on a force verdict, the stranded user cannot be sent a fix.',
       }),
     },
-    { examples: [{ status: 'ok', latestVersion: '1.4.0', storeUrl: 'https://...', message: null }] },
+    {
+      examples: [{ status: 'ok', latestVersion: '1.4.0', storeUrl: 'https://...', message: null }],
+    },
   );
 
   const OPEN = { status: 'ok', latestVersion: null, storeUrl: null, message: null } as const;
@@ -103,7 +106,7 @@ export default async function publicAppVersionRoutes(app: FastifyInstance) {
       const [policy] = await db
         .select()
         .from(appVersionPolicies)
-        .where(eq(appVersionPolicies.platform, request.query.platform))
+        .where(eq(appVersionPolicies.platform, request.query.platform as any))
         .orderBy(desc(appVersionPolicies.version))
         .limit(1);
 
@@ -126,7 +129,11 @@ export default async function publicAppVersionRoutes(app: FastifyInstance) {
 
       const lang = resolveLang(request.headers['x-lang'] as string | undefined);
       const status: 'ok' | 'soft' | 'force' =
-        compareSemver(running, min) < 0 ? 'force' : compareSemver(running, latest) < 0 ? 'soft' : 'ok';
+        compareSemver(running, min) < 0
+          ? 'force'
+          : compareSemver(running, latest) < 0
+            ? 'soft'
+            : 'ok';
 
       return {
         status,
@@ -141,7 +148,11 @@ export default async function publicAppVersionRoutes(app: FastifyInstance) {
 // Mirrors pickText() in client/notifications/push.ts: prefer the requested
 // language, fall back across languages rather than render an empty screen to a
 // user who cannot be sent a corrected build.
-function pickMessage(policy: { messageUz: string; messageRu: string }, lang: SupportedLang): string | null {
-  const ordered = lang === 'uz' ? [policy.messageUz, policy.messageRu] : [policy.messageRu, policy.messageUz];
+function pickMessage(
+  policy: { messageUz: string; messageRu: string },
+  lang: SupportedLang,
+): string | null {
+  const ordered =
+    lang === 'uz' ? [policy.messageUz, policy.messageRu] : [policy.messageRu, policy.messageUz];
   return ordered.find((v) => v.trim() !== '') ?? null;
 }
