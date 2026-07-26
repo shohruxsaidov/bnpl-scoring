@@ -180,17 +180,18 @@ export async function runScoringPipeline(input: {
     const blocking = await loadBlockingDeal(input.userId);
     const activeDealEv = evaluateActiveDeal(blocking);
     console.log('[PIPELINE:active_deal] evaluateActiveDeal →', activeDealEv.status);
-    if (activeDealEv.status === 'rejected') {
-      await recordPipeline(input.scoringId, 'active_deal', {
-        status: 'rejected',
-        rejectReasonCode: 'active_deal_exists',
-        summary: activeDealEv.summary,
-        raw: activeDealEv.raw,
-      });
-      await markRejected(input.scoringId, 'active_deal_exists');
-      console.log('[PIPELINE:active_deal] REJECTED blockingDeal=', blocking?.dealNumber);
-      return { kind: 'rejected', reasonCode: 'active_deal_exists' };
-    }
+    // TODO need uncommit code below
+    // if (activeDealEv.status === 'rejected') {
+    //   await recordPipeline(input.scoringId, 'active_deal', {
+    //     status: 'rejected',
+    //     rejectReasonCode: 'active_deal_exists',
+    //     summary: activeDealEv.summary,
+    //     raw: activeDealEv.raw,
+    //   });
+    //   await markRejected(input.scoringId, 'active_deal_exists');
+    //   console.log('[PIPELINE:active_deal] REJECTED blockingDeal=', blocking?.dealNumber);
+    //   return { kind: 'rejected', reasonCode: 'active_deal_exists' };
+    // }
     await recordPipeline(input.scoringId, 'active_deal', {
       status: 'passed',
       summary: activeDealEv.status === 'passed' ? activeDealEv.summary : null,
