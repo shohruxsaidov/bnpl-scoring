@@ -66,7 +66,13 @@ export default async function clientPayRoutes(app: FastifyInstance) {
     },
     {
       examples: [
-        { paymentId: '4021', amount: 500000, remainingDebt: 1200000, dealClosed: false, booked: true },
+        {
+          paymentId: '4021',
+          amount: 500000,
+          remainingDebt: 1200000,
+          dealClosed: false,
+          booked: true,
+        },
       ],
     },
   );
@@ -93,13 +99,16 @@ export default async function clientPayRoutes(app: FastifyInstance) {
       },
       preHandler: guards,
     },
-    async (request) =>
-      initiatePlumPayment({
+    async (request) => {
+      const res = await initiatePlumPayment({
         userId: Number(request.user.sub),
         dealId: request.body.dealId,
         cardId: request.body.cardId,
         amount: request.body.amount,
-      }),
+      });
+
+      return res
+    },
   );
 
   /* ── POST /client/payments/confirm — verify OTP, charge, book ──────────── */
