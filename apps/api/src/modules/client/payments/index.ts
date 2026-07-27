@@ -35,7 +35,7 @@ export default async function clientPaymentRoutes(app: FastifyInstance) {
     amount: Type.Number(),
     // How the money was initiated, not how it arrived: 'payme' is a client-side
     // checkout, 'manual' an admin recording a transfer they received.
-    source: Type.Union([Type.Literal('manual'), Type.Literal('payme')]),
+    source: Type.String(),
     // The sub-kind behind `source`: 'replenishment' | 'writing_off' for a manual row, or the
     // rail's own name ('payme') for a machine-booked one. Left open as a string
     // rather than a union — the column is free text, and a new rail must not
@@ -65,14 +65,6 @@ export default async function clientPaymentRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'List my payments',
-        description:
-          "Every payment the authenticated client has made, across all their credits, " +
-          'newest first. One row per money-in event — not per instalment; for the ' +
-          'schedule of what is still owed, use GET /client/deals/:id. `from`/`to` are ' +
-          'inclusive ISO date-times carrying the caller’s UTC offset. Amounts are in som. ' +
-          'Paged 1-based via `page`: the response echoes the requested `page` and reports ' +
-          '`lastPage`, so a page past the end returns an empty list with page > lastPage ' +
-          'rather than silently re-serving the final page.',
         security: SECURITY,
         querystring: ListQuery,
         response: {

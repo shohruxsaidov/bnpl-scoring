@@ -30,6 +30,7 @@ export * from './katm-inps-reports';
 export * from './deal-payments';
 export * from './payment-allocations';
 export * from './payme-transactions';
+export * from './plum-payment-sessions';
 export * from './merchant-categories';
 export * from './merchant-documents';
 export * from './merchant-tariffs';
