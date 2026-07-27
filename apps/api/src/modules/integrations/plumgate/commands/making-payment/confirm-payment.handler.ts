@@ -1,37 +1,23 @@
-import {
-  env,
-  db,
-  logIntegration,
-  IntegrationError,
-  makePlumClient,
-  parsePlumError,
-} from '../../service/shared';
-import { MakingPaymentCommand } from './making-payment.command';
+import { logIntegration } from '../../../log';
+import { db, IntegrationError, makePlumClient, parsePlumError } from '../../service/shared';
+import { ConfirmPaymentCommand } from './confirm-payment.command';
 
-// Removes a card from Plumgate. A 404 ("card not found / already removed") is
-// treated as success so the caller can proceed to delete the local row
-export async function makingPaymentHandler(
-  params: MakingPaymentCommand,
-): Promise<{ sessionId: string }> {
+export const confirmPaymentHandler = async ({ sessionId, otp }: ConfirmPaymentCommand) => {
   const client = makePlumClient();
   const payload = {
-    userId: params.userId,
-    cardId: params.cardId,
-    amount: params.amount,
-    extraId: params.extraId,
-    sendOtp: false,
-    transactionData: params.transactionData,
+    session: sessionId,
+    otp,
   };
 
   const requestTimestamp = new Date();
   try {
-    const data = await client.post('Payment/payment', { json: payload }).json<{
+    const data = await client.post('Payment/confirmPayment', { json: payload }).json<{
       result: { transactionId: string };
     }>();
 
     logIntegration(db, {
       integration: 'plumgate',
-      methodName: 'Payment/payment',
+      methodName: 'Payment/confirmPayment',
       methodType: 'POST',
       request: payload,
       response: data,
@@ -59,4 +45,4 @@ export async function makingPaymentHandler(
     });
     throw toThrow;
   }
-}
+};
