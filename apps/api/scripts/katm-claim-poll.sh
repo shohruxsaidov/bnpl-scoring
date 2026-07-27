@@ -15,7 +15,8 @@
 # POSIX sh compatible (dash on Debian/Ubuntu): no pipefail, no BASH_SOURCE.
 set -u
 
-URL="${URL:-https://api.infokredit.uz/katm-api/v1/claim/get}"
+URL="${URL:-https://api.infokredit.uz/katm-api/v1/clails
+m/get}"
 LOGIN="${KATM_LOGIN:-*********}"
 PASSWORD="${KATM_PASSWORD:-********}"
 
