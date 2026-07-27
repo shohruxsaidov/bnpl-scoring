@@ -3,7 +3,7 @@ import { StringEnum } from '@lib/typebox';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { listPayments } from './queries/list-payments/list-payments.handler';
-import { listManualPayments } from './queries/list-manual-payments/list-manual-payments.handler';
+import type { PaymentSortBy } from './queries/list-payments/list-payments.query';
 import { searchDealsForManualPayment } from './queries/search-deals/search-deals.handler';
 import { createManualPayment } from './commands/create-manual-payment/create-manual-payment.handler';
 import { listPaymeTransactions } from './queries/list-payme-transactions/list-payme-transactions.handler';
@@ -19,16 +19,34 @@ export default async function adminPaymentRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
   const preHandler = app.verifyAdminJwt;
 
+  /* ── The payments register ───────────────────────────────────────────────
+   * Every money-in event against a deal, whatever the rail. `source` narrows it
+   * to one — which is all the "manual payments" view is: this endpoint with
+   * source=manual. Paginated because deal_payments only ever grows.
+   */
   const ListQuery = Type.Object({
     merchantId: Type.Optional(Type.String()),
+    source: Type.Optional(StringEnum(['manual', 'payme', 'plum'] as const)),
+    dateFrom: Type.Optional(Type.String({ format: 'date' })),
+    dateTo: Type.Optional(Type.String({ format: 'date' })),
+    q: Type.Optional(Type.String()),
+    page: Type.Optional(Type.Integer({ minimum: 0 })),
+    limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 100 })),
+    sortBy: Type.Optional(StringEnum(['paymentDate', 'amount'] as const)),
+    sortDir: Type.Optional(StringEnum(['asc', 'desc'] as const)),
   });
 
   fastify.get('/', { schema: { tags: TAGS, querystring: ListQuery }, preHandler }, async (request) => {
-    const { merchantId } = request.query;
-    const payments = await listPayments({
+    const { merchantId, source, sortBy, sortDir, ...rest } = request.query;
+    // StringEnum widens to unknown at the type level; the schema is what
+    // actually constrains these values.
+    return listPayments({
+      ...rest,
       merchantId: merchantId ? Number(merchantId) : undefined,
+      source: source as DealPaymentSource | undefined,
+      sortBy: sortBy as PaymentSortBy | undefined,
+      sortDir: sortDir as 'asc' | 'desc' | undefined,
     });
-    return { payments };
   });
 
   fastify.get(
@@ -37,21 +55,6 @@ export default async function adminPaymentRoutes(app: FastifyInstance) {
     async (request) => {
       const deals = await searchDealsForManualPayment(request.query.q);
       return { deals };
-    },
-  );
-
-  // Despite the path, this lists every money-in event — a Payme payment settles
-  // the same instalments and belongs in the same register. `source` filters.
-  const PaymentsQuery = Type.Object({
-    source: Type.Optional(StringEnum(['manual', 'payme', 'plum'] as const)),
-  });
-
-  fastify.get(
-    '/manual',
-    { schema: { tags: TAGS, querystring: PaymentsQuery }, preHandler },
-    async (request) => {
-      const payments = await listManualPayments(request.query.source as DealPaymentSource | undefined);
-      return { payments };
     },
   );
 

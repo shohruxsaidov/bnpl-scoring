@@ -1,3 +1,24 @@
+/**
+ * The command's echo of the row it wrote. Deliberately not the register's
+ * `Payment` shape: that one carries the merchant, which this command has no
+ * reason to look up. Callers refresh the register to see the row in context.
+ */
+export interface CreatedManualPayment {
+  id: string;
+  dealId: string;
+  dealNumber: string;
+  clientName: string;
+  clientPhone: string;
+  amount: number;
+  source: 'manual';
+  paymentType: string;
+  note: string | null;
+  /** Value date, `YYYY-MM-DD`. */
+  paymentDate: string;
+  createdAt: string;
+  adminName: string | null;
+}
+
 export interface CreateManualPaymentInput {
   dealId: string;
   adminUserId: number;
