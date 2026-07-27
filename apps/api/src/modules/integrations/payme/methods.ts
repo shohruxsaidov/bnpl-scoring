@@ -10,7 +10,7 @@ import { applyPayment, lockDeal, OverpaymentError } from '../../deals/payments/a
 import { assertAmountAcceptable, resolveAccount } from './account';
 import { paymeErrors } from './errors';
 import { toSom, type PaymeAccount } from './protocol';
-import { enqueuePaymentReceivedPush } from './notify';
+import { enqueuePaymentReceivedPush } from '../../deals/payments/notify';
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type PaymeTransaction = typeof paymeTransactions.$inferSelect;

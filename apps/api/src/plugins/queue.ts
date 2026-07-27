@@ -38,6 +38,12 @@ import {
   setPlumCardScoreQueue,
   type PlumCardScoreJobData,
 } from '../modules/integrations/plumgate/card-scoring';
+import {
+  PLUM_PAYMENT_SWEEP_QUEUE,
+  PLUM_PAYMENT_SWEEP_INTERVAL_MS,
+  PLUM_PAYMENT_SWEEP_JOB_ID,
+  processPlumPaymentSweepJob,
+} from '../modules/client/payments/sweep';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -47,6 +53,7 @@ declare module 'fastify' {
     paymeSweepQueue: Queue;
     notificationsPushQueue: Queue<NotificationPushJobData>;
     plumCardScoreQueue: Queue<PlumCardScoreJobData>;
+    plumPaymentSweepQueue: Queue;
     // Every Queue created by this plugin, in registration order. The bull-board
     // dashboard iterates this so new queues surface without touching its plugin.
     queues: Queue[];
@@ -98,6 +105,21 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
     },
   );
 
+  // Plum card-payment session timeout. Frees credits whose payer never typed the
+  // OTP, and escalates sessions stuck mid-confirm — the ones where Plum may hold
+  // money we never booked — so a human sees them.
+  const plumPaymentSweepQueue: Queue = new Queue(PLUM_PAYMENT_SWEEP_QUEUE, { connection });
+  await plumPaymentSweepQueue.add(
+    'sweep',
+    {},
+    {
+      jobId: PLUM_PAYMENT_SWEEP_JOB_ID,
+      repeat: { every: PLUM_PAYMENT_SWEEP_INTERVAL_MS },
+      removeOnComplete: true,
+      removeOnFail: 50,
+    },
+  );
+
   // Registry consumed by the bull-board dashboard. Push each new queue here.
   const queues: Queue[] = [
     queue,
@@ -106,6 +128,7 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
     notificationsPushQueue,
     plumCardScoreQueue,
     paymeSweepQueue,
+    plumPaymentSweepQueue,
   ];
 
   const worker = new Worker<KatmPollJobData>(
@@ -192,6 +215,25 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
     app.log.warn({ jobId: job?.id, err }, 'payme transaction sweep failed');
   });
 
+  const plumPaymentSweepWorker = new Worker(
+    PLUM_PAYMENT_SWEEP_QUEUE,
+    async () => {
+      const { expired, escalated } = await processPlumPaymentSweepJob();
+      if (expired > 0) app.log.info({ expired }, 'plum payment sessions expired');
+      // Not info: every escalated row is money Plum may hold that our ledger does
+      // not, and it needs a person.
+      if (escalated > 0) {
+        app.log.error({ escalated }, 'plum payment sessions stuck mid-confirm — manual review');
+      }
+      return expired + escalated;
+    },
+    { connection, concurrency: 1 },
+  );
+
+  plumPaymentSweepWorker.on('failed', (job, err) => {
+    app.log.warn({ jobId: job?.id, err }, 'plum payment session sweep failed');
+  });
+
   worker.on('failed', (job, err) => {
     if (!job) return;
     const exhausted = job.attemptsMade >= (job.opts.attempts ?? 1);
@@ -210,6 +252,7 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
   app.decorate('notificationsPushQueue', notificationsPushQueue);
   app.decorate('plumCardScoreQueue', plumCardScoreQueue);
   app.decorate('paymeSweepQueue', paymeSweepQueue);
+  app.decorate('plumPaymentSweepQueue', plumPaymentSweepQueue);
   app.decorate('queues', queues);
   app.addHook('onClose', async () => {
     await worker.close();

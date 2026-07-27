@@ -1,20 +1,26 @@
 import { eq } from 'drizzle-orm';
 import type { db } from '@db';
 import { deals } from '@db/deals';
-import { getRemainingDebt } from '../../deals/payments/apply-payment';
+import {
+  getRemainingDebt,
+  MIN_PAYMENT_SOM,
+  PAYABLE_DEAL_STATUSES,
+} from '../../deals/payments/apply-payment';
 import { paymeErrors } from './errors';
 import type { PaymeAccount } from './protocol';
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /**
- * Smallest payment we accept. Below this the payment costs more in commission
- * and reconciliation attention than it settles.
+ * Smallest payment we accept.
+ * @deprecated the floor is not Payme's — import `MIN_PAYMENT_SOM` from
+ * deals/payments/apply-payment. Kept as an alias so existing call sites and the
+ * client deals route keep reading the one value.
  */
-export const PAYME_MIN_PAYMENT_SOM = 1_000;
+export const PAYME_MIN_PAYMENT_SOM = MIN_PAYMENT_SOM;
 
 /** A deal carries debt only in these states. */
-const PAYABLE_STATUSES = new Set(['active', 'overdue']);
+const PAYABLE_STATUSES = PAYABLE_DEAL_STATUSES;
 
 export interface ResolvedAccount {
   dealId: string;

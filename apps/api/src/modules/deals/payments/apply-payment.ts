@@ -27,6 +27,23 @@ type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 /** Som are 2dp. Float arithmetic on them drifts; every result is snapped back. */
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+/**
+ * Smallest payment any rail accepts. Below this a payment costs more in
+ * commission and reconciliation attention than it settles.
+ *
+ * Shared rather than per-rail: a floor that differs by rail is a floor a client
+ * discovers by being refused, and "1 000 som through Payme, 500 through the app"
+ * is not a rule anyone can explain at a support desk.
+ */
+export const MIN_PAYMENT_SOM = 1_000;
+
+/**
+ * A deal carries debt — and is therefore payable — only in these states. A
+ * closed or draft deal has nothing to settle, and a payment against one would
+ * allocate to no instalment.
+ */
+export const PAYABLE_DEAL_STATUSES = new Set(['active', 'overdue']);
+
 export class OverpaymentError extends Error {
   readonly code = 'OVERPAYMENT';
   readonly statusCode = 400;

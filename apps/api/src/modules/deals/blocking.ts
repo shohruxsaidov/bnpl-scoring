@@ -17,6 +17,7 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '@db';
 import { deals } from '@db/deals';
+import { isUniqueViolation } from '@lib/pg-errors';
 
 /**
  * The deal statuses that hold the client's one slot.
@@ -41,27 +42,6 @@ export async function loadBlockingDeal(userId: number): Promise<BlockingDeal | n
     .where(and(eq(deals.userId, userId), inArray(deals.status, [...BLOCKING_DEAL_STATUSES])))
     .limit(1);
   return row ?? null;
-}
-
-/**
- * Postgres unique-violation on a named index.
- *
- * Drizzle wraps driver errors, so the thrown object carries neither `code` nor
- * `constraint` — the real PostgresError hangs off `.cause`, and postgres.js spells
- * the field `constraint_name`. Both shapes are checked because the wrapping is a
- * library detail we do not want this rule to depend on: a version bump that stops
- * wrapping must not silently turn the race back into a 500.
- */
-function isUniqueViolation(err: unknown, constraint: string): boolean {
-  type PgLike = { code?: string; constraint?: string; constraint_name?: string; cause?: unknown };
-  for (
-    let e = err as PgLike | null | undefined, depth = 0;
-    e && depth < 4;
-    e = e.cause as PgLike, depth++
-  ) {
-    if (e.code === '23505' && (e.constraint ?? e.constraint_name) === constraint) return true;
-  }
-  return false;
 }
 
 /** Lost the race for the client's one open deal slot. */

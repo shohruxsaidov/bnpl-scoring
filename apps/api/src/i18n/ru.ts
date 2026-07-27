@@ -84,6 +84,14 @@ export const ru: Record<string, string> = {
   deal_not_found: 'Договор не найден',
   deal_not_payable: 'По этому договору нет задолженности к оплате',
   payme_not_configured: 'Оплата через Payme временно недоступна',
+  // card payments (Plumgate)
+  card_not_found: 'Карта не найдена',
+  amount_too_small: 'Минимальная сумма платежа — %{min} сум',
+  amount_exceeds_debt: 'Сумма превышает остаток задолженности — %{remaining} сум',
+  payment_already_pending: 'По этому договору уже есть незавершённый платёж',
+  payment_session_not_found: 'Платёжная сессия не найдена',
+  payment_session_not_pending: 'Платёжная сессия уже завершена. Начните оплату заново',
+  payment_session_not_stranded: 'Этот платёж не требует ручного проведения',
   invalid_signing_purpose: 'Неверное назначение токена подписи',
   invalid_signing_session: 'Неверная сессия подписи',
 

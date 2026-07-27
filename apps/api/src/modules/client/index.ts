@@ -12,6 +12,7 @@ import clientMerchantsRoutes from './merchants/index';
 import clientBannersRoutes from './banners/index';
 import clientPaymentsRoutes from './payments/index';
 import clientPaymentsByDealRoutes from './payments/by-deal';
+import clientPayRoutes from './payments/pay';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -54,6 +55,10 @@ export default async function clientModule(app: FastifyInstance) {
   await app.register(clientMerchantsRoutes, { prefix: '/client/merchants' });
   await app.register(clientBannersRoutes, { prefix: '/client/banners' });
   await app.register(clientPaymentsRoutes, { prefix: '/client/payments' });
+  // Same prefix, opposite concern: the plugin above reads payment history, this
+  // one makes payments. Split because the OTP/charge state machine has nothing
+  // to do with the read surface — see payments/pay.ts.
+  await app.register(clientPayRoutes, { prefix: '/client/payments' });
   // Same payments, projected per credit. Its own plugin because it pages over
   // deals rather than payments — see payments/by-deal.ts.
   await app.register(clientPaymentsByDealRoutes, { prefix: '/client/payments-by-deal' });

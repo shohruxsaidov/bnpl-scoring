@@ -84,6 +84,14 @@ export const uz: Record<string, string> = {
   deal_not_found: 'Shartnoma topilmadi',
   deal_not_payable: "Ushbu shartnoma bo'yicha to'lanadigan qarz yo'q",
   payme_not_configured: "Payme orqali to'lov vaqtincha mavjud emas",
+  // card payments (Plumgate)
+  card_not_found: 'Karta topilmadi',
+  amount_too_small: "Eng kam to'lov summasi — %{min} so'm",
+  amount_exceeds_debt: "Summa qarz qoldig'idan oshib ketdi — %{remaining} so'm",
+  payment_already_pending: "Ushbu shartnoma bo'yicha tugallanmagan to'lov mavjud",
+  payment_session_not_found: "To'lov sessiyasi topilmadi",
+  payment_session_not_pending: "To'lov sessiyasi yakunlangan. To'lovni qaytadan boshlang",
+  payment_session_not_stranded: "Bu to'lov qo'lda o'tkazishni talab qilmaydi",
   invalid_signing_purpose: "Imzolash maqsadi noto'g'ri",
   invalid_signing_session: "Imzolash sessiyasi noto'g'ri",
 

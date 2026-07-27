@@ -1,15 +1,11 @@
-import {
-  env,
-  db,
-  logIntegration,
-  IntegrationError,
-  makePlumClient,
-  parsePlumError,
-} from '../../service/shared';
+import { db, logIntegration, makePlumClient, parsePlumError } from '../../service/shared';
 import { MakingPaymentCommand } from './making-payment.command';
 
-// Removes a card from Plumgate. A 404 ("card not found / already removed") is
-// treated as success so the caller can proceed to delete the local row
+/**
+ * Registers a card payment at Plumgate and triggers the OTP SMS. Charges
+ * nothing — the money moves at confirmPayment. Safe to fail: a session nobody
+ * confirms costs an SMS and expires.
+ */
 export async function makingPaymentHandler(
   params: MakingPaymentCommand,
 ): Promise<{ session: number; otpSentPhone: string }> {
@@ -46,15 +42,18 @@ export async function makingPaymentHandler(
     };
   } catch (err) {
     const toThrow = await parsePlumError(err);
-    const status = toThrow instanceof IntegrationError ? toThrow.statusCode : null;
+    // See confirm-payment.handler.ts: parsePlumError yields a plain object, not
+    // an IntegrationError, so an `instanceof` test discards the vendor's own
+    // status and body — the only record of why the payment could not start.
+    const failure = toThrow as { statusCode?: number; body?: unknown; message?: string };
     logIntegration(db, {
       integration: 'plumgate',
-      methodName: 'deleteUserCard',
-      methodType: 'DELETE',
+      methodName: 'Payment/payment',
+      methodType: 'POST',
       request: payload,
-      response: toThrow instanceof IntegrationError ? toThrow.body : null,
-      status,
-      errorMessage: toThrow.message,
+      response: failure.body ?? null,
+      status: failure.statusCode ?? null,
+      errorMessage: failure.message ?? String(toThrow),
       requestTimestamp,
       responseTimestamp: new Date(),
     });

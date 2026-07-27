@@ -1,8 +1,16 @@
 import { logIntegration } from '../../../log';
-import { db, IntegrationError, makePlumClient, parsePlumError } from '../../service/shared';
+import { db, makePlumClient, parsePlumError } from '../../service/shared';
 import { ConfirmPaymentCommand } from './confirm-payment.command';
 
-export const confirmPaymentHandler = async ({ sessionId, otp }: ConfirmPaymentCommand) => {
+/**
+ * Verifies the OTP and CHARGES THE CARD. Irreversible: there is no reversal
+ * endpoint wired anywhere in this system, so nothing that could refuse the
+ * payment may run after this returns. See client/payments/pay.service.ts.
+ */
+export const confirmPaymentHandler = async ({
+  sessionId,
+  otp,
+}: ConfirmPaymentCommand): Promise<{ transactionId: string }> => {
   const client = makePlumClient();
   const payload = {
     session: sessionId,
@@ -27,19 +35,23 @@ export const confirmPaymentHandler = async ({ sessionId, otp }: ConfirmPaymentCo
       responseTimestamp: new Date(),
     });
     return {
-      sessionId: data.result.transactionId,
+      transactionId: data.result.transactionId,
     };
   } catch (err) {
     const toThrow = await parsePlumError(err);
-    const status = toThrow instanceof IntegrationError ? toThrow.statusCode : null;
+    // parsePlumError returns a PLAIN OBJECT for a vendor HTTP failure, never an
+    // IntegrationError — an `instanceof` check here silently logs null for both
+    // the status and the body, which is exactly the forensic trail a failed
+    // payment needs. Read the fields off whatever shape came back instead.
+    const failure = toThrow as { statusCode?: number; body?: unknown; message?: string };
     logIntegration(db, {
       integration: 'plumgate',
-      methodName: 'deleteUserCard',
-      methodType: 'DELETE',
+      methodName: 'Payment/confirmPayment',
+      methodType: 'POST',
       request: payload,
-      response: toThrow instanceof IntegrationError ? toThrow.body : null,
-      status,
-      errorMessage: toThrow.message,
+      response: failure.body ?? null,
+      status: failure.statusCode ?? null,
+      errorMessage: failure.message ?? String(toThrow),
       requestTimestamp,
       responseTimestamp: new Date(),
     });
