@@ -178,4 +178,9 @@ export const ru: Record<string, string> = {
   'plumIntegrationErrors.-102': 'Неправильный ОТП код',
   'plumIntegrationErrors.-137': 'Введен неправильный код подтверждения',
   'plumIntegrationErrors.-111': 'Пользователь заблокирован из-за превышения лимита OTP',
+  'plumIntegrationErrors.-200': 'Карта не найдена',
+  'plumIntegrationErrors.-105': 'Карта не найдена',
+  'plumIntegrationErrors.-153': 'Сервис SMS-уведомлений привязан к другому номеру телефона.',
+  'plumIntegrationErrors.-261': 'Вставленная карта блокируется на определенный период времени.',
+  'plumIntegrationErrors.-2': 'Срок действия одноразового пароля истек.',
 };

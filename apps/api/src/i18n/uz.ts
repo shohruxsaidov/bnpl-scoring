@@ -50,8 +50,8 @@ export const uz: Record<string, string> = {
   image_too_small: "Rasm juda kichik: kamida 640px kenglikda bo'lishi kerak",
   invalid_aspect_ratio: "Rasm nisbati 2:1 bo'lishi kerak (masalan, 1440×720)",
   action_value_required: "Tanlangan harakat uchun manzil ko'rsatilishi shart",
-  invalid_action_url: "Havola https:// bilan boshlanishi kerak",
-  invalid_banner_window: 'Tugash vaqti boshlanish vaqtidan keyin bo\'lishi kerak',
+  invalid_action_url: 'Havola https:// bilan boshlanishi kerak',
+  invalid_banner_window: "Tugash vaqti boshlanish vaqtidan keyin bo'lishi kerak",
   invalid_coordinates: "Kenglik va uzunlik birgalikda ko'rsatilishi kerak",
   otp_cooldown: "Iltimos, yangi kod so'rashdan oldin biroz kuting",
   otp_daily_limit: 'Tasdiqlash kodlari uchun kunlik chegaraga yetdingiz',
@@ -179,4 +179,9 @@ export const uz: Record<string, string> = {
   'plumIntegrationErrors.-137': "Otp parol noto'g'ri kiritilgan",
   'plumIntegrationErrors.-111':
     "Otp parol tasdiqlash limitdan oshirib yuborildi. Birozdan keyin urinib ko'ring",
+  'plumIntegrationErrors.-200': 'Karta topilmadi',
+  'plumIntegrationErrors.-105': 'Karta topilmadi',
+  'plumIntegrationErrors.-153': "Sms xabarnoma xizmati boshqa telefon nomerga bog'langan",
+  'plumIntegrationErrors.-261': "Kiritilgan karta ma'lum muaddatga bloklangan",
+  'plumIntegrationErrors.-2': 'OTP amal qilish muddati yakunlangan',
 };
