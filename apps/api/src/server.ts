@@ -2,7 +2,7 @@ import './tracing.js';
 import { buildApp } from './app.js';
 import { env } from './env.js';
 
-// import './migrate.js';
+import './migrate.js';
 const app = await buildApp();
 
 try {
