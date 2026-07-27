@@ -31,7 +31,7 @@ export default async function clientPaymentsByDealRoutes(app: FastifyInstance) {
     /** In som. */
     amount: Type.Number(),
     // How the money was initiated, not how it arrived.
-    source: Type.Union([Type.Literal('manual'), Type.Literal('payme')]),
+    source: Type.String(),
     // Free text in the column, so free text here — a new rail must not make an
     // existing payment fail response validation and vanish from the history.
     paymentType: Type.String(),
@@ -67,14 +67,6 @@ export default async function clientPaymentsByDealRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'List my payments grouped by deal',
-        description:
-          'Every payment the authenticated client has made, grouped under the credit it ' +
-          'was paid against — newest credit first, newest payment first within each. Only ' +
-          'deals that have at least one payment appear; a signed credit nobody has paid yet ' +
-          'is absent. Amounts are in som. Paged 1-based over DEALS (not payments), so each ' +
-          'returned deal always carries its complete payment history and `paidTotal` always ' +
-          'equals the sum of the `payments` beneath it. `total` counts deals. For a flat ' +
-          'chronological feed with a date filter, use GET /client/payments.',
         security: SECURITY,
         querystring: ListQuery,
         response: {
@@ -105,7 +97,7 @@ export default async function clientPaymentsByDealRoutes(app: FastifyInstance) {
       });
 
       return {
-        page,
+        page: +page,
         lastPage,
         total,
         deals: rows.map((d) => ({
