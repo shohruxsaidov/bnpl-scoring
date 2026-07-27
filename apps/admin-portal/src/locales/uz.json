@@ -884,6 +884,8 @@
     "create": "Yaratish",
     "yes": "Ha",
     "branchCreated": "Filial yaratildi",
+    "editBranch": "Filialni tahrirlash",
+    "branchSaved": "Filial saqlandi",
     "employeeCreated": "Xodim yaratildi",
     "categoryCreated": "Kategoriya yaratildi",
     "editCategory": "Kategoriyani tahrirlash",

@@ -242,32 +242,67 @@ async function toggleVisibility() {
 
 // --- Branches ----------------------------------------------------------------
 const showBranch = ref(false)
+const editingBranchId = ref<string | null>(null)
 const branchForm = ref({ name: '', address: '', phone: '', regionId: null as number | null })
 const branchRegion = ref<number | null>(null)
 const branchSaving = ref(false)
 
-const { regionOptions, districtOptions, onRegionChange, lookupName, lookupParent } = useRegions()
+const { regionOptions, districtOptions, districtsUpperId, onRegionChange, lookupName, lookupParent } =
+  useRegions()
 
 function openBranch() {
+  editingBranchId.value = null
   branchForm.value = { name: '', address: '', phone: '', regionId: null }
   branchRegion.value = null
   showBranch.value = true
 }
 
+function openEditBranch(branch: Branch) {
+  editingBranchId.value = branch.id
+  branchForm.value = {
+    name: branch.name,
+    address: branch.address,
+    phone: branch.phone,
+    regionId: branch.regionId,
+  }
+  // regionId may hold an oblast or a district, but the first Select always shows
+  // the oblast — resolve upward, then prime the district list for that oblast so
+  // the second Select opens populated instead of empty.
+  const oblastId = lookupParent(branch.regionId)?.id ?? branch.regionId
+  branchRegion.value = oblastId
+  districtsUpperId.value = oblastId
+  showBranch.value = true
+}
+
 async function submitBranch() {
-  if (!branchForm.value.name || !branchForm.value.address || !branchForm.value.phone) return
+  const f = branchForm.value
+  if (!f.name || !f.address || !f.phone) return
   branchSaving.value = true
   try {
-    await merchants.createBranch(merchantId.value, {
-      name: branchForm.value.name,
-      address: branchForm.value.address,
-      phone: branchForm.value.phone,
-      regionId: branchForm.value.regionId ?? undefined,
-    })
-    toast.add({ severity: 'success', summary: t('merchantDetail.branchCreated'), life: 2000 })
+    const id = editingBranchId.value
+    if (id) {
+      const before = branches.value.find((b) => b.id === id)
+      // Send only what moved: a PATCH carrying untouched fields would clobber a
+      // concurrent edit (the map tab writes to the same branch).
+      const patch: Partial<Branch> = {}
+      if (f.name !== before?.name) patch.name = f.name
+      if (f.address !== before?.address) patch.address = f.address
+      if (f.phone !== before?.phone) patch.phone = f.phone
+      if (f.regionId !== (before?.regionId ?? null)) patch.regionId = f.regionId
+      if (Object.keys(patch).length > 0) await merchants.updateBranch(id, patch)
+      toast.add({ severity: 'success', summary: t('merchantDetail.branchSaved'), life: 2000 })
+    } else {
+      await merchants.createBranch(merchantId.value, {
+        name: f.name,
+        address: f.address,
+        phone: f.phone,
+        regionId: f.regionId ?? undefined,
+      })
+      toast.add({ severity: 'success', summary: t('merchantDetail.branchCreated'), life: 2000 })
+    }
     showBranch.value = false
   } catch {
-    notifyError('merchantDetail.createFailed')
+    notifyError(editingBranchId.value ? 'merchantDetail.updateFailed' : 'merchantDetail.createFailed')
   } finally {
     branchSaving.value = false
   }
@@ -1048,6 +1083,13 @@ async function assignScoringModel(radioValue: number) {
               <ToggleSwitch :model-value="data.active" @update:model-value="toggleBranch(data)" />
             </template>
           </Column>
+          <Column style="width: 48px">
+            <template #body="{ data }">
+              <button class="icon-btn" :title="$t('common.edit')" @click="openEditBranch(data)">
+                <i class="pi pi-pencil" />
+              </button>
+            </template>
+          </Column>
         </DataTable>
       </div>
     </section>
@@ -1366,8 +1408,10 @@ async function assignScoringModel(radioValue: number) {
       </p>
     </section>
 
-    <!-- Branch dialog -->
-    <Dialog v-model:visible="showBranch" modal :header="$t('merchantDetail.addBranch')" :style="{ width: '480px' }">
+    <!-- Branch dialog (create & edit) -->
+    <Dialog v-model:visible="showBranch" modal
+      :header="editingBranchId ? $t('merchantDetail.editBranch') : $t('merchantDetail.addBranch')"
+      :style="{ width: '480px' }">
       <div class="field">
         <label class="field-label">{{ $t('merchantDetail.name') }}</label>
         <InputText v-model="branchForm.name" />
@@ -1395,7 +1439,7 @@ async function assignScoringModel(radioValue: number) {
       <template #footer>
         <button class="btn-ghost" @click="showBranch = false">{{ $t('common.cancel') }}</button>
         <button class="btn-gradient" :disabled="branchSaving" @click="submitBranch">
-          {{ $t('merchantDetail.create') }}
+          {{ editingBranchId ? $t('common.save') : $t('merchantDetail.create') }}
         </button>
       </template>
     </Dialog>

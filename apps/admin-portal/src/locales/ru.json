@@ -892,6 +892,8 @@
     "create": "Создать",
     "yes": "Да",
     "branchCreated": "Филиал создан",
+    "editBranch": "Редактировать филиал",
+    "branchSaved": "Филиал сохранён",
     "employeeCreated": "Сотрудник создан",
     "categoryCreated": "Категория создана",
     "editCategory": "Редактировать категорию",
