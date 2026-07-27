@@ -24,6 +24,9 @@ import { adminUsers } from './admin-users';
 //   'manual' — a Platform Admin recorded it by hand (adminUserId set)
 //   'payme'  — a client paid through Payme; booked by PerformTransaction, so
 //              adminUserId is null and no human is accountable for the row.
+//   'plum'   — a client paid from a saved card in the mobile app; booked by
+//              POST /client/payments/confirm once Plumgate's OTP clears. Like
+//              'payme', machine-booked and adminUserId null.
 //
 // `paymentDate` is the VALUE date — the day the money actually moved, which for
 // a manual row is whatever the operator read off the MIB statement, not when
@@ -37,7 +40,7 @@ import { adminUsers } from './admin-users';
 // single-column read still tells an operator what happened. Rows written before
 // 2026-07-22 carry the retired 'mib' / 'transfer' labels.
 // ---------------------------------------------------------------------------
-export type DealPaymentSource = 'manual' | 'payme';
+export type DealPaymentSource = 'manual' | 'payme' | 'plum';
 
 export const dealPayments = pgTable('deal_payments', {
   id: serial('id').primaryKey(),
