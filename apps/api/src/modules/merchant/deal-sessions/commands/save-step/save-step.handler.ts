@@ -60,6 +60,13 @@ export async function saveStep(
   if (step === 'products' && next.prepayment) {
     delete next.prepayment;
   }
+  // A parked creation failure describes the run as it was. Saving a step is the
+  // agent acting on it — redoing Товары IS the answer to `product_not_found` — so
+  // the reason goes with the cause. Left behind, it would sit on the screen after
+  // the fix and read as a dead end where there is none.
+  if (next.dealCreation) {
+    delete next.dealCreation;
+  }
 
   const after = seq[idx + 1] ?? 'verification';
 

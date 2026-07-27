@@ -23,6 +23,12 @@ import {
   createMobileMyidSession,
   exchangeMobileMyidCode,
 } from '../../integrations/myid/myid-mobile-new-flow';
+import {
+  autoCreateDealAfterSigning,
+  loadDealForSession,
+} from '../../merchant/deals/commands/create-deal/auto-create.handler';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // ---------------------------------------------------------------------------
 // Client Deal Signing — the client signs on their OWN phone.
@@ -32,12 +38,17 @@ import {
 // how they got their limit), so the face-scan happens through the MyID SDK they
 // have already used, and the акцепт code lands on the phone that is in their hand.
 //
-// What is being signed is a DEAL SESSION — the Deal does not exist yet and will
-// not until the Agent presses Создать сделку. The client's two proofs are stamped
-// onto that session; nothing here creates, approves or funds anything. Deal
-// creation can fail for reasons only an Agent can fix (a product went inactive, a
-// tariff bound moved), and those errors belong on the Agent's screen, not on a
-// phone in someone's pocket.
+// What is being signed is a DEAL SESSION. The client's two proofs are stamped onto
+// that session, and the акцепт is the last DECISION anyone makes about this deal —
+// so the server builds the Deal itself the moment consent lands, rather than waiting
+// for the agent to press a button that asks them nothing.
+//
+// That does not move the FAILURES onto the phone, and the distinction is the whole
+// design of this file. Deal creation can fail for reasons only an agent can fix (a
+// product went inactive, a tariff bound moved) and the client, whose phone is back
+// in their pocket, can act on none of them. So the outcome the client is told is a
+// boolean — signed, and either it went through or the seller is finishing it — while
+// the reason is parked on the run for the agent's screen. See auto-create.handler.
 //
 // The push is a NUDGE. GET /to-sign is the truth: the app finds pending requests by
 // asking, so a dropped notification costs seconds, not the deal.
@@ -284,7 +295,7 @@ export default async function clientDealSigningRoutes(app: FastifyInstance) {
         tags: TAGS,
         summary: 'Send the акцепт code',
         description:
-          'On the client\'s own phone the SMS is not a second factor — whoever holds the ' +
+          "On the client's own phone the SMS is not a second factor — whoever holds the " +
           'unlocked handset has both the app and the message. It is kept because it is the ' +
           'акцепт: the artifact that evidences consent to these terms, in the form a court ' +
           'recognizes. What actually secures this step is the MyID scan before it and the terms ' +
@@ -337,15 +348,22 @@ export default async function clientDealSigningRoutes(app: FastifyInstance) {
         tags: TAGS,
         summary: 'Confirm the акцепт code and sign',
         description:
-          'The last act. Stamps consent onto the session together with a digest of the exact ' +
-          'terms consented to — which the Agent\'s Создать сделку then re-checks, so the Deal ' +
-          'that gets built cannot be for a basket the client never saw. The Deal itself is NOT ' +
-          'created here: the Agent creates it, because that is where its failures can be fixed.',
+          'The last act, and the one that produces the Deal. Stamps consent onto the session ' +
+          'together with a digest of the exact terms consented to, then builds the Deal from ' +
+          'that session server-side — the agent is no longer asked to confirm what the client ' +
+          'has already signed. `dealCreated` reports whether that succeeded; when it is false ' +
+          'the signature still stands and the seller finishes at the counter. The REASON it ' +
+          'failed is deliberately not returned: every one of them is actionable only by the ' +
+          'agent, and this response is read by a phone.',
         security: SECURITY,
         params: IdParams,
         body: VerifyBody,
         response: {
-          200: Type.Object({ ok: Type.Boolean(), signed: Type.Boolean() }),
+          200: Type.Object({
+            ok: Type.Boolean(),
+            signed: Type.Boolean(),
+            dealCreated: Type.Boolean(),
+          }),
           400: ERROR,
           401: ERROR,
           404: ERROR,
@@ -356,9 +374,20 @@ export default async function clientDealSigningRoutes(app: FastifyInstance) {
       preHandler: guards,
     },
     async (request, reply) => {
+      const userId = Number(request.user.sub);
+
+      // Replay, checked BEFORE anything is spent. A confirmation that landed and then
+      // lost its response — the tunnel dropped, the app retried — must not come back
+      // as a failure, and it would come back as one twice over: a run that produced
+      // its Deal is `completed` and invisible to loadSigningContext, and the code is
+      // burnt either way, so the retry would read as a WRONG CODE to the one client
+      // who entered the right one. The акцепт is already recorded; say so.
+      const replayed = await loadSignedOutcome(request.params.id, userId);
+      if (replayed) return { ok: true, signed: true, dealCreated: replayed.dealCreated };
+
       let ctx: SigningContext;
       try {
-        ctx = await loadSigningContext(request.params.id, Number(request.user.sub));
+        ctx = await loadSigningContext(request.params.id, userId);
       } catch (e: any) {
         return signingErrorReply(reply, e);
       }
@@ -374,8 +403,60 @@ export default async function clientDealSigningRoutes(app: FastifyInstance) {
       }
       if (result === 'invalid') return reply.code(400).sendError('invalid_otp');
 
-      await stampOtpSigning(ctx.session, 'remote');
-      return { ok: true, signed: true };
+      // The stamp rewrites the run, and the Deal is built from what it wrote — so
+      // the row it hands back is the one that goes forward, never `ctx.session`.
+      const { session } = await stampOtpSigning(ctx.session, 'remote');
+
+      const created = await autoCreateDealAfterSigning(session);
+      if (created.status === 'failed') {
+        // Logged, not returned. The agent gets the code off the session; this line
+        // is for us, and it is the only place an unexpected cause survives.
+        request.log.warn(
+          { dealSessionId: session.id, code: created.code, err: created.cause },
+          'remote signing: automatic deal creation failed',
+        );
+      }
+
+      return { ok: true, signed: true, dealCreated: created.status === 'created' };
     },
   );
+}
+
+/**
+ * Has this client already signed this run — and did it produce a Deal?
+ *
+ * Null means "no акцепт on record", i.e. an ordinary first attempt. Ownership is
+ * re-checked here rather than borrowed from loadSigningContext, which refuses
+ * completed runs — and a successful creation completes the run.
+ *
+ * The fresh-stamp branch answers without re-checking the code, which is not a hole:
+ * the stamp IS the proof that this authenticated client entered the right code for
+ * this session, GET /to-sign already tells them the same thing, and the reply grants
+ * nothing — it reports a decision that is already recorded.
+ */
+async function loadSignedOutcome(
+  sessionId: string,
+  userId: number,
+): Promise<{ dealCreated: boolean } | null> {
+  // This runs before loadSigningContext, so it is now the first thing to touch a
+  // path parameter. A non-UUID must fall through to the 404 that has always
+  // answered it, not reach Postgres and come back a 500.
+  if (!UUID_RE.test(sessionId)) return null;
+
+  const [session] = await db
+    .select()
+    .from(dealSessions)
+    .where(eq(dealSessions.id, sessionId))
+    .limit(1);
+  if (!session || session.userId !== userId) return null;
+
+  if (await loadDealForSession(session.id)) return { dealCreated: true };
+
+  // Signed, but the Deal did not get built — creation failed, and the reason is
+  // parked on the run for the agent. The client is told the same thing they were
+  // told the first time: it is signed, and the seller is finishing it.
+  const stamp = stepDataOf(session).signing;
+  if (isSigningProofFresh(stamp?.otpVerifiedAt)) return { dealCreated: false };
+
+  return null;
 }

@@ -104,11 +104,16 @@ export async function stampMyidSigning(
  * It is not accepted from the caller and not read back from an earlier stamp: this
  * is the one moment where "what the client agreed to" is a fact rather than an
  * assumption, and createDealFromSession recomputes it to check nothing moved since.
+ *
+ * Returns the REWRITTEN session row alongside the stamp. The caller's row is now a
+ * lie — it predates the акцепт — and deal creation runs straight off the back of
+ * this call, reading the proofs out of step_data. Handing back the stale row would
+ * have the Deal refused for `otp_not_verified` by the consent we just recorded.
  */
 export async function stampOtpSigning(
   session: DealSessionRow,
   channel?: SigningChannel,
-): Promise<SigningStamp> {
+): Promise<{ stamp: SigningStamp; session: DealSessionRow }> {
   const data = stepDataOf(session);
   // The OTP endpoints gate on a fresh MyID stamp, so this is a guard against a
   // future caller that forgets to, not a reachable path today.
@@ -123,14 +128,14 @@ export async function stampOtpSigning(
     termsHash,
     channel: channel ?? data.signing.channel ?? 'counter',
   };
-  await writeStepDataWithAction(
+  const updated = await writeStepDataWithAction(
     session,
     { ...data, signing: stamp },
     'deal_sign_otp',
     new Date(stamp.otpVerifiedAt!),
     stamp.channel!,
   );
-  return stamp;
+  return { stamp, session: updated };
 }
 
 /**

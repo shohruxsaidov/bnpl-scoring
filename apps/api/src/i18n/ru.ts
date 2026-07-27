@@ -141,6 +141,8 @@ export const ru: Record<string, string> = {
   session_incomplete: 'В сессии заполнены не все шаги — пройдите мастер заново',
   scoring_missing: 'Результат скоринга отсутствует в сессии',
   scoring_declined: 'Скоринг отклонён — сделка не может быть создана',
+  deal_already_created: 'Сделка по этой сессии уже создана',
+  deal_creation_failed: 'Не удалось создать сделку',
 
   // deal signing (myid_not_verified / otp_not_verified / otp_attempts_exceeded above)
   terms_changed: 'Условия сделки изменились после подписания — клиент должен подписать заново',

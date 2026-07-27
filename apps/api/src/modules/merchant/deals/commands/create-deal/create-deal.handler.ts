@@ -8,7 +8,11 @@ import {
   buyouts,
 } from '../../../../deals/schema';
 import { calcTotalPayable, splitInstallments } from '../../../../deals/installments';
-import { isActiveDealConflict, loadBlockingDeal } from '../../../../deals/blocking';
+import {
+  isActiveDealConflict,
+  isDealSessionConflict,
+  loadBlockingDeal,
+} from '../../../../deals/blocking';
 import { products, users } from '@db/schema';
 import { userCreditLimits } from '@db/user-credit-limits';
 import { katm077Reports } from '@db/katm-077-reports';
@@ -266,6 +270,11 @@ export async function createDeal(input: CreateDealInput) {
     // client's one deal while this transaction was in flight. Same answer as the
     // guard above, just arrived at the hard way.
     if (isActiveDealConflict(err)) throw coded('active_deal_exists');
+    // Lost the race to deals_deal_session_idx — two confirmations of THIS run
+    // landed at once and the other one won. A different answer entirely: the deal
+    // the caller wanted exists, and the caller should read it back rather than
+    // treat the run as blocked.
+    if (isDealSessionConflict(err)) throw coded('deal_already_created');
     throw err;
   }
 }

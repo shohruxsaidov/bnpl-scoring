@@ -73,6 +73,11 @@ export default async function merchantDealRoutes(app: FastifyInstance) {
         // The client took a deal elsewhere while this wizard was running.
         if (err.code === 'active_deal_exists')
           return reply.code(409).sendError('active_deal_exists');
+        // This run already built its deal — the акцепт did it, and the agent pressed
+        // the fallback anyway (or twice). Not an error the wizard should dramatize:
+        // the poll on signing-status has the deal and will move the screen on.
+        if (err.code === 'deal_already_created')
+          return reply.code(409).sendError('deal_already_created');
         // Signing proofs absent or stale — the wizard sends the agent back to the
         // MyID gate (or the OTP gate) rather than showing a dead end.
         if (err.code === 'myid_not_verified') return reply.code(409).sendError('myid_not_verified');

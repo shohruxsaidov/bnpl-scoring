@@ -43,8 +43,37 @@ export async function loadBlockingDeal(userId: number): Promise<BlockingDeal | n
   return row ?? null;
 }
 
-/** Postgres unique-violation on the one-active-deal index — the concurrent race. */
+/**
+ * Postgres unique-violation on a named index.
+ *
+ * Drizzle wraps driver errors, so the thrown object carries neither `code` nor
+ * `constraint` — the real PostgresError hangs off `.cause`, and postgres.js spells
+ * the field `constraint_name`. Both shapes are checked because the wrapping is a
+ * library detail we do not want this rule to depend on: a version bump that stops
+ * wrapping must not silently turn the race back into a 500.
+ */
+function isUniqueViolation(err: unknown, constraint: string): boolean {
+  type PgLike = { code?: string; constraint?: string; constraint_name?: string; cause?: unknown };
+  for (
+    let e = err as PgLike | null | undefined, depth = 0;
+    e && depth < 4;
+    e = e.cause as PgLike, depth++
+  ) {
+    if (e.code === '23505' && (e.constraint ?? e.constraint_name) === constraint) return true;
+  }
+  return false;
+}
+
+/** Lost the race for the client's one open deal slot. */
 export function isActiveDealConflict(err: unknown): boolean {
-  const e = err as { code?: string; constraint?: string } | null;
-  return e?.code === '23505' && e?.constraint === 'deals_user_active_idx';
+  return isUniqueViolation(err, 'deals_user_active_idx');
+}
+
+/**
+ * Lost the race to build the Deal for a session — two OTP confirmations for the
+ * same run landed at once. Distinct from the above: this one is not a refusal,
+ * it means the deal the caller wanted already exists and should be read back.
+ */
+export function isDealSessionConflict(err: unknown): boolean {
+  return isUniqueViolation(err, 'deals_deal_session_idx');
 }

@@ -93,12 +93,20 @@ export function useClientApi() {
       ),
   });
 
+  // The акцепт now builds the deal too, so this response carries the outcome: the
+  // agent is not asked to confirm what the client has already signed. `deal` and
+  // `dealCreationError` are mutually exclusive, and exactly one is set.
   const verifySigningOtpMutation = useMutation({
     mutationFn: ({ dealSessionId, code }: { dealSessionId: string; code: string }) =>
-      apiFetch<{ ok: boolean; signing: SessionSigning }>(
-        `/merchant/deal-sessions/${dealSessionId}/sign-otp/verify`,
-        { method: 'POST', body: JSON.stringify({ code }) },
-      ),
+      apiFetch<{
+        ok: boolean;
+        signing: SessionSigning;
+        deal: { id: string; number: number | null } | null;
+        dealCreationError: string | null;
+      }>(`/merchant/deal-sessions/${dealSessionId}/sign-otp/verify`, {
+        method: 'POST',
+        body: JSON.stringify({ code }),
+      }),
   });
 
   return {

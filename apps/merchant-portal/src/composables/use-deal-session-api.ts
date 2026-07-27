@@ -203,6 +203,12 @@ export async function cancelSigningRequest(sessionId: string): Promise<void> {
   })
 }
 
+/** The deal the акцепт produced, once it has. */
+export interface SigningStatusDeal {
+  id: string
+  number: number | null
+}
+
 export interface SigningStatus {
   signing: SessionSigning | null
   signingRequest: SessionSigningRequest | null
@@ -210,6 +216,17 @@ export interface SigningStatus {
   otpVerified: boolean
   /** Can we reach this client's phone at all? Gates the remote option being offered. */
   remoteAvailable: boolean
+  /**
+   * Set once the client's акцепт has built the deal server-side. This is how the
+   * agent's screen finds out: the client signed on their own phone, so nothing on
+   * this screen was ever going to tell us.
+   */
+  deal: SigningStatusDeal | null
+  /**
+   * Why automatic creation failed, if it did — a raw code, agent-facing. The client
+   * is never shown this; every reason is one only the counter can act on.
+   */
+  dealCreationError: string | null
 }
 
 /** Polled while we wait on the client's phone. Freshness is decided server-side. */

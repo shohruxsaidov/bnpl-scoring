@@ -111,10 +111,47 @@ async function refreshSigningStatus() {
     remoteAvailable.value = status.remoteAvailable
     deal.setSigningRequest(status.signingRequest)
     deal.setSigning(status.signing)
+    applyCreationOutcome(status.deal, status.dealCreationError)
   } catch {
     // A poll that fails is a slower screen, not a broken one — the agent can still
     // fall back to signing here, and the next tick will pick the truth back up.
   }
+}
+
+/**
+ * Land the outcome of automatic creation on this screen.
+ *
+ * The акцепт builds the deal server-side now, so for a client signing on their own
+ * phone this is the ONLY way the agent finds out — nothing they do here produces it.
+ * Success finishes the step without the agent touching anything; failure leaves the
+ * gate exactly as it was, with the reason shown and Создать сделку still there to
+ * press once the cause is fixed.
+ */
+function applyCreationOutcome(
+  created: { id: string; number: number | null } | null,
+  error: string | null,
+) {
+  if (created) {
+    submitError.value = ''
+    if (!sd.value.createdDealId) {
+      deal.setCreatedDealId(created.id, created.number != null ? String(created.number) : null)
+      deal.complete('verification')
+    }
+    return
+  }
+  if (error) submitError.value = creationErrorText(error)
+}
+
+/**
+ * A creation code, in words. The codes are a closed set the server owns, and an
+ * unrecognized one falls back to the generic line rather than being printed raw —
+ * a bare `amount_above_tariff_max` on a screen with a customer in front of it is
+ * not an error message, it is a shrug.
+ */
+function creationErrorText(code: string): string {
+  const key = `stepVerification.createError.${code}`
+  const text = t(key)
+  return text === key ? t('stepVerification.createDealFailed') : text
 }
 
 function stopPolling() {
@@ -124,11 +161,38 @@ function stopPolling() {
   }
 }
 
-// Poll ONLY while the client's phone owes us something. Nothing else on this
-// screen changes without the agent doing it, so polling outside that window would
-// be asking the server a question we already know the answer to.
+/**
+ * The акцепт and the deal it builds commit separately, so there is a window — short,
+ * but real — where the poll sees the signature and not yet its outcome. Stopping at
+ * `ready` would freeze the screen inside that window, showing Создать сделку for a
+ * deal the server is at that moment creating.
+ *
+ * Bounded, because the window is the only thing it exists for: if no outcome has
+ * landed in fifteen seconds, something is wrong that more polling will not fix, and
+ * the manual button is the right place to end up.
+ */
+const OUTCOME_GRACE_MS = 15_000
+const outcomeUntil = ref(0)
+
+const awaitingOutcome = computed(
+  () =>
+    now.value < outcomeUntil.value &&
+    !sd.value.createdDealId &&
+    !submitError.value,
+)
+
+watch(phase, (p) => {
+  // Only the live transition — a reload that lands on `ready` has already asked
+  // once, in onMounted, and got the whole truth.
+  if (p === 'ready' && !sd.value.createdDealId) outcomeUntil.value = Date.now() + OUTCOME_GRACE_MS
+})
+
+// Poll ONLY while someone owes us something: the client's phone, or the server
+// finishing what the акцепт started. Nothing else on this screen changes without
+// the agent doing it, so polling outside those windows would be asking the server a
+// question we already know the answer to.
 watch(
-  awaitingClient,
+  () => awaitingClient.value || awaitingOutcome.value,
   (waiting) => {
     stopPolling()
     if (waiting) poll = setInterval(refreshSigningStatus, 3000)
@@ -305,6 +369,10 @@ async function verifySigningOtp() {
     })
     // The stamp the server just wrote — the phase recomputes from it.
     deal.setSigning(res.signing)
+    // …and the deal it went on to build. At the counter the outcome comes back in
+    // this response rather than on a poll: the agent is standing right here, and
+    // making them wait 3s for news the server already has would be theatre.
+    applyCreationOutcome(res.deal, res.dealCreationError)
   } catch (err: any) {
     otpError.value =
       err?.message === 'myid_not_verified'
@@ -321,6 +389,14 @@ function fmtDate(iso: string) {
   })
 }
 
+/**
+ * The fallback, not the happy path.
+ *
+ * The акцепт creates the deal by itself now; this button is what the agent presses
+ * after fixing whatever stopped it — a product reactivated, a tariff bound moved
+ * back. It is the same server call it always was, deliberately unchanged: the point
+ * of keeping it is that it is the path we already trust.
+ */
 async function signSubmit() {
   if (!deal.dealSessionId || phase.value !== 'ready') return
   submitting.value = true
@@ -354,8 +430,13 @@ async function signSubmit() {
       submitError.value = t('stepVerification.termsChanged')
     } else if (code === 'active_deal_exists') {
       submitError.value = t('stepVerification.activeDealExists')
+    } else if (code === 'deal_already_created' || code === 'session_not_active') {
+      // The акцепт got there first — this press was a double-tap, or a click on a
+      // screen that had not polled yet. Not a failure: go and fetch the deal.
+      await refreshSigningStatus()
     } else {
-      submitError.value = code ?? t('stepVerification.createDealFailed')
+      // Was `code ?? …`, i.e. a raw server code in the UI. Every code now has words.
+      submitError.value = creationErrorText(code ?? '')
     }
   } finally {
     submitting.value = false
@@ -623,23 +704,37 @@ async function signSubmit() {
         </p>
       </div>
 
-      <!-- ready: both proofs stamped → build the deal from the session -->
+      <!-- ready: signed. The server builds the deal off the back of the акцепт; the
+           button below is the retry for when that failed, not the next step. -->
       <div v-else class="gate-row myid-verified">
         <div class="gate-hint">
           <i class="pi pi-check-circle success-icon" />
           <div>
             <p class="gate-title">{{ $t('stepVerification.signedTitle') }}</p>
-            <p class="gate-sub">{{ $t('stepVerification.signedHint') }}</p>
+            <p class="gate-sub">
+              {{ awaitingOutcome && !submitError
+                ? $t('stepVerification.creatingDeal')
+                : $t('stepVerification.signedHint') }}
+            </p>
           </div>
         </div>
-        <button class="btn-gradient sign" :disabled="submitting" @click="signSubmit">
-          <i v-if="submitting" class="pi pi-spin pi-spinner" />
-          <i v-else class="pi pi-file-check" />
-          {{ submitting ? $t('stepVerification.creatingDeal') : $t('stepVerification.createDeal') }}
-        </button>
         <p v-if="submitError" class="submit-error">
           <i class="pi pi-exclamation-triangle" /> {{ submitError }}
         </p>
+        <!-- Fallback. Hidden only while automatic creation is actually in flight, so
+             the agent is not offered a button for work already being done — but back
+             the moment we stop expecting an answer, whether one failed or none came.
+             There is no state in which this screen has no way forward. -->
+        <button v-if="!sd.createdDealId && !awaitingOutcome" class="btn-gradient sign" :disabled="submitting"
+          @click="signSubmit">
+          <i v-if="submitting" class="pi pi-spin pi-spinner" />
+          <i v-else :class="submitError ? 'pi pi-refresh' : 'pi pi-file-check'" />
+          {{ submitting
+            ? $t('stepVerification.creatingDeal')
+            : submitError
+              ? $t('stepVerification.retryCreateDeal')
+              : $t('stepVerification.createDeal') }}
+        </button>
       </div>
     </div>
 

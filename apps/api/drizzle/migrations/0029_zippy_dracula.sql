@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "deals_deal_session_idx" ON "deals" USING btree ("deal_session_id");

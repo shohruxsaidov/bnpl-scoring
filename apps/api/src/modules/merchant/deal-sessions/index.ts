@@ -35,6 +35,10 @@ import {
   sendSigningRequestPush,
 } from '../../deals/signing/service';
 import { issueSigningOtp, verifySigningOtp } from '../../deals/signing/otp';
+import {
+  autoCreateDealAfterSigning,
+  loadDealForSession,
+} from '../deals/commands/create-deal/auto-create.handler';
 import { getActiveSession } from './queries/get-active-session/get-active-session.handler';
 import { listSessions } from './queries/list-sessions/list-sessions.handler';
 import {
@@ -824,19 +828,39 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       }
       if (result === 'invalid') return reply.code(400).sendError('invalid_otp');
 
-      // Consent is a stamp, not a token the browser carries: POST /merchant/deals
-      // reads it back off the session. A failed deal creation can therefore be
-      // retried without burning a second SMS.
-      return { ok: true, signing: await stampOtpSigning(ctx.session, 'counter') };
+      // Consent is a stamp, not a token the browser carries: the deal is built from
+      // the session, so a failed creation can be retried — by the agent, from the
+      // button below — without burning a second SMS.
+      const { stamp, session } = await stampOtpSigning(ctx.session, 'counter');
+
+      // The акцепт was the last decision; the Deal follows from it. Unlike the
+      // client's phone, this caller IS the agent, so the failure code goes straight
+      // back in the response — they are the one who can act on it.
+      const created = await autoCreateDealAfterSigning(session);
+      if (created.status === 'failed') {
+        request.log.warn(
+          { dealSessionId: session.id, code: created.code, err: created.cause },
+          'counter signing: automatic deal creation failed',
+        );
+      }
+
+      return {
+        ok: true,
+        signing: stamp,
+        deal:
+          created.status === 'created' ? { id: created.dealId, number: created.dealNumber } : null,
+        dealCreationError: created.status === 'failed' ? created.code : null,
+      };
     },
   );
 
   /* ── Remote signing — hand the gate to the client's own phone ────────────── */
   //
-  // Same two proofs, same session, different surface. The Agent stays the one who
-  // creates the Deal: its failures (a product deactivated, a tariff bound moved) are
-  // fixable only at the counter, and surfacing them on a phone in someone's pocket
-  // would strand the client's акцепт with nobody able to act.
+  // Same two proofs, same session, different surface. Either way the акцепт builds
+  // the Deal server-side — but its FAILURES (a product deactivated, a tariff bound
+  // moved) stay here, on the agent's screen: they are fixable only at the counter,
+  // and a phone in someone's pocket cannot act on them. The client is told whether
+  // it worked, never why it didn't. The agent is told both.
 
   /* ── POST /:id/signing-request — ask the client to sign on their phone ───── */
 
@@ -923,17 +947,26 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       const p = payload(request);
       let session: DealSessionRow;
       try {
-        session = await loadOwnedActiveSession(request.params.id, Number(p.sub));
+        // NOT the active guard. A run that has just produced its Deal is `completed`,
+        // and this endpoint is precisely how the wizard finds that out — the client
+        // signed on their phone and the agent's screen has to move on its own.
+        // Refusing the poll at the one moment it has news would be the whole feature.
+        session = await loadOwnedSession(request.params.id, Number(p.sub));
       } catch (err: any) {
         return sessionErrorReply(reply, err);
       }
 
       const data = stepDataOf(session);
+      const deal = await loadDealForSession(session.id);
       return {
         signing: data.signing ?? null,
         signingRequest: data.signingRequest ?? null,
         myidVerified: isSigningProofFresh(data.signing?.myidVerifiedAt),
         otpVerified: isSigningProofFresh(data.signing?.otpVerifiedAt),
+        // The two halves of the outcome. Both null while the client is still
+        // deciding; exactly one of them set once the акцепт has landed.
+        deal: deal ? { id: deal.id, number: deal.dealNumber } : null,
+        dealCreationError: data.dealCreation?.code ?? null,
         // Whether remote signing is even on the table. Sent up-front so the wizard
         // can offer it or not, rather than showing a button that 409s — the client
         // who uninstalled the app is exactly the one the Agent must not be surprised

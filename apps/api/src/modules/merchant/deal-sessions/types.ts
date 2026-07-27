@@ -123,6 +123,27 @@ export interface SigningRequestState {
   rejectedAt?: string;
 }
 
+/**
+ * A failed attempt to build the Deal automatically after the акцепт.
+ *
+ * Only failures are recorded. Success needs no state here — the Deal itself is the
+ * record, found by `deals.deal_session_id`, and the run is `completed` by the same
+ * transaction. This block exists because the client is no longer the one being told:
+ * they signed on a phone that is back in their pocket, and every reason creation can
+ * fail is one only the agent at the counter can act on. So the reason is parked on
+ * the run, and the agent's screen picks it up on its next poll.
+ *
+ * Cleared by saveStep — an agent who redoes Товары has, by doing so, addressed the
+ * `product_not_found` they were shown, and a stale reason under a fixed cause reads
+ * as a dead end where there is none.
+ */
+export interface DealCreationState {
+  status: 'failed';
+  /** The coded reason from createDealFromSession — agent-facing, never client-facing. */
+  code: string;
+  at: string;
+}
+
 export interface SessionStepData {
   client?: { userId: string; isNewClient: boolean; myidVerified: boolean; katmConsent: boolean };
   card?: {
@@ -162,6 +183,7 @@ export interface SessionStepData {
   prepayment?: PrepaymentStamp;
   signing?: SigningStamp;
   signingRequest?: SigningRequestState;
+  dealCreation?: DealCreationState;
   /**
    * Which step sequence this run follows (ADR — reuse scoring). Absent ⇒ 'full'
    * (client → card → …). 'reuse' routes through the contacts step and reuses the

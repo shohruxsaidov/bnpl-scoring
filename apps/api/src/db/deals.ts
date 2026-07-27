@@ -83,6 +83,16 @@ export const deals = pgTable(
     uniqueIndex('deals_user_active_idx')
       .on(t.userId)
       .where(sql`status in ('active', 'overdue')`),
+    // One Deal per Wizard run. The Deal is now built by the server the instant the
+    // client confirms the акцепт, so two confirmations of the same run — a retried
+    // request, a double-tap, the client's phone and the agent's tablet racing — are
+    // ordinary traffic rather than an abuse case. The read-then-create check in
+    // autoCreateDealAfterSigning rejects almost all of them; this index is what
+    // holds when both reads miss. Unlike the index above this is not a business
+    // rule the agent can violate — it is the identity of the run.
+    // Legacy deals carry a NULL deal_session_id and Postgres treats NULLs as
+    // distinct, so they never collide here.
+    uniqueIndex('deals_deal_session_idx').on(t.dealSessionId),
   ],
 );
 

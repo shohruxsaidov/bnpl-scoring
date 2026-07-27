@@ -141,6 +141,8 @@ export const uz: Record<string, string> = {
   session_incomplete: "Sessiyada barcha qadamlar to'ldirilmagan — masterni qaytadan o'ting",
   scoring_missing: "Sessiyada skoring natijasi yo'q",
   scoring_declined: "Skoring rad etilgan — bitim yaratib bo'lmaydi",
+  deal_already_created: "Bu sessiya bo'yicha shartnoma allaqachon yaratilgan",
+  deal_creation_failed: "Shartnomani yaratib bo'lmadi",
 
   // deal signing (myid_not_verified / otp_not_verified / otp_attempts_exceeded above)
   terms_changed: "Imzolangandan keyin bitim shartlari o'zgardi — mijoz qaytadan imzolashi kerak",
