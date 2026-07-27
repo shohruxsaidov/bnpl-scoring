@@ -211,6 +211,13 @@
       "when": 1785149796852,
       "tag": "0029_zippy_dracula",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1785150816598,
+      "tag": "0030_opposite_anthem",
+      "breakpoints": true
     }
   ]
 }

@@ -39,6 +39,29 @@ function coded(code: string, statusCode: number): Error & { code: string; status
   return Object.assign(new Error(code), { code, statusCode });
 }
 
+/**
+ * A refusal that must survive the transaction that produced it.
+ *
+ * Returned rather than thrown wherever the same transaction also writes
+ * something we need to keep — a throw would discard both.
+ */
+/**
+ * Outcome of the confirm pre-flight. One shape rather than a discriminated
+ * union: this project compiles without strictNullChecks, so union narrowing on
+ * an `ok` flag does not work and every read would need a cast.
+ * `code` non-null means refused.
+ */
+interface Preflight {
+  row: typeof plumPaymentSessions.$inferSelect | null;
+  code: string | null;
+  statusCode: number;
+  args?: Record<string, unknown>;
+}
+
+function refuse(code: string, statusCode: number, args?: Record<string, unknown>): Preflight {
+  return { row: null, code, statusCode, args };
+}
+
 /** Som are 2dp; a client can send anything and float compares are unforgiving. */
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -206,7 +229,12 @@ export async function confirmPlumPayment(
   input: ConfirmPlumPaymentInput,
 ): Promise<ConfirmPlumPaymentResult> {
   // ── Pre-flight: everything that can still refuse, before the point of no return
-  const session = await db.transaction(async (tx) => {
+  //
+  // A refusal here is RETURNED, never thrown. Two of these refusals also retire
+  // the session, and a throw would roll that update back with the rest of the
+  // transaction — leaving the row 'pending' and the deal pinned by an attempt
+  // that can never succeed. The error is raised after the commit instead.
+  const preflight: Preflight = await db.transaction(async (tx) => {
     const [row] = await tx
       .select()
       .from(plumPaymentSessions)
@@ -219,14 +247,14 @@ export async function confirmPlumPayment(
       .limit(1);
 
     // Scoped to the caller, so another client's session id is simply not found.
-    if (!row) throw coded('payment_session_not_found', 404);
-    if (row.status !== 'pending') throw coded('payment_session_not_pending', 409);
+    if (!row) return refuse('payment_session_not_found', 404);
+    if (row.status !== 'pending') return refuse('payment_session_not_pending', 409);
 
     const deal = await lockDeal(tx, row.dealId);
-    if (!deal) throw coded('deal_not_found', 404);
+    if (!deal) return refuse('deal_not_found', 404);
     if (!PAYABLE_DEAL_STATUSES.has(deal.status)) {
       await failWithin(tx, row.id, 'deal_not_payable');
-      throw coded('deal_not_payable', 409);
+      return refuse('deal_not_payable', 409);
     }
 
     // Re-read the debt from scratch. Between the OTP being sent and the client
@@ -237,7 +265,7 @@ export async function confirmPlumPayment(
     const remaining = await getRemainingDebt(tx, row.dealId);
     if (row.amountSom > remaining) {
       await failWithin(tx, row.id, 'amount_exceeds_debt');
-      throw Object.assign(coded('amount_exceeds_debt', 409), { args: { remaining } });
+      return refuse('amount_exceeds_debt', 409, { remaining });
     }
 
     // Claiming the row for this confirm attempt. Also stops two taps on the
@@ -247,10 +275,15 @@ export async function confirmPlumPayment(
       .set({ status: 'confirming', updatedAt: new Date() })
       .where(and(eq(plumPaymentSessions.id, row.id), eq(plumPaymentSessions.status, 'pending')))
       .returning();
-    if (!claimed.length) throw coded('payment_session_not_pending', 409);
+    if (!claimed.length) return refuse('payment_session_not_pending', 409);
 
-    return row;
+    return { row, code: null, statusCode: 200 };
   });
+
+  if (preflight.code) {
+    throw Object.assign(coded(preflight.code, preflight.statusCode), { args: preflight.args });
+  }
+  const session = preflight.row;
 
   // ── The point of no return ────────────────────────────────────────────────
   let transactionId: string;

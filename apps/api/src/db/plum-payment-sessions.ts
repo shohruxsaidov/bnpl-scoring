@@ -55,9 +55,6 @@ export type PlumPaymentSessionStatus =
   | 'expired'
   | 'debited_unbooked';
 
-/** Statuses that still hold the deal's one-payment-at-a-time slot. */
-export const PLUM_SESSION_LIVE_STATUSES = ['pending', 'confirming'] as const;
-
 export const plumPaymentSessions = pgTable(
   'plum_payment_sessions',
   {
