@@ -42,11 +42,15 @@ const ROLE_OPTIONS = [
 const m = ref({ name: '', legalName: '', inn: '', phone: '', address: '', regionId: null as number | null })
 const mRegion = ref<number | null>(null)
 const mErrors = ref({ name: false, legalName: false, inn: false, phone: false, address: false })
+// Which message the INN field shows: bad format by default, or "already taken"
+// once the server has rejected this exact value.
+const innErrorKey = ref('onboarding.innRequired')
 
 function validateMerchant(): boolean {
   mErrors.value.name = !m.value.name.trim()
   mErrors.value.legalName = !m.value.legalName.trim()
   mErrors.value.inn = !m.value.inn || m.value.inn.includes('_') || m.value.inn.replace(/\D/g, '').length !== 9
+  innErrorKey.value = 'onboarding.innRequired'
   mErrors.value.phone = !m.value.phone || m.value.phone.includes('_')
   mErrors.value.address = !m.value.address.trim()
   return !Object.values(mErrors.value).some(Boolean)
@@ -64,8 +68,14 @@ async function submitStep1() {
     const merchant = await store.create(formData)
     merchantId.value = merchant.id
     step.value = 2
-  } catch {
-    toast.add({ severity: 'error', summary: t('onboarding.errorMerchant'), life: 3000 })
+  } catch (e) {
+    // apiFetch rejects with the server's error code as the message.
+    if ((e as Error).message === 'inn_taken') {
+      mErrors.value.inn = true
+      innErrorKey.value = 'onboarding.innTaken'
+    } else {
+      toast.add({ severity: 'error', summary: t('onboarding.errorMerchant'), life: 3000 })
+    }
   } finally {
     saving.value = false
   }
@@ -209,7 +219,7 @@ function finish() {
             <label>{{ t('onboarding.inn') }}</label>
             <InputMask v-model="m.inn" mask="999999999" :class="{ 'p-invalid': mErrors.inn }" class="w-full"
               placeholder="000000000" />
-            <small v-if="mErrors.inn" class="error-msg">{{ t('onboarding.innRequired') }}</small>
+            <small v-if="mErrors.inn" class="error-msg">{{ t(innErrorKey) }}</small>
           </div>
           <div class="field">
             <label>{{ t('onboarding.phone') }}</label>

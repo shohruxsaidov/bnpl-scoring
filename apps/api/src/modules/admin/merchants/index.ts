@@ -43,6 +43,25 @@ const TAGS = ["Admin · Merchants"]
 const LOGO_PREFIX = "merchant-logos"
 const MAX_LOGO_BYTES = 2 * 1024 * 1024 // 2 MB — a logo needing more is a mistake
 
+/**
+ * Postgres unique-violation on merchants.inn — a merchant with that INN is
+ * already registered.
+ *
+ * Two traps, both verified against the running DB: drizzle wraps every driver
+ * error in a DrizzleQueryError that carries no `code`, so the PostgresError has
+ * to be dug out of `cause`; and postgres.js spells the field `constraint_name`,
+ * not `constraint`. Matching the constraint rather than a bare 23505 keeps a
+ * future unique index on the table from being reported as a duplicate INN.
+ */
+function isInnConflict(err: unknown): boolean {
+  type PgErrorLike = { code?: string; constraint_name?: string; cause?: unknown }
+  let e = err as PgErrorLike | null | undefined
+  for (let depth = 0; e && depth < 5; e = e.cause as PgErrorLike | null | undefined, depth++) {
+    if (e.code === "23505" && e.constraint_name === "merchants_inn_unique") return true
+  }
+  return false
+}
+
 export default async function adminMerchantRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>()
 
@@ -135,8 +154,13 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
         const model = await getScoringModel(request.body.scoringModelId)
         if (!model) return reply.code(404).sendError("scoring_model_not_found")
       }
-      const merchant = await createMerchant(request.body)
-      return reply.code(201).send({ merchant: await serializeMerchant(merchant) })
+      try {
+        const merchant = await createMerchant(request.body)
+        return reply.code(201).send({ merchant: await serializeMerchant(merchant) })
+      } catch (err) {
+        if (isInnConflict(err)) return reply.code(409).sendError("inn_taken")
+        throw err
+      }
     },
   )
 
@@ -158,7 +182,15 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
         const model = await getScoringModel(request.body.scoringModelId)
         if (!model) return reply.code(404).sendError("scoring_model_not_found")
       }
-      const merchant = await updateMerchant({ id: Number(request.params.id), patch: request.body })
+      let merchant: Awaited<ReturnType<typeof updateMerchant>>
+      try {
+        merchant = await updateMerchant({ id: Number(request.params.id), patch: request.body })
+      } catch (err) {
+        // Same hole as on create: moving a merchant onto an INN somebody else
+        // already holds must read as a duplicate, not an opaque 500.
+        if (isInnConflict(err)) return reply.code(409).sendError("inn_taken")
+        throw err
+      }
       if (!merchant) return reply.code(404).sendError("not_found")
       return { merchant: await serializeMerchant(merchant) }
     },

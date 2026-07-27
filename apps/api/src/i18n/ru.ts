@@ -45,6 +45,7 @@ export const ru: Record<string, string> = {
   invalid_document_type: 'Допускаются только файлы PDF, PNG или JPEG',
   file_too_large: 'Размер файла слишком большой',
   merchant_logo_not_found: 'Логотип мерчанта не найден',
+  inn_taken: 'Мерчант с таким ИНН уже существует — найдите его в списке мерчантов',
   banner_not_found: 'Баннер не найден',
   image_too_small: 'Изображение слишком маленькое: ширина должна быть не менее 640px',
   invalid_aspect_ratio: 'Соотношение сторон должно быть 2:1 (например, 1440×720)',

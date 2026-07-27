@@ -45,6 +45,7 @@ export const uz: Record<string, string> = {
   invalid_document_type: 'Faqat PDF, PNG yoki JPEG fayllar qabul qilinadi',
   file_too_large: 'Fayl hajmi juda katta',
   merchant_logo_not_found: 'Merchant logotipi topilmadi',
+  inn_taken: "Bunday INN bilan merchant allaqachon mavjud — uni merchantlar ro'yxatidan toping",
   banner_not_found: 'Banner topilmadi',
   image_too_small: "Rasm juda kichik: kamida 640px kenglikda bo'lishi kerak",
   invalid_aspect_ratio: "Rasm nisbati 2:1 bo'lishi kerak (masalan, 1440×720)",

@@ -1229,6 +1229,7 @@
     "nameRequired": "Nom kiritilishi shart",
     "legalNameRequired": "Yuridik nom kiritilishi shart",
     "innRequired": "INN kiritilishi shart",
+    "innTaken": "Bunday INN bilan merchant allaqachon mavjud — uni merchantlar ro'yxatidan toping",
     "phoneRequired": "Telefon kiritilishi shart",
     "addressRequired": "Manzil kiritilishi shart",
     "errorMerchant": "Merchant yaratib bo'lmadi",
