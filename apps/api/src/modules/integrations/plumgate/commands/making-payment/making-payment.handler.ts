@@ -12,21 +12,21 @@ import { MakingPaymentCommand } from './making-payment.command';
 // treated as success so the caller can proceed to delete the local row
 export async function makingPaymentHandler(
   params: MakingPaymentCommand,
-): Promise<{ sessionId: string }> {
+): Promise<{ session: number; otpSentPhone: string }> {
   const client = makePlumClient();
   const payload = {
     userId: params.userId,
     cardId: params.cardId,
     amount: params.amount,
     extraId: params.extraId,
-    sendOtp: false,
+    sendOtp: true,
     transactionData: params.transactionData,
   };
 
   const requestTimestamp = new Date();
   try {
     const data = await client.post('Payment/payment', { json: payload }).json<{
-      result: { transactionId: string };
+      result: { transactionId: string; session: number; otpSentPhone: string };
     }>();
 
     logIntegration(db, {
@@ -41,7 +41,8 @@ export async function makingPaymentHandler(
       responseTimestamp: new Date(),
     });
     return {
-      sessionId: data.result.transactionId,
+      session: data.result.session,
+      otpSentPhone: data.result.otpSentPhone,
     };
   } catch (err) {
     const toThrow = await parsePlumError(err);
