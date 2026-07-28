@@ -145,7 +145,7 @@ export async function initiatePlumPayment(
         .values({
           userId: input.userId,
           dealId: input.dealId,
-          cardId: card.plumId,
+          cardId: +card.plumId!,
           amountSom: amount,
           extraId,
         })
