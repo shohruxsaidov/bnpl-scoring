@@ -2,7 +2,10 @@ import { randomUUID } from 'node:crypto';
 import { and, eq, inArray, lt, sql } from 'drizzle-orm';
 import { db } from '@db';
 import { deals, userCards } from '@db/schema';
-import { plumPaymentSessions, type PlumPaymentSessionStatus } from '@db/plum-payment-sessions';
+import {
+  plumPaymentSessions,
+  type PlumPaymentSessionStatus,
+} from '@db/plum-payment-sessions';
 import { isUniqueViolation } from '@lib/pg-errors';
 import {
   applyPayment,
@@ -75,8 +78,8 @@ export const PLUM_SESSION_TTL_MS = 15 * 60 * 1000;
 export interface InitiatePlumPaymentInput {
   userId: number;
   dealId: string;
-  /** user_cards.plum_card_id — the id GET /client/cards hands the app. */
-  cardId: string;
+  /** user_cards.plum_id — the id GET /client/cards hands the app. */
+  cardId: number;
   /** In som. */
   amount: number;
 }
@@ -121,7 +124,7 @@ export async function initiatePlumPayment(
       const [card] = await tx
         .select({ plumId: userCards.plumId })
         .from(userCards)
-        .where(and(eq(userCards.userId, input.userId), eq(userCards.plumCardId, input.cardId)))
+        .where(and(eq(userCards.userId, input.userId), eq(userCards.plumId, input.cardId)))
         .limit(1);
       if (!card) throw coded('card_not_found', 404);
 

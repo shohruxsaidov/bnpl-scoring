@@ -30,7 +30,7 @@ export default async function clientPayRoutes(app: FastifyInstance) {
     dealId: Type.String({ format: 'uuid' }),
     // The `id` from GET /client/cards — Plumgate's attachment id, the same one
     // DELETE /client/cards/:id takes.
-    cardId: Type.String({ minLength: 1 }),
+    cardId: Type.Integer({ minimum: 1 }),
     /** In som. The real ceiling is the deal's remaining debt; the handler enforces it. */
     amount: Type.Number({ minimum: MIN_PAYMENT_SOM }),
   });
@@ -85,6 +85,14 @@ export default async function clientPayRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Pay a credit from a saved card (initiate)',
+        description:
+          'Starts a card payment against one of the caller’s own credits and triggers a ' +
+          'Plumgate OTP SMS. Amount is in som and must be at least ' +
+          `${MIN_PAYMENT_SOM} and no more than the credit’s remaining debt — both are ` +
+          'checked here, before any OTP exists, because the confirm step cannot be undone. ' +
+          'Only one payment may be in flight per credit: a second call while one is ' +
+          'outstanding returns 409 payment_already_pending rather than sending another SMS. ' +
+          'Pass the returned `sessionId` to POST /client/payments/confirm.',
         security: SECURITY,
         body: InitiateBody,
         response: { 200: InitiateResponse, 400: ERROR, 401: ERROR, 404: ERROR, 409: ERROR },
@@ -99,7 +107,7 @@ export default async function clientPayRoutes(app: FastifyInstance) {
         amount: request.body.amount,
       });
 
-      return res;
+      return res
     },
   );
 
@@ -111,6 +119,15 @@ export default async function clientPayRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Pay a credit from a saved card (confirm OTP)',
+        description:
+          'Verifies the Plumgate OTP, charges the card and books the payment against the ' +
+          'credit. The deal and the amount come from the session created by POST ' +
+          '/client/payments — they are deliberately NOT accepted here, so a payment can ' +
+          'never be booked for a different amount than the one that was charged. ' +
+          'A mistyped code (Plum -102/-137) leaves the session alive and can be retried ' +
+          'with the same `sessionId`; any other failure ends it and the payment must be ' +
+          'started again. `booked: false` means the card was charged but allocation is ' +
+          'pending manual resolution — the payment is accepted, the balance is not yet updated.',
         security: SECURITY,
         body: ConfirmBody,
         response: { 200: ConfirmResponse, 400: ERROR, 401: ERROR, 404: ERROR, 409: ERROR },
