@@ -2,10 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { and, eq, inArray, lt, sql } from 'drizzle-orm';
 import { db } from '@db';
 import { deals, userCards } from '@db/schema';
-import {
-  plumPaymentSessions,
-  type PlumPaymentSessionStatus,
-} from '@db/plum-payment-sessions';
+import { plumPaymentSessions, type PlumPaymentSessionStatus } from '@db/plum-payment-sessions';
 import { isUniqueViolation } from '@lib/pg-errors';
 import {
   applyPayment,
@@ -299,9 +296,9 @@ export async function confirmPlumPayment(
       await db
         .update(plumPaymentSessions)
         .set({ status: 'pending', failureCode: code, updatedAt: new Date() })
-        .where(eq(plumPaymentSessions.id, session.id));
+        .where(eq(plumPaymentSessions.id, session!.id));
     } else {
-      await markSessionFailed(session.id, code);
+      await markSessionFailed(session!.id, code);
     }
     throw err;
   }
@@ -312,15 +309,15 @@ export async function confirmPlumPayment(
   await db
     .update(plumPaymentSessions)
     .set({ plumTransactionId: transactionId, updatedAt: new Date() })
-    .where(eq(plumPaymentSessions.id, session.id));
+    .where(eq(plumPaymentSessions.id, session!.id));
 
   // ── Booking ───────────────────────────────────────────────────────────────
   try {
     const booked = await db.transaction(async (tx) => {
-      await lockDeal(tx, session.dealId);
+      await lockDeal(tx, session!.dealId);
       const payment = await applyPayment(tx, {
-        dealId: session.dealId,
-        amount: session.amountSom,
+        dealId: session!.dealId,
+        amount: session!.amountSom,
         source: 'plum',
         paymentType: 'plum',
         adminUserId: null,
@@ -331,24 +328,24 @@ export async function confirmPlumPayment(
       await tx
         .update(plumPaymentSessions)
         .set({ status: 'booked', paymentId: payment.paymentId, updatedAt: new Date() })
-        .where(eq(plumPaymentSessions.id, session.id));
+        .where(eq(plumPaymentSessions.id, session!.id));
 
-      const remainingDebt = await getRemainingDebt(tx, session.dealId);
+      const remainingDebt = await getRemainingDebt(tx, session!.dealId);
       return { ...payment, remainingDebt };
     });
 
     // Outside the transaction, always — a push provider must never be able to
     // roll back a booked payment.
     await enqueuePaymentReceivedPush({
-      userId: session.userId,
+      userId: session!.userId,
       paymentId: booked.paymentId,
-      amount: session.amountSom,
+      amount: session!.amountSom,
       dealClosed: booked.dealClosed,
     });
 
     return {
       paymentId: booked.paymentId,
-      amount: session.amountSom,
+      amount: session!.amountSom,
       remainingDebt: booked.remainingDebt,
       dealClosed: booked.dealClosed,
       booked: true,
@@ -366,22 +363,22 @@ export async function confirmPlumPayment(
         failureCode: err instanceof OverpaymentError ? 'overpayment' : 'booking_failed',
         updatedAt: new Date(),
       })
-      .where(eq(plumPaymentSessions.id, session.id))
+      .where(eq(plumPaymentSessions.id, session!.id))
       // A failure to record the failure would erase the only pointer to the
       // money; nothing more can be done here but leave it in the logs.
       .catch(() => undefined);
 
     console.error('[plum-payment] debited but not booked', {
-      sessionId: session.id,
-      dealId: session.dealId,
+      sessionId: session!.id,
+      dealId: session!.dealId,
       transactionId,
-      amount: session.amountSom,
+      amount: session!.amountSom,
       err,
     });
 
     return {
       paymentId: null,
-      amount: session.amountSom,
+      amount: session!.amountSom,
       remainingDebt: null,
       dealClosed: false,
       booked: false,

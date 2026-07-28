@@ -38,7 +38,11 @@ export const useManualPaymentsStore = defineStore('manualPayments', () => {
     error.value = null
 
     try {
-      const data = await apiFetch<{ payments: ManualPayment[] }>('/admin/payments/manual')
+      // The manual list is the payments register narrowed to one rail — there is
+      // no separate /manual endpoint. 100 is the server's max page size.
+      const data = await apiFetch<{ payments: ManualPayment[] }>(
+        '/admin/payments?source=manual&limit=100',
+      )
       payments.value = data.payments
     } catch (err: any) {
       error.value = err?.message ?? 'error'

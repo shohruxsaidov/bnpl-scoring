@@ -4,7 +4,8 @@ import { useI18n } from 'vue-i18n'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Select from 'primevue/select'
-import { usePaymentsStore, type Payment } from '@/stores/payments'
+import type { DataTablePageEvent, DataTableSortEvent } from 'primevue/datatable'
+import { usePaymentsStore, type PaymentSource } from '@/stores/payments'
 import {
   useManualPaymentsStore,
   type DealSearchResult,
@@ -20,8 +21,8 @@ const merchantsStore = useMerchantsStore()
 const { t } = useI18n()
 
 // ── Tabs ─────────────────────────────────────────────────────────────────────
-type Tab = 'schedule' | 'manual' | 'plan'
-const activeTab = ref<Tab>('schedule')
+type Tab = 'register' | 'manual' | 'plan'
+const activeTab = ref<Tab>('register')
 
 function switchTab(tab: Tab) {
   activeTab.value = tab
@@ -30,9 +31,12 @@ function switchTab(tab: Tab) {
   }
 }
 
-// ── Schedule tab ─────────────────────────────────────────────────────────────
+// ── Register tab ─────────────────────────────────────────────────────────────
+// Every filter here is a server filter: the register is paginated, so narrowing
+// it client-side would only narrow the visible page and leave the KPI strip —
+// which reports the whole filtered set — disagreeing with the table.
 const merchantFilter = ref<string | null>(null)
-const statusFilter = ref<Payment['status'] | null>(null)
+const sourceFilter = ref<PaymentSource | null>(null)
 const search = ref('')
 const dateFrom = ref('')
 const dateTo = ref('')
@@ -42,54 +46,54 @@ onMounted(() => {
   if (merchantsStore.merchants.length === 0) merchantsStore.fetchAll().catch(() => {})
 })
 
-watch(merchantFilter, (id) => store.fetchPayments(id ?? undefined))
+watch(merchantFilter, (id) => store.fetchPayments({ merchantId: id ?? undefined }))
+watch(sourceFilter, (source) => store.fetchPayments({ source: source ?? undefined }))
+watch([dateFrom, dateTo], ([from, to]) =>
+  store.fetchPayments({ dateFrom: from || undefined, dateTo: to || undefined }),
+)
+
+// Debounced: every keystroke is a round trip otherwise.
+let searchDebounce: ReturnType<typeof setTimeout> | null = null
+watch(search, (q) => {
+  if (searchDebounce) clearTimeout(searchDebounce)
+  searchDebounce = setTimeout(() => store.fetchPayments({ q: q || undefined }), 300)
+})
+
+function onPage(event: DataTablePageEvent) {
+  store.fetchPayments({ page: event.page, limit: event.rows })
+}
+
+function onSort(event: DataTableSortEvent) {
+  // Only these two columns are sortable server-side; anything else is ignored
+  // rather than silently sorting the current page alone.
+  const field = event.sortField
+  if (field !== 'paymentDate' && field !== 'amount') return
+  store.fetchPayments({ sortBy: field, sortDir: event.sortOrder === 1 ? 'asc' : 'desc' })
+}
 
 const merchantOptions = computed(() => [
   { label: t('payments.allMerchants'), value: null },
   ...merchantsStore.merchants.map((m) => ({ label: m.name, value: m.id })),
 ])
 
-const statusOptions = computed(() => [
-  { label: t('payments.allStatuses'), value: null },
-  { label: t('payments.statusConfirmed'), value: 'confirmed' },
-  { label: t('payments.statusPending'), value: 'pending' },
-  { label: t('payments.statusPartial'), value: 'partial' },
+const sourceOptions = computed(() => [
+  { label: t('payments.allSources'), value: null },
+  { label: t('payments.sourceManual'), value: 'manual' },
+  { label: t('payments.sourcePayme'), value: 'payme' },
+  { label: t('payments.sourcePlum'), value: 'plum' },
 ])
 
-const filtered = computed<Payment[]>(() => {
-  let list = store.payments
-  if (statusFilter.value) list = list.filter((p) => p.status === statusFilter.value)
-  if (dateFrom.value) list = list.filter((p) => p.date.slice(0, 10) >= dateFrom.value)
-  if (dateTo.value) list = list.filter((p) => p.date.slice(0, 10) <= dateTo.value)
-  if (search.value.trim()) {
-    const q = search.value.toLowerCase()
-    list = list.filter(
-      (p) =>
-        p.clientName.toLowerCase().includes(q) ||
-        p.clientPhone.includes(q) ||
-        p.dealNumber.toLowerCase().includes(q),
-    )
-  }
-  return list
-})
-
-const stats = computed(() => {
-  const confirmed = store.payments.filter((p) => p.status === 'confirmed')
-  return {
-    total: store.payments.length,
-    confirmed: confirmed.length,
-    pending: store.payments.filter((p) => p.status === 'pending').length,
-    partial: store.payments.filter((p) => p.status === 'partial').length,
-    volume: confirmed.reduce((s, p) => s + p.amount, 0),
-  }
-})
-
-const STATUS_COLORS: Record<Payment['status'], { fg: string; bg: string }> = {
-  confirmed: { fg: 'var(--success)', bg: 'var(--success-bg)' },
-  pending: { fg: 'var(--warning)', bg: 'var(--warning-bg)' },
-  partial: { fg: 'var(--accent-2)', bg: 'color-mix(in srgb, var(--accent-2) 12%, transparent)' },
-  cancelled: { fg: 'var(--danger)', bg: 'var(--danger-bg)' },
+const SOURCE_COLORS: Record<PaymentSource, { fg: string; bg: string }> = {
+  manual: { fg: 'var(--accent-2)', bg: 'color-mix(in srgb, var(--accent-2) 12%, transparent)' },
+  payme: { fg: 'var(--success)', bg: 'var(--success-bg)' },
+  plum: { fg: 'var(--warning)', bg: 'var(--warning-bg)' },
 }
+
+const SOURCE_LABEL = computed<Record<PaymentSource, string>>(() => ({
+  manual: t('payments.sourceManual'),
+  payme: t('payments.sourcePayme'),
+  plum: t('payments.sourcePlum'),
+}))
 
 function formatSomM(som: number): string {
   if (som >= 1_000_000_000) return `${(som / 1_000_000_000).toFixed(1)}B`
@@ -203,6 +207,9 @@ async function submit() {
       paymentDate: form.value.paymentDate,
       note: form.value.note || undefined,
     })
+    // The new row belongs to the register too — leaving it stale would show a
+    // count and volume that disagree with what the operator just entered.
+    store.fetchPayments({ page: store.filters.page })
     closeDialog()
   } catch (err: any) {
     if (err?.message === 'OVERPAYMENT') {
@@ -230,7 +237,7 @@ const TYPE_LABEL = computed<Record<string, string>>(() => ({
  * against createdAt's UTC date part, which is the same basis the server used to
  * decide the value date was in the past.
  */
-function isBackdated(p: ManualPayment): boolean {
+function isBackdated(p: Pick<ManualPayment, 'paymentDate' | 'createdAt'>): boolean {
   return p.paymentDate !== p.createdAt.slice(0, 10)
 }
 
@@ -241,17 +248,17 @@ function hideDealDropdown() {
 
 <template>
   <div class="page">
-    <template v-if="store.loading && store.payments.length === 0 && activeTab === 'schedule'">
+    <template v-if="store.loading && store.payments.length === 0 && activeTab === 'register'">
       <div class="kpi-strip">
         <div v-for="i in 4" :key="i" class="kpi-card surface-card skeleton-card" />
       </div>
       <div class="surface-card skeleton-table" />
     </template>
 
-    <div v-else-if="store.error && activeTab === 'schedule'" class="surface-card error-state">
+    <div v-else-if="store.error && activeTab === 'register'" class="surface-card error-state">
       <i class="pi pi-exclamation-circle" />
       <p>{{ store.error }}</p>
-      <button class="btn-ghost" @click="store.fetchPayments(merchantFilter ?? undefined)">{{ $t('common.retry') }}</button>
+      <button class="btn-ghost" @click="store.fetchPayments()">{{ $t('common.retry') }}</button>
     </div>
 
     <template v-else>
@@ -267,27 +274,27 @@ function hideDealDropdown() {
         </button>
       </div>
 
-      <!-- KPI strip -->
+      <!-- KPI strip — describes the whole filtered register, not the visible page -->
       <div class="kpi-strip">
         <div class="kpi-card surface-card">
           <span class="kpi-label">{{ $t('payments.totalPayments') }}</span>
-          <span class="kpi-value font-mono">{{ stats.total }}</span>
-        </div>
-        <div class="kpi-card surface-card">
-          <span class="kpi-label">{{ $t('payments.statusConfirmed') }}</span>
-          <span class="kpi-value font-mono" style="color:var(--success)">{{ stats.confirmed }}</span>
-        </div>
-        <div class="kpi-card surface-card">
-          <span class="kpi-label">{{ $t('payments.statusPending') }}</span>
-          <span class="kpi-value font-mono" style="color:var(--warning)">{{ stats.pending }}</span>
-        </div>
-        <div class="kpi-card surface-card">
-          <span class="kpi-label">{{ $t('payments.statusPartial') }}</span>
-          <span class="kpi-value font-mono" style="color:var(--accent-2)">{{ stats.partial }}</span>
+          <span class="kpi-value font-mono">{{ store.totals.count }}</span>
         </div>
         <div class="kpi-card surface-card">
           <span class="kpi-label">{{ $t('payments.volume') }}</span>
-          <span class="kpi-value font-mono text-gradient">{{ formatSomM(stats.volume) }} {{ $t('common.som') }}</span>
+          <span class="kpi-value font-mono text-gradient">{{ formatSomM(store.totals.volume) }} {{ $t('common.som') }}</span>
+        </div>
+        <div class="kpi-card surface-card">
+          <span class="kpi-label">{{ $t('payments.sourceManual') }}</span>
+          <span class="kpi-value font-mono" style="color:var(--accent-2)">{{ formatSomM(store.totals.bySource.manual) }}</span>
+        </div>
+        <div class="kpi-card surface-card">
+          <span class="kpi-label">{{ $t('payments.sourcePayme') }}</span>
+          <span class="kpi-value font-mono" style="color:var(--success)">{{ formatSomM(store.totals.bySource.payme) }}</span>
+        </div>
+        <div class="kpi-card surface-card">
+          <span class="kpi-label">{{ $t('payments.sourcePlum') }}</span>
+          <span class="kpi-value font-mono" style="color:var(--warning)">{{ formatSomM(store.totals.bySource.plum) }}</span>
         </div>
       </div>
 
@@ -295,11 +302,11 @@ function hideDealDropdown() {
       <div class="tab-bar surface-card">
         <button
           class="tab-btn"
-          :class="{ active: activeTab === 'schedule' }"
-          @click="switchTab('schedule')"
+          :class="{ active: activeTab === 'register' }"
+          @click="switchTab('register')"
         >
           <i class="pi pi-credit-card" />
-          {{ $t('payments.tabSchedule') }}
+          {{ $t('payments.tabRegister') }}
         </button>
         <button
           class="tab-btn"
@@ -319,8 +326,8 @@ function hideDealDropdown() {
         </button>
       </div>
 
-      <!-- ── Schedule tab ── -->
-      <template v-if="activeTab === 'schedule'">
+      <!-- ── Register tab ── -->
+      <template v-if="activeTab === 'register'">
         <div class="surface-card filters-bar">
           <span class="search-wrap">
             <i class="pi pi-search search-icon" />
@@ -335,11 +342,11 @@ function hideDealDropdown() {
             class="filter-select"
           />
           <Select
-            v-model="statusFilter"
-            :options="statusOptions"
+            v-model="sourceFilter"
+            :options="sourceOptions"
             option-label="label"
             option-value="value"
-            :placeholder="$t('payments.allStatuses')"
+            :placeholder="$t('payments.allSources')"
             class="filter-select"
           />
           <div class="date-range-wrap">
@@ -351,23 +358,38 @@ function hideDealDropdown() {
         </div>
 
         <div class="surface-card table-card">
+          <div v-if="store.payments.length === 0 && !store.loading" class="empty-state">
+            <i class="pi pi-inbox" style="font-size:2rem;color:var(--text-secondary);opacity:.4" />
+            <p class="muted" style="margin:.5rem 0 0">{{ $t('payments.registerEmpty') }}</p>
+          </div>
+
+          <!-- Lazy: paging, sorting and every filter are resolved by the server,
+               so the table renders exactly the page it was handed. -->
           <DataTable
-            :value="filtered"
+            v-else
+            lazy
+            :value="store.payments"
+            :total-records="store.total"
+            :loading="store.loading"
             data-key="id"
             row-hover
-            removable-sort
-            :paginator="filtered.length > 15"
-            :rows="15"
-            :rows-per-page-options="[10, 15, 25, 50]"
+            paginator
+            :rows="store.filters.limit"
+            :first="store.filters.page * store.filters.limit"
+            :rows-per-page-options="[10, 25, 50, 100]"
+            :sort-field="store.filters.sortBy"
+            :sort-order="store.filters.sortDir === 'asc' ? 1 : -1"
             size="small"
             class="grid-table"
+            @page="onPage"
+            @sort="onSort"
           >
-            <Column :header="$t('payments.merchant')" field="merchantName" sortable>
+            <Column :header="$t('payments.merchant')" field="merchantName">
               <template #body="{ data }">
                 <RouterLink :to="`/merchants/${data.merchantId}`" class="table-link">{{ data.merchantName }}</RouterLink>
               </template>
             </Column>
-            <Column :header="$t('payments.client')" field="clientName" sortable>
+            <Column :header="$t('payments.client')" field="clientName">
               <template #body="{ data }">
                 <div class="client-cell">
                   <span class="client-name">{{ data.clientName }}</span>
@@ -375,39 +397,45 @@ function hideDealDropdown() {
                 </div>
               </template>
             </Column>
-            <Column :header="$t('payments.contract')" field="dealNumber" style="width:200px">
+            <Column :header="$t('payments.contract')" field="dealNumber" style="width:160px">
               <template #body="{ data }">
-                <RouterLink :to="`/deals/${data.contractId}`" class="font-mono deal-id">{{ data.dealNumber }}</RouterLink>
+                <RouterLink :to="`/deals/${data.dealId}`" class="font-mono deal-id">{{ data.dealNumber }}</RouterLink>
               </template>
             </Column>
-            <Column :header="$t('payments.amount')" field="amount" sortable style="width:200px">
+            <Column :header="$t('payments.amount')" field="amount" sortable style="width:160px">
               <template #body="{ data }">
-                <div v-if="data.status === 'partial'" class="partial-amount">
-                  <MonoAmount :value="data.paidAmount" size="sm" />
-                  <span class="partial-of font-mono">/ {{ data.amount.toLocaleString('ru') }}</span>
-                </div>
-                <MonoAmount v-else :value="data.amount" size="sm" />
+                <MonoAmount :value="data.amount" size="sm" />
               </template>
             </Column>
-            <Column :header="$t('payments.status')" field="status" sortable style="width:130px">
+            <Column :header="$t('payments.source')" field="source" style="width:120px">
               <template #body="{ data }">
                 <span
                   class="pill"
-                  :style="{ color: STATUS_COLORS[data.status as Payment['status']].fg, background: STATUS_COLORS[data.status as Payment['status']].bg }"
-                >{{ $t('payments.status' + data.status.charAt(0).toUpperCase() + data.status.slice(1)) }}</span>
+                  :style="{ color: SOURCE_COLORS[data.source as PaymentSource].fg, background: SOURCE_COLORS[data.source as PaymentSource].bg }"
+                >{{ SOURCE_LABEL[data.source as PaymentSource] }}</span>
               </template>
             </Column>
-            <Column :header="$t('payments.provider')" field="paymentProvider" style="width:140px">
+            <Column :header="$t('payments.colType')" field="paymentType" style="width:110px">
               <template #body="{ data }">
-                <span v-if="data.paymentProvider?.length" class="provider-list">
-                  <span v-for="p in data.paymentProvider" :key="p" class="pill provider-pill">{{ p }}</span>
-                </span>
+                <span class="muted" style="font-size:.82rem">{{ TYPE_LABEL[data.paymentType] ?? data.paymentType }}</span>
+              </template>
+            </Column>
+            <!-- Machine-booked rows have no operator; the dash says "nobody
+                 signed off", which is different from a missing name. -->
+            <Column :header="$t('payments.colAdmin')" field="adminName" style="width:150px">
+              <template #body="{ data }">
+                <span v-if="data.adminName" style="font-size:.82rem">{{ data.adminName }}</span>
                 <span v-else class="muted">—</span>
               </template>
             </Column>
-            <Column :header="$t('payments.date')" field="date" sortable style="width:120px">
+            <Column :header="$t('payments.date')" field="paymentDate" sortable style="width:150px">
               <template #body="{ data }">
-                <span class="font-mono muted">{{ formatDate(data.date) }}</span>
+                <div class="date-cell">
+                  <span class="font-mono">{{ formatIsoDate(data.paymentDate) }}</span>
+                  <span v-if="isBackdated(data)" class="font-mono booked-at">
+                    {{ $t('payments.bookedAt', { date: formatDate(data.createdAt) }) }}
+                  </span>
+                </div>
               </template>
             </Column>
           </DataTable>
@@ -733,10 +761,6 @@ function hideDealDropdown() {
 
 .date-cell { display: flex; flex-direction: column; gap: 0.15rem; }
 .booked-at { font-size: 0.7rem; color: var(--text-secondary); }
-.partial-amount { display: flex; align-items: baseline; gap: 0.3rem; }
-.partial-of { font-size: 0.72rem; color: var(--text-secondary); }
-.provider-list { display: flex; flex-wrap: wrap; gap: 0.3rem; }
-.provider-pill { color: var(--accent-2); background: color-mix(in srgb, var(--accent-2) 12%, transparent); text-transform: capitalize; }
 
 .error-state { padding: 3rem 2rem; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; text-align: center; }
 .error-state i { font-size: 2.2rem; color: var(--danger); }
