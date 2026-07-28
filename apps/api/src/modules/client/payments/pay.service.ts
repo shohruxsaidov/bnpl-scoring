@@ -122,7 +122,7 @@ export async function initiatePlumPayment(
       // ownership ledger; a card id the client made up, or one belonging to
       // another user, dies here rather than at Plum.
       const [card] = await tx
-        .select({ plumId: userCards.plumId })
+        .select({ plumId: userCards.plumCardId })
         .from(userCards)
         .where(and(eq(userCards.userId, input.userId), eq(userCards.plumId, input.cardId)))
         .limit(1);
