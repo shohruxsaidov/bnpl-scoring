@@ -45,13 +45,27 @@ const kybKpis = computed(() => [
   // past the end of its schedule is not merely untidy bookkeeping — it is a client
   // locked out of the platform, and every day it sits is a day of lost sales.
   {
-    key: 'stuck-deals',
-    label: t('overview.stuckDeals'),
-    value: String(overview.stuckDeals.value),
-    delta: t('overview.stuckDealsDelta'),
-    tone: overview.stuckDeals.value > 0 ? ('down' as const) : ('up' as const),
+    key: 'blocked-clients',
+    label: t('overview.blockedClients'),
+    value: String(overview.blockedClients.value),
+    delta: t('overview.blockedClientsDelta'),
+    tone: overview.blockedClients.value > 0 ? ('down' as const) : ('up' as const),
     sparkColor: '#ffb02e',
     icon: 'pi pi-lock',
+  },
+  // Deliberately the loudest tile on the row, and deliberately not next to the
+  // one above: that one is a business condition, this one is money that left a
+  // client's card and never reached their balance. Clicking it goes straight to
+  // the worklist, because reading the number is not the point — clearing it is.
+  {
+    key: 'stranded-payments',
+    label: t('overview.strandedPayments'),
+    value: String(overview.strandedPayments.value),
+    delta: t('overview.strandedPaymentsDelta'),
+    tone: overview.strandedPayments.value > 0 ? ('down' as const) : ('up' as const),
+    sparkColor: '#ff5c5c',
+    icon: 'pi pi-exclamation-triangle',
+    to: '/payments/stuck',
   },
 ])
 
@@ -234,14 +248,21 @@ const tenantHealth = computed(() => overview.merchantHealth.value.slice(0, 8))
 
     <!-- ── KYB KPI strip ── -->
     <div class="kpi-strip kyb-strip">
-      <div v-for="k in kybKpis" :key="k.key" class="kpi-card">
+      <component
+        :is="k.to ? 'RouterLink' : 'div'"
+        v-for="k in kybKpis"
+        :key="k.key"
+        :to="k.to"
+        class="kpi-card"
+        :class="{ 'kpi-alarm': k.key === 'stranded-payments' && overview.strandedPayments.value > 0 }"
+      >
         <div class="kpi-label">
           <i :class="k.icon" />
           {{ k.label }}
         </div>
         <div class="kpi-value">{{ k.value }}</div>
         <div class="kpi-delta" :class="k.tone">{{ k.delta }}</div>
-      </div>
+      </component>
     </div>
 
     <!-- ── Charts row ── -->

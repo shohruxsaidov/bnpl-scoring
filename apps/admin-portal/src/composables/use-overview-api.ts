@@ -19,8 +19,13 @@ export function useOverviewApi() {
   const merchantHealth = ref<OverviewMerchant[]>([])
   const kybStats = ref<KybStats>({ pending: 0, verified: 0, rejected: 0 })
   // Deals past the end of their schedule that are still open. Each one is a
-  // client who cannot buy from anyone until an admin closes it.
-  const stuckDeals = ref(0)
+  // client who cannot buy from anyone until an admin closes it. Named for the
+  // consequence, not the row: "stuck" on this dashboard now means stranded
+  // money, and one word cannot carry both.
+  const blockedClients = ref(0)
+  // Card payments Plumgate took that were never allocated. Not untidiness —
+  // money we are holding that belongs on someone's balance.
+  const strandedPayments = ref(0)
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -31,11 +36,13 @@ export function useOverviewApi() {
       const data = await apiFetch<{
         merchantHealth: OverviewMerchant[]
         kybStats: KybStats
-        stuckDeals: number
+        blockedClients: number
+        strandedPayments: number
       }>('/admin/overview')
       merchantHealth.value = data.merchantHealth
       kybStats.value = data.kybStats
-      stuckDeals.value = data.stuckDeals
+      blockedClients.value = data.blockedClients
+      strandedPayments.value = data.strandedPayments
     } catch (e: any) {
       error.value = e?.message ?? 'error'
     } finally {
@@ -43,5 +50,5 @@ export function useOverviewApi() {
     }
   }
 
-  return { merchantHealth, kybStats, stuckDeals, loading, error, fetch }
+  return { merchantHealth, kybStats, blockedClients, strandedPayments, loading, error, fetch }
 }

@@ -256,6 +256,19 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        // Its own route rather than a tab on the register: the register is a
+        // read-only report of money that landed, this is a worklist of money
+        // that did not, and it needs a stable URL to link an alert at.
+        path: 'payments/stuck',
+        name: 'stuck-payments',
+        component: () => import('@/views/stuck-payments-view.vue'),
+        meta: {
+          titleKey: 'routeTitle.stuckPayments',
+          breadcrumbKeys: ['breadcrumb.payments', 'breadcrumb.stuckPayments'],
+          feature: 'view_payments',
+        },
+      },
+      {
         path: 'permissions',
         name: 'permissions',
         component: () => import('@/views/permissions-view.vue'),

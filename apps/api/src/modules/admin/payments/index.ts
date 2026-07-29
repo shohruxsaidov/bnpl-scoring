@@ -9,9 +9,15 @@ import { createManualPayment } from './commands/create-manual-payment/create-man
 import { listPaymeTransactions } from './queries/list-payme-transactions/list-payme-transactions.handler';
 import {
   bookStrandedPlumSession,
+  countStrandedPlumSessions,
   listPlumSessions,
+  resolveStrandedPlumSession,
 } from '../../client/payments/pay.service';
-import type { DealPaymentSource, PlumPaymentSessionStatus } from '../../deals/schema';
+import type {
+  DealPaymentSource,
+  PlumPaymentSessionStatus,
+  PlumSessionResolutionReason,
+} from '../../deals/schema';
 
 const TAGS = ['Admin · Payments'];
 
@@ -81,22 +87,26 @@ export default async function adminPaymentRoutes(app: FastifyInstance) {
   );
 
   /* ── Plum card-payment sessions — the stuck-money screen ─────────────────
-   * Read-only plus ONE action. Like the Payme mirror above these rows are
-   * protocol state, not the ledger — but unlike Payme they can end in a status
-   * no automatic process can resolve: `debited_unbooked`, meaning Plumgate took
-   * the client's money and allocation failed. Every such row is a client whose
-   * balance is wrong until someone acts, which is why this screen exists at all.
+   * Read-only plus TWO actions. Like the Payme mirror above these rows are
+   * protocol state, not the ledger — but unlike Payme they can end in statuses
+   * no automatic process can resolve: `debited_unbooked` (Plumgate took the
+   * client's money and allocation failed) and `needs_refund` (allocation was
+   * tried and proved impossible). Every such row is a client whose balance is
+   * wrong until someone acts, which is why this screen exists at all.
+   *
+   * The status filter is deliberately NOT the full enum. `booked` alone is the
+   * entire history of card payments and this endpoint does not paginate; the
+   * ledger view (`GET /` with source=plum) is where that belongs.
    */
   const PlumSessionsQuery = Type.Object({
-    // Defaults to the stranded ones — the only status that needs a human.
+    // Defaults to both stranded statuses — the rows that need a human.
     status: Type.Optional(
       StringEnum([
         'debited_unbooked',
+        'needs_refund',
+        'resolved',
         'pending',
         'confirming',
-        'booked',
-        'failed',
-        'expired',
       ] as const),
     ),
   });
@@ -115,15 +125,22 @@ export default async function adminPaymentRoutes(app: FastifyInstance) {
           id: String(s.id),
           dealNumber: s.dealNumber != null ? String(s.dealNumber) : null,
           createdAt: s.createdAt.toISOString(),
+          resolvedAt: s.resolvedAt ? s.resolvedAt.toISOString() : null,
         })),
       };
     },
   );
 
+  /** How many rows are waiting on a human. Feeds the nav badge and the overview tile. */
+  fastify.get('/plum/sessions/stranded-count', { schema: { tags: TAGS }, preHandler }, async () => {
+    return { count: await countStrandedPlumSessions() };
+  });
+
   /**
    * Book a payment Plumgate already collected. Not a "retry" of the charge —
    * the card was debited long ago; this only allocates money we are already
-   * holding, so it is safe to press twice (the second press 409s on status).
+   * holding, so it is safe to press twice (the second press 409s on status,
+   * concurrently as well as sequentially — the service locks the row).
    */
   fastify.post(
     '/plum/sessions/:id/book',
@@ -132,15 +149,59 @@ export default async function adminPaymentRoutes(app: FastifyInstance) {
       preHandler,
     },
     async (request, reply) => {
+      const adminUserId = Number((request.user as { sub: string }).sub);
       try {
-        const { paymentId } = await bookStrandedPlumSession(Number(request.params.id));
+        const { paymentId } = await bookStrandedPlumSession(
+          Number(request.params.id),
+          adminUserId,
+        );
         return { paymentId: String(paymentId) };
       } catch (err: any) {
         // OVERPAYMENT here means the debt shrank since the debit — the money is
-        // genuinely surplus and needs refunding at Plumgate, not booking.
+        // genuinely surplus and needs refunding at Plumgate, not booking. The
+        // service has already moved the row to `needs_refund`; the client is
+        // expected to follow up with /resolve once the refund is done.
         if (err.code === 'OVERPAYMENT') {
           return reply.status(409).send({ code: 'OVERPAYMENT', message: err.message });
         }
+        if (err.statusCode) return reply.status(err.statusCode).sendError(err.code);
+        throw err;
+      }
+    },
+  );
+
+  /**
+   * Close a stranded row without booking it. Moves no money — refunds happen in
+   * Plumgate's own dashboard — it records that a human dealt with it and why.
+   */
+  const ResolveBody = Type.Object({
+    reason: StringEnum(['refunded_at_plumgate', 'no_debit_occurred', 'other'] as const),
+    // Mandatory, and mandatory with substance: "ok" a year from now explains
+    // nothing about money that left a client's card.
+    note: Type.String({ minLength: 10, maxLength: 1000 }),
+  });
+
+  fastify.post(
+    '/plum/sessions/:id/resolve',
+    {
+      schema: {
+        tags: TAGS,
+        params: Type.Object({ id: Type.String({ pattern: '^\\d+$' }) }),
+        body: ResolveBody,
+      },
+      preHandler,
+    },
+    async (request, reply) => {
+      const adminUserId = Number((request.user as { sub: string }).sub);
+      try {
+        await resolveStrandedPlumSession({
+          sessionId: Number(request.params.id),
+          reason: request.body.reason as PlumSessionResolutionReason,
+          note: request.body.note,
+          adminUserId,
+        });
+        return { ok: true };
+      } catch (err: any) {
         if (err.statusCode) return reply.status(err.statusCode).sendError(err.code);
         throw err;
       }

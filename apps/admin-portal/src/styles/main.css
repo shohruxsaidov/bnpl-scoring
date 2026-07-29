@@ -684,6 +684,13 @@ a {
   overflow: hidden;
   position: relative;
 }
+/* A KPI that is a link somewhere, and one that is shouting. Used by the stranded
+   card-payments tile: a non-zero value there is money we owe, not a statistic. */
+a.kpi-card { text-decoration: none; color: inherit; }
+a.kpi-card:hover { border-color: var(--text-secondary); }
+.kpi-card.kpi-alarm { border-color: var(--danger); }
+.kpi-card.kpi-alarm .kpi-value { color: var(--danger); }
+
 .kpi-card .kpi-label {
   font-size: 0.72rem;
   font-weight: 700;

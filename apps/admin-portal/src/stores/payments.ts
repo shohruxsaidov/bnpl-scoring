@@ -27,7 +27,11 @@ export interface Payment {
   source: PaymentSource
   paymentType: string
   note: string | null
-  /** Null for machine-booked rows — nobody signed off on a Payme or Plum payment. */
+  /**
+   * Null means nobody signed off — the usual case for a Payme or Plum payment,
+   * which books itself. A name on a machine rail means a human intervened: a
+   * Plum payment recovered by hand from the stuck-payments screen.
+   */
   adminName: string | null
   /** Value date, `YYYY-MM-DD` — the day the money moved. */
   paymentDate: string

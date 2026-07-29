@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
+import { useStuckPaymentsStore } from '@/stores/stuck-payments'
 
 const props = defineProps<{ collapsed: boolean; mobileOpen?: boolean; isMobile?: boolean }>()
 const emit = defineEmits<{ (e: 'toggle'): void }>()
@@ -10,6 +11,16 @@ const emit = defineEmits<{ (e: 'toggle'): void }>()
 const auth = useAuthStore()
 const router = useRouter()
 const { t } = useI18n()
+
+const stuck = useStuckPaymentsStore()
+
+// Stranded card payments are created by a background sweeper, at any hour, with
+// nobody watching. The client notices immediately — their money is gone and
+// their balance did not move — so the least this nav can do is carry the number
+// to whoever logs in first.
+onMounted(() => {
+  if (auth.can('view_payments')) stuck.fetchCount()
+})
 
 interface NavItem {
   label: string
@@ -19,6 +30,8 @@ interface NavItem {
   /** Hub entries: shown when the admin holds ANY of these. Mirrors meta.anyFeature. */
   anyFeature?: string[]
   superadmin?: boolean
+  /** Rendered as a count chip; omitted or 0 shows nothing. */
+  badge?: number
 }
 
 const allNav = computed<NavItem[]>(() => [
@@ -37,6 +50,7 @@ const allNav = computed<NavItem[]>(() => [
   { label: t('nav.scoringModel'), icon: 'pi pi-sliders-h', to: '/scoring-model', feature: 'manage_scoring_model' },
   { label: t('nav.scorings'), icon: 'pi pi-list-check', to: '/scorings', feature: 'view_scorings' },
   { label: t('nav.payments'), icon: 'pi pi-credit-card', to: '/payments', feature: 'view_payments' },
+  { label: t('nav.stuckPayments'), icon: 'pi pi-exclamation-triangle', to: '/payments/stuck', feature: 'view_payments', badge: stuck.strandedCount },
   { label: t('nav.permissions'), icon: 'pi pi-shield', to: '/permissions', feature: 'manage_roles' },
 ])
 
@@ -74,6 +88,7 @@ async function logout() {
         :exact-active-class="item.to === '/' ? 'active' : ''" :title="item.label">
         <i :class="item.icon" />
         <span v-if="!props.collapsed">{{ item.label }}</span>
+        <span v-if="item.badge" class="nav-badge">{{ item.badge }}</span>
       </RouterLink>
     </nav>
 
@@ -226,6 +241,31 @@ async function logout() {
 
 .nav-link i {
   font-size: 1rem;
+}
+
+/* Money nobody has dealt with yet. Sits on the danger colour deliberately — it
+   is not a count of things to read, it is a count of clients owed money. */
+.nav-badge {
+  margin-left: auto;
+  min-width: 20px;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+/* Collapsed the label is gone, so the chip rides the icon instead of a row end. */
+.collapsed .nav-badge {
+  position: absolute;
+  transform: translate(0.7rem, -0.7rem);
+  margin-left: 0;
+}
+
+.collapsed .nav-link {
+  position: relative;
 }
 
 .nav-link:hover {

@@ -6,6 +6,7 @@ import {
   numeric,
   pgTable,
   serial,
+  text,
   timestamp,
   uniqueIndex,
   uuid,
@@ -14,6 +15,7 @@ import {
 import { users } from './users';
 import { deals } from './deals';
 import { dealPayments } from './deal-payments';
+import { adminUsers } from './admin-users';
 
 // ---------------------------------------------------------------------------
 // plum_payment_sessions
@@ -44,6 +46,19 @@ import { dealPayments } from './deal-payments';
 //                      status a human must resolve: `plum_transaction_id`,
 //                      `deal_id` and `amount_som` together carry everything a
 //                      retry needs. Never swept, never auto-expired.
+//   needs_refund     — a booking attempt PROVED the money cannot be allocated:
+//                      the debt shrank below the amount between the debit and
+//                      the recovery, so allocating it would overpay the deal.
+//                      Written by the recovery action itself, so the next
+//                      operator does not press Book and collect the same 409.
+//                      Only a refund at Plumgate closes this one.
+//   resolved         — closed by hand, terminal. `resolution_reason` says why
+//                      (refunded at Plumgate, or the investigation found no
+//                      debit ever happened); the note and the resolver are what
+//                      make it auditable a year later.
+//
+// The last three are the worklist behind the admin stuck-payments screen. Every
+// row sitting in one of them is a client whose balance is wrong.
 //
 // Amounts are in som, matching deal_payments and every client-facing surface.
 // ---------------------------------------------------------------------------
@@ -53,7 +68,19 @@ export type PlumPaymentSessionStatus =
   | 'booked'
   | 'failed'
   | 'expired'
-  | 'debited_unbooked';
+  | 'debited_unbooked'
+  | 'needs_refund'
+  | 'resolved';
+
+/**
+ * Why a stranded session was closed by hand. Structured rather than free text
+ * alone because these are the counts anyone will eventually want ("how much did
+ * we refund last quarter"); the note carries the story.
+ */
+export type PlumSessionResolutionReason =
+  | 'refunded_at_plumgate'
+  | 'no_debit_occurred'
+  | 'other';
 
 export const plumPaymentSessions = pgTable(
   'plum_payment_sessions',
@@ -96,6 +123,15 @@ export const plumPaymentSessions = pgTable(
     // Plum's own error code (e.g. '-111'), kept so support can answer "why did my
     // payment fail" without digging through integration_logs.
     failureCode: varchar('failure_code', { length: 40 }),
+    // ── Manual resolution. All three null until an operator closes the row. ──
+    resolutionReason: varchar('resolution_reason', { length: 32 }).$type<PlumSessionResolutionReason>(),
+    // Mandatory at the API, nullable here: rows resolved before this column
+    // existed have nothing to put in it, and a NOT NULL would have to invent one.
+    resolutionNote: text('resolution_note'),
+    // Who closed it. The counterpart of deal_payments.admin_user_id for the money
+    // that never reached the ledger.
+    resolvedByAdminUserId: integer('resolved_by_admin_user_id').references(() => adminUsers.id),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },

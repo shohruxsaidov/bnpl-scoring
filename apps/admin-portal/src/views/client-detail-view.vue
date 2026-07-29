@@ -9,6 +9,7 @@ import Textarea from 'primevue/textarea'
 import { useToast } from 'primevue/usetoast'
 import { useClientsStore } from '@/stores/clients'
 import { useAuthStore } from '@/stores/auth'
+import { useStuckPaymentsStore } from '@/stores/stuck-payments'
 import MonoAmount from '@/components/mono-amount.vue'
 import StatusBadge from '@/components/status-badge.vue'
 import { formatDate, formatDateTime } from '@/utils/money'
@@ -44,7 +45,22 @@ function tabLabel(tab: Tab): string {
   return t(TAB_LABEL_KEYS[tab])
 }
 
-onMounted(() => store.fetchDetail(clientId))
+// ── Stranded card payments ──────────────────────────────────────────────────
+// Support meets this problem from the other end: the client rings because money
+// left their card and their balance did not move, and whoever picks up opens
+// THIS page, not a worklist they have no reason to check. So the notice comes to
+// them. The actionable set is tiny and unpaginated by design, so filtering it
+// client-side costs one request and no new endpoint.
+const stuck = useStuckPaymentsStore()
+
+const clientStranded = computed(() =>
+  stuck.actionable.filter((s) => String(s.userId) === clientId),
+)
+
+onMounted(() => {
+  store.fetchDetail(clientId)
+  if (auth.can('view_payments')) stuck.fetch(null)
+})
 
 watch(activeTab, (tab) => {
   if (tab === 'Deals') store.fetchDetailDeals(clientId)
@@ -224,6 +240,20 @@ function paymentStatusBg(status: string): string {
     <button class="back" @click="router.push('/clients')">
       <i class="pi pi-arrow-left" /> {{ $t('clientDetail.backToClients') }}
     </button>
+
+    <!-- Above everything: this client is owed money right now. -->
+    <RouterLink v-if="clientStranded.length" to="/payments/stuck" class="stranded-notice surface-card">
+      <i class="pi pi-exclamation-triangle" />
+      <div class="stranded-text">
+        <strong>{{ $t('clientDetail.strandedTitle', { count: clientStranded.length }) }}</strong>
+        <span>{{
+          $t('clientDetail.strandedBody', {
+            amount: clientStranded.reduce((sum, s) => sum + s.amount, 0).toLocaleString('ru'),
+          })
+        }}</span>
+      </div>
+      <i class="pi pi-arrow-right" />
+    </RouterLink>
 
     <!-- Header -->
     <header class="c-header surface-card">
@@ -747,6 +777,37 @@ function paymentStatusBg(status: string): string {
 
 .back:hover {
   color: var(--accent-2);
+}
+
+.stranded-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.9rem 1.1rem;
+  border-left: 3px solid var(--danger);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.stranded-notice > .pi:first-child {
+  color: var(--danger);
+  font-size: 1.1rem;
+}
+
+.stranded-notice:hover {
+  border-color: var(--danger);
+}
+
+.stranded-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+}
+
+.stranded-text span {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
 }
 
 .c-header {

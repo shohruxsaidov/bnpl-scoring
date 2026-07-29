@@ -28,6 +28,14 @@ import { adminUsers } from './admin-users';
 //              POST /client/payments/confirm once Plumgate's OTP clears. Like
 //              'payme', machine-booked and adminUserId null.
 //
+// One exception to "machine rails have no admin": a 'plum' row CAN carry an
+// adminUserId. That is a stranded payment recovered by hand from the admin
+// stuck-payments screen — Plumgate took the money, booking failed at the time,
+// and an operator later decided to allocate it. The rail is still Plum (that is
+// where the money came from); the admin is who decided. So the rule is: a null
+// admin means nobody signed off, and a non-null admin on a machine rail means a
+// human intervened — which is exactly the row an audit wants to find.
+//
 // `paymentDate` is the VALUE date — the day the money actually moved, which for
 // a manual row is whatever the operator read off the MIB statement, not when
 // they typed it in. `createdAt` remains the booking instant, so the two diverge

@@ -1,8 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { and, eq, inArray, lt, sql } from 'drizzle-orm';
 import { db } from '@db';
-import { deals, userCards } from '@db/schema';
-import { plumPaymentSessions, type PlumPaymentSessionStatus } from '@db/plum-payment-sessions';
+import { deals, userCards, users } from '@db/schema';
+import {
+  plumPaymentSessions,
+  type PlumPaymentSessionStatus,
+  type PlumSessionResolutionReason,
+} from '@db/plum-payment-sessions';
 import { isUniqueViolation } from '@lib/pg-errors';
 import {
   applyPayment,
@@ -443,13 +447,28 @@ export async function sweepStalePlumSessions(): Promise<{ expired: number; escal
 /**
  * Book a payment Plum already took. The recovery action behind the admin stuck-
  * payments screen; it is the second half of confirmPlumPayment and nothing more.
+ *
+ * `adminUserId` is threaded onto the ledger row. The rail stays 'plum' — that is
+ * a fact about where the money came from — but unlike a machine-booked Plum
+ * payment this one had a human decide, and deal_payments.admin_user_id is where
+ * that is recorded. See the source table's header for the full rule.
  */
-export async function bookStrandedPlumSession(sessionId: number): Promise<{ paymentId: number }> {
+export async function bookStrandedPlumSession(
+  sessionId: number,
+  adminUserId: number,
+): Promise<{ paymentId: number }> {
   const outcome = await db.transaction(async (tx) => {
+    // FOR UPDATE, and on the SESSION rather than only the deal. The status guard
+    // below is the whole idempotency story, and an unlocked read makes it a lie:
+    // two concurrent presses would both see 'debited_unbooked', both pass, then
+    // serialise on the deal lock and book the same debit twice. Locking the row
+    // whose state is being guarded makes the second press block, re-read
+    // 'booked', and 409 — which is what the route already promises callers.
     const [row] = await tx
       .select()
       .from(plumPaymentSessions)
       .where(eq(plumPaymentSessions.id, sessionId))
+      .for('update')
       .limit(1);
     if (!row) throw coded('payment_session_not_found', 404);
     if (row.status !== 'debited_unbooked') throw coded('payment_session_not_stranded', 409);
@@ -460,7 +479,7 @@ export async function bookStrandedPlumSession(sessionId: number): Promise<{ paym
       amount: row.amountSom,
       source: 'plum',
       paymentType: 'plum',
-      adminUserId: null,
+      adminUserId,
       // The one place a Plum row carries a note: without it nothing on the
       // payment itself says it was booked late, by hand, after a failure.
       note: `Восстановлен платёж Plum (транзакция ${row.plumTransactionId ?? '—'})`,
@@ -473,6 +492,28 @@ export async function bookStrandedPlumSession(sessionId: number): Promise<{ paym
       .where(eq(plumPaymentSessions.id, row.id));
 
     return { row, payment };
+  }).catch(async (err) => {
+    // An overpayment is not a failed attempt to be retried — it is a verdict.
+    // The debt shrank below this amount and never grows again, so every future
+    // press of Book collects the same 409. Recording that on the row keeps the
+    // worklist honest: the next operator sees "refund needed", not "untried".
+    //
+    // Deliberately narrow. A database blip or a lost connection must leave the
+    // row in `debited_unbooked` where it can still be booked once the cause is
+    // gone, so only OverpaymentError reclassifies.
+    if (err instanceof OverpaymentError) {
+      await db
+        .update(plumPaymentSessions)
+        .set({ status: 'needs_refund', failureCode: 'overpayment', updatedAt: new Date() })
+        .where(
+          and(
+            eq(plumPaymentSessions.id, sessionId),
+            eq(plumPaymentSessions.status, 'debited_unbooked'),
+          ),
+        )
+        .catch(() => undefined);
+    }
+    throw err;
   });
 
   await enqueuePaymentReceivedPush({
@@ -485,39 +526,128 @@ export async function bookStrandedPlumSession(sessionId: number): Promise<{ paym
   return { paymentId: outcome.payment.paymentId };
 }
 
+export interface ResolveStrandedPlumSessionInput {
+  sessionId: number;
+  reason: PlumSessionResolutionReason;
+  note: string;
+  adminUserId: number;
+}
+
+/**
+ * Close a stranded session by hand, without booking anything.
+ *
+ * The escape hatch for money that cannot go to the ledger: refunded at Plumgate
+ * because the debt no longer fits, or an investigation that concluded the card
+ * was never actually debited. It moves no money — Plumgate refunds are done in
+ * Plum's own dashboard, this system has no refund call — it only records that a
+ * human dealt with it, so the worklist stops showing a row nobody can action.
+ *
+ * Both stranded statuses are accepted: `needs_refund` is the usual path, but an
+ * operator who establishes there was no debit should not have to press Book and
+ * collect a deliberate error first just to unlock the button.
+ */
+export async function resolveStrandedPlumSession(
+  input: ResolveStrandedPlumSessionInput,
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    // Locked for the same reason Book locks: without it two operators can both
+    // pass the status guard and the second one overwrites the first one's note.
+    const [row] = await tx
+      .select()
+      .from(plumPaymentSessions)
+      .where(eq(plumPaymentSessions.id, input.sessionId))
+      .for('update')
+      .limit(1);
+    if (!row) throw coded('payment_session_not_found', 404);
+    if (row.status !== 'debited_unbooked' && row.status !== 'needs_refund') {
+      throw coded('payment_session_not_stranded', 409);
+    }
+
+    await tx
+      .update(plumPaymentSessions)
+      .set({
+        status: 'resolved',
+        resolutionReason: input.reason,
+        resolutionNote: input.note,
+        resolvedByAdminUserId: input.adminUserId,
+        resolvedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(plumPaymentSessions.id, row.id));
+  });
+}
+
 export interface PlumSessionListItem {
   id: number;
   userId: number;
+  clientName: string | null;
+  clientPhone: string | null;
   dealId: string;
   dealNumber: number | null;
   amount: number;
   status: PlumPaymentSessionStatus;
   plumTransactionId: string | null;
   failureCode: string | null;
+  resolutionReason: PlumSessionResolutionReason | null;
+  resolutionNote: string | null;
+  resolvedAt: Date | null;
   createdAt: Date;
 }
 
 /**
- * Sessions an operator may need to act on. Defaults to the stranded ones —
- * that is the only status this screen exists for.
+ * Sessions an operator may need to act on. Defaults to the two stranded
+ * statuses — those are the rows this screen exists for.
+ *
+ * The client's name and phone are joined in rather than left to a second call:
+ * a stranded row means someone was charged and their balance is wrong, and the
+ * operator's next move is usually to ring them, not to click through to a
+ * profile. Unpaginated on purpose — the actionable set should be countable on
+ * one hand, and the route refuses to filter by the statuses that are not.
  */
 export async function listPlumSessions(
-  statuses: PlumPaymentSessionStatus[] = ['debited_unbooked'],
+  statuses: PlumPaymentSessionStatus[] = ['debited_unbooked', 'needs_refund'],
 ): Promise<PlumSessionListItem[]> {
-  return db
+  const rows = await db
     .select({
       id: plumPaymentSessions.id,
       userId: plumPaymentSessions.userId,
+      firstName: users.firstName,
+      lastName: users.lastName,
+      clientPhone: users.phone,
       dealId: plumPaymentSessions.dealId,
       dealNumber: deals.dealNumber,
       amount: plumPaymentSessions.amountSom,
       status: plumPaymentSessions.status,
       plumTransactionId: plumPaymentSessions.plumTransactionId,
       failureCode: plumPaymentSessions.failureCode,
+      resolutionReason: plumPaymentSessions.resolutionReason,
+      resolutionNote: plumPaymentSessions.resolutionNote,
+      resolvedAt: plumPaymentSessions.resolvedAt,
       createdAt: plumPaymentSessions.createdAt,
     })
     .from(plumPaymentSessions)
     .leftJoin(deals, eq(plumPaymentSessions.dealId, deals.id))
+    .leftJoin(users, eq(plumPaymentSessions.userId, users.id))
     .where(inArray(plumPaymentSessions.status, statuses))
-    .orderBy(sql`${plumPaymentSessions.createdAt} desc`);
+    // Oldest first. This is a queue, not a feed: the row that has been wrong
+    // longest is the client most likely already on the phone to support.
+    .orderBy(sql`${plumPaymentSessions.createdAt} asc`);
+
+  return rows.map(({ firstName, lastName, ...rest }) => ({
+    ...rest,
+    clientName: firstName || lastName ? `${lastName ?? ''} ${firstName ?? ''}`.trim() : null,
+  }));
+}
+
+/**
+ * How many rows are waiting on a human. Drives the nav badge and the overview
+ * tile — cheap enough to poll, and it is the only number that answers "do we
+ * owe anyone money right now".
+ */
+export async function countStrandedPlumSessions(): Promise<number> {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(plumPaymentSessions)
+    .where(inArray(plumPaymentSessions.status, ['debited_unbooked', 'needs_refund']));
+  return row?.count ?? 0;
 }
