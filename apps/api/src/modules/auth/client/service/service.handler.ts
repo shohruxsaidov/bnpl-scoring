@@ -178,6 +178,23 @@ export async function upsertDevice(input: {
   appVersion: string;
   language: 'uz' | 'ru';
 }): Promise<void> {
+  const device = await db.select().from(userDevices).where(eq(userDevices.userId, input.userId));
+
+  if (device) {
+    await db
+      .update(userDevices)
+      .set({
+        userId: input.userId,
+        fcmToken: input.fcmToken,
+        platform: input.platform,
+        appVersion: input.appVersion,
+        language: input.language,
+        updatedAt: new Date(),
+      })
+      .where(eq(userDevices.userId, input.userId));
+    return;
+  }
+
   await db
     .insert(userDevices)
     .values(input)
