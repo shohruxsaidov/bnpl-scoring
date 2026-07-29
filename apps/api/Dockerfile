@@ -21,5 +21,5 @@ ENV HOST=0.0.0.0
 
 EXPOSE 4000
 # apps/api "start" script -> node dist/server.js
-CMD ["sh", "-c", "npm run db:migrate && tsx /app/dist/server.js"]
-# CMD ["sh", "-c", "tsx /app/dist/server.js"]
+# CMD ["sh", "-c", "npm run db:migrate && tsx /app/dist/server.js"]
+CMD ["sh", "-c", "tsx /app/dist/server.js"]
