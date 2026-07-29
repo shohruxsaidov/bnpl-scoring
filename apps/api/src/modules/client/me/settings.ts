@@ -47,7 +47,6 @@ const Settings = Type.Object(
       enabled: Type.Boolean(),
       enrolledAt: Type.Union([Type.String(), Type.Null()]),
     }),
-    language: Language,
     devices: Type.Array(DeviceItem),
   },
   {
@@ -55,7 +54,6 @@ const Settings = Type.Object(
       {
         notifications: { pushEnabled: true },
         biometric: { enabled: true, enrolledAt: '2026-07-09T08:11:00.000Z' },
-        language: 'ru',
         devices: [
           {
             id: '9f2c1b7e-3a44-4c8d-9f01-2b3c4d5e6f70',
@@ -99,13 +97,6 @@ export default async function clientSettingsRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Get my app settings',
-        description:
-          'Everything the Settings screen renders. `notifications`, `biometric` and ' +
-          '`language` describe THE CALLING DEVICE (resolved from x-device-id); ' +
-          '`devices` lists every device on the account, newest-active first, with ' +
-          '`current: true` on the caller. `lastActiveAt` is the last time that ' +
-          'device minted or refreshed a session. Biometric is read-only here — ' +
-          'enable it via POST /client/auth/register-device.',
         security: SECURITY,
         response: { 200: Settings, 400: ERROR, 401: ERROR },
       },
@@ -141,12 +132,6 @@ export default async function clientSettingsRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Update my app settings',
-        description:
-          'Partial update, applied to THE CALLING DEVICE (x-device-id). ' +
-          '`pushEnabled: false` stops FCM pushes to this device only — the in-app ' +
-          'notification inbox keeps receiving everything, so nothing is lost. ' +
-          '`language` sets the locale of pushes sent to this device. Omitted fields ' +
-          'are left alone; an empty body is a no-op.',
         security: SECURITY,
         body: Type.Object(
           {
@@ -169,44 +154,6 @@ export default async function clientSettingsRoutes(app: FastifyInstance) {
       if (!device) return reply.code(400).sendError('device_not_trusted');
 
       await updateClientSettings(device.id, request.body);
-      return { ok: true };
-    },
-  );
-
-  /* ── DELETE /client/me/devices/:id — untrust another device ──────────────── */
-
-  fastify.delete(
-    '/devices/:id',
-    {
-      schema: {
-        tags: TAGS,
-        summary: 'Revoke a device',
-        description:
-          'Untrusts one of the caller’s OTHER devices: revokes its sessions, ' +
-          'removes its biometric key and its push token, and clears its trusted ' +
-          'flag. PIN and biometric login on that device stop working — it must go ' +
-          'through /setup (full OTP + MyID) to return, which is the point. Refuses ' +
-          'the caller’s own device with 409; use POST /client/auth/logout for that.',
-        security: SECURITY,
-        params: Type.Object({
-          id: Type.String({ format: 'uuid', examples: ['3ab1d904-77cc-4e10-8a52-11de9f0c4477'] }),
-        }),
-        response: { 200: Ok, 400: ERROR, 401: ERROR, 404: ERROR, 409: ERROR },
-      },
-      preHandler: guards,
-    },
-    async (request, reply) => {
-      if (!request.deviceId) return reply.code(400).sendError('missing_device_id');
-
-      const result = await revokeClientDevice(
-        Number(request.user.sub),
-        request.params.id,
-        request.deviceId,
-      );
-      if (result === 'not_found') return reply.code(404).sendError('device_not_found');
-      if (result === 'current_device') {
-        return reply.code(409).sendError('cannot_revoke_current_device');
-      }
       return { ok: true };
     },
   );
