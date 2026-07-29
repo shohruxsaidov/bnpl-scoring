@@ -45,7 +45,22 @@ export type ClientActionType =
   | 'scoring'
   | 'deal_sign_myid'
   | 'deal_sign_otp'
-  | 'deal_sign_reject';
+  | 'deal_sign_reject'
+  // Security-material device changes, from the app's Settings screen. They earn
+  // rows under the rule above: a revoke takes PIN and biometric login away from a
+  // device, and enrolling a key HANDS OUT a credential that mints sessions with
+  // no password. Support's first question about a phone that stopped working is
+  // "when was it revoked", and nothing else records it — user_devices only holds
+  // the current state, and its updated_at is overwritten by the next upsert.
+  //
+  // Only the EXPLICIT gestures are logged: POST/DELETE /client/auth/register-
+  // device. The publicKey side-channel on /setup and /login is deliberately
+  // silent — activateDevice nulls the key and the app re-enrols on every password
+  // login, so logging it would put one row per login in a tab whose header
+  // explicitly excludes logins.
+  | 'device_revoke'
+  | 'biometric_enroll'
+  | 'biometric_disable';
 
 export type ClientActionStatus = 'success' | 'failed';
 

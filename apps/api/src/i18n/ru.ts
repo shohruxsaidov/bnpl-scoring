@@ -62,6 +62,8 @@ export const ru: Record<string, string> = {
   invalid_pin_reset_token: 'Срок действия запроса на сброс PIN-кода истёк. Начните заново',
   pin_reset_token_device_mismatch: 'Сброс PIN-кода нужно завершить на том же устройстве',
   device_not_trusted: 'Это устройство не подтверждено. Войдите по паролю',
+  device_not_found: 'Устройство не найдено',
+  cannot_revoke_current_device: 'Нельзя отключить текущее устройство. Используйте выход из аккаунта',
   current_password_required: 'Введите текущий пароль',
   account_locked: 'Аккаунт заблокирован из-за слишком большого числа попыток. Сбросьте пароль',
   missing_device_id: 'Требуется заголовок x-device-id',

@@ -1,4 +1,4 @@
-import { integer, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { boolean, integer, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { users } from './users';
 
 export const userDevices = pgTable('user_devices', {
@@ -10,6 +10,20 @@ export const userDevices = pgTable('user_devices', {
   fcmToken: text('fcm_token'),
   platform: varchar('platform', { length: 10 }).notNull().$type<'ios' | 'android'>(),
   appVersion: varchar('app_version', { length: 10 }).notNull(),
+  // OS model string as the app reports it ('iPhone 14 Pro', 'Samsung SM-S911B'),
+  // sent on /setup, /login and the fcm-token upsert. Its only job is to make a
+  // row recognisable to its owner in the app's device list — without it two
+  // iPhones are both "iOS · 1.0.2" and neither can be told apart, which defeats
+  // the one thing that screen exists for. Nullable: old app builds send nothing,
+  // and a null must never overwrite a name we already have.
+  deviceName: varchar('device_name', { length: 100 }),
+  // Client's push preference FOR THIS DEVICE. Enforced in exactly one place —
+  // the push worker's device query — so a muted device simply isn't in the token
+  // list. It gates the FCM MIRROR only: notify() still writes the inbox row, or a
+  // client who muted for a week would come back to a hole in their payment
+  // history. Reset to true on re-activation (see activateDevice): a device that
+  // changed hands must not inherit the previous owner's mute.
+  pushEnabled: boolean('push_enabled').notNull().default(true),
   // UI language the app runs in, sent on the fcm-token upsert. Drives the
   // locale of push title/body (rendered server-side in the push worker, which
   // has no request context). Defaults to 'ru' (matches deals.lang).

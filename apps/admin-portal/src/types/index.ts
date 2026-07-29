@@ -108,6 +108,9 @@ export type ClientActionType =
   | 'deal_sign_myid'
   | 'deal_sign_otp'
   | 'deal_sign_reject'
+  | 'device_revoke'
+  | 'biometric_enroll'
+  | 'biometric_disable'
 
 export interface ClientActionRow {
   id: number

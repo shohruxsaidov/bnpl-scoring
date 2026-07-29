@@ -99,12 +99,22 @@ export async function processNotificationPushJob(
     return;
   }
 
+  // The one and only enforcement point for the client's push preference: a muted
+  // device is absent from the token list, so nothing downstream has to know the
+  // setting exists. The inbox row above was written regardless — muting silences
+  // the mirror, never the record.
   const devices = await db
     .select()
     .from(userDevices)
-    .where(and(eq(userDevices.userId, data.userId), isNotNull(userDevices.fcmToken)));
+    .where(
+      and(
+        eq(userDevices.userId, data.userId),
+        isNotNull(userDevices.fcmToken),
+        eq(userDevices.pushEnabled, true),
+      ),
+    );
   if (devices.length === 0) {
-    log.info({ notificationId: row.id }, 'no push tokens for user — inbox only');
+    log.info({ notificationId: row.id }, 'no push-enabled tokens for user — inbox only');
     return;
   }
 

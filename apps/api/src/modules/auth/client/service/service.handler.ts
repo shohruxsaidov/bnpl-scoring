@@ -8,7 +8,7 @@ import {
 } from 'node:crypto';
 import type { KeyObject } from 'node:crypto';
 import argon2 from 'argon2';
-import { and, eq, gt, ilike, isNull, ne, or } from 'drizzle-orm';
+import { and, eq, gt, ilike, isNull, ne, or, sql } from 'drizzle-orm';
 import { db } from '@db';
 import { redis } from '@redis';
 import { userDevices, userSessions, otpVerifications, users } from '@db/schema';
@@ -177,24 +177,9 @@ export async function upsertDevice(input: {
   platform: 'ios' | 'android';
   appVersion: string;
   language: 'uz' | 'ru';
+  /** OS model string. Omitted by older app builds — never overwrites a stored name with null. */
+  deviceName?: string;
 }): Promise<void> {
-  const device = await db.select().from(userDevices).where(eq(userDevices.userId, input.userId));
-
-  if (device) {
-    await db
-      .update(userDevices)
-      .set({
-        userId: input.userId,
-        fcmToken: input.fcmToken,
-        platform: input.platform,
-        appVersion: input.appVersion,
-        language: input.language,
-        updatedAt: new Date(),
-      })
-      .where(eq(userDevices.userId, input.userId));
-    return;
-  }
-
   await db
     .insert(userDevices)
     .values(input)
@@ -206,6 +191,11 @@ export async function upsertDevice(input: {
         platform: input.platform,
         appVersion: input.appVersion,
         language: input.language,
+        // Keep whatever name we already hold when the caller sends none, so a
+        // client on an older build does not blank a name a newer build set.
+        // push_enabled is deliberately absent: it is the client's own setting and
+        // a token refresh is not a decision to change it.
+        ...(input.deviceName ? { deviceName: input.deviceName } : {}),
         updatedAt: new Date(),
       },
     });
@@ -226,6 +216,8 @@ export async function activateDevice(input: {
   deviceId: string;
   platform: 'ios' | 'android';
   appVersion: string;
+  /** OS model string. Omitted by older app builds — never overwrites a stored name with null. */
+  deviceName?: string;
 }): Promise<string> {
   const now = new Date();
   const [row] = await db
@@ -235,6 +227,7 @@ export async function activateDevice(input: {
       deviceId: input.deviceId,
       platform: input.platform,
       appVersion: input.appVersion,
+      deviceName: input.deviceName,
       activatedAt: now,
     })
     .onConflictDoUpdate({
@@ -246,6 +239,14 @@ export async function activateDevice(input: {
         activatedAt: now,
         publicKey: null,
         keyRegisteredAt: null,
+        // The previous owner's mute must not survive a device changing hands —
+        // same reasoning as the key nulled above. But this runs on EVERY password
+        // login, so an unconditional reset would silently un-mute a client who
+        // muted push and then simply logged in again. Hence the CASE: inside ON
+        // CONFLICT DO UPDATE an unqualified column is the row's EXISTING value, so
+        // this reads "keep the setting unless the owner is changing".
+        pushEnabled: sql`case when ${userDevices.userId} = ${input.userId} then ${userDevices.pushEnabled} else true end`,
+        ...(input.deviceName ? { deviceName: input.deviceName } : {}),
         updatedAt: now,
       },
     })

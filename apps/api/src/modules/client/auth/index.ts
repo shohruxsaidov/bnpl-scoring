@@ -32,6 +32,7 @@ import {
   verifyUserPin,
 } from '../../auth/client/service/service.handler';
 import type { OtpPurpose } from '../../auth/client/service/service.handler';
+import { recordAction } from '../actions/service';
 import { sendOtpSms } from '../../../lib/sms';
 
 // Onboarding token minted by registration/myid-complete. Carries no `type`
@@ -274,6 +275,13 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
     examples: ['MFkwEwYHKoZIzj0CAQYI...'],
   });
 
+  // OS model string, for the device list in GET /client/me/settings. Optional
+  // everywhere so older app builds keep working — and accepted on the auth flows
+  // rather than only on the fcm-token upsert, because a client who denies push
+  // permission never calls that endpoint and would stay nameless in exactly the
+  // list where the name matters.
+  const DeviceName = Type.String({ minLength: 1, maxLength: 100, examples: ['iPhone 14 Pro'] });
+
   /**
    * Enrol an optional biometric key on a just-activated device. MUST run after
    * activateDevice, which nulls publicKey on conflict — enrolling first would be
@@ -303,6 +311,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
           platform: Platform,
           appVersion: Type.String({ minLength: 1, maxLength: 10, examples: ['1.0.0'] }),
           publicKey: Type.Optional(PublicKey),
+          deviceName: Type.Optional(DeviceName),
         }),
         response: {
           200: Type.Object({
@@ -343,6 +352,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
         deviceId: request.deviceId,
         platform: request.body.platform,
         appVersion: request.body.appVersion,
+        deviceName: request.body.deviceName,
       });
       // One active session per device: drop any prior session on this device
       // (e.g. it changed hands) before minting the new one.
@@ -378,6 +388,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
           platform: Platform,
           appVersion: Type.String({ minLength: 1, maxLength: 10, examples: ['1.0.0'] }),
           publicKey: Type.Optional(PublicKey),
+          deviceName: Type.Optional(DeviceName),
         }),
         response: {
           200: Type.Object({
@@ -395,7 +406,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
     async (request, reply) => {
       if (!request.deviceId) return reply.code(400).sendError('missing_device_id');
 
-      const { phone, password, platform, appVersion, publicKey } = request.body;
+      const { phone, password, platform, appVersion, publicKey, deviceName } = request.body;
 
       const user = await findUserByPhone(phone);
       // Uniform 401 whether the user is unknown or the password is wrong, so the
@@ -419,6 +430,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
         deviceId: request.deviceId,
         platform,
         appVersion,
+        deviceName,
       });
       // One active session per device: drop any stale session before the new one.
       await revokeDeviceSessions(deviceRowId);
@@ -1060,6 +1072,18 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       const ok = await registerDeviceKey(device.id, request.body.publicKey);
       if (!ok) return reply.code(400).sendError('invalid_public_key');
 
+      // The client's explicit "enable Face ID / fingerprint" tap. Logged because a
+      // registered key mints sessions via /challenge + /biometric with no password
+      // at all — handing that out is a credential change, not a preference. Only
+      // this endpoint logs it: the publicKey side-channel on /setup and /login
+      // re-enrols on every password login and would bury the tab.
+      await recordAction({
+        userId: Number(request.user.sub),
+        action: 'biometric_enroll',
+        status: 'success',
+        actorType: 'client',
+      });
+
       return { ok: true };
     },
   );
@@ -1087,6 +1111,16 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       }
 
       await clearDeviceKey(device.id);
+
+      // Idempotent endpoint, but a row every time: "they turned it off twice" is
+      // true and harmless, whereas deduping would hide a real second gesture.
+      await recordAction({
+        userId: Number(request.user.sub),
+        action: 'biometric_disable',
+        status: 'success',
+        actorType: 'client',
+      });
+
       return { ok: true };
     },
   );
@@ -1236,6 +1270,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
           language: Type.Optional(
             Type.Union([Type.Literal('uz'), Type.Literal('ru')], { examples: ['ru'] }),
           ),
+          deviceName: Type.Optional(DeviceName),
         }),
         response: { 200: Ok, 400: ERROR, 401: ERROR },
       },
@@ -1251,6 +1286,7 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
         platform: request.body.platform,
         appVersion: request.body.appVersion,
         language: request.body.language ?? 'ru',
+        deviceName: request.body.deviceName,
       });
       return { ok: true };
     },

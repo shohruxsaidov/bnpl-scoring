@@ -62,6 +62,8 @@ export const uz: Record<string, string> = {
   invalid_pin_reset_token: "PIN-kodni tiklash so'rovi muddati tugadi. Qaytadan boshlang",
   pin_reset_token_device_mismatch: "PIN-kodni tiklashni o'sha qurilmada yakunlash kerak",
   device_not_trusted: 'Bu qurilma tasdiqlanmagan. Parol bilan kiring',
+  device_not_found: 'Qurilma topilmadi',
+  cannot_revoke_current_device: "Joriy qurilmani o'chirib bo'lmaydi. Hisobdan chiqishdan foydalaning",
   current_password_required: 'Joriy parolni kiriting',
   account_locked: "Juda ko'p urinish tufayli hisob bloklandi. Parolni tiklang",
   missing_device_id: 'x-device-id talab qilinadi',

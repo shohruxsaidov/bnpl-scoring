@@ -3,6 +3,7 @@ import clientRegistrationRoutes from './registration/index';
 import clientAuthRoutes from './auth/index';
 import clientCardsRoutes from './cards/index';
 import clientMeRoutes from './me/index';
+import clientSettingsRoutes from './me/settings';
 import clientScoringRoutes from './scoring/index';
 import clientNotificationsRoutes from './notifications/index';
 import clientDealsRoutes from './deals/index';
@@ -49,6 +50,9 @@ export default async function clientModule(app: FastifyInstance) {
   await app.register(clientAuthRoutes, { prefix: '/client/auth' });
   await app.register(clientCardsRoutes, { prefix: '/client/cards' });
   await app.register(clientMeRoutes, { prefix: '/client/me' });
+  // Same prefix, different concern: the plugin above is the client's identity,
+  // this one is the Settings screen (push, biometric state, devices).
+  await app.register(clientSettingsRoutes, { prefix: '/client/me' });
   await app.register(clientScoringRoutes, { prefix: '/client/scoring' });
   await app.register(clientScoringCardsRoutes, { prefix: '/client/scoring/cards' });
   await app.register(clientNotificationsRoutes, { prefix: '/client/notifications' });
