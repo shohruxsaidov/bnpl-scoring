@@ -45,7 +45,6 @@ const Settings = Type.Object(
     notifications: Type.Object({ pushEnabled: Type.Boolean() }),
     biometric: Type.Object({
       enabled: Type.Boolean(),
-      enrolledAt: Type.Union([Type.String(), Type.Null()]),
     }),
     devices: Type.Array(DeviceItem),
   },
@@ -53,7 +52,7 @@ const Settings = Type.Object(
     examples: [
       {
         notifications: { pushEnabled: true },
-        biometric: { enabled: true, enrolledAt: '2026-07-09T08:11:00.000Z' },
+        biometric: { enabled: true },
         devices: [
           {
             id: '9f2c1b7e-3a44-4c8d-9f01-2b3c4d5e6f70',
