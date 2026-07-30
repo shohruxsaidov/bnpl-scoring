@@ -114,7 +114,7 @@ export default async function clientSettingsRoutes(app: FastifyInstance) {
       const s = await getClientSettings(userId, device);
       return {
         ...s,
-        biometric: { enabled: s.biometric.enabled, enrolledAt: iso(s.biometric.enrolledAt) },
+        biometric: { enabled: s.biometric.enabled },
         devices: s.devices.map((d) => ({
           ...d,
           lastActiveAt: iso(d.lastActiveAt),
