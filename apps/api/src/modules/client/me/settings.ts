@@ -116,7 +116,7 @@ export default async function clientSettingsRoutes(app: FastifyInstance) {
         biometric: { enabled: s.biometric.enabled },
         devices: s.devices.map((d) => ({
           ...d,
-          lastActiveAt: iso(d.lastActiveAt),
+          lastActiveAt: null,
           createdAt: d.createdAt.toISOString(),
         })),
       };
