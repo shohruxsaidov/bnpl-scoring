@@ -1,1 +1,0 @@
-ALTER TABLE "user_cards" ADD COLUMN "plum_card_id" varchar(30);

@@ -1,1 +1,0 @@
-ALTER TABLE "products" ADD COLUMN "vatPercent" integer DEFAULT 12;

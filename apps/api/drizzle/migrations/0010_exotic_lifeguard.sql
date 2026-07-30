@@ -1,1 +1,0 @@
-ALTER TABLE "users" ALTER COLUMN "nationality" DROP NOT NULL;

@@ -1,1 +1,0 @@
-CREATE UNIQUE INDEX "deals_user_active_idx" ON "deals" USING btree ("user_id") WHERE status in ('active', 'overdue');
