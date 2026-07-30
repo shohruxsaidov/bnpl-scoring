@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { db } from '@db';
 import { userCards } from '@db/user-cards';
 import { userCreditLimits } from '@db/user-credit-limits';
@@ -10,10 +10,13 @@ import { runModelAndLimit, type LimitCard } from '../../scoring/compute-limit';
 import { loadBlockingDeal } from '../../deals/blocking';
 import { isRetryableRejectReason } from '../../scoring/pipelines/types';
 import {
+  claimModelStage,
   loadClientScoringAwaitingModel,
+  loadPipeline,
   markError,
   markRejected,
   markScored,
+  openPlumStage,
   recordPipeline,
   setCurrentPipeline,
   type ScoringRow,
@@ -31,7 +34,8 @@ export const CLIENT_LIMIT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
  * follow-up poll). Side effects (limit write, model run) already happened.
  */
 export type ClientStepOutcome =
-  | { status: 'pending'; enqueue: { reportType: '077' | 'inps' | 'mib'; token: string } }
+  | { status: 'pending'; enqueue?: { reportType: '077' | 'inps' | 'mib'; token: string } }
+  | { status: 'awaiting_card' }
   | { status: 'rejected'; reasonCode: string; missingFields?: string[] }
   | { status: 'failed'; reason: string }
   | { status: 'scored'; creditLimit: string }
@@ -81,6 +85,28 @@ async function loadLatestCard(
   };
 }
 
+/**
+ * The user's newest card that Plum can actually score, or null.
+ *
+ * A card with no `plumCardId` (a row predating the two Plum ids being told apart)
+ * is a card we hold but cannot score, and plum_card now gates the model — so for
+ * scoring purposes it is the same as having no card at all. Treating it as one
+ * here is what keeps an unscoreable card from being discovered only AFTER the
+ * chargeable bureau reports have been bought.
+ */
+export async function loadScoreableCard(
+  userId: number,
+): Promise<(LimitCard & { plumCardId: string }) | null> {
+  const card = await loadLatestCard(userId);
+  if (!card?.plumCardId) return null;
+  return { ...card, plumCardId: card.plumCardId };
+}
+
+/** True when the user holds a card the plum_card stage could run against. */
+export async function hasScoreableCard(userId: number): Promise<boolean> {
+  return (await loadScoreableCard(userId)) != null;
+}
+
 async function load077(claimId: string) {
   const [row] = await db
     .select()
@@ -99,11 +125,56 @@ async function loadInps(claimId: string) {
   return row?.demandId != null ? row : null;
 }
 
-export async function finalizeClientScoringIfReady(
-  userId: number,
-): Promise<Extract<ClientStepOutcome, { status: 'scored' | 'rejected' | 'error' }> | null> {
-  const scoring = await loadClientScoringAwaitingModel(userId);
-  if (!scoring) return null;
+/**
+ * Open the plum_card stage for a client run whose KATM gates have passed.
+ *
+ * Cardless runs PARK rather than fail: the applicant did nothing wrong and the
+ * bureau reports are already bought, so the run waits at 'awaiting_card' and the
+ * card-confirm route drives it on (see finalizeClientScoringIfReady).
+ */
+export async function startClientPlumStage(scoring: ScoringRow): Promise<ClientStepOutcome> {
+  const card = await loadScoreableCard(scoring.userId!);
+  if (!card) {
+    await setCurrentPipeline(scoring.id, null);
+    return { status: 'awaiting_card' };
+  }
+
+  await openPlumStage(scoring.id);
+
+  let outcome;
+  try {
+    outcome = await enqueuePlumCardScore({
+      scoringId: scoring.id,
+      plumCardId: card.plumCardId,
+      pcType: card.pcType,
+      maskedPan: card.maskedPan,
+    });
+  } catch (err) {
+    // The stage gates the model, so failing to even start it fails the run — it
+    // is not something to score around. Retryable: no 0-limit cooldown.
+    await recordPipeline(scoring.id, 'plum_card', {
+      status: 'error',
+      raw: { error: (err as Error).message },
+    });
+    await markError(scoring.id);
+    return { status: 'error' };
+  }
+
+  // 'queued' ⇒ the worker owns the run from here and the app polls /status.
+  if (outcome === 'queued') return { status: 'pending' };
+
+  // 'skipped' (kill-switch off) or 'ready' (a recent scoring of this card was
+  // reused) — nothing to wait for, so take the claim and run the model now.
+  const claimed = await claimModelStage(scoring.id);
+  if (!claimed) return { status: 'pending' };
+  return runClientModel(claimed);
+}
+
+/** The model stage of a client run. PRECONDITION: the caller holds the claim. */
+export async function runClientModel(
+  scoring: ScoringRow,
+): Promise<Extract<ClientStepOutcome, { status: 'scored' | 'rejected' | 'error' }>> {
+  const userId = scoring.userId!;
 
   // The active_deal gate ran at the top of the chain; the limit gets written down
   // here, a whole KATM round trip later. A deal signed in between would have had
@@ -125,8 +196,6 @@ export async function finalizeClientScoringIfReady(
   // }
 
   const card = await loadLatestCard(userId);
-
-  await setCurrentPipeline(scoring.id, 'model_score');
 
   const resolvedModel = await resolveScoringModel(db);
   if (!resolvedModel) {
@@ -175,19 +244,6 @@ export async function finalizeClientScoringIfReady(
     await markRejected(scoring.id, result.engineRejected ? 'model_stop_factor' : 'zero_limit');
   }
 
-  // plum_card — observational card-behaviour scoring (does NOT feed the model).
-  // Same rule as the merchant path: fired on reject as well as approve. Skipped
-  // when the run reached the model with no card, or when the card predates the
-  // plum_card_id column and so has no id the scoring rail would accept.
-  if (card?.plumCardId) {
-    await enqueuePlumCardScore({
-      scoringId: scoring.id,
-      plumCardId: card.plumCardId,
-      pcType: card.pcType,
-      maskedPan: card.maskedPan,
-    });
-  }
-
   // reject collapses to a 0 limit (the reason stays on the scorings run).
   const limit = result.decision === 'approve' ? String(result.platformCreditLimit) : '0';
   await writeClientCreditLimit(userId, scoring.id, limit);
@@ -210,6 +266,68 @@ export async function finalizeClientScoringIfReady(
   }
 
   return { status: 'scored', creditLimit: limit };
+}
+
+/** Entry point for the BullMQ worker once Plum has answered and it holds the claim. */
+export async function finalizeClientAfterPlum(scoring: ScoringRow): Promise<void> {
+  await runClientModel(scoring);
+}
+
+/**
+ * Re-drive a run that failed at the plum stage, WITHOUT re-buying KATM.
+ *
+ * A Plum timeout is a technical failure of the last stage; 077 and INPS are
+ * already stored under this run's claimId and are still perfectly good. Opening a
+ * new run would re-register a claim and re-charge for both, which would make a
+ * vendor hiccup cost real money per applicant.
+ *
+ * Returns null when there is nothing to resume — no claim, or reports that never
+ * completed — in which case the caller opens a fresh run as usual.
+ */
+export async function resumeErroredClientRun(
+  scoring: ScoringRow,
+): Promise<ClientStepOutcome | null> {
+  if (!scoring.katmClaimId) return null;
+  const [katm, inps] = await Promise.all([
+    load077(scoring.katmClaimId),
+    loadInps(scoring.katmClaimId),
+  ]);
+  if (!katm || !inps) return null;
+  return startClientPlumStage(scoring);
+}
+
+/**
+ * Lazy entry point — used by POST /start and by card-confirm. Advances whatever
+ * the user's current run is waiting on, and is a no-op when there is nothing to
+ * advance.
+ *
+ * Also the fallback that stops a dead worker stalling a run forever: a run parked
+ * on a plum_card row that has since resolved is finalized here, under the same
+ * CAS the worker uses, so only one of them ever runs the model.
+ */
+export async function finalizeClientScoringIfReady(
+  userId: number,
+): Promise<Extract<ClientStepOutcome, { status: 'scored' | 'rejected' | 'error' }> | null> {
+  const scoring = await loadClientScoringAwaitingModel(userId);
+  if (!scoring) return null;
+
+  // Parked with no card (or an unscoreable one) — open the stage if a card has
+  // since arrived, otherwise keep waiting.
+  if (scoring.currentPipeline == null) {
+    const outcome = await startClientPlumStage(scoring);
+    return outcome.status === 'scored' || outcome.status === 'rejected' || outcome.status === 'error'
+      ? outcome
+      : null;
+  }
+
+  if (scoring.currentPipeline !== 'plum_card') return null;
+
+  const plum = await loadPipeline(scoring.id, 'plum_card');
+  if (plum?.status !== 'passed') return null; // vendor still working
+
+  const claimed = await claimModelStage(scoring.id);
+  if (!claimed) return null; // the worker got there first
+  return runClientModel(claimed);
 }
 
 /**
@@ -251,6 +369,7 @@ export async function applyClientStep(
   if (step.kind === 'failed') {
     return { status: 'failed', reason: step.reason };
   }
-  const outcome = await finalizeClientScoringIfReady(scoring.userId!);
-  return outcome ?? { status: 'failed', reason: 'Unknown error occurred' };
+  // gates_passed — the KATM knockouts are clear, so the chargeable card scoring
+  // may now run. It gates the model; the model no longer runs here.
+  return startClientPlumStage(scoring);
 }

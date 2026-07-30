@@ -33,11 +33,13 @@ import {
 } from '../modules/integrations/payme/sweep';
 import {
   PLUM_CARD_SCORE_QUEUE,
-  handlePlumCardScoreFailure,
-  processPlumCardScoreJob,
   setPlumCardScoreQueue,
   type PlumCardScoreJobData,
 } from '../modules/integrations/plumgate/card-scoring';
+import {
+  handlePlumCardScoreFailure,
+  processPlumCardScoreJob,
+} from '../modules/integrations/plumgate/card-scoring-worker';
 import {
   PLUM_PAYMENT_SWEEP_QUEUE,
   PLUM_PAYMENT_SWEEP_INTERVAL_MS,
@@ -171,12 +173,13 @@ export default fp(async function queuePlugin(app: FastifyInstance) {
     );
   });
 
-  // plum_card — observational card-behaviour scoring. Uzcard polls (throw/retry),
-  // Humo answers inline. Nothing here may touch the scoring run: an exhausted job
-  // marks its own row 'error' and the run stays exactly as the model left it.
+  // plum_card — card-behaviour scoring, the stage that gates the model. Uzcard
+  // polls (throw/retry), Humo answers inline. On success the worker carries the
+  // run into the model; on exhaustion it FAILS the run, because the card score
+  // feeds model params the engine would otherwise silently read as 0.
   const plumCardScoreWorker = new Worker<PlumCardScoreJobData>(
     PLUM_CARD_SCORE_QUEUE,
-    async (job) => processPlumCardScoreJob(job.data),
+    async (job) => processPlumCardScoreJob(job.data, claimRejectQueue),
     { connection, concurrency: 5 },
   );
 

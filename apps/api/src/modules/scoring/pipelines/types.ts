@@ -231,6 +231,11 @@ interface PlumCardSummaryBase {
   /** ISO — the observation window both rails are measured over. */
   periodBegin: string;
   periodEnd: string;
+  /** Set when this row was COPIED from a recent scoring of the same card rather
+   *  than bought fresh (Plum bills per scoring). The figures are as of the
+   *  periodBegin/periodEnd above — which lag today by the age of the reuse — so
+   *  the provenance is stamped rather than passed off as current. */
+  reusedFromScoringId?: number;
 }
 
 export interface PlumCardUzcardSummary extends PlumCardSummaryBase {

@@ -54,6 +54,8 @@ export const rejectReasonCodes: Record<SupportedLang, Record<string, string>> = 
     zero_limit: "Hozircha sizga kredit limiti ajratilmadi.",
     // pre-run profile bucket
     data_missing: "Ma'lumotlaringiz to'liq emas. Profilni to'ldiring va qayta urinib ko'ring.",
+    // pre-run card precondition — the card scoring stage cannot run without one
+    card_required: "Skoringni o'tkazish uchun kartangizni qo'shing va qayta urinib ko'ring.",
     // codeless / unknown fallback
     unknown: "Hozircha kredit limitini hisoblab bo'lmadi. Keyinroq qayta urinib ko'ring.",
   },
@@ -95,6 +97,8 @@ export const rejectReasonCodes: Record<SupportedLang, Record<string, string>> = 
     zero_limit: 'На данный момент кредитный лимит вам не выделен.',
     // pre-run profile bucket
     data_missing: 'Ваши данные заполнены не полностью. Заполните профиль и повторите попытку.',
+    // pre-run card precondition — the card scoring stage cannot run without one
+    card_required: 'Для скоринга нужна привязанная карта. Добавьте карту и повторите попытку.',
     // codeless / unknown fallback
     unknown: 'Сейчас не удалось рассчитать кредитный лимит. Попробуйте позже.',
   },

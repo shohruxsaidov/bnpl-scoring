@@ -3,7 +3,7 @@
 // Leaf module: no KATM/model runtime imports, so flow.ts, poller.ts and the
 // wizard endpoints can all write through it without import cycles.
 // ---------------------------------------------------------------------------
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, gt, sql } from 'drizzle-orm';
 import { db } from '@db';
 import { scorings } from '@db/scorings';
 import { scoringPipelines } from '@db/scoring-pipelines';
@@ -175,6 +175,75 @@ export async function loadPipeline(
     .select()
     .from(scoringPipelines)
     .where(and(eq(scoringPipelines.scoringId, scoringId), eq(scoringPipelines.type, type)))
+    .limit(1);
+  return row ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// plum_card staging — the blocking pre-model stage
+// ---------------------------------------------------------------------------
+
+/**
+ * Open (or re-open) the plum_card stage on a run whose knockout gates have all
+ * passed. `currentPipeline` is the token the model stage is claimed with, so
+ * setting it here is what gives claimModelStage() something to win.
+ *
+ * Deliberately legal from 'error' too: a Plum timeout is a technical failure and
+ * its retry re-opens THIS run rather than starting a fresh one — the chargeable
+ * 077/INPS reports are already stored under the run's claimId and must not be
+ * bought a second time because a vendor was slow.
+ */
+export async function openPlumStage(scoringId: number): Promise<void> {
+  await db
+    .update(scorings)
+    .set({ status: 'passed', currentPipeline: 'plum_card', updatedAt: new Date() })
+    .where(eq(scorings.id, scoringId));
+}
+
+/**
+ * Compare-and-swap the run out of the plum stage and into the model stage.
+ * Returns the row to exactly ONE caller; every other caller gets null.
+ *
+ * Two triggers race for the model by design: the BullMQ worker fires the moment
+ * Plum answers, and the polling GET fires as the fallback that stops a dead
+ * worker from stalling a wizard forever. Without this swap both would run the
+ * model — and on the merchant reject path both would close the session and
+ * enqueue a second claim retraction.
+ */
+export async function claimModelStage(scoringId: number): Promise<ScoringRow | null> {
+  const [row] = await db
+    .update(scorings)
+    .set({ currentPipeline: 'model_score', updatedAt: new Date() })
+    .where(and(eq(scorings.id, scoringId), eq(scorings.currentPipeline, 'plum_card')))
+    .returning();
+  return row ?? null;
+}
+
+/**
+ * The most recent successful plum_card result for a card, no older than maxAgeMs.
+ *
+ * Plum bills per scoring, so a card must not be re-scored for every retry, card
+ * switch or wizard re-run. The observation window is rolling (now−N → now) and so
+ * can never be part of the key: the key is the card alone, and a hit carries its
+ * own older periodBegin/periodEnd — which is why the copy is stamped with
+ * reusedFromScoringId instead of being passed off as fresh.
+ */
+export async function loadRecentPlumResult(
+  plumCardId: string,
+  maxAgeMs: number,
+): Promise<typeof scoringPipelines.$inferSelect | null> {
+  const [row] = await db
+    .select()
+    .from(scoringPipelines)
+    .where(
+      and(
+        eq(scoringPipelines.type, 'plum_card'),
+        eq(scoringPipelines.status, 'passed'),
+        gt(scoringPipelines.updatedAt, new Date(Date.now() - maxAgeMs)),
+        sql`${scoringPipelines.summary} ->> 'cardId' = ${plumCardId}`,
+      ),
+    )
+    .orderBy(desc(scoringPipelines.updatedAt))
     .limit(1);
   return row ?? null;
 }

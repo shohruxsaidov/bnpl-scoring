@@ -18,6 +18,7 @@ import {
   isWizardStep,
   stepDataOf,
   type DealSessionRow,
+  type ScoringStamp,
   type SessionStepData,
 } from './types';
 import { createMyidSession, exchangeMyidCode } from '../../integrations/myid/client';
@@ -71,13 +72,15 @@ import {
   startScoringRun,
   setKatmClaimIdOnScoring,
   loadScoringBySession,
-  markScored,
-  markRejected,
+  claimModelStage,
+  loadPipeline,
   markError,
-  setCurrentPipeline,
+  openPlumStage,
   recordPipeline,
 } from '../../scoring/pipelines/store';
 import { enqueuePlumCardScore } from '../../integrations/plumgate/card-scoring';
+import { finalizeMerchantScoring, loadSessionRow } from './finalize';
+import { stampPlumPending } from './commands/stamp-plum-pending/stamp-plum-pending.handler';
 import { listCards } from '../../integrations/plumgate/queries/list-cards/list-cards.handler';
 import { addCard } from '../../integrations/plumgate/commands/add-card/add-card.handler';
 import { confirmCard } from '../../integrations/plumgate/commands/confirm-card/confirm-card.handler';
@@ -85,8 +88,6 @@ import { recordAction, vendorReasonCode } from '../../client/actions/service';
 import { stampScoring } from './commands/stamp-scoring/stamp-scoring.handler';
 import { rejectSession } from './commands/reject-session/reject-session.handler';
 import type { GENDERS } from '../../integrations/katm/service/shared';
-import { resolveScoringModel } from '../../scoring/resolve-model';
-import { runModelAndLimit } from '../../scoring/compute-limit';
 
 type JwtPayload = {
   sub: string;
@@ -1199,6 +1200,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
     maskedPan: Type.String({ minLength: 1 }),
     holderName: Type.String(),
     expiry: Type.String({ minLength: 1 }),
+    bank: Type.Optional(Type.String()),
     bailsmen: Type.Optional(Type.Array(BailsmanItemSchema, { minItems: 1, maxItems: 5 })),
   });
 
@@ -1207,7 +1209,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
     { schema: { tags: TAGS, params: IdParams, body: ScoreCardBody }, preHandler: guards },
     async (request, reply) => {
       const p = payload(request);
-      const { plumCardId, pcType, maskedPan, holderName, expiry } = request.body;
+      const { plumCardId, pcType, maskedPan, holderName, expiry, bank } = request.body;
 
       let session;
       try {
@@ -1226,26 +1228,22 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       // never reached for this session.
       const scoringRun = await loadScoringBySession(session.id);
 
+      // Only the ban flag is read here; the full 077/INPS load for the model
+      // happens in finalize, which may well run in another process.
       let katm: typeof katm077Reports.$inferSelect | null = null;
-      let inps: typeof katmInpsReports.$inferSelect | null = null;
       if (session.katmClaimId) {
-        const [report, inpsReport] = await Promise.all([
-          db
-            .select()
-            .from(katm077Reports)
-            .where(eq(katm077Reports.claimId, session.katmClaimId))
-            .limit(1),
-          db
-            .select()
-            .from(katmInpsReports)
-            .where(eq(katmInpsReports.claimId, session.katmClaimId))
-            .limit(1),
-        ]);
-        if (report[0]?.demandId != null) katm = report[0];
-        if (inpsReport[0]?.demandId != null) inps = inpsReport[0];
+        const [report] = await db
+          .select()
+          .from(katm077Reports)
+          .where(eq(katm077Reports.claimId, session.katmClaimId))
+          .limit(1);
+        if (report?.demandId != null) katm = report;
       }
 
-      // Pre-engine hard gate: credit ban is a regulatory constraint, not a scoring criterion
+      // Pre-engine hard gate: credit ban is a regulatory constraint, not a
+      // scoring criterion. It stays HERE, ahead of the chargeable Plum call —
+      // the pipeline order is cost-ascending, and a banned applicant must knock
+      // out before we buy a card scoring nobody will ever look at.
       if (katm?.hasCreditBan === true) {
         const sessionAfterCard = await saveStep(session, 'card', {
           cardId: plumCardId,
@@ -1262,134 +1260,166 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           decision: 'reject',
           platformCreditLimit: 0,
           criteriaScores: {},
+          rejectionReason: { code: 'credit_ban' },
         });
         await rejectSession(sessionAfterCard);
         await enqueueClaimRejection(app.katmClaimRejectQueue, sessionAfterCard);
-        return {
-          score: 0,
-          limit: 0,
-          decision: 'reject',
-          scoringId: null,
-          coefficient: 0,
-          criteriaScores: {},
-          sessionClosed: true,
-        };
+        // Answers 'pending' like every other exit: this endpoint never returns a
+        // verdict. The stamp above is what the next GET reads.
+        return { status: 'pending' as const };
       }
 
-      if (scoringRun) await setCurrentPipeline(scoringRun.id, 'model_score');
-
-      const resolvedModel = await resolveScoringModel(db, Number(p.merchantId));
-      if (!resolvedModel) {
-        if (scoringRun) {
-          await recordPipeline(scoringRun.id, 'model_score', { status: 'error' });
-          await markError(scoringRun.id);
-        }
-        throw new Error('no_scoring_model_available');
-      }
-
-      const [userRow] = await db
-        .select({
-          birthDate: users.birthDate,
-          gender: users.gender,
-          nationality: users.nationality,
-          citizenship: users.citizenShipId,
-          region: users.regionCode,
-          address: users.address,
-        })
-        .from(users)
-        .where(eq(users.id, session.userId))
-        .limit(1);
-
-      // Single source of truth for the model run + limit formula + criteria
-      // breakdown — shared with the client self-scoring path (compute-limit.ts).
-      const {
-        scoreSum,
-        coefficient,
-        decision: finalDecision,
-        platformCreditLimit,
-        criteriaScores,
-        engineRejected,
-        engineResult,
-      } = runModelAndLimit({
-        model: resolvedModel.params,
-        userRow: userRow ?? null,
-        katm,
-        inps,
-        card: { pcType, maskedPan, holderName },
-      });
-
-      // model_score is a pure execution marker: the row is 'passed' whenever the
-      // model ran (approve, zero-limit, or stop-factor alike). The approve/reject
-      // decision lives on the scorings rollup, not on this pipeline row.
-      if (scoringRun) {
-        await recordPipeline(scoringRun.id, 'model_score', {
-          status: 'passed',
-          summary: { score: scoreSum, platformCreditLimit },
-          raw: engineResult,
-        });
-        if (finalDecision === 'approve') {
-          await markScored(scoringRun.id, {
-            score: scoreSum,
-            creditLimit: String(platformCreditLimit),
-            criteriaScores,
-          });
-        } else {
-          await markRejected(scoringRun.id, engineRejected ? 'model_stop_factor' : 'zero_limit');
-        }
-      }
-
-      // Scoring history persistence removed — to be rebuilt from scratch.
-      // The computed result is still stamped onto the session below.
-      const scoringId: string | null = null;
-
-      const sessionAfterCard = await saveStep(session, 'card', {
+      // The card the agent chose + the bailsmen they entered are stamped onto the
+      // SESSION, not carried in the job payload: the model run has moved out of
+      // this request, and a payload is a snapshot — an agent who re-scores with a
+      // different card must not end up with the old one on their deal.
+      const card = {
         cardId: plumCardId,
         maskedPan,
         pcType,
+        bank: bank ?? '',
         holderName,
         expiry,
+      };
+      await stampPlumPending(session, {
+        status: 'pending',
+        startedAt: new Date().toISOString(),
+        card,
+        bailsmen: request.body.bailsmen,
       });
+      // Re-read: the stamp above rewrote stepData, and finalize reads it back.
+      const staged = (await loadSessionRow(session.id)) ?? session;
 
-      await stampScoring(
-        sessionAfterCard,
-        {
-          cardId: plumCardId,
-          scoringId,
-          scoreSum,
-          coefficient,
-          decision: finalDecision,
-          platformCreditLimit,
-          criteriaScores: criteriaScores as Record<string, unknown>,
-        },
-        request.body.bailsmen,
-      );
-
-      if (finalDecision === 'reject') {
-        await rejectSession(sessionAfterCard);
-        await enqueueClaimRejection(app.katmClaimRejectQueue, sessionAfterCard);
+      // A session with no scoring run (it never reached /start) has nothing to
+      // stage a pipeline against — run the model straight away. The verdict still
+      // goes out via the GET, so the wizard has one flow and only one.
+      if (!scoringRun) {
+        await finalizeMerchantScoring(staged, null, app.katmClaimRejectQueue);
+        return { status: 'pending' as const };
       }
 
-      // plum_card — observational card-behaviour scoring (does NOT feed the model).
-      // Fired for rejected runs too: a dataset truncated at the current model's
-      // decision boundary has no negative samples and cannot be used to fit its
-      // successor. Async, so the agent's wizard never waits on Plumgate.
-      if (scoringRun) {
-        await enqueuePlumCardScore({
+      await openPlumStage(scoringRun.id);
+
+      let stage;
+      try {
+        stage = await enqueuePlumCardScore({
           scoringId: scoringRun.id,
           plumCardId,
           pcType,
           maskedPan,
         });
+      } catch (err) {
+        // plum_card gates the model and feeds it params the engine would read as
+        // 0 if absent, so a stage that cannot even start fails the run rather
+        // than scoring around it. Retryable — re-POST re-drives this stage alone
+        // and re-reads the bureau reports already paid for.
+        await recordPipeline(scoringRun.id, 'plum_card', {
+          status: 'error',
+          raw: { error: (err as Error).message },
+        });
+        await markError(scoringRun.id);
+        await stampPlumPending(staged, {
+          status: 'failed',
+          startedAt: new Date().toISOString(),
+          error: 'plum_unavailable',
+          card,
+          bailsmen: request.body.bailsmen,
+        });
+        return reply.code(503).sendError('plum_unavailable');
       }
 
-      return {
-        scoringId,
-        coefficient,
-        scoreSum,
-        criteriaScores,
-        limit: platformCreditLimit,
-        sessionClosed: finalDecision === 'reject',
-      };
+      // The vendor is working — the wizard polls GET /:id/cards/score from here.
+      if (stage === 'queued') return { status: 'pending' as const };
+
+      // 'skipped' (kill-switch off) or 'ready' (a recent scoring of this card was
+      // reused): there is nothing to wait for, so run the model now — but STILL
+      // answer 'pending'. The verdict only ever leaves through the GET, so the
+      // wizard has a single flow whose shape does not depend on whether the
+      // pipeline happened to be switched on or a cached result happened to exist.
+      const claimed = await claimModelStage(scoringRun.id);
+      if (claimed) await finalizeMerchantScoring(staged, claimed, app.katmClaimRejectQueue);
+      return { status: 'pending' as const };
     },
   );
+
+  /* ── GET /:id/cards/score — poll the verdict while Plum works ──────────── */
+
+  fastify.get(
+    '/:id/cards/score',
+    { schema: { tags: TAGS, params: IdParams }, preHandler: guards },
+    async (request, reply) => {
+      const p = payload(request);
+      let session;
+      try {
+        // No active guard, for the reason GET /:id/status already documents: a
+        // model rejection CLOSES the session, and the wizard is still polling and
+        // must receive the stamped verdict rather than a 409 it would read as
+        // transient.
+        session = await loadOwnedSession(request.params.id, Number(p.sub));
+      } catch (err: any) {
+        return sessionErrorReply(reply, err);
+      }
+
+      const data = stepDataOf(session);
+
+      // No wait outstanding and a stamp on file ⇒ that stamp is the verdict.
+      if (!data.plumPending && data.scoring) {
+        return scoringStampResult(session, data.scoring);
+      }
+      if (data.plumPending?.status === 'failed') {
+        return { status: 'error' as const, error: data.plumPending.error ?? 'plum_failed' };
+      }
+
+      const scoringRun = await loadScoringBySession(session.id);
+      if (!scoringRun) return { status: 'pending' as const };
+
+      // Lazy fallback. Plum resolved but the worker never carried the run into the
+      // model (crashed, lost job, restarted mid-flight) — finish it here rather
+      // than leaving the agent polling a run that will never move. The CAS is the
+      // same one the worker takes, so exactly one of us runs the model.
+      if (scoringRun.currentPipeline === 'plum_card') {
+        const plum = await loadPipeline(scoringRun.id, 'plum_card');
+        if (plum?.status === 'passed') {
+          const claimed = await claimModelStage(scoringRun.id);
+          if (claimed) return finalizeMerchantScoring(session, claimed, app.katmClaimRejectQueue);
+        }
+        if (plum?.status === 'error') {
+          return { status: 'error' as const, error: 'plum_failed' };
+        }
+      }
+
+      return { status: 'pending' as const };
+    },
+  );
+}
+
+/**
+ * Rebuild the verdict payload from the stamp a finished run left on the session,
+ * so a wizard that polls after the fact (resumed tab, second poll landing behind
+ * the finalizing one) gets the same object the finalize returned.
+ */
+function scoringStampResult(session: DealSessionRow, stamp: ScoringStamp) {
+  // Stamps written before rejectionReason existed still have to render, so the
+  // model breakdown remains the fallback.
+  const model = stamp.criteriaScores?.['model'] as
+    | { rejected?: boolean; stopFactor?: string }
+    | undefined;
+  return {
+    status: 'scored' as const,
+    scoringId: stamp.scoringId,
+    score: stamp.scoreSum,
+    scoreSum: stamp.scoreSum,
+    coefficient: stamp.coefficient,
+    decision: stamp.decision,
+    limit: stamp.platformCreditLimit,
+    criteriaScores: stamp.criteriaScores,
+    sessionClosed: session.status !== 'active',
+    rejectionReason:
+      stamp.decision === 'reject'
+        ? (stamp.rejectionReason ??
+          (model?.rejected
+            ? { code: 'model_stop_factor', factorKey: model.stopFactor }
+            : { code: 'zero_limit' }))
+        : null,
+  };
 }

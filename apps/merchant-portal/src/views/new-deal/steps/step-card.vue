@@ -250,10 +250,16 @@ async function confirmOtp() {
 // ── Scoring ──────────────────────────────────────────────────────────────────
 // The server runs the score AND stamps the full result onto the Deal Session
 // (ADR-0024) — the response here is display-only.
+//
+// Scoring is ASYNC: the card is scored at Plum before the model may run, so the
+// POST only opens that stage and the verdict arrives on the polling GET. The POST
+// still answers inline when there is nothing to wait for (the pipeline is switched
+// off, or this card was scored recently enough to reuse).
 
 type RejectionCode = 'credit_ban' | 'card_declined' | 'model_stop_factor' | 'zero_limit'
 
 interface ServerScoreResult {
+  status: 'scored'
   score: number
   limit: number
   decision: string
@@ -263,6 +269,18 @@ interface ServerScoreResult {
   sessionClosed?: boolean
   rejectionReason?: { code: RejectionCode; factorKey?: string } | null
 }
+
+/** What POST and GET /cards/score both answer with. */
+type ScoreResponse =
+  | ServerScoreResult
+  | { status: 'pending' }
+  | { status: 'error'; error?: string }
+
+/** How often the wizard asks for the verdict, and how long it keeps asking. The
+ *  server always reaches a terminal state inside its own poll budget, so this cap
+ *  only exists so a lost response can't leave the spinner up forever. */
+const SCORE_POLL_INTERVAL_MS = 2000
+const SCORE_POLL_TIMEOUT_MS = 5 * 60 * 1000
 
 const scoring = ref(false)
 const progress = ref(0)
@@ -286,9 +304,39 @@ const rejectionDesc = computed(() => {
 })
 
 let progressTimer: ReturnType<typeof setInterval> | null = null
+/** Flipped on unmount so an in-flight poll loop stops instead of outliving the view. */
+let pollAborted = false
 
 function clearTimer() {
   if (progressTimer) { clearInterval(progressTimer); progressTimer = null }
+}
+
+onUnmounted(() => { pollAborted = true; clearTimer() })
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * Ask for the verdict until the server has one.
+ *
+ * Asks BEFORE the first wait: POST never answers with a verdict any more, but it
+ * has often already produced one by the time it returns (card scoring switched
+ * off, or a recent scoring of this card reused), and sleeping first would add a
+ * pointless couple of seconds to the common case.
+ */
+async function pollForVerdict(): Promise<ServerScoreResult> {
+  const deadline = Date.now() + SCORE_POLL_TIMEOUT_MS
+  while (Date.now() < deadline) {
+    if (pollAborted) throw new Error('aborted')
+    const data = await apiFetch<ScoreResponse>(
+      `/merchant/deal-sessions/${deal.dealSessionId}/cards/score`,
+    )
+    if (data.status === 'scored') return data
+    if (data.status === 'error') throw new Error(data.error ?? 'score_failed')
+    await delay(SCORE_POLL_INTERVAL_MS)
+  }
+  throw new Error('score_timeout')
 }
 
 async function recreateSession() {
@@ -312,7 +360,7 @@ async function runScoring(): Promise<CardScoreResult | null> {
   }, 250)
 
   try {
-    const data = await apiFetch<ServerScoreResult>(
+    const started = await apiFetch<ScoreResponse>(
       `/merchant/deal-sessions/${deal.dealSessionId}/cards/score`,
       {
         method: 'POST',
@@ -330,6 +378,9 @@ async function runScoring(): Promise<CardScoreResult | null> {
         }),
       },
     )
+    // The POST only opens the run — the verdict always arrives on the GET.
+    const data = started.status === 'pending' ? await pollForVerdict() : started
+    if (data.status !== 'scored') throw new Error('score_failed')
     clearTimer()
     progress.value = 100
     serverResult.value = data

@@ -214,6 +214,13 @@ export default async function clientCardsRoutes(app: FastifyInstance) {
         dedupeKey: `card_add:${row.id}`,
       });
 
+      // A run parked at 'awaiting_card' has cleared KATM and is waiting for
+      // exactly this. Adding the card is what opens the plum_card stage and, in
+      // turn, the model. Best-effort: the card was added either way.
+      await finalizeClientScoringIfReady(userId).catch((err) =>
+        request.log.warn({ err, userId }, 'post-card scoring advance failed'),
+      );
+
       return { card: toCardDto(row) };
     },
   );

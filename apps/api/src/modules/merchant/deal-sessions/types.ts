@@ -55,6 +55,13 @@ export interface ScoringStamp {
   /** som (whole units) */
   platformCreditLimit: number;
   criteriaScores: Record<string, unknown>;
+  /**
+   * Why it was rejected, in the wizard's own vocabulary. Stamped rather than
+   * re-derived: the verdict is delivered by a later GET, and a credit-ban
+   * knockout leaves no model breakdown to reconstruct a reason from — it would
+   * come back as a generic zero limit.
+   */
+  rejectionReason?: { code: string; factorKey?: string } | null;
 }
 
 /** Async-report state while a BullMQ job polls KATM (ADR-0025). */
@@ -62,6 +69,34 @@ export interface KatmPendingState {
   status: 'pending' | 'failed';
   startedAt: string;
   error?: string;
+}
+
+/**
+ * Async state while a BullMQ job scores the card at Plum — the stage that now
+ * gates the model, so the wizard polls through it exactly as it polls KATM.
+ *
+ * It also carries the two inputs the model run needs, because that run has moved
+ * out of the HTTP handler and into the worker: the card the agent chose and the
+ * bailsmen they entered. They live HERE, on the live session row, rather than in
+ * the job payload — a payload is a snapshot, and an agent who re-scores with a
+ * different card must not have the old one stamped on their deal.
+ *
+ * The card step itself is NOT saved until the model has run: saveStep advances
+ * currentStep, and a session resumed mid-scoring must come back to the card step.
+ */
+export interface PlumPendingState {
+  status: 'pending' | 'failed';
+  startedAt: string;
+  error?: string;
+  card: {
+    cardId: string;
+    maskedPan: string;
+    pcType: string;
+    bank: string;
+    holderName: string;
+    expiry: string;
+  };
+  bailsmen?: BailsmanItem[];
 }
 
 /** Prepayment confirmed server-side at POST /prepayment (ADR-0026). */
@@ -179,6 +214,7 @@ export interface SessionStepData {
   verification?: { lang: 'ru' | 'uz' };
   bailsmen?: BailsmanItem[];
   katmPending?: KatmPendingState;
+  plumPending?: PlumPendingState;
   scoring?: ScoringStamp;
   prepayment?: PrepaymentStamp;
   signing?: SigningStamp;
@@ -232,12 +268,15 @@ export function stepDataOf(session: DealSessionRow): SessionStepData {
 
 /**
  * True when an `active` session has gone idle past the TTL and should be reaped.
- * katmPending sessions are EXEMPT — a BullMQ poll worker owns them while a bureau
- * report is in flight (and polling never exceeds the TTL anyway), so the "no
- * writes" idle is an artifact of reads-don't-bump, not real abandonment.
+ * katmPending and plumPending sessions are EXEMPT — a BullMQ worker owns them
+ * while a vendor call is in flight (and neither poll budget approaches the TTL),
+ * so the "no writes" idle is an artifact of reads-don't-bump, not real
+ * abandonment. Reaping one would strand a worker that is about to run the model.
  */
 export function isSessionStale(session: DealSessionRow, now: Date = new Date()): boolean {
   if (session.status !== 'active') return false;
-  if (stepDataOf(session).katmPending?.status === 'pending') return false;
+  const data = stepDataOf(session);
+  if (data.katmPending?.status === 'pending') return false;
+  if (data.plumPending?.status === 'pending') return false;
   return now.getTime() - session.updatedAt.getTime() > DEAL_SESSION_TTL_MS;
 }

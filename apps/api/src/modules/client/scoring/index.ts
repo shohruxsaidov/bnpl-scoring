@@ -26,7 +26,12 @@ import {
 import { resolveLang } from '../../../i18n/index';
 import { reasonMessage } from '../../../i18n/reason-codes';
 import type { GENDERS } from '../../integrations/katm/service/shared';
-import { applyClientStep, finalizeClientScoringIfReady } from './finalize';
+import {
+  applyClientStep,
+  finalizeClientScoringIfReady,
+  hasScoreableCard,
+  resumeErroredClientRun,
+} from './finalize';
 
 // ---------------------------------------------------------------------------
 // Client Scoring — a user self-scores in the mobile app to learn their credit
@@ -134,7 +139,7 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
 
       // A run already underway must not re-fire chargeable KATM. 'in_progress' =
       // bureau still running → pending. 'passed' = KATM already cleared, only the
-      // card/model remains → finalize if a card now exists, else awaiting_card.
+      // card scoring / model remains → advance it as far as it will go.
       const latest = await loadLatestClientScoring(userId);
       if (latest?.status === 'in_progress') return { status: 'pending' as const };
       if (latest?.status === 'passed') {
@@ -150,7 +155,40 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
             reasonMessage: reasonMessage(lang, outcome.reasonCode),
           };
         }
-        return { status: 'awaiting_card' as const };
+        if (outcome?.status === 'error') {
+          return { status: 'error' as const, reasonMessage: reasonMessage(lang) };
+        }
+        // Nothing terminal: either Plum is working (pending) or there is still no
+        // scoreable card to work on.
+        const after = await loadLatestClientScoring(userId);
+        return after?.currentPipeline === 'plum_card'
+          ? { status: 'pending' as const }
+          : { status: 'awaiting_card' as const };
+      }
+      // A run that died at the card-scoring stage is re-drivable on its own: the
+      // bureau reports it already paid for are still stored under its claimId, so
+      // resume it rather than opening a run that would buy them again.
+      if (latest?.status === 'error') {
+        const resumed = await resumeErroredClientRun(latest);
+        if (resumed) {
+          switch (resumed.status) {
+            case 'scored':
+              return { status: 'scored' as const, creditLimit: resumed.creditLimit };
+            case 'rejected':
+              return {
+                status: 'rejected' as const,
+                reasonCode: resumed.reasonCode,
+                reasonCategory: reasonCategory(resumed.reasonCode),
+                reasonMessage: reasonMessage(lang, resumed.reasonCode),
+              };
+            case 'awaiting_card':
+              return { status: 'awaiting_card' as const };
+            case 'error':
+              return { status: 'error' as const, reasonMessage: reasonMessage(lang) };
+            default:
+              return { status: 'pending' as const };
+          }
+        }
       }
 
       const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
@@ -166,6 +204,19 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
           reasonCategory: 'data_missing',
           reasonMessage: reasonMessage(lang, 'data_missing'),
           missingFields: missing,
+        };
+      }
+
+      // A scoreable card is a PRECONDITION now, not a later step: plum_card gates
+      // the model, so a run opened without one can only ever stall or fail — after
+      // the chargeable bureau reports have been bought. Refusing here costs the
+      // applicant nothing (retryable, no run, no cooldown) and costs us nothing.
+      if (!(await hasScoreableCard(userId))) {
+        return {
+          status: 'rejected' as const,
+          reasonCode: 'card_required',
+          reasonCategory: 'data_missing',
+          reasonMessage: reasonMessage(lang, 'card_required'),
         };
       }
 
@@ -205,16 +256,23 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
       const outcome = await applyClientStep(step, scoring);
       switch (outcome.status) {
         case 'pending':
-          await enqueueKatmPoll(app.katmPollQueue, {
-            scoringId: scoring.id,
-            origin: 'client',
-            claimId,
-            consentId: consent.agreementId,
-            consentDate: consent.agreementDate.toISOString(),
-            token: outcome.enqueue.token,
-            reportType: outcome.enqueue.reportType,
-          });
+          // `enqueue` is absent when the wait is Plum's rather than KATM's — the
+          // plum_card worker was queued by applyClientStep and owns the run from
+          // here, so there is no follow-up report to poll for.
+          if (outcome.enqueue) {
+            await enqueueKatmPoll(app.katmPollQueue, {
+              scoringId: scoring.id,
+              origin: 'client',
+              claimId,
+              consentId: consent.agreementId,
+              consentDate: consent.agreementDate.toISOString(),
+              token: outcome.enqueue.token,
+              reportType: outcome.enqueue.reportType,
+            });
+          }
           return { status: 'pending' as const };
+        case 'awaiting_card':
+          return { status: 'awaiting_card' as const };
         case 'rejected':
           return {
             status: 'rejected' as const,
@@ -300,7 +358,12 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
         : scoring.status === 'in_progress'
           ? ('pending' as const)
           : scoring.status === 'passed'
-            ? ('awaiting_card' as const)
+            ? // 'passed' covers two very different waits. Parked on plum_card the
+              // card IS on file and the vendor is working — reporting that as
+              // 'awaiting_card' would tell the app to ask for a card it already has.
+              scoring.currentPipeline === 'plum_card'
+              ? ('pending' as const)
+              : ('awaiting_card' as const)
             : scoring.status === 'scored'
               ? ('scored' as const)
               : scoring.status === 'rejected'
