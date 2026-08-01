@@ -143,7 +143,6 @@ export async function fetchUzcardScore(plumScoringId: number): Promise<UzcardSco
 // --- Humo: one shot ----------------------------------------------------------
 
 export interface HumoScoreResult {
-  average: PlumHumoScoreRow;
   /** Per-month series. The averages cannot be un-averaged, so it is fetched too. */
   monthly: PlumHumoScoreRow[];
 }
@@ -154,10 +153,6 @@ export async function fetchHumoScore(
 ): Promise<HumoScoreResult> {
   const body = { cardId: plumCardId, startDate: window.beginDate, endDate: window.endDate };
   const client = makePlumClient();
-
-  const avg = await logged('HumoScoringAvg', 'POST', body, () =>
-    client.post('Scoring/HumoScoringAvg', { json: body }).json<PlumHumoAvgResponse>(),
-  );
 
   // Best-effort: the monthly series is the richer signal (trend, volatility) but
   // the average is the headline. Losing the series must not lose the row.
@@ -171,5 +166,5 @@ export async function fetchHumoScore(
     // Logged by logged(); the average still stands.
   }
 
-  return { average: avg.result, monthly };
+  return { monthly };
 }

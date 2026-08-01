@@ -481,7 +481,8 @@ export async function evaluate077(
     summary: ev.status === 'passed' ? ev.summary : null,
     raw: ev.status === 'passed' ? ev.raw : null,
   });
-  return requestInps(scoringId, claimId);
+  return { kind: 'gates_passed' };
+  // return requestInps(scoringId, claimId);
 }
 
 /** Pipeline 3 — request the chargeable INPS report, then evaluate it. */

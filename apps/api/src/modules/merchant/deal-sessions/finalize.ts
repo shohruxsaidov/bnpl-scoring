@@ -25,7 +25,10 @@ import {
   recordPipeline,
   type ScoringRow,
 } from '../../scoring/pipelines/store';
-import { enqueueClaimRejection, type ClaimRejectJobData } from '../../integrations/katm/claim-reject';
+import {
+  enqueueClaimRejection,
+  type ClaimRejectJobData,
+} from '../../integrations/katm/claim-reject';
 import { stepDataOf, type DealSessionRow } from './types';
 import { saveStep } from './commands/save-step/save-step.handler';
 import { stampScoring } from './commands/stamp-scoring/stamp-scoring.handler';
@@ -75,22 +78,15 @@ export async function finalizeMerchantScoring(
   const { card, bailsmen } = pending;
 
   let katm: typeof katm077Reports.$inferSelect | null = null;
-  let inps: typeof katmInpsReports.$inferSelect | null = null;
   if (session.katmClaimId) {
-    const [report, inpsReport] = await Promise.all([
+    const [report] = await Promise.all([
       db
         .select()
         .from(katm077Reports)
         .where(eq(katm077Reports.claimId, session.katmClaimId))
         .limit(1),
-      db
-        .select()
-        .from(katmInpsReports)
-        .where(eq(katmInpsReports.claimId, session.katmClaimId))
-        .limit(1),
     ]);
     if (report[0]?.demandId != null) katm = report[0];
-    if (inpsReport[0]?.demandId != null) inps = inpsReport[0];
   }
 
   const resolvedModel = await resolveScoringModel(db, session.merchantId);
@@ -129,8 +125,9 @@ export async function finalizeMerchantScoring(
     model: resolvedModel.params,
     userRow: userRow ?? null,
     katm,
-    inps,
     card: { pcType: card.pcType, maskedPan: card.maskedPan, holderName: card.holderName },
+    //TODO remove static value and use real value from INPS report
+    incomesInSom: 8000000,
   });
 
   // model_score is a pure execution marker: the row is 'passed' whenever the

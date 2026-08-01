@@ -4,7 +4,6 @@ import { userCreditLimits } from '@db/user-credit-limits';
 import { scorings } from '@db/scorings';
 import { deals } from '@db/deals';
 import { BLOCKING_DEAL_STATUSES } from '../../../../deals/blocking';
-import { creditLimitIndexForScore } from '../../../../scoring/compute-limit';
 import type { ScoringStamp } from '../../types';
 
 // ---------------------------------------------------------------------------
@@ -14,9 +13,12 @@ import type { ScoringStamp } from '../../types';
 // reuses it: we rehydrate a ScoringStamp from the run that produced the limit
 // so the deal keeps real denormalized score/criteria data.
 //
-// `coefficient` isn't persisted on `scorings`, so we recompute it from the score
-// band (createDeal doesn't store it anyway — it's only carried for parity with
-// the full-path stamp).
+// `coefficient` has no column on `scorings`, so we read it back out of the run's
+// stored `criteria_scores.model` entry — the model revision that produced this
+// limit may have since been re-authored, and rescoring it against today's bands
+// would report a coefficient the stored limit was never derived from.
+// (createDeal doesn't store it anyway — it's only carried for parity with the
+// full-path stamp.)
 //
 // Eligibility lives in exactly one place — `selectEligibleLimits` below. The
 // merchant portal previews the limit on the client-search screen while `/start`
@@ -121,14 +123,18 @@ export async function loadReusableLimit(userId: number): Promise<ReusableLimit |
   if (!hit) return null;
 
   const scoreSum = hit.scoring.score ?? 0;
+  const criteriaScores = (hit.scoring.criteriaScores ?? {}) as Record<string, unknown>;
+  const modelEntry = criteriaScores['model'] as { coefficient?: unknown } | undefined;
+  const coefficient = typeof modelEntry?.coefficient === 'number' ? modelEntry.coefficient : 0;
+
   const stamp: ScoringStamp = {
     cardId: '',
     scoringId: hit.scoring.id.toString(),
     scoreSum,
-    coefficient: creditLimitIndexForScore(scoreSum),
+    coefficient,
     decision: 'approve',
     platformCreditLimit: hit.creditLimit,
-    criteriaScores: (hit.scoring.criteriaScores ?? {}) as Record<string, unknown>,
+    criteriaScores,
   };
 
   return { creditLimit: hit.creditLimit, expiresAt: hit.expiresAt, stamp };

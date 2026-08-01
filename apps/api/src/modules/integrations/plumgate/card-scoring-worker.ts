@@ -25,10 +25,7 @@ import {
   fetchUzcardScore,
   PlumScorePendingError,
 } from './queries/score-card/score-card.handler';
-import {
-  finalizeMerchantScoring,
-  loadSessionRow,
-} from '../../merchant/deal-sessions/finalize';
+import { finalizeMerchantScoring, loadSessionRow } from '../../merchant/deal-sessions/finalize';
 import { stampPlumPending } from '../../merchant/deal-sessions/commands/stamp-plum-pending/stamp-plum-pending.handler';
 import { stepDataOf } from '../../merchant/deal-sessions/types';
 import { finalizeClientAfterPlum } from '../../client/scoring/finalize';
@@ -54,14 +51,8 @@ export async function processPlumCardScoreJob(
       'passed',
       {
         ...summary,
-        totalDebitScore: result.average?.totalDebitScore,
-        totalDebitCount: result.average?.totalDebitCount,
-        replenishmentScore: result.average?.replenishmentScore,
-        replenishmentCount: result.average?.replenishmentCount,
-        creditScore: result.average?.creditScore,
-        creditCount: result.average?.creditCount,
       },
-      { average: result.average, monthly: result.monthly },
+      { monthly: result.monthly },
     );
     await advanceToModel(data.scoringId, rejectQueue);
     return;

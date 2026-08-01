@@ -5,7 +5,7 @@ import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { FastifyInstance } from 'fastify';
 import { eq } from 'drizzle-orm';
 import { db as appDb } from '@db';
-import { users } from '@db/schema';
+import { userCards, users } from '@db/schema';
 import { katm077Reports } from '@db/katm-077-reports';
 import { katmInpsReports } from '@db/katm-inps-reports';
 import { dealSessions } from '../../deals/schema';
@@ -996,18 +996,11 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       }
 
       if (session.katmClaimId) {
-        const [report077, reportInps] = await Promise.all([
-          db
-            .select()
-            .from(katm077Reports)
-            .where(eq(katm077Reports.claimId, session.katmClaimId))
-            .limit(1),
-          db
-            .select({ status: katmInpsReports.status })
-            .from(katmInpsReports)
-            .where(eq(katmInpsReports.claimId, session.katmClaimId))
-            .limit(1),
-        ]);
+        const report077 = await db
+          .select()
+          .from(katm077Reports)
+          .where(eq(katm077Reports.claimId, session.katmClaimId))
+          .limit(1);
 
         const data = (session.stepData ?? {}) as SessionStepData;
         if (data.katmPending) {
@@ -1021,7 +1014,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           };
         }
 
-        if (report077[0]?.status === 'completed' && reportInps[0]?.status === 'completed') {
+        if (report077[0]?.status === 'completed') {
           const {
             claimId: _c,
             token: _t,
@@ -1111,6 +1104,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         cardNumber,
         expiry,
       });
+
       return result;
     },
   );
@@ -1152,6 +1146,17 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       let card;
       try {
         card = await confirmCard({ sessionId, otp });
+        await db
+          .insert(userCards)
+          .values({
+            expiry: card.expiry,
+            maskedPan: card.maskedPan,
+            plumId: card.plumId!,
+            plumCardId: card.plumCardId,
+            userId: session.userId!,
+            pcType: card.pcType,
+          })
+          .onConflictDoNothing();
       } catch (err) {
         if (session.userId) {
           await recordAction({

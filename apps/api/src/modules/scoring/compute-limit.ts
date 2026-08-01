@@ -25,23 +25,6 @@ type PassedResult = Extract<ScoringResult, { rejected: false }>;
 
 export const BRV_UZS = 412_000;
 
-// Credit-limit index by total scoring score (Балл). Half-open [From, To): From
-// inclusive, To exclusive. The index scales the applicant's monthly disposable
-// income (Income*50% − existing monthly payments) into a per-month credit limit.
-// Hardcoded for now — the score→index mapping is not yet model-configurable.
-const CREDIT_LIMIT_INDEX_BANDS: ReadonlyArray<{ from: number; to: number; index: number }> = [
-  { from: -847, to: 490, index: 0 },
-  { from: 490, to: 556, index: 0.25 },
-  { from: 556, to: 621, index: 0.5 },
-  { from: 621, to: 687, index: 0.75 },
-  { from: 687, to: 1000, index: 1 },
-];
-
-export function creditLimitIndexForScore(score: number): number {
-  const band = CREDIT_LIMIT_INDEX_BANDS.find((b) => score >= b.from && score < b.to);
-  return band?.index ?? 0;
-}
-
 /** Whole years between an ISO birth date and now. */
 export function ageYears(birthDate: string): number {
   const b = new Date(birthDate);
@@ -89,8 +72,8 @@ export interface LimitComputationInput {
   model: ScoringModelData;
   userRow: LimitUserRow | null;
   katm: Katm077Row | null;
-  inps: KatmInpsRow | null;
   card: LimitCard | null;
+  incomesInSom: number | null;
 }
 
 export interface LimitComputationResult {
@@ -112,7 +95,10 @@ export interface LimitComputationResult {
  * credit limit. Mirrors the merchant wizard's original inline computation.
  */
 export function runModelAndLimit(input: LimitComputationInput): LimitComputationResult {
-  const { model, userRow, katm, inps, card } = input;
+  const { model, userRow, katm, card } = input;
+  if (!input.incomesInSom) {
+    input.incomesInSom = 0;
+  }
 
   // KATM inputs are restricted to the last 2 years: re-derived live from the raw
   // 077 detail records (stored aggregates roll up the whole history).
@@ -135,11 +121,8 @@ export function runModelAndLimit(input: LimitComputationInput): LimitComputation
       passportRegion: userRow.region || '',
       address: userRow.address || '',
     }),
-    ...(inps && {
-      incomeSum: (inps.incomesAllSumma ?? 0) / 12,
-      incomeSumInBrv: (inps.incomesAllSumma ?? 0) / 12 / BRV_UZS,
-      workExperienceMonths: monthsBetween(inps.periodBegin ?? '', inps.periodEnd ?? ''),
-    }),
+    incomeSum: input.incomesInSom ?? 0,
+    incomeSumInBrv: (input.incomesInSom ?? 0) / BRV_UZS,
     allDebts: 0,
   };
 
@@ -166,11 +149,13 @@ export function runModelAndLimit(input: LimitComputationInput): LimitComputation
   }
 
   // Credit limit = monthly disposable income scaled by the score-based index.
-  // Per-month figure in whole som. Negative disposable or index 0 → 0, which
-  // flows through the zero_limit reject path.
-  const incomeMonthly = (inps?.incomesAllSumma ?? 0) / 12;
+  // The index is the model's LimitCoefficient band for the total score (resolved
+  // by the engine) — the score→index mapping lives in the model revision, not
+  // here. Per-month figure in whole som. Negative disposable or index 0 → 0,
+  // which flows through the zero_limit reject path.
+  const incomeMonthly = (input.incomesInSom ?? 0) ;
   const monthlyPayment = katm?.avgMonthlyPayment ? +katm.avgMonthlyPayment / 100 : 0;
-  const limitIndex = creditLimitIndexForScore(scoreSum);
+  const limitIndex = coefficient;
   const disposableMonthly = incomeMonthly * 0.5 - monthlyPayment;
   const platformCreditLimit =
     Math.floor(Math.max(0, Math.round(disposableMonthly * limitIndex)) / 1000) * 1000;
@@ -216,17 +201,7 @@ export function runModelAndLimit(input: LimitComputationInput): LimitComputation
         },
       },
     }),
-    ...(inps && {
-      inps: {
-        detail: {
-          incomesAllSumma: inps.incomesAllSumma ?? 0,
-          avgMonthlyIncome: (inps.incomesAllSumma ?? 0) / 12,
-          periodBegin: inps.periodBegin ?? '',
-          periodEnd: inps.periodEnd ?? '',
-          incomes: (inps.incomes as InpsIncomeEntry[]) ?? [],
-        },
-      },
-    }),
+
     model: modelEntry,
   };
 

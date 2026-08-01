@@ -346,14 +346,16 @@
 
   "LimitCoefficient": {
     "Name": "Коэффициент итогового лимита",
-    "Description": "Множитель кредитного лимита в зависимости от суммарного скор-балла.",
+    "Description": "Множитель кредитного лимита в зависимости от суммарного скор-балла. Умножается на месячный свободный доход (Доход*50% − текущие платежи).",
     "Unit": "score",
     "BaseLimit": 5000000,
     "DefaultCoefficient": 0,
     "Ranges": [
-      { "From": -2205, "To": 500, "Coefficient": 0 },
-      { "From": 500, "To": 750, "Coefficient": 0.8 },
-      { "From": 750, "To": null, "Coefficient": 1 }
+      { "From": -2205, "To": 490, "Coefficient": 0 },
+      { "From": 490, "To": 556, "Coefficient": 0.25 },
+      { "From": 556, "To": 621, "Coefficient": 0.5 },
+      { "From": 621, "To": 687, "Coefficient": 0.75 },
+      { "From": 687, "To": null, "Coefficient": 1 }
     ]
   }
 }

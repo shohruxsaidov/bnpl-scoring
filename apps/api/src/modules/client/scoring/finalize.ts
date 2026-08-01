@@ -218,14 +218,13 @@ export async function runClientModel(
     .limit(1);
 
   const katm = scoring.katmClaimId ? await load077(scoring.katmClaimId) : null;
-  const inps = scoring.katmClaimId ? await loadInps(scoring.katmClaimId) : null;
 
   const result = runModelAndLimit({
     model: resolvedModel.params,
     userRow: userRow ?? null,
     katm,
-    inps,
     card,
+    incomesInSom: 8000000, //TODO need to uncommit code below
   });
 
   await recordPipeline(scoring.id, 'model_score', {
@@ -315,7 +314,9 @@ export async function finalizeClientScoringIfReady(
   // since arrived, otherwise keep waiting.
   if (scoring.currentPipeline == null) {
     const outcome = await startClientPlumStage(scoring);
-    return outcome.status === 'scored' || outcome.status === 'rejected' || outcome.status === 'error'
+    return outcome.status === 'scored' ||
+      outcome.status === 'rejected' ||
+      outcome.status === 'error'
       ? outcome
       : null;
   }
