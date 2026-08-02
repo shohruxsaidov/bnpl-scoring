@@ -63,7 +63,7 @@ export default async function publicAppVersionRoutes(app: FastifyInstance) {
 
   const Response = Type.Object(
     {
-      status: StringEnum(['ok', 'soft', 'force'] as const, {
+      status: StringEnum(['ok', 'force'] as const, {
         description:
           "'force' — block the app with a non-dismissible screen. 'soft' — dismissible " +
           "update nudge. 'ok' — proceed.",
@@ -128,11 +128,11 @@ export default async function publicAppVersionRoutes(app: FastifyInstance) {
       }
 
       const lang = resolveLang(request.headers['x-lang'] as string | undefined);
-      const status: 'ok' | 'soft' | 'force' =
+      const status: 'ok' | 'force' =
         compareSemver(running, min) < 0
           ? 'force'
           : compareSemver(running, latest) < 0
-            ? 'soft'
+            ? 'ok'
             : 'ok';
 
       return {
