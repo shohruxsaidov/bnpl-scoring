@@ -36,13 +36,12 @@ interface NavItem {
 
 const allNav = computed<NavItem[]>(() => [
   { label: t('nav.overview'), icon: 'pi pi-th-large', to: '/' },
-  { label: t('nav.merchants'), icon: 'pi pi-building', to: '/merchants', feature: 'view_merchants' },
   { label: t('nav.clients'), icon: 'pi pi-users', to: '/clients', feature: 'view_clients' },
-  { label: t('nav.banners'), icon: 'pi pi-images', to: '/banners', feature: 'manage_banners' },
+  { label: t('nav.merchants'), icon: 'pi pi-building', to: '/merchants', feature: 'view_merchants' },
+
   { label: t('nav.allDeals'), icon: 'pi pi-credit-card', to: '/deals', feature: 'view_deals' },
-  { label: t('nav.tariffs'), icon: 'pi pi-percentage', to: '/tariffs', feature: 'view_tariffs' },
+  // { label: t('nav.tariffs'), icon: 'pi pi-percentage', to: '/tariffs', feature: 'view_tariffs' },
   { label: t('nav.employees'), icon: 'pi pi-users', to: '/employees', feature: 'manage_employees' },
-  { label: t('nav.settings'), icon: 'pi pi-cog', to: '/settings', anyFeature: ['manage_settings', 'manage_scoring_model', 'view_app_versions'] },
   { label: t('nav.categories'), icon: 'pi pi-tag', to: '/categories', feature: 'manage_global_categories' },
   { label: t('nav.blacklist'), icon: 'pi pi-ban', to: '/blacklist', feature: 'manage_blacklist' },
   { label: t('nav.buyout'), icon: 'pi pi-shopping-bag', to: '/buyout', feature: 'manage_buyout' },
@@ -50,9 +49,38 @@ const allNav = computed<NavItem[]>(() => [
   { label: t('nav.scoringModel'), icon: 'pi pi-sliders-h', to: '/scoring-model', feature: 'manage_scoring_model' },
   { label: t('nav.scorings'), icon: 'pi pi-list-check', to: '/scorings', feature: 'view_scorings' },
   { label: t('nav.payments'), icon: 'pi pi-credit-card', to: '/payments', feature: 'view_payments' },
-  { label: t('nav.stuckPayments'), icon: 'pi pi-exclamation-triangle', to: '/payments/stuck', feature: 'view_payments', badge: stuck.strandedCount },
-  { label: t('nav.permissions'), icon: 'pi pi-shield', to: '/permissions', feature: 'manage_roles' },
+  // { label: t('nav.stuckPayments'), icon: 'pi pi-exclamation-triangle', to: '/payments/stuck', feature: 'view_payments', badge: stuck.strandedCount },
+  // { label: t('nav.permissions'), icon: 'pi pi-shield', to: '/permissions', feature: 'manage_roles' },
+  // { label: t('nav.banners'), icon: 'pi pi-images', to: '/banners', feature: 'manage_banners' },
+  { label: t('nav.settings'), icon: 'pi pi-cog', to: '/settings', anyFeature: ['manage_settings', 'manage_scoring_model', 'view_app_versions'] },
+
 ])
+// TODO 
+
+
+// 1.Sdelki
+// VIKUP
+// Klient skoring 
+
+// 2.
+// Tariff 
+// scoring model yaratish 
+
+
+// 3.
+//  collection
+//  payments
+// cherniy spisok 
+
+
+// 4.Settings
+
+// categories
+// permissions
+// banners
+// scoringModel
+
+
 
 const nav = computed<NavItem[]>(() =>
   allNav.value.filter((item) => {

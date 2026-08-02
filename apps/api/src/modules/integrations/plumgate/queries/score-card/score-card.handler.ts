@@ -150,6 +150,7 @@ export interface HumoScoreResult {
 export async function fetchHumoScore(
   plumCardId: string,
   window: PlumScoreWindow,
+  expiry: string, // "3006" year and month
 ): Promise<HumoScoreResult> {
   const body = { cardId: plumCardId, startDate: window.beginDate, endDate: window.endDate };
   const client = makePlumClient();
@@ -162,7 +163,8 @@ export async function fetchHumoScore(
       client.post('Scoring/HumoScoring', { json: body }).json<PlumHumoMonthlyResponse>(),
     );
     monthly = report.result?.report ?? [];
-  } catch {
+  } catch (err) {
+    console.error('HumoScoring failed', err);
     // Logged by logged(); the average still stands.
   }
 

@@ -342,7 +342,7 @@ async function submitPrepayment() {
               </span>
             </div>
             <button class="add-btn" @click="onAddProduct(p)">
-              <i class="pi pi-plus" /> {{ $t('stepProducts.add') }}
+              <i class="pi pi-plus" />
             </button>
           </div>
         </div>
@@ -551,9 +551,12 @@ async function submitPrepayment() {
 </template>
 
 <style scoped>
+/* The basket carries the limit banner, the item list and the running totals —
+   340px squeezed the amounts. It grows with the viewport but stops at 480px so
+   the catalog keeps the majority of the row. */
 .step-layout {
   display: grid;
-  grid-template-columns: 1fr 340px;
+  grid-template-columns: 1fr clamp(400px, 38%, 620px);
   gap: 1.4rem;
   align-items: start;
 }
@@ -654,15 +657,23 @@ async function submitPrepayment() {
   gap: 0.8rem;
 }
 
+/* The row must not share a background with the card it sits in — on the dark
+   theme --bg-surface on --bg-surface renders as one flat sheet of text. */
 .product {
-  border: 1px solid var(--border-subtle);
+  border: 1px solid var(--border-default);
   border-radius: 14px;
   padding: 0.9rem 1.2rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1.2rem;
-  background: var(--bg-surface);
+  background: var(--bg-base);
+  transition: border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease);
+}
+
+.product:hover {
+  border-color: var(--border-strong);
+  background: var(--bg-hover);
 }
 
 .p-info {
@@ -728,25 +739,35 @@ async function submitPrepayment() {
   border-radius: 999px;
 }
 
+/* The primary action of this step — it has to read as a button against the
+   product row, not as another muted chip. Filled, not outlined. */
 .add-btn {
-  background: var(--bg-base);
-  border: 1px solid var(--border-subtle);
-  color: var(--accent-2);
+  background: var(--gradient-hero);
+  border: 1px solid transparent;
+  color: #fff;
   font-weight: 700;
-  font-size: 0.76rem;
-  padding: 0.35rem 0.7rem;
-  border-radius: 8px;
+  font-size: 0.88rem;
+  padding: 0.7rem 1.3rem;
+  border-radius: 10px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  justify-content: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+  box-shadow: 0 2px 10px var(--accent-glow);
   transition: all 0.15s ease;
 }
 
 .add-btn:hover {
-  background: var(--gradient-hero);
-  color: #fff;
-  border-color: transparent;
+  background: var(--gradient-accent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px var(--accent-glow);
+}
+
+.add-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 6px var(--accent-glow);
 }
 
 .basket {
@@ -852,10 +873,18 @@ async function submitPrepayment() {
   overflow-y: auto;
 }
 
+/* Same problem as .product — the basket panel is itself a surface card, so an
+   item on --bg-surface had no edge at all. */
 .basket-item {
-  background: var(--bg-surface);
+  background: var(--bg-base);
+  border: 1px solid var(--border-default);
   border-radius: 12px;
   padding: 0.8rem;
+  transition: border-color var(--t-fast) var(--ease);
+}
+
+.basket-item:hover {
+  border-color: var(--border-strong);
 }
 
 .bi-top {
@@ -918,12 +947,14 @@ async function submitPrepayment() {
   gap: 0.6rem;
 }
 
+/* Sits inside .basket-item, which now owns --bg-base — step back up to the
+   surface tone so the stepper keeps an edge. */
 .qty button {
   width: 24px;
   height: 24px;
   border-radius: 7px;
-  border: 1px solid var(--border-subtle);
-  background: var(--bg-base);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
   color: var(--text-primary);
   cursor: pointer;
   display: grid;
