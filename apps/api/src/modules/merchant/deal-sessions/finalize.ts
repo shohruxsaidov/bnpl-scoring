@@ -18,6 +18,7 @@ import { katmInpsReports } from '@db/katm-inps-reports';
 import { dealSessions } from '../../deals/schema';
 import { resolveScoringModel } from '../../scoring/resolve-model';
 import { runModelAndLimit } from '../../scoring/compute-limit';
+import { loadPlumTurnoverFloor } from '../../integrations/plumgate/card-scoring';
 import {
   markError,
   markRejected,
@@ -130,8 +131,9 @@ export async function finalizeMerchantScoring(
       maskedPan: card.maskedPan,
       holderName: card.holderName
     },
-    //TODO remove static value and use real value from INPS report
-    incomesInSom: 8000000,
+    // Income is the card's observed monthly turnover floor — the plum_card stage
+    // is what gates this model run, so its band is already on the row by now.
+    incomesInSom: scoringRun ? await loadPlumTurnoverFloor(scoringRun.id) : null,
   });
 
   // model_score is a pure execution marker: the row is 'passed' whenever the

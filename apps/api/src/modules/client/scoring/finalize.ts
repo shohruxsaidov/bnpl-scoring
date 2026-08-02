@@ -22,7 +22,10 @@ import {
   type ScoringRow,
 } from '../../scoring/pipelines/store';
 import type { PipelineStepResult } from '../../integrations/katm/flow';
-import { enqueuePlumCardScore } from '../../integrations/plumgate/card-scoring';
+import {
+  enqueuePlumCardScore,
+  loadPlumTurnoverFloor,
+} from '../../integrations/plumgate/card-scoring';
 import { notify } from '../notifications/service';
 
 /** Credit-limit validity window before a re-score is allowed (Q: 7 days). */
@@ -225,7 +228,9 @@ export async function runClientModel(
     userRow: userRow ?? null,
     katm,
     card,
-    incomesInSom: 8000000, //TODO need to uncommit code below
+    // Income is the card's observed monthly turnover floor — same input as the
+    // merchant path, so a client's self-scored limit matches the counter's.
+    incomesInSom: await loadPlumTurnoverFloor(scoring.id),
   });
 
   await recordPipeline(scoring.id, 'model_score', {
