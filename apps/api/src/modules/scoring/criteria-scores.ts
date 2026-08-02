@@ -24,7 +24,7 @@ export interface KatmCriteriaDetail {
 }
 
 export interface CardCriteriaDetail {
-  pcType: string;
+  pcType: number;
   bank?: string;
   maskedPan?: string;
   holderName?: string;

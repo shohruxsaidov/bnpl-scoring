@@ -125,7 +125,11 @@ export async function finalizeMerchantScoring(
     model: resolvedModel.params,
     userRow: userRow ?? null,
     katm,
-    card: { pcType: card.pcType, maskedPan: card.maskedPan, holderName: card.holderName },
+    card: {
+      pcType: card.pcType,
+      maskedPan: card.maskedPan,
+      holderName: card.holderName
+    },
     //TODO remove static value and use real value from INPS report
     incomesInSom: 8000000,
   });

@@ -78,7 +78,7 @@ async function loadLatestCard(
     .limit(1);
   if (!row) return null;
   return {
-    pcType: row.pcType,
+    pcType: +row.pcType,
     maskedPan: row.maskedPan,
     holderName: row.holderName,
     plumCardId: row.plumCardId,
@@ -145,9 +145,8 @@ export async function startClientPlumStage(scoring: ScoringRow): Promise<ClientS
   try {
     outcome = await enqueuePlumCardScore({
       scoringId: scoring.id,
-      plumCardId: card.plumCardId,
-      pcType: card.pcType,
-      maskedPan: card.maskedPan,
+      cardId: card.plumCardId,
+      pcType: +card.pcType,
     });
   } catch (err) {
     // The stage gates the model, so failing to even start it fails the run — it

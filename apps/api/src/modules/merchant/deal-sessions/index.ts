@@ -1285,13 +1285,22 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       // SESSION, not carried in the job payload: the model run has moved out of
       // this request, and a payload is a snapshot — an agent who re-scores with a
       // different card must not end up with the old one on their deal.
+      const userCards = await listCards(String(session.userId!)); // warm the cache for the model
+      const c = userCards.find((c) => c.plumCardId === cardId);
+      if (!c) return reply.code(400).sendError('card_not_found');
       const card = {
         cardId,
+        pcType: c?.pcType ?? null,
       };
       await stampPlumPending(session, {
         status: 'pending',
         startedAt: new Date().toISOString(),
-        card,
+        card: {
+          cardId: cardId,
+          pcType: c?.pcType ?? null,
+          holderName: c?.holderName ?? null,
+          maskedPan: c?.maskedPan ?? null,
+        },
         bailsmen: request.body.bailsmen,
       });
       // Re-read: the stamp above rewrote stepData, and finalize reads it back.
@@ -1306,12 +1315,12 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       }
 
       await openPlumStage(scoringRun.id);
-
       let stage;
       try {
         stage = await enqueuePlumCardScore({
           scoringId: scoringRun.id,
           cardId: cardId,
+          pcType: c?.pcType ?? null,
         });
       } catch (err) {
         // plum_card gates the model and feeds it params the engine would read as
@@ -1327,7 +1336,12 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           status: 'failed',
           startedAt: new Date().toISOString(),
           error: 'plum_unavailable',
-          card,
+          card: {
+            cardId: cardId,
+            pcType: +c?.pcType!,
+            holderName: c?.holderName ?? null,
+            maskedPan: c?.maskedPan ?? null,
+          },
           bailsmen: request.body.bailsmen,
         });
         return reply.code(503).sendError('plum_unavailable');

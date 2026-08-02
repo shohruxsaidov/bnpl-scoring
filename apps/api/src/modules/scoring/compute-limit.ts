@@ -63,7 +63,7 @@ export interface LimitUserRow {
 }
 
 export interface LimitCard {
-  pcType: string;
+  pcType: number;
   maskedPan: string;
   holderName: string | null;
 }
@@ -153,7 +153,7 @@ export function runModelAndLimit(input: LimitComputationInput): LimitComputation
   // by the engine) — the score→index mapping lives in the model revision, not
   // here. Per-month figure in whole som. Negative disposable or index 0 → 0,
   // which flows through the zero_limit reject path.
-  const incomeMonthly = (input.incomesInSom ?? 0) ;
+  const incomeMonthly = input.incomesInSom ?? 0;
   const monthlyPayment = katm?.avgMonthlyPayment ? +katm.avgMonthlyPayment / 100 : 0;
   const limitIndex = coefficient;
   const disposableMonthly = incomeMonthly * 0.5 - monthlyPayment;

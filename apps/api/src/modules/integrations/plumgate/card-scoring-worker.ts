@@ -39,7 +39,7 @@ export async function processPlumCardScoreJob(
   // successor job drives the run; writing here would mislabel its row.
   if (!summary) return;
 
-  if (summary.pcType === 'humo') {
+  if (summary.pcType === 1) {
     // Synchronous rail: one call, one answer, no vendor scoringId, no polling.
     const result = await fetchHumoScore(data.cardId, plumWindowOf(summary));
 
@@ -62,7 +62,7 @@ export async function processPlumCardScoreJob(
   // BEFORE the first poll: a retry that re-ran createScoringCard would open (and
   // be billed for) a fresh scoring on every attempt.
   if (summary.plumScoringId == null) {
-    const plumScoringId = await createUzcardScoring(data.plumCardId, plumWindowOf(summary));
+    const plumScoringId = await createUzcardScoring(data.cardId, plumWindowOf(summary));
 
     if (!(await claimPlumRow(data))) return;
 

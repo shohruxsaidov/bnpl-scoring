@@ -90,6 +90,9 @@ export interface PlumPendingState {
   error?: string;
   card: {
     cardId: string;
+    pcType: number;
+    maskedPan: string;
+    holderName: string;
   };
   bailsmen?: BailsmanItem[];
 }

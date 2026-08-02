@@ -44,6 +44,7 @@ export interface PlumCardScoreJobData {
   scoringId: number;
   /** Plumgate's My Uzcard card id (NOT the attachment id — see user_cards). */
   cardId: string;
+  pcType: number; // 0 | 1; // 0: uzcard, 1: humo
 }
 
 /**
@@ -127,12 +128,9 @@ export async function enqueuePlumCardScore(data: PlumCardScoreJobData): Promise<
   // decide whether it still owns the card.
   const summary: PlumCardSummary = {
     cardId: data.cardId,
+    pcType: data.pcType as 0 | 1,
     periodBegin: beginDate.toISOString(),
     periodEnd: endDate.toISOString(),
-    // Carry a scoring the vendor already opened for this card into the retry, so
-    // re-driving a stage that timed out RESUMES the poll instead of buying a
-    // second scoring. Dropped when the card changed — that id belongs to the
-    // other card, and its window with it.
     ...(sameCard && prior?.plumScoringId != null
       ? {
           plumScoringId: prior.plumScoringId,
@@ -143,17 +141,21 @@ export async function enqueuePlumCardScore(data: PlumCardScoreJobData): Promise<
   };
   await recordPipeline(data.scoringId, 'plum_card', { status: 'pending', summary, raw: null });
 
-  await queueRef.add('score', data, {
-    jobId: plumJobId(data.scoringId),
-    attempts: env.PLUM_POLL_MAX_ATTEMPTS,
-    backoff: { type: 'fixed', delay: env.PLUM_POLL_INTERVAL_MS },
-    removeOnComplete: true,
-    // Removed on failure so a retry can re-add the same jobId. The failure is
-    // recorded durably on the scoring_pipelines row and on `scorings` — a better
-    // record than a stranded entry in Redis's failed set, which would silently
-    // block every subsequent retry of this run.
-    removeOnFail: true,
-  });
+  await queueRef.add(
+    'score',
+    { ...data, ...summary },
+    {
+      jobId: plumJobId(data.scoringId),
+      attempts: env.PLUM_POLL_MAX_ATTEMPTS,
+      backoff: { type: 'fixed', delay: env.PLUM_POLL_INTERVAL_MS },
+      removeOnComplete: true,
+      // Removed on failure so a retry can re-add the same jobId. The failure is
+      // recorded durably on the scoring_pipelines row and on `scorings` — a better
+      // record than a stranded entry in Redis's failed set, which would silently
+      // block every subsequent retry of this run.
+      removeOnFail: true,
+    },
+  );
   return 'queued';
 }
 
@@ -176,7 +178,7 @@ export async function claimPlumRow(data: PlumCardScoreJobData): Promise<PlumCard
   if (!row) return null;
 
   const summary = row.summary as PlumCardSummary | null;
-  if (!summary || summary.cardId !== data.plumCardId) return null;
+  if (!summary || summary.cardId !== data.cardId) return null;
   return summary;
 }
 

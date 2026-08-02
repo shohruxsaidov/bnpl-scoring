@@ -225,7 +225,6 @@ interface PlumCardSummaryBase {
   /** Plumgate's My Uzcard card id — the row's owner. A worker whose job carries a
    *  different cardId is stale (the agent switched cards) and must not write. */
   cardId: string;
-  maskedPan: string;
   /** Vendor scoring id — uzcard only; persisted between create and poll. */
   plumScoringId?: number;
   /** ISO — the observation window both rails are measured over. */
@@ -236,17 +235,18 @@ interface PlumCardSummaryBase {
    *  periodBegin/periodEnd above — which lag today by the age of the reuse — so
    *  the provenance is stamped rather than passed off as current. */
   reusedFromScoringId?: number;
+  pcType: 0 | 1;
 }
 
 export interface PlumCardUzcardSummary extends PlumCardSummaryBase {
-  pcType: string;
+  pcType: 0;
   scoredBall?: number;
   maxScoreBall?: number;
   criteria?: Array<{ name: string; category: string; ball: number }>;
 }
 
 export interface PlumCardHumoSummary extends PlumCardSummaryBase {
-  pcType: string;
+  pcType: 1;
   totalDebitScore?: number;
   totalDebitCount?: number;
   replenishmentScore?: number;

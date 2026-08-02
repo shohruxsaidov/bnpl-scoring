@@ -146,7 +146,7 @@ export interface PlumCard {
   maskedPan: string;
   holderName: string;
   expiry: string;
-  pcType: string; // uzcard;  humo
+  pcType: number; // 0 | 1; // 0: uzcard, 1: humo
 }
 
 export interface PlumAddCardResult {
@@ -197,7 +197,7 @@ export function toPlumCard(r: PlumCardItem): PlumCard {
     maskedPan: r.number,
     holderName: r.owner,
     expiry: `${expireMonth}${expireYear}`,
-    pcType: r.pcType === 1 ? 'Humo' : 'Uzcard',
+    pcType: r.pcType,
   };
 }
 

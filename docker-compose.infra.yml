@@ -34,7 +34,10 @@ services:
   redis:
     image: eqalpha/keydb:latest
     restart: unless-stopped
-    command: ['keydb-server', '--appendonly', 'yes']
+    # noeviction is mandatory, not a tuning knob: BullMQ stores job state in
+    # plain keys, so any eviction policy silently drops queued jobs. Pinned
+    # explicitly rather than relying on the image default.
+    command: ['keydb-server', '--appendonly', 'yes', '--maxmemory-policy', 'noeviction']
     ports:
       - '${REDIS_PORT:-6379}:6379'
     volumes:
