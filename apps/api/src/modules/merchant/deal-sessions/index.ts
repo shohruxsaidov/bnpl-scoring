@@ -1286,12 +1286,9 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       // this request, and a payload is a snapshot — an agent who re-scores with a
       // different card must not end up with the old one on their deal.
       const userCards = await listCards(String(session.userId!)); // warm the cache for the model
-      const c = userCards.find((c) => c.plumCardId === cardId);
+      const c = userCards.find((c) => +c.plumCardId === +cardId);
       if (!c) return reply.code(400).sendError('card_not_found');
-      const card = {
-        cardId,
-        pcType: c?.pcType ?? null,
-      };
+  
       await stampPlumPending(session, {
         status: 'pending',
         startedAt: new Date().toISOString(),
