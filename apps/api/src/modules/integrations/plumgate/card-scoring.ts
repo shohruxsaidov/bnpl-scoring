@@ -45,6 +45,7 @@ export interface PlumCardScoreJobData {
   /** Plumgate's My Uzcard card id (NOT the attachment id — see user_cards). */
   cardId: string;
   pcType: number; // 0 | 1; // 0: uzcard, 1: humo
+  expiry: string; // 4-digit YYMM, for Humo only
 }
 
 /**

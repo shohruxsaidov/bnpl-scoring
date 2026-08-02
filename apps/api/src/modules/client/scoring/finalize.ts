@@ -69,7 +69,7 @@ export async function writeClientCreditLimit(
  */
 async function loadLatestCard(
   userId: number,
-): Promise<(LimitCard & { plumCardId: string | null }) | null> {
+): Promise<(LimitCard & { plumCardId: string | null; expiry: string | null }) | null> {
   const [row] = await db
     .select()
     .from(userCards)
@@ -82,6 +82,7 @@ async function loadLatestCard(
     maskedPan: row.maskedPan,
     holderName: row.holderName,
     plumCardId: row.plumCardId,
+    expiry: row.expiry,
   };
 }
 
@@ -96,10 +97,10 @@ async function loadLatestCard(
  */
 export async function loadScoreableCard(
   userId: number,
-): Promise<(LimitCard & { plumCardId: string }) | null> {
+): Promise<(LimitCard & { plumCardId: string; expiry: string }) | null> {
   const card = await loadLatestCard(userId);
   if (!card?.plumCardId) return null;
-  return { ...card, plumCardId: card.plumCardId };
+  return { ...card, plumCardId: card.plumCardId, expiry: card.expiry };
 }
 
 /** True when the user holds a card the plum_card stage could run against. */
@@ -147,6 +148,7 @@ export async function startClientPlumStage(scoring: ScoringRow): Promise<ClientS
       scoringId: scoring.id,
       cardId: card.plumCardId,
       pcType: +card.pcType,
+      expiry: card.expiry, //TODO need to remove static data
     });
   } catch (err) {
     // The stage gates the model, so failing to even start it fails the run — it

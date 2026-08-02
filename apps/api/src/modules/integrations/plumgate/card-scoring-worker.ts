@@ -42,7 +42,7 @@ export async function processPlumCardScoreJob(
   if (summary.pcType === 1) {
     // Synchronous rail: one call, one answer, no vendor scoringId, no polling.
     //TODO need to remove static data
-    const result = await fetchHumoScore(data.cardId, plumWindowOf(summary), '3006');
+    const result = await fetchHumoScore(data.cardId, plumWindowOf(summary), data.expiry);
 
     // The vendor call is slow enough that the card may have changed under us.
     if (!(await claimPlumRow(data))) return;

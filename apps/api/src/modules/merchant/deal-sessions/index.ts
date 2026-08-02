@@ -1288,7 +1288,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       const userCards = await listCards(String(session.userId!)); // warm the cache for the model
       const c = userCards.find((c) => +c.plumCardId === +cardId);
       if (!c) return reply.code(400).sendError('card_not_found');
-  
+
       await stampPlumPending(session, {
         status: 'pending',
         startedAt: new Date().toISOString(),
@@ -1318,6 +1318,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
           scoringId: scoringRun.id,
           cardId: cardId,
           pcType: c?.pcType ?? null,
+          expiry: c?.expiry ?? null,
         });
       } catch (err) {
         // plum_card gates the model and feeds it params the engine would read as
