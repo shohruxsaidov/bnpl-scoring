@@ -53,9 +53,20 @@ const totalWithMarkup = computed(() => {
   return Math.round(total.value * (1 + pct / 100))
 })
 
-/** Approved limit (som) scaled by the selected tariff's term in months */
-const effectiveLimit = computed(
-  () => (scoring.platformCreditLimit ?? 0) * (tariff.value?.termMonths ?? 0),
+/**
+ * Hard ceiling on one deal's credit portion, in som. MUST match
+ * MAX_EFFECTIVE_LIMIT_SOM in the API's scoring/effective-limit.ts — the server
+ * computes the prepayment gap against its own copy, so a drift here shows the
+ * agent a limit the server will not honour.
+ */
+const MAX_EFFECTIVE_LIMIT_SOM = 30_000_000
+
+/** Approved limit (som) scaled by the selected tariff's term in months, capped */
+const effectiveLimit = computed(() =>
+  Math.min(
+    (scoring.platformCreditLimit ?? 0) * (tariff.value?.termMonths ?? 0),
+    MAX_EFFECTIVE_LIMIT_SOM,
+  ),
 )
 
 const withinLimit = computed(() => totalWithMarkup.value <= effectiveLimit.value)

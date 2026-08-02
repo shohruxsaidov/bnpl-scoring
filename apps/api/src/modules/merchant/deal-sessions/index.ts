@@ -79,6 +79,7 @@ import {
   recordPipeline,
 } from '../../scoring/pipelines/store';
 import { enqueuePlumCardScore } from '../../integrations/plumgate/card-scoring';
+import { effectiveLimitOf } from '../../scoring/effective-limit';
 import { finalizeMerchantScoring, loadSessionRow } from './finalize';
 import { stampPlumPending } from './commands/stamp-plum-pending/stamp-plum-pending.handler';
 import { listCards } from '../../integrations/plumgate/queries/list-cards/list-cards.handler';
@@ -324,7 +325,10 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       // prepayment gap cannot drift from the deal's own totalPayable.
       const basketBase = calcBasketAmount(data.products.lines);
       const totalWithMarkup = calcTotalPayable(basketBase, data.tariff.markupPercent);
-      const effectiveLimit = Math.round(data.scoring.platformCreditLimit * data.tariff.termMonths);
+      const effectiveLimit = effectiveLimitOf(
+        data.scoring.platformCreditLimit,
+        data.tariff.termMonths,
+      );
       const gap = Math.round((totalWithMarkup - effectiveLimit) * 100) / 100;
 
       if (gap <= 0) return reply.code(409).sendError('no_prepayment_needed');

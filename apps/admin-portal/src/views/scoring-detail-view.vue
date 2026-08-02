@@ -264,8 +264,9 @@ function inpsData(raw: Record<string, unknown> | null): Json {
 }
 
 // ---- plum_card (card-behaviour scoring) -------------------------------------
-// Observational: Plumgate's read of how the card is used. It does NOT feed the
-// model — nothing here influenced the decision on this run.
+// Plumgate's read of how the card is used. The turnover band derived from it is
+// the model's income input, so this panel explains part of the decision — it is
+// not a side report.
 //
 // The two rails are different measurements and are rendered differently:
 //   uzcard — DATA-SET template points; each criterion reports the band it fell in
@@ -479,13 +480,9 @@ function goBack() {
           <KvTable :value="mibData(activePipeline.raw)" :labels="VENDOR_LABELS" />
         </div>
 
-        <!-- plum_card — card-behaviour scoring. Collected only; feeds no decision. -->
+        <!-- plum_card — card-behaviour scoring. The turnover band derived here is
+             the model's income input, so this DID shape the decision. -->
         <template v-else-if="activePipeline.type === 'plum_card'">
-          <div class="callout callout-info">
-            <i class="pi pi-info-circle" />
-            <span>{{ t('scoringReport.plumCard.observationalNote') }}</span>
-          </div>
-
           <!-- Uzcard: DATA-SET criteria, as returned -->
           <div v-if="plumPcType(activePipeline) === 'uzcard' && plumCriteria(activePipeline).length"
             class="surface-card table-card">

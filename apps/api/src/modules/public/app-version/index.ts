@@ -128,11 +128,11 @@ export default async function publicAppVersionRoutes(app: FastifyInstance) {
       }
 
       const lang = resolveLang(request.headers['x-lang'] as string | undefined);
-      const status: 'ok' | 'force' =
+      const status: 'ok' |'soft' | 'force' =
         compareSemver(running, min) < 0
           ? 'force'
           : compareSemver(running, latest) < 0
-            ? 'ok'
+            ? 'soft'
             : 'ok';
 
       return {

@@ -32,6 +32,7 @@ import {
   hasScoreableCard,
   resumeErroredClientRun,
 } from './finalize';
+import { loadLimitOffers } from './limit';
 
 // ---------------------------------------------------------------------------
 // Client Scoring — a user self-scores in the mobile app to learn their credit
@@ -383,6 +384,37 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
         reasonCode,
         reasonMessage: status === 'rejected' ? reasonMessage(lang, reasonCode ?? undefined) : null,
       };
+    },
+  );
+
+  const LimitResponse = Type.Array(
+    Type.Object({
+      months: Type.Integer(),
+      amount: Type.Number(),
+    }),
+  );
+
+  /* ── GET /client/scoring/limit — the limit as a menu of terms ───────────── */
+  fastify.get(
+    '/limit',
+    {
+      schema: {
+        tags: TAGS,
+        summary: 'Credit limit by term',
+        description:
+          'The stored per-month limit scaled by each offered term, capped at ' +
+          '30 000 000 som. `amount` is what the client would OWE over the term — ' +
+          'the wizard checks the marked-up basket total against it — so it is NOT ' +
+          'a goods budget: under a 20% tariff an amount of 9 000 000 buys a ' +
+          '7 500 000 basket. Every term comes back at 0 when there is no usable ' +
+          'limit; GET /status says why.',
+        security: SECURITY,
+        response: { 200: LimitResponse, 401: ERROR },
+      },
+      preHandler: guards,
+    },
+    async (request) => {
+      return loadLimitOffers(Number(request.user.sub));
     },
   );
 }

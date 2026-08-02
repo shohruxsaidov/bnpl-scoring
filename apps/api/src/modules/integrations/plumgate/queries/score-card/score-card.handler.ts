@@ -12,8 +12,10 @@
 //
 // The results are NOT commensurable and no attempt is made to make them so.
 // Uzcard yields template points against a fixed ceiling; Humo yields unbounded
-// million-som buckets. Nothing here derives a limit or a decision — this data is
-// observational (it does not feed the model).
+// million-som buckets. Nothing HERE derives a limit or a decision — these calls
+// stay thin — but the data no longer stops at the row: the worker turns it into
+// the turnover band the model reads as income (loadPlumTurnoverFloor). Treat a
+// wrong figure as a wrong credit limit, not a cosmetic reporting defect.
 // ---------------------------------------------------------------------------
 import {
   env,
