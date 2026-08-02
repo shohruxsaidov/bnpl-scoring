@@ -510,7 +510,8 @@
       "replenishmentScore": "Hisobdan to'ldirish bali",
       "replenishmentCount": "Hisobdan to'ldirishlar",
       "creditScore": "Tushumlar bali",
-      "creditCount": "Kartaga tushumlar"
+      "creditCount": "Kartaga tushumlar",
+      "turnoverBasis": "Aylanma manbasi"
     },
     "model": {
       "decision": "Qaror",
@@ -536,7 +537,13 @@
       "reportedCount": "Plum {n} ta ko'rsatkich qaytardi. Baholanmagan ko'rsatkichlar ro'yxatda yo'q, lekin maksimal balda hisobga olingan — natija kam ko'rsatilishi mumkin.",
       "humoScaleNote": "Humo: N bali (N−1) mln — N mln so'm aylanmani bildiradi. Bu DATA-SET shablon bali emas — Uzcard bali bilan solishtirilmaydi.",
       "pending": "Plum karta skoringini hali hisoblamoqda.",
-      "failed": "Plum karta skoringi natijasini qaytarmadi."
+      "failed": "Plum karta skoringi natijasini qaytarmadi.",
+      "turnoverBand": "Karta boʻyicha oylik aylanma",
+      "turnoverFrom": "{min} dan",
+      "basis": {
+        "replenishment": "Toʻldirishlar (tushumlar)",
+        "debit": "Xarajatlar (tushum yoʻq)"
+      }
     }
   },
   "jsonReport": {

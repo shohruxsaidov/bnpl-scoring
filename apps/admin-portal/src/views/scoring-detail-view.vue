@@ -146,7 +146,17 @@ function formatTimestamp(iso: string): string {
 // Render a pipeline's `summary` jsonb as a strip of cards.
 // plum_card keys that are structure, not figures — rendered elsewhere (or not at
 // all) rather than as cards in the summary strip.
-const PLUM_CARD_HIDDEN_SUMMARY = ['criteria', 'cardId', 'plumScoringId', 'pcType', 'maxScoreBall']
+// maxAvgAmount is not hidden data — it is the other end of the turnover band, and
+// is rendered together with minAvgAmount as one bracket rather than as two
+// unrelated numbers.
+const PLUM_CARD_HIDDEN_SUMMARY = [
+  'criteria',
+  'cardId',
+  'plumScoringId',
+  'pcType',
+  'maxScoreBall',
+  'maxAvgAmount',
+]
 
 function summaryCards(pipeline: { type: string; summary: Record<string, unknown> | null; raw?: unknown } | null) {
   if (!pipeline?.summary) return []
@@ -166,6 +176,34 @@ function summaryCards(pipeline: { type: string; summary: Record<string, unknown>
         return {
           label: summaryLabel(key),
           value: max != null ? `${String(value)} / ${String(max)}` : formatSummaryValue(value),
+        }
+      }
+      // The turnover band is ONE reading — a bracket the vendor's buckets imply —
+      // so it renders as a single card. An absent ceiling is the open-ended top
+      // bucket, shown as "от X" rather than silently dropped.
+      if (type === 'plum_card' && key === 'minAvgAmount') {
+        const max = (summary as { maxAvgAmount?: unknown }).maxAvgAmount
+        const min = formatMoney(Math.round(Number(value)))
+        return {
+          label: t('scoringReport.plumCard.turnoverBand'),
+          value:
+            typeof max === 'number'
+              ? `${min} – ${formatMoney(Math.round(max))}`
+              : t('scoringReport.plumCard.turnoverFrom', { min }),
+        }
+      }
+      // Humo only: which series the band was read off. Spending is a much weaker
+      // proxy than inflow, so it must be visible which one this is.
+      if (type === 'plum_card' && key === 'turnoverBasis') {
+        const k = `scoringReport.plumCard.basis.${String(value)}`
+        return { label: summaryLabel(key), value: te(k) ? t(k) : formatSummaryValue(value) }
+      }
+      // Observation windows are stored as ISO instants; show them as dates.
+      if ((key === 'periodBegin' || key === 'periodEnd') && typeof value === 'string') {
+        const d = new Date(value)
+        return {
+          label: summaryLabel(key),
+          value: Number.isNaN(d.getTime()) ? formatSummaryValue(value) : formatTimestamp(value),
         }
       }
       // KATM 077: append the scoring level (Уровень) to the class, e.g. "A1 ОТЛИЧНЫЙ".
@@ -242,9 +280,15 @@ interface PlumCriterion {
   category: string
   ball: number
 }
+// pcType is NUMERIC on the wire — 0 uzcard, 1 humo — and comparing it to the
+// string names silently matched neither, which sent every finished row to the
+// "still computing" callout. Rows written before pcType became a number still
+// carry the string form, so both are accepted.
 function plumPcType(p: ScoringDetailPipeline): 'uzcard' | 'humo' | null {
-  const s = p.summary as { pcType?: unknown } | null
-  return s?.pcType === 'humo' ? 'humo' : s?.pcType === 'uzcard' ? 'uzcard' : null
+  const v = (p.summary as { pcType?: unknown } | null)?.pcType
+  if (v === 1 || v === '1' || v === 'humo') return 'humo'
+  if (v === 0 || v === '0' || v === 'uzcard') return 'uzcard'
+  return null
 }
 function plumCriteria(p: ScoringDetailPipeline): PlumCriterion[] {
   const s = p.summary as { criteria?: unknown } | null

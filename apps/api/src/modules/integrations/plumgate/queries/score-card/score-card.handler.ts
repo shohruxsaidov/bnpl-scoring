@@ -24,7 +24,6 @@ import {
   parsePlumError,
 } from '../../service/shared';
 import type {
-  PlumHumoAvgResponse,
   PlumHumoMonthlyResponse,
   PlumHumoScoreRow,
   PlumScoringCreateResponse,

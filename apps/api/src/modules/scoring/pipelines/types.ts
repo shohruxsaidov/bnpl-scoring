@@ -236,6 +236,12 @@ interface PlumCardSummaryBase {
    *  the provenance is stamped rather than passed off as current. */
   reusedFromScoringId?: number;
   pcType: 0 | 1;
+  /** Monthly average turnover over the window, in SOM, as a BAND — both rails
+   *  report a bucket index rather than a figure, so only the bracket is real and
+   *  a point figure would be an invention. An unset ceiling means the band is
+   *  open-ended above (uzcard's top bucket, 90 млн +); humo buckets always close. */
+  minAvgAmount?: number;
+  maxAvgAmount?: number;
 }
 
 export interface PlumCardUzcardSummary extends PlumCardSummaryBase {
@@ -247,6 +253,12 @@ export interface PlumCardUzcardSummary extends PlumCardSummaryBase {
 
 export interface PlumCardHumoSummary extends PlumCardSummaryBase {
   pcType: 1;
+  /** Which series the turnover band above was read off. 'replenishment' is money
+   *  coming IN — the signal we actually want; 'debit' is spending, a much weaker
+   *  proxy used only when the card reports no inflow at all. Unset means neither
+   *  series had any turnover. Recorded because a debit-derived band must not be
+   *  read as income. */
+  turnoverBasis?: 'replenishment' | 'debit';
   totalDebitScore?: number;
   totalDebitCount?: number;
   replenishmentScore?: number;
