@@ -90,11 +90,6 @@ export interface PlumPendingState {
   error?: string;
   card: {
     cardId: string;
-    maskedPan: string;
-    pcType: string;
-    bank: string;
-    holderName: string;
-    expiry: string;
   };
   bailsmen?: BailsmanItem[];
 }
@@ -183,11 +178,6 @@ export interface SessionStepData {
   client?: { userId: string; isNewClient: boolean; myidVerified: boolean; katmConsent: boolean };
   card?: {
     cardId: string;
-    maskedPan: string;
-    pcType: string;
-    bank: string;
-    holderName: string;
-    expiry: string;
   };
   tariff?: {
     tariffId: string;

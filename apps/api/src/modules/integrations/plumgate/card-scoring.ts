@@ -43,9 +43,7 @@ export interface PlumCardScoreJobData {
   /** scorings.id — the run the row hangs off. */
   scoringId: number;
   /** Plumgate's My Uzcard card id (NOT the attachment id — see user_cards). */
-  plumCardId: string;
-  pcType: string;
-  maskedPan: string;
+  cardId: string;
 }
 
 /**
@@ -99,7 +97,7 @@ export async function enqueuePlumCardScore(data: PlumCardScoreJobData): Promise<
   // Cache hit — copy the earlier scoring forward rather than buying it again. The
   // copy keeps the ORIGINAL observation window and records where it came from, so
   // admin can see the figures are as of then, not now.
-  const cached = await loadRecentPlumResult(data.plumCardId, PLUM_RESULT_TTL_MS);
+  const cached = await loadRecentPlumResult(data.cardId, PLUM_RESULT_TTL_MS);
   if (cached) {
     const summary = cached.summary as PlumCardSummary;
     await recordPipeline(data.scoringId, 'plum_card', {
@@ -114,7 +112,7 @@ export async function enqueuePlumCardScore(data: PlumCardScoreJobData): Promise<
 
   const existing = await loadPipeline(data.scoringId, 'plum_card');
   const prior = existing?.summary as PlumCardSummary | null;
-  const sameCard = prior?.cardId === data.plumCardId;
+  const sameCard = prior?.cardId === data.cardId;
 
   // A job for this same card is already in flight (the agent double-tapped, or
   // re-POSTed while Plum was working). Rewriting the row would discard the vendor
@@ -128,9 +126,7 @@ export async function enqueuePlumCardScore(data: PlumCardScoreJobData): Promise<
   // stage visible while the vendor works, and it is what the worker reads to
   // decide whether it still owns the card.
   const summary: PlumCardSummary = {
-    pcType: data.pcType,
-    cardId: data.plumCardId,
-    maskedPan: data.maskedPan,
+    cardId: data.cardId,
     periodBegin: beginDate.toISOString(),
     periodEnd: endDate.toISOString(),
     // Carry a scoring the vendor already opened for this card into the retry, so

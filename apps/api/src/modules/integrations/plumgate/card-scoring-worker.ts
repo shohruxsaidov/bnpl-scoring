@@ -41,7 +41,7 @@ export async function processPlumCardScoreJob(
 
   if (summary.pcType === 'humo') {
     // Synchronous rail: one call, one answer, no vendor scoringId, no polling.
-    const result = await fetchHumoScore(data.plumCardId, plumWindowOf(summary));
+    const result = await fetchHumoScore(data.cardId, plumWindowOf(summary));
 
     // The vendor call is slow enough that the card may have changed under us.
     if (!(await claimPlumRow(data))) return;

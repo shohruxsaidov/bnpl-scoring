@@ -1059,10 +1059,30 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       let cards: Awaited<ReturnType<typeof listCards>> = [];
       try {
         cards = await listCards(String(session.userId));
+
+        const cardsFromDb = await db
+          .select()
+          .from(userCards)
+          .where(eq(userCards.userId, session.userId));
+        console.log('cardsFromDb:', cardsFromDb);
+        cards = cards.filter((c) => {
+          const found = cardsFromDb.find((dbCard) => +dbCard.plumCardId! === +c.plumCardId);
+          if (!found) {
+            request.log.warn(
+              { card: c },
+              `Card not found in DB UserId:${session.userId} cards ${c.plumCardId}`,
+            );
+            request.log.warn(cardsFromDb, `DB cards for UserId:${session.userId}`);
+            request.log.warn(cards, `Plumcards cards for UserId:${session.userId}`);
+          }
+          return !!found;
+        });
       } catch (err) {
         request.log.warn({ err, userId: session.userId }, 'listCards failed, returning empty list');
       }
-      return { cards };
+      return {
+        cards: cards.map((c) => ({ id: c.plumCardId, maskedPan: c.maskedPan })),
+      };
     },
   );
 
@@ -1200,12 +1220,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
   });
 
   const ScoreCardBody = Type.Object({
-    plumCardId: Type.String({ minLength: 1 }),
-    pcType: Type.String(),
-    maskedPan: Type.String({ minLength: 1 }),
-    holderName: Type.String(),
-    expiry: Type.String({ minLength: 1 }),
-    bank: Type.Optional(Type.String()),
+    cardId: Type.String({ minLength: 1 }),
     bailsmen: Type.Optional(Type.Array(BailsmanItemSchema, { minItems: 1, maxItems: 5 })),
   });
 
@@ -1214,7 +1229,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
     { schema: { tags: TAGS, params: IdParams, body: ScoreCardBody }, preHandler: guards },
     async (request, reply) => {
       const p = payload(request);
-      const { plumCardId, pcType, maskedPan, holderName, expiry, bank } = request.body;
+      const { cardId } = request.body;
 
       let session;
       try {
@@ -1245,20 +1260,12 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
         if (report?.demandId != null) katm = report;
       }
 
-      // Pre-engine hard gate: credit ban is a regulatory constraint, not a
-      // scoring criterion. It stays HERE, ahead of the chargeable Plum call —
-      // the pipeline order is cost-ascending, and a banned applicant must knock
-      // out before we buy a card scoring nobody will ever look at.
       if (katm?.hasCreditBan === true) {
         const sessionAfterCard = await saveStep(session, 'card', {
-          cardId: plumCardId,
-          maskedPan,
-          pcType,
-          holderName,
-          expiry,
+          cardId: cardId,
         });
         await stampScoring(sessionAfterCard, {
-          cardId: plumCardId,
+          cardId,
           scoringId: null,
           scoreSum: 0,
           coefficient: 0,
@@ -1279,12 +1286,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       // this request, and a payload is a snapshot — an agent who re-scores with a
       // different card must not end up with the old one on their deal.
       const card = {
-        cardId: plumCardId,
-        maskedPan,
-        pcType,
-        bank: bank ?? '',
-        holderName,
-        expiry,
+        cardId,
       };
       await stampPlumPending(session, {
         status: 'pending',
@@ -1309,9 +1311,7 @@ export default async function merchantDealSessionRoutes(app: FastifyInstance) {
       try {
         stage = await enqueuePlumCardScore({
           scoringId: scoringRun.id,
-          plumCardId,
-          pcType,
-          maskedPan,
+          cardId: cardId,
         });
       } catch (err) {
         // plum_card gates the model and feeds it params the engine would read as

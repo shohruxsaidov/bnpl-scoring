@@ -113,15 +113,8 @@ async function buildStepPayload(
 
     case 'card': {
       const cardId = str(body['cardId']);
-      const maskedPan = str(body['maskedPan']);
-      if (!cardId || !maskedPan) throw err('invalid_step_payload');
       const result = {
         cardId,
-        maskedPan,
-        pcType: str(body['pcType']) ?? '',
-        bank: str(body['bank']) ?? '',
-        holderName: str(body['holderName']) ?? '',
-        expiry: str(body['expiry']) ?? '',
       };
       return result;
     }

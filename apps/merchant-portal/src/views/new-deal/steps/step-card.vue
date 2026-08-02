@@ -80,7 +80,7 @@ async function fetchCards() {
     // Restore previously selected card if it still exists in the list
     if (deal.sessionData.selectedCard) {
       const stillExists = cards.value.some(
-        (c) => c.plumCardId === deal.sessionData.selectedCard?.plumCardId,
+        (c) => c.id === deal.sessionData.selectedCard?.plumCardId,
       )
       if (!stillExists) deal.setCard(null as unknown as Card)
     }
@@ -106,11 +106,11 @@ onMounted(() => {
 // ── Card selection ───────────────────────────────────────────────────────────
 
 const selectedId = ref<string | null>(
-  deal.sessionData.selectedCard?.plumCardId ?? null,
+  deal.sessionData.selectedCard?.id ?? null,
 )
 
-function selectCard(plumCardId: string) {
-  selectedId.value = plumCardId
+function selectCard(cardId: string) {
+  selectedId.value = cardId
   // Reset scoring result when switching cards
   result.value = null
   serverResult.value = null
@@ -118,7 +118,7 @@ function selectCard(plumCardId: string) {
 }
 
 const selectedCard = computed(() =>
-  cards.value.find((c) => c.plumCardId === selectedId.value),
+  cards.value.find((c) => c.id === selectedId.value),
 )
 
 // ── Add card flow ────────────────────────────────────────────────────────────
@@ -365,12 +365,7 @@ async function runScoring(): Promise<CardScoreResult | null> {
       {
         method: 'POST',
         body: JSON.stringify({
-          plumCardId: selectedCard.value.plumCardId,
-          pcType: selectedCard.value.pcType,
-          maskedPan: selectedCard.value.maskedPan,
-          bank: selectedCard.value.bank,
-          holderName: selectedCard.value.holderName,
-          expiry: selectedCard.value.expiry,
+          cardId: selectedCard.value.id,
           bailsmen: localBailsmen.value.map(b => ({
             relation: b.relation as BailsmanRelation,
             phone: '+998' + rawDigits(b.phone),
@@ -470,11 +465,11 @@ async function next() {
 
     <!-- Card grid -->
     <div v-else class="cards-grid">
-      <button v-for="card in cards" :key="card.plumCardId" class="bank-card"
-        :class="{ selected: selectedId === card.plumCardId }" @click="selectCard(card.plumCardId)">
+      <button v-for="card in cards" :key="card.id" class="bank-card" :class="{ selected: selectedId === card.id }"
+        @click="selectCard(card.id)">
         <div class="bc-top">
           <span class="bc-bank">{{ card.bank }}</span>
-          <i class="pi" :class="selectedId === card.plumCardId ? 'pi-check-circle' : 'pi-circle'" />
+          <i class="pi" :class="selectedId === card.id ? 'pi-check-circle' : 'pi-circle'" />
         </div>
         <div class="bc-pan font-mono">{{ card.maskedPan }}</div>
         <div class="bc-foot">
@@ -504,7 +499,7 @@ async function next() {
             @input="handleExpiryInput" />
         </div>
         <div class="add-actions">
-  
+
           <button class="btn-gradient" :disabled="addLoading" @click="requestAddCard">
             <i v-if="addLoading" class="pi pi-spin pi-spinner" />
             {{ $t('stepCard.sendOtp') }}
@@ -543,6 +538,7 @@ async function next() {
     </div>
 
     <!-- Bailsmen -->
+
     <div v-if="selectedId && !adding" class="bailsmen-section">
       <div class="bailsmen-header">
         <span class="bailsmen-title">{{ $t('stepCard.contacts.title') }}</span>
