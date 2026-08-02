@@ -88,7 +88,10 @@ export interface Card {
   id: string;
   /** PlumGate userCardId (same value as id, explicit alias for clarity) */
   plumCardId: string;
-  pcType: 'uzcard' | 'humo';
+  /** Payment rail, as the vendor numbers it: 0 uzcard, 1 humo. Never the rail's
+   *  name — the API has always sent the number. Absent on cards from
+   *  GET /:id/cards, which returns only `id` and `maskedPan`. */
+  pcType?: number;
   maskedPan: string;
   holderName: string;
   expiry: string;

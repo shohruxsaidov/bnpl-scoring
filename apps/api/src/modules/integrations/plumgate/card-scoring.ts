@@ -195,3 +195,25 @@ export async function writePlumRow(
 export function plumWindowOf(summary: PlumCardSummary): PlumScoreWindow {
   return { beginDate: new Date(summary.periodBegin), endDate: new Date(summary.periodEnd) };
 }
+
+/**
+ * The card's monthly turnover FLOOR, in som — the model's income input.
+ *
+ * The bottom of the band, deliberately. Neither rail reports a turnover figure,
+ * only the bucket it fell in, so the top of that bucket is som the applicant may
+ * not actually earn — and a credit limit derived from it lends against money that
+ * was never observed. The floor is the figure the evidence supports outright.
+ *
+ * Null when there is no band to read: the stage was skipped by the kill-switch,
+ * the row never passed, or the card reported no turnover at all. Callers hand
+ * that to the model as no income, which the engine reads as 0 — see the
+ * mutilated-input-vector rule in scoring/pipelines/config.ts before making a
+ * model that needs this runnable while the stage is off.
+ */
+export async function loadPlumTurnoverFloor(scoringId: number): Promise<number | null> {
+  const row = await loadPipeline(scoringId, 'plum_card');
+  if (row?.status !== 'passed') return null;
+
+  const summary = row.summary as PlumCardSummary | null;
+  return typeof summary?.minAvgAmount === 'number' ? summary.minAvgAmount : null;
+}

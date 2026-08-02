@@ -230,14 +230,17 @@ export const useDealStore = defineStore(
       }
 
       if (data.card) {
+        // The server stamps only cardId/pcType/maskedPan/holderName onto the card
+        // step; expiry and bank are not part of that stamp. Restored blank rather
+        // than left undefined behind a type that claimed they were always there.
         fresh.selectedCard = {
           id: data.card.cardId,
           plumCardId: data.card.cardId,
           pcType: data.card.pcType,
-          maskedPan: data.card.maskedPan,
-          holderName: data.card.holderName,
-          expiry: data.card.expiry,
-          bank: data.card.bank,
+          maskedPan: data.card.maskedPan ?? '',
+          holderName: data.card.holderName ?? '',
+          expiry: data.card.expiry ?? '',
+          bank: data.card.bank ?? '',
         };
       }
 

@@ -72,7 +72,17 @@ export function isSigningProofFresh(at: string | null | undefined, now = Date.no
 
 export interface SessionStepData {
   client?: { isNewClient: boolean; myidVerified: boolean; katmConsent: boolean }
-  card?: { cardId: string; maskedPan: string; pcType: 'uzcard' | 'humo'; bank: string; holderName: string; expiry: string }
+  /** Stamped by the server once the model has run (saveStep 'card'), so only the
+   *  four fields it carries are ever present. `pcType` is the vendor's number —
+   *  0 uzcard, 1 humo — not the rail's name. */
+  card?: {
+    cardId: string
+    maskedPan?: string
+    pcType?: number
+    holderName?: string
+    bank?: string
+    expiry?: string
+  }
   tariff?: {
     tariffId: string
     name: string
