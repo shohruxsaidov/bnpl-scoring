@@ -25,7 +25,7 @@ import { effectiveLimitOf } from '../../scoring/effective-limit';
  * so a term shown here may not exist at the shop the client actually walks into.
  * Both are accepted: the client app has no merchant context to narrow by yet.
  */
-export const CLIENT_LIMIT_TERMS = [6, 9, 12, 18, 24] as const;
+export const CLIENT_LIMIT_TERMS = [3, 6, 9, 12, 18, 24] as const;
 
 export interface LimitOffer {
   months: number;
