@@ -13,8 +13,25 @@ import { listActiveFaqs } from './queries';
 
 const TAGS = ['Client · FAQ'];
 const SECURITY = [{ clientAuth: [] }];
-const XLANG = [{ $ref: '#/components/parameters/xLang' }];
 const ERROR = { $ref: 'ErrorResponse#' };
+
+// Documented through `schema.headers`, NOT through the components/parameters
+// $ref the other client modules use: @fastify/swagger derives a route's
+// `parameters` from querystring/params/headers and drops a raw `parameters` key
+// on the floor, so those refs render nothing at all (see banners, merchants).
+//
+// additionalProperties is left open — the default — because this validates every
+// request to the route: locking it down would reject Authorization, x-device-id
+// and everything else the client legitimately sends. Values outside the enum are
+// rejected by ajv with a 400 rather than silently falling back to uz, which is
+// stricter than resolveLang() alone and is the point of declaring it here.
+const Headers = Type.Object({
+  'x-lang': Type.Optional(
+    StringEnum(['uz', 'ru'] as const, {
+      description: 'Response language. Defaults to uz when omitted.',
+    }),
+  ),
+});
 
 // Five minutes, matching the banner carousel: the list only changes when an
 // admin edits it, and the cost of staleness is bounded — a corrected answer can
@@ -70,7 +87,7 @@ export default async function clientFaqRoutes(app: FastifyInstance) {
           'order the sections appear in. An empty array means the help screen ' +
           'should be hidden rather than shown empty.',
         security: SECURITY,
-        parameters: XLANG,
+        headers: Headers,
         response: { 200: Type.Object({ faqs: Type.Array(Faq) }), 401: ERROR },
       },
       preHandler: [app.verifyClientJwt],
