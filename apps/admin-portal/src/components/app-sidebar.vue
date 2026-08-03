@@ -76,7 +76,7 @@ const allNav = computed<NavEntry[]>(() => [
     to: '',
     children: [
       { label: t('nav.allDeals'), icon: 'pi pi-credit-card', to: '/deals', feature: 'view_deals' },
-      // { label: t('nav.tariffs'), icon: 'pi pi-percentage', to: '/tariffs', feature: 'view_tariffs' },
+      { label: t('nav.tariffs'), icon: 'pi pi-percentage', to: '/tariffs', feature: 'view_tariffs' },
       { label: t('nav.buyout'), icon: 'pi pi-shopping-bag', to: '/buyout', feature: 'manage_buyout' },
       { label: t('nav.collectionBoard'), icon: 'pi pi-table', to: '/collection-board', feature: 'view_collection_board' },
     ],
@@ -86,7 +86,6 @@ const allNav = computed<NavEntry[]>(() => [
   { key: 'payments', label: t('nav.payments'), icon: 'pi pi-wallet', to: '/payments', feature: 'view_payments', children: [] },
   // { key: 'stuckPayments', label: t('nav.stuckPayments'), icon: 'pi pi-exclamation-triangle', to: '/payments/stuck', feature: 'view_payments', badge: stuck.strandedCount, children: [] },
 
-  // { key: 'banners', label: t('nav.banners'), icon: 'pi pi-images', to: '/banners', feature: 'manage_banners', children: [] },
   { key: 'categories', label: t('nav.categories'), icon: 'pi pi-tag', to: '/categories', feature: 'manage_global_categories', children: [] },
 
   {
@@ -95,8 +94,9 @@ const allNav = computed<NavEntry[]>(() => [
     icon: 'pi pi-cog',
     to: '',
     children: [
+      { key: 'banners', label: t('nav.banners'), icon: 'pi pi-images', to: '/banners', feature: 'manage_banners', children: [] },
       { label: t('nav.employees'), icon: 'pi pi-users', to: '/employees', feature: 'manage_employees' },
-      // { label: t('nav.permissions'), icon: 'pi pi-shield', to: '/permissions', feature: 'manage_roles' },
+      { label: t('nav.permissions'), icon: 'pi pi-shield', to: '/permissions', feature: 'manage_roles' },
       { label: t('nav.scoringModel'), icon: 'pi pi-sliders-h', to: '/scoring-model', feature: 'manage_scoring_model' },
       { label: t('nav.settings'), icon: 'pi pi-cog', to: '/settings', anyFeature: ['manage_settings', 'manage_scoring_model', 'view_app_versions', 'manage_faqs'] },
     ],
