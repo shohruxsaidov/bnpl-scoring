@@ -20,6 +20,7 @@ export * from './deal-payment-schedules';
 export * from './deal-receipts';
 export * from './deal-sessions';
 export * from './deals';
+export * from './faqs';
 export * from './files';
 export * from './integration-logs';
 export * from './katm-claim-seq';

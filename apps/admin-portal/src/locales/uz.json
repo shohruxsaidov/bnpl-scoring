@@ -48,7 +48,8 @@
     "settingsPublicOffer": "Ommaviy oferta",
     "settingsScoring": "Skoring sozlamalari",
     "settingsAppVersions": "Ilova versiyasi",
-    "banners": "Bannerlar"
+    "banners": "Bannerlar",
+    "settingsFaqs": "Savol-javoblar"
   },
   "breadcrumb": {
     "overview": "Umumiy ko'rinish",
@@ -77,7 +78,8 @@
     "settingsScoring": "Skoring",
     "settingsAppVersions": "Ilova versiyasi",
     "banners": "Bannerlar",
-    "new": "Yangi"
+    "new": "Yangi",
+    "settingsFaqs": "Savol-javoblar"
   },
   "topbar": {
     "scoring": "Skoring",
@@ -106,7 +108,12 @@
     "clients": "Mijozlar",
     "integrationLogs": "Integratsiya loglari",
     "categories": "Kategoriyalar",
-    "banners": "Bannerlar"
+    "banners": "Bannerlar",
+    "groups": {
+      "counterparties": "Kontragentlar",
+      "deals": "Shartnomalar",
+      "administration": "Administratsiya"
+    }
   },
   "categories": {
     "searchPlaceholder": "Nom bo'yicha qidirish…",
@@ -191,6 +198,28 @@
     "pushFailed": "Bildirishnomani yuborib bo'lmadi",
     "tabActions": "Amallar",
     "noActions": "Hozircha amallar yo'q",
+    "funnelTitle": "Amallar voronkasi",
+    "funnelSubtitle": "Mijozning ro'yxatdan o'tishdan imzolangan shartnomagacha bo'lgan yo'li",
+    "funnelReached": "Qayergacha yetdi",
+    "funnelProgress": "Bosqichlar o'tildi",
+    "funnelFailures": "Xatoliklar",
+    "funnelNotStarted": "Amallar yo'q",
+    "funnelStage_registration": "Ro'yxatdan o'tish",
+    "funnelStage_card": "Karta biriktirish",
+    "funnelStage_scoring": "Skoring",
+    "funnelStage_signing": "Shartnomani imzolash",
+    "funnelAttempts": "Urinishlar: {n}",
+    "funnelStuckAt": "Oxirgi urinish: {date}",
+    "funnelNoAttempt": "Bajarilmagan",
+    "funnelBlockedBy": "To'xtash sababi:",
+    "funnelFirstSeen": "Birinchi amal:",
+    "funnelLastSeen": "Oxirgi amal:",
+    "gapInstant": "darhol",
+    "gapMinutes": "+{n} daq",
+    "gapHours": "+{n} soat",
+    "gapDays": "+{n} kun",
+    "actionLogTitle": "Xronologiya",
+    "actionLogCount": "Hodisalar: {n}",
     "actionDate": "Sana",
     "actionName": "Amal",
     "actionStatus": "Holat",
@@ -405,7 +434,8 @@
       "admins": "Administratorlar",
       "integrationLogs": "Integratsiya loglari",
       "clients": "Mijozlar",
-      "banners": "Bannerlar"
+      "banners": "Bannerlar",
+      "faqs": "Savol-javoblar"
     }
   },
   "scorings": {
@@ -1125,7 +1155,9 @@
     "scoring": "Skoring sozlamalari",
     "scoringDesc": "Skoring vaqtida qaysi tekshiruvlar bajariladi",
     "appVersion": "Ilova versiyasi",
-    "appVersionDesc": "Mobil ilova uchun majburiy yangilanish siyosati"
+    "appVersionDesc": "Mobil ilova uchun majburiy yangilanish siyosati",
+    "faqs": "Savol-javoblar",
+    "faqsDesc": "Mijoz ilovasidagi yordam bo'limi"
   },
   "orgWarning": {
     "title": "Tashkilot rekvizitlari to'ldirilmagan",
@@ -1573,6 +1605,40 @@
       "invalid_action_url": "Havola https:// bilan boshlanishi kerak",
       "action_value_required": "Tanlangan amal uchun manzilni ko'rsating",
       "invalid_banner_window": "Tugash vaqti boshlanish vaqtidan keyin bo'lishi kerak"
+    }
+  },
+  "faqs": {
+    "loadFailed": "Savollarni yuklab bo'lmadi",
+    "saveFailed": "Saqlab bo'lmadi",
+    "saved": "Savol saqlandi",
+    "created": "Savol qo'shildi",
+    "deleted": "Savol o'chirildi",
+    "add": "Savol qo'shish",
+    "edit": "Savolni tahrirlash",
+    "category": "Bo'lim",
+    "question": "Savol",
+    "answer": "Javob",
+    "searchPlaceholder": "Savol va javoblar bo'yicha qidirish",
+    "noResults": "Hech narsa topilmadi",
+    "emptyCategory": "Bu bo'limda hozircha savollar yo'q",
+    "orderHint": "Bo'lim ichidagi tartib sudrab o'zgartiriladi. Bo'limlarning tartibini ilovaning o'zi belgilaydi.",
+    "dragHint": "Tartibni o'zgartirish uchun sudrang",
+    "dragDisabledHint": "Qidiruv paytida tartibni o'zgartirib bo'lmaydi — qidiruvni tozalang",
+    "reorderStale": "Ro'yxat o'zgardi. Sahifa yangilandi — tartibni qaytadan belgilang",
+    "activate": "Ko'rsatish",
+    "deactivate": "Yashirish",
+    "deleteConfirmTitle": "Savol o'chirilsinmi?",
+    "deleteConfirmMsg": "«{question}» butunlay o'chiriladi. Mijozlardan vaqtincha yashirish uchun «Yashirish» tugmasidan foydalaning.",
+    "visibleHint": "Ilovada ko'rinadi",
+    "hiddenHint": "Mijozlardan yashirilgan",
+    "plainTextHint": "Oddiy matn: qator ko'chirishlar saqlanadi, formatlash (**qalin**, havolalar, ro'yxatlar) qo'llab-quvvatlanmaydi.",
+    "bothLanguagesRequired": "Ikkala tilni ham to'ldiring",
+    "cat": {
+      "general": "Umumiy",
+      "limits": "Limit",
+      "payments": "To'lov",
+      "deals": "Muddatli to'lovlar",
+      "account": "Profil"
     }
   }
 }

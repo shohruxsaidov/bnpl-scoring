@@ -16,6 +16,7 @@ import adminBuyoutRoutes from "./buyouts/index"
 import adminClientsRoutes from "./clients/index"
 import adminNotificationsRoutes from "./notifications/index"
 import adminBannerRoutes from "./banners/index"
+import adminFaqRoutes from "./faqs/index"
 import mxikRoutes from "../mxik/index"
 import adminBankRoutes from "./banks/index"
 import adminOrganizationRoutes from "./organization/index"
@@ -60,6 +61,7 @@ export default async function adminModule(app: FastifyInstance) {
   await app.register(guarded(adminClientsRoutes, { read: "view_clients" }), { prefix: "/admin/clients" })
   await app.register(guarded(adminNotificationsRoutes, { read: "send_client_push", write: "send_client_push" }), { prefix: "/admin/notifications" })
   await app.register(guarded(adminBannerRoutes, { read: "manage_banners", write: "manage_banners" }), { prefix: "/admin/banners" })
+  await app.register(guarded(adminFaqRoutes, { read: "manage_faqs", write: "manage_faqs" }), { prefix: "/admin/faqs" })
   await app.register(guarded(adminUsersRoutes, { read: "manage_admins", write: "manage_admins" }), { prefix: "/admin/users" })
   await app.register(adminPermissionsRoutes, { prefix: "/admin/permissions" })
   await app.register(mxikRoutes, { prefix: "/admin/mxik", preHandler: app.verifyAdminJwt })

@@ -53,6 +53,23 @@ const auth = useAuthStore()
       <i class="pi pi-chevron-right hub-arrow" />
     </router-link>
 
+    <!-- Its own grant, like the two below: help copy is edited by support, not by
+         whoever holds the org requisites. -->
+    <router-link
+      v-if="auth.can('manage_faqs')"
+      class="surface-card hub-card"
+      :to="{ name: 'settings-faqs' }"
+    >
+      <div class="hub-icon">
+        <i class="pi pi-question-circle" />
+      </div>
+      <div class="hub-text">
+        <span class="hub-title">{{ $t('settings.faqs') }}</span>
+        <span class="hub-desc">{{ $t('settings.faqsDesc') }}</span>
+      </div>
+      <i class="pi pi-chevron-right hub-arrow" />
+    </router-link>
+
     <!-- manage_settings is not enough to reach this one — see the route's feature gate. -->
     <router-link
       v-if="auth.can('manage_scoring_model')"

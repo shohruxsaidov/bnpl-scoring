@@ -12,6 +12,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useStuckPaymentsStore } from '@/stores/stuck-payments'
 import MonoAmount from '@/components/mono-amount.vue'
 import StatusBadge from '@/components/status-badge.vue'
+import ClientActionFunnel from '@/components/client-action-funnel.vue'
+import ClientActionTimeline from '@/components/client-action-timeline.vue'
 import { formatDate, formatDateTime } from '@/utils/money'
 import type { ClientActionRow, ClientNotificationRow } from '@/types'
 
@@ -71,40 +73,8 @@ watch(activeTab, (tab) => {
 })
 
 // ── Actions tab ─────────────────────────────────────────────────────────────
-
-function actionLabel(action: string): string {
-  return t(`clientDetail.action_${action}`, action)
-}
-
-function actorLabel(row: ClientActionRow): string {
-  // An agent's name is the answer to «кто добавил эту карту?», so show it when
-  // we have it and fall back to the bare role when we don't (backfilled rows).
-  const role = t(`clientDetail.actor_${row.actorType}`, row.actorType)
-  if (row.actorType === 'agent' && row.actorName) return `${row.actorName} · ${role}`
-  return role
-}
-
-function sourceText(row: ClientActionRow): string {
-  const parts: string[] = []
-  if (row.channel) parts.push(t(`clientDetail.actionChannel_${row.channel}`, row.channel))
-  if (row.merchantName) parts.push(row.merchantName)
-  return parts.join(' · ')
-}
-
-/**
- * Reject codes come from three vocabularies: the scoring pipeline's (already
- * translated under `scorings.rejectReason`), a couple of our own, and raw vendor
- * codes from Plumgate/MyID that nobody has translated. An untranslated code is
- * rendered VERBATIM on purpose — `plumgate_400` still tells support which vendor
- * refused, where a blank cell or «Неизвестно» would throw away the only thing
- * the row knew.
- */
-function reasonLabel(code: string | null): string {
-  if (!code) return '—'
-  const own = t(`clientDetail.reason_${code}`, '')
-  if (own) return own
-  return t(`scorings.rejectReason.${code}`, code)
-}
+// Labels live in a composable because the funnel and the timeline both render
+// them and must agree word for word — see use-client-actions.ts.
 
 /** Where a row can be opened in full. Signing rows only become clickable once
  *  the run produced a Deal — deal sessions have no admin page. */
@@ -565,66 +535,18 @@ function paymentStatusBg(status: string): string {
     </section>
 
     <!-- Actions tab -->
-    <section v-else class="tab-body">
-      <div class="surface-card table-wrap">
-        <DataTable
-          :value="store.detailActions"
-          data-key="id"
-          size="small"
-          class="clickable-rows"
-          :empty-message="$t('clientDetail.noActions')"
-          @row-click="(e: any) => openAction(e.data)"
-        >
-          <Column :header="$t('clientDetail.actionDate')">
-            <template #body="{ data }">
-              <span class="font-mono muted">{{ formatDateTime(data.occurredAt) }}</span>
-            </template>
-          </Column>
-          <Column :header="$t('clientDetail.actionName')">
-            <template #body="{ data }">
-              <span class="t-name-sm">{{ actionLabel(data.action) }}</span>
-              <!-- Reconstructed rows carry an inferred actor, so say so rather
-                   than let the Кто column read as something we observed. -->
-              <span
-                v-if="data.backfilled"
-                class="muted notif-body"
-                :title="$t('clientDetail.actionBackfilled')"
-              >
-                {{ $t('clientDetail.actionBackfilled') }}
-              </span>
-            </template>
-          </Column>
-          <Column :header="$t('clientDetail.actionStatus')">
-            <template #body="{ data }">
-              <span
-                class="status-chip"
-                :style="{
-                  color: data.status === 'success' ? 'var(--success)' : 'var(--danger)',
-                  background: data.status === 'success' ? 'var(--success-bg)' : 'var(--danger-bg)',
-                }"
-              >
-                {{ $t(`clientDetail.actionStatus_${data.status}`) }}
-              </span>
-            </template>
-          </Column>
-          <Column :header="$t('clientDetail.actionActor')">
-            <template #body="{ data }">
-              <span>{{ actorLabel(data) }}</span>
-            </template>
-          </Column>
-          <Column :header="$t('clientDetail.actionSource')">
-            <template #body="{ data }">
-              <span v-if="sourceText(data)" class="muted">{{ sourceText(data) }}</span>
-              <span v-else class="muted">—</span>
-            </template>
-          </Column>
-          <Column :header="$t('clientDetail.actionReason')">
-            <template #body="{ data }">
-              <span class="muted">{{ reasonLabel(data.reasonCode) }}</span>
-            </template>
-          </Column>
-        </DataTable>
+    <section v-else class="tab-body actions-tab">
+      <!-- Funnel first: «докуда дошёл» is the question, the log is the evidence -->
+      <ClientActionFunnel :actions="store.detailActions" />
+
+      <div class="log-head">
+        <h3>{{ $t('clientDetail.actionLogTitle') }}</h3>
+        <span class="muted log-count">
+          {{ $t('clientDetail.actionLogCount', { n: store.detailActions.length }) }}
+        </span>
       </div>
+
+      <ClientActionTimeline :actions="store.detailActions" @open="openAction" />
     </section>
 
     <!-- Send push dialog -->
@@ -943,6 +865,30 @@ function paymentStatusBg(status: string): string {
 .table-wrap {
   padding: 0;
   overflow: hidden;
+}
+
+.actions-tab {
+  gap: 1.1rem;
+}
+
+.log-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: -0.4rem;
+}
+
+.log-head h3 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.log-count {
+  font-size: 0.75rem;
 }
 
 .info-grid {

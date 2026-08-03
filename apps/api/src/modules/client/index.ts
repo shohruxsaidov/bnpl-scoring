@@ -11,6 +11,7 @@ import clientDealSigningRoutes from './deals/signing';
 import clientScoringCardsRoutes from './scoring/cards';
 import clientMerchantsRoutes from './merchants/index';
 import clientBannersRoutes from './banners/index';
+import clientFaqsRoutes from './faqs/index';
 import clientPaymentsRoutes from './payments/index';
 import clientPaymentsByDealRoutes from './payments/by-deal';
 import clientPayRoutes from './payments/pay';
@@ -58,6 +59,7 @@ export default async function clientModule(app: FastifyInstance) {
   await app.register(clientNotificationsRoutes, { prefix: '/client/notifications' });
   await app.register(clientMerchantsRoutes, { prefix: '/client/merchants' });
   await app.register(clientBannersRoutes, { prefix: '/client/banners' });
+  await app.register(clientFaqsRoutes, { prefix: '/client/faqs' });
   await app.register(clientPaymentsRoutes, { prefix: '/client/payments' });
   // Same prefix, opposite concern: the plugin above reads payment history, this
   // one makes payments. Split because the OTP/charge state machine has nothing

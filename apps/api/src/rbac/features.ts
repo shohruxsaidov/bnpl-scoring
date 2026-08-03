@@ -25,6 +25,13 @@ export const ADMIN_FEATURES = [
   // offer. Read and write are one grant — inspecting the banner list has no
   // standalone support value the way the force-update floor does.
   'manage_banners',
+  // Same reasoning as manage_banners, and for the same reason it is not folded
+  // into it either: FAQ copy is written by whoever answers support tickets, who
+  // should be able to fix a wrong answer without also being handed the platform's
+  // bank requisites — and without being handed the home-screen carousel. Read and
+  // write are one grant: reading the FAQ list has no standalone support value,
+  // since support can read the same answers in the app.
+  'manage_faqs',
   'view_merchants',
   'manage_merchants',
   'onboard_merchants',

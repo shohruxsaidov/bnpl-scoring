@@ -48,7 +48,8 @@
     "settingsPublicOffer": "Публичная оферта",
     "settingsScoring": "Настройки скоринга",
     "settingsAppVersions": "Версия приложения",
-    "banners": "Баннеры"
+    "banners": "Баннеры",
+    "settingsFaqs": "Вопросы и ответы"
   },
   "breadcrumb": {
     "overview": "Обзор",
@@ -77,7 +78,8 @@
     "settingsScoring": "Скоринг",
     "settingsAppVersions": "Версия приложения",
     "banners": "Баннеры",
-    "new": "Новый"
+    "new": "Новый",
+    "settingsFaqs": "Вопросы и ответы"
   },
   "topbar": {
     "scoring": "Скоринг",
@@ -106,7 +108,12 @@
     "clients": "Клиенты",
     "integrationLogs": "Логи интеграций",
     "categories": "Категории",
-    "banners": "Баннеры"
+    "banners": "Баннеры",
+    "groups": {
+      "counterparties": "Контрагенты",
+      "deals": "Сделки",
+      "administration": "Администрирование"
+    }
   },
   "categories": {
     "searchPlaceholder": "Поиск по названию…",
@@ -191,6 +198,28 @@
     "pushFailed": "Не удалось отправить уведомление",
     "tabActions": "Действия",
     "noActions": "Действий пока нет",
+    "funnelTitle": "Воронка действий",
+    "funnelSubtitle": "Путь клиента от регистрации до подписанной сделки",
+    "funnelReached": "Дошёл до",
+    "funnelProgress": "Этапов пройдено",
+    "funnelFailures": "Ошибок",
+    "funnelNotStarted": "Нет действий",
+    "funnelStage_registration": "Регистрация",
+    "funnelStage_card": "Привязка карты",
+    "funnelStage_scoring": "Скоринг",
+    "funnelStage_signing": "Подписание сделки",
+    "funnelAttempts": "Попыток: {n}",
+    "funnelStuckAt": "Последняя попытка: {date}",
+    "funnelNoAttempt": "Не выполнялось",
+    "funnelBlockedBy": "Причина остановки:",
+    "funnelFirstSeen": "Первое действие:",
+    "funnelLastSeen": "Последнее действие:",
+    "gapInstant": "сразу",
+    "gapMinutes": "+{n} мин",
+    "gapHours": "+{n} ч",
+    "gapDays": "+{n} дн",
+    "actionLogTitle": "Хронология",
+    "actionLogCount": "Событий: {n}",
     "actionDate": "Дата",
     "actionName": "Действие",
     "actionStatus": "Статус",
@@ -413,7 +442,8 @@
       "admins": "Администраторы",
       "integrationLogs": "Логи интеграций",
       "clients": "Клиенты",
-      "banners": "Баннеры"
+      "banners": "Баннеры",
+      "faqs": "Вопросы и ответы"
     }
   },
   "scorings": {
@@ -1133,7 +1163,9 @@
     "scoring": "Настройки скоринга",
     "scoringDesc": "Какие проверки выполняются при скоринге",
     "appVersion": "Версия приложения",
-    "appVersionDesc": "Политика принудительного обновления мобильного приложения"
+    "appVersionDesc": "Политика принудительного обновления мобильного приложения",
+    "faqs": "Вопросы и ответы",
+    "faqsDesc": "Раздел помощи в приложении клиента"
   },
   "orgWarning": {
     "title": "Реквизиты организации не заполнены",
@@ -1586,6 +1618,40 @@
       "invalid_action_url": "Ссылка должна начинаться с https://",
       "action_value_required": "Укажите цель для выбранного действия",
       "invalid_banner_window": "Дата окончания должна быть позже даты начала"
+    }
+  },
+  "faqs": {
+    "loadFailed": "Не удалось загрузить вопросы",
+    "saveFailed": "Не удалось сохранить",
+    "saved": "Вопрос сохранён",
+    "created": "Вопрос добавлен",
+    "deleted": "Вопрос удалён",
+    "add": "Добавить вопрос",
+    "edit": "Редактировать вопрос",
+    "category": "Раздел",
+    "question": "Вопрос",
+    "answer": "Ответ",
+    "searchPlaceholder": "Поиск по вопросам и ответам",
+    "noResults": "Ничего не найдено",
+    "emptyCategory": "В этом разделе пока нет вопросов",
+    "orderHint": "Порядок внутри раздела задаётся перетаскиванием. Порядок самих разделов задаёт приложение.",
+    "dragHint": "Перетащите, чтобы изменить порядок",
+    "dragDisabledHint": "Во время поиска порядок менять нельзя — очистите поиск",
+    "reorderStale": "Список изменился. Страница обновлена — задайте порядок заново",
+    "activate": "Показать",
+    "deactivate": "Скрыть",
+    "deleteConfirmTitle": "Удалить вопрос?",
+    "deleteConfirmMsg": "«{question}» будет удалён навсегда. Чтобы временно скрыть его от клиентов, используйте «Скрыть».",
+    "visibleHint": "Виден в приложении",
+    "hiddenHint": "Скрыт от клиентов",
+    "plainTextHint": "Обычный текст: переносы строк сохраняются, форматирование (**жирный**, ссылки, списки) не поддерживается.",
+    "bothLanguagesRequired": "Заполните оба языка",
+    "cat": {
+      "general": "Общее",
+      "limits": "Лимит",
+      "payments": "Оплата",
+      "deals": "Рассрочки",
+      "account": "Профиль"
     }
   }
 }
