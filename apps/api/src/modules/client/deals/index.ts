@@ -29,6 +29,17 @@ function formatDealNumber(n: number | null | undefined): string {
   return n != null ? String(n) : '—';
 }
 
+// The markup the tariff added on top of the cash basket, as a multiplier.
+// deal_items.price is the shop's cash price; the client never pays that — they
+// pay amount × (1 + markup%), which is only stored as the deal's totalPayable.
+// Reconstructed from the two stored figures rather than from the tariff, so the
+// prices shown always belong to the contract this client actually signed, even
+// if the tariff has since been edited.
+function markupRatio(amount: number | null, totalPayable: number | null): number {
+  if (!amount || !totalPayable || amount <= 0) return 1;
+  return totalPayable / amount;
+}
+
 export default async function clientDealRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
   const TAGS = ['Client · Deals'];
@@ -123,6 +134,9 @@ export default async function clientDealRoutes(app: FastifyInstance) {
 
   const BasketItem = Type.Object({
     productName: Type.String(),
+    // Per-unit price WITH the deal's markup applied — what this line costs the
+    // client under the terms they signed, not the shop's cash price. Lines
+    // therefore sum to totalPayable (± rounding), not to amount.
     price: Type.Number(),
     quantity: Type.Integer(),
   });
@@ -201,6 +215,8 @@ export default async function clientDealRoutes(app: FastifyInstance) {
         loadDealSchedule(deal.id),
       ]);
 
+      const ratio = markupRatio(deal.amount, deal.totalPayable);
+
       return {
         deal: {
           id: deal.id,
@@ -220,7 +236,7 @@ export default async function clientDealRoutes(app: FastifyInstance) {
           ...sched.progress,
           basket: itemRows.map((i) => ({
             productName: i.productName,
-            price: Number(i.price),
+            price: Math.round(Number(i.price) * ratio * 100) / 100,
             quantity: i.quantity,
           })),
           schedule: sched.schedule,

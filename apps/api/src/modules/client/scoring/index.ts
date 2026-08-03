@@ -372,7 +372,14 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
                 : ('error' as const);
 
       const reasonCode = scoring?.status === 'rejected' ? (scoring.rejectReasonCode ?? null) : null;
-      if (status === 'scored' && (!limit || !limit.creditLimit)) {
+      const expired = limit ? limit.expiresAt.getTime() <= Date.now() : false;
+      // A limit past its TTL is not a limit. The run that produced it still reads
+      // 'scored' — runs are never rewritten — but there is nothing left to spend:
+      // POST /start ignores an expired row and buys fresh bureau reports, and the
+      // wizard refuses to reuse it. 'none' is what says that to the app, and the
+      // `expired` flag below is what lets it word the prompt as "refresh" rather
+      // than "get scored". Same treatment as a missing or empty limit row.
+      if (status === 'scored' && (!limit || !limit.creditLimit || expired)) {
         status = 'none';
       }
 
@@ -380,7 +387,7 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
         status,
         creditLimit: limit ? limit.creditLimit : null,
         expiresAt: limit ? limit.expiresAt.toISOString() : null,
-        expired: limit ? limit.expiresAt.getTime() <= Date.now() : false,
+        expired,
         reasonCode,
         reasonMessage: status === 'rejected' ? reasonMessage(lang, reasonCode ?? undefined) : null,
       };
