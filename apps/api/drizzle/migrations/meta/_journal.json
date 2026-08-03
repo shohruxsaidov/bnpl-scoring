@@ -8,6 +8,13 @@
       "when": 1785427261226,
       "tag": "0000_thankful_red_wolf",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785736897119,
+      "tag": "0001_uneven_naoko",
+      "breakpoints": true
     }
   ]
 }
