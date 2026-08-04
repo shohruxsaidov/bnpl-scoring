@@ -56,7 +56,6 @@ export default async function merchantBranchRoutes(app: FastifyInstance) {
     schema: {
       tags: TAGS,
       summary: "List branches",
-      description: "Returns all branches for the authenticated merchant.",
       security: SECURITY,
       parameters: XLANG,
       response: { 200: Type.Object({ branches: Type.Array(Branch) }), 401: ERROR },
@@ -71,7 +70,6 @@ export default async function merchantBranchRoutes(app: FastifyInstance) {
     schema: {
       tags: TAGS,
       summary: "Create branch",
-      description: "Creates a branch. Requires the `manage_branches` permission.",
       security: SECURITY,
       parameters: XLANG,
       body: CreateBody,
@@ -87,7 +85,6 @@ export default async function merchantBranchRoutes(app: FastifyInstance) {
     schema: {
       tags: TAGS,
       summary: "Update branch",
-      description: "Partially updates a branch. Requires the `manage_branches` permission.",
       security: SECURITY,
       parameters: XLANG,
       params: IdParams,

@@ -68,9 +68,6 @@ export default async function adminPublicOfferRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Upload a public-offer PDF to storage',
-        description:
-          'Accepts a single multipart PDF file, stores it in object storage, and ' +
-          'returns its objectKey to reference when publishing a version.',
         consumes: ['multipart/form-data'],
         response: { 200: UploadResponse, 400: { $ref: 'ErrorResponse#' } },
       },
@@ -105,9 +102,6 @@ export default async function adminPublicOfferRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Publish a new public-offer version',
-        description:
-          'Records the two uploaded PDFs and inserts a new version (MAX+1) that ' +
-          'goes live immediately. Append-only — existing versions are never modified.',
         body: CreateBody,
         response: { 201: OfferVersion },
       },

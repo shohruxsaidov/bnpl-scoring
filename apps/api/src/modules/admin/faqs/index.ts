@@ -90,10 +90,6 @@ export default async function adminFaqRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'List FAQs',
-        description:
-          'Active and inactive together, grouped by category and ordered within ' +
-          'each one. The whole list in one call — it is small by construction and ' +
-          'the admin screen filters client-side.',
         response: { 200: Type.Object({ faqs: Type.Array(FaqView) }) },
       },
     },
@@ -116,11 +112,6 @@ export default async function adminFaqRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Create a FAQ',
-        description:
-          'All four texts are required — an entry is never half-translated, so ' +
-          'the client read path never has to decide what to show a Russian ' +
-          'speaker when only the Uzbek text exists. The new entry lands at the ' +
-          'bottom of its category; use /reorder to move it.',
         body: CreateBody,
         response: { 201: Type.Object({ faq: FaqView }), 400: ERROR },
       },
@@ -167,10 +158,6 @@ export default async function adminFaqRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Update a FAQ',
-        description:
-          'Any subset of fields. Moving an entry to another category puts it at ' +
-          "the bottom of the destination — its old position was a rank among rows " +
-          'it no longer sits with, so carrying it over would be meaningless.',
         params: IdParams,
         body: UpdateBody,
         response: { 200: Type.Object({ faq: FaqView }), 400: ERROR, 404: ERROR },
@@ -233,11 +220,6 @@ export default async function adminFaqRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Delete a FAQ',
-        description:
-          'Permanent. Use this when an answer is WRONG or its feature is gone; ' +
-          'to hide a correct answer temporarily, PATCH `isActive: false` instead. ' +
-          'Safe to delete because nothing references a FAQ — but a client whose ' +
-          'list is still cached keeps showing it for up to five minutes.',
         params: IdParams,
         response: { 204: Type.Null(), 404: ERROR },
       },
@@ -260,13 +242,6 @@ export default async function adminFaqRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Reorder one category',
-        description:
-          "`ids` must be the COMPLETE set of that category's entries, in the order " +
-          'they should appear. A partial or stale list is rejected rather than ' +
-          'applied: if someone else added a question while this screen was open, ' +
-          'silently ordering around it would leave the two admins looking at ' +
-          'different lists. Scoped to one category, so reordering two sections at ' +
-          'once cannot conflict.',
         body: Type.Object({
           category: Category,
           ids: Type.Array(Type.Integer(), { minItems: 1 }),

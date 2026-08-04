@@ -78,7 +78,6 @@ export default async function clientDealRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'List my deals',
-        description: "The authenticated client's active, overdue and closed credits.",
         security: SECURITY,
         querystring: ListQuery,
         response: { 200: Type.Object({ deals: Type.Array(DealListItem) }), 401: ERROR },
@@ -174,8 +173,6 @@ export default async function clientDealRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Get my deal',
-        description:
-          "One of the authenticated client's own credits, with basket and payment schedule.",
         security: SECURITY,
         params: IdParams,
         response: { 200: Type.Object({ deal: DealDetail }), 401: ERROR, 404: ERROR },
@@ -261,10 +258,6 @@ export default async function clientDealRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Payme checkout link',
-        description:
-          "A Payme checkout URL for one of the caller's own deals, prefilled with the deal " +
-          'number and the next instalment. Deep-links into the Payme app when installed. ' +
-          'Stateless — nothing is reserved by calling this.',
         security: SECURITY,
         params: IdParams,
         response: { 200: PaymeLink, 401: ERROR, 404: ERROR, 409: ERROR },

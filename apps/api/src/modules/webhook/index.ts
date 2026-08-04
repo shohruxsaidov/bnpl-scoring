@@ -38,9 +38,6 @@ export default async function webhookRoutes(app: FastifyInstance) {
       schema: {
         tags: ['Webhooks'],
         summary: 'Payme Merchant API',
-        description:
-          'JSON-RPC 2.0 endpoint called by Payme. Basic auth (Paycom:<cashbox key>). ' +
-          'Always answers HTTP 200 — outcomes are carried in the JSON-RPC body.',
       },
     },
     async (request, reply) => {

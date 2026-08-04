@@ -43,10 +43,6 @@ export default async function publicBannerImageRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Banner image',
-        description:
-          'The banner artwork for one language. 404s unless the banner is ' +
-          'currently active and inside its window, so a scheduled campaign is ' +
-          'not readable before it starts.',
         params: Params,
         // Binary image response; no JSON body schema (streams bypass serialization).
         response: { 404: ERROR },

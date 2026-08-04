@@ -96,7 +96,6 @@ export default async function clientMeRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Get my profile',
-        description: "Returns the authenticated client's own profile.",
         security: SECURITY,
         response: {
           200: Type.Object({ profile: Profile }),

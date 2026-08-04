@@ -182,10 +182,6 @@ export default async function adminBannerRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'List banners',
-        description:
-          'In carousel order. `includeInactive` brings back deactivated and ' +
-          'expired banners — the archive of what has run, which is the only ' +
-          'record of it since banners are never deleted.',
         querystring: Type.Object({ includeInactive: Type.Optional(Type.Boolean()) }),
         response: { 200: Type.Object({ banners: Type.Array(BannerView) }) },
       },
@@ -233,9 +229,6 @@ export default async function adminBannerRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Create a banner',
-        description:
-          'Both images must already be uploaded. A banner is never half-built: ' +
-          'the row and its two file records are written in one transaction.',
         body: CreateBody,
         response: { 201: Type.Object({ banner: BannerView }), 400: ERROR },
       },
@@ -306,10 +299,6 @@ export default async function adminBannerRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Update a banner',
-        description:
-          'Any subset of fields. Deactivating (`isActive: false`) is how a banner ' +
-          'is removed — there is no delete. Sending a new image objectKey replaces ' +
-          "that locale's art and mints a new public URL.",
         params: IdParams,
         body: UpdateBody,
         response: { 200: Type.Object({ banner: BannerView }), 400: ERROR, 404: ERROR },

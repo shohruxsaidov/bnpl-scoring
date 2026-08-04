@@ -86,7 +86,6 @@ export default async function adminAppVersionRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Force-update policy revision history',
-        description: 'Newest first. The first row for each platform is the policy currently in force.',
         response: { 200: Type.Object({ revisions: Type.Array(PolicyRevision) }) },
       },
     },
@@ -127,10 +126,6 @@ export default async function adminAppVersionRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'How many devices a candidate minSupportedVersion would lock out',
-        description:
-          'Buckets recently-active devices by reported app version. Understates nothing about ' +
-          'the gate and overstates its reach: builds shipped before the app had a version check ' +
-          'never call /app-version, so they are counted here but cannot in fact be gated.',
         querystring: Type.Object({
           platform: Platform,
           minSupportedVersion: VersionString,
@@ -206,9 +201,6 @@ export default async function adminAppVersionRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Publish a new force-update policy revision',
-        description:
-          'Inserts a revision (MAX+1 for this platform) that goes live immediately, subject to ' +
-          'the public endpoint cache. Append-only — existing revisions are never modified.',
         body: CreateBody,
         response: { 201: PolicyRevision, 400: ERROR },
       },

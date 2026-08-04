@@ -86,7 +86,6 @@ export default async function clientCardsRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'List cards',
-        description: "Returns the authenticated client's saved cards, newest first.",
         security: SECURITY,
         response: { 200: Type.Object({ cards: Type.Array(Card) }), 401: ERROR },
       },
@@ -120,9 +119,6 @@ export default async function clientCardsRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Add card (initiate)',
-        description:
-          'Registers the card at Plumgate and triggers an OTP SMS. Returns the ' +
-          'session id to pass to POST /confirm along with the code.',
         security: SECURITY,
         body: AddCardBody,
         response: { 200: AddCardResponse, 401: ERROR, 404: ERROR },
@@ -157,7 +153,6 @@ export default async function clientCardsRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Confirm card (verify OTP)',
-        description: 'Verifies the Plumgate OTP and persists the card. Idempotent per card.',
         security: SECURITY,
         body: ConfirmCardBody,
         response: { 200: Type.Object({ card: Card }), 401: ERROR, 500: ERROR },
@@ -233,8 +228,6 @@ export default async function clientCardsRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Delete card',
-        description:
-          'Removes the card at Plumgate, then locally. A remote 404 is treated as already-removed.',
         security: SECURITY,
         params: IdParams,
         response: { 200: OkResponse, 401: ERROR, 404: ERROR },

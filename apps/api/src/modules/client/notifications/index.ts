@@ -66,11 +66,6 @@ export default async function clientNotificationsRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'List notifications',
-        description:
-          "Returns the authenticated client's notifications, newest first, with the " +
-          'current unread count in the response. `title`/`body` are rendered ' +
-          'server-side in the `x-lang` language; `type` and `data` are kept for ' +
-          'icons and deep-linking (e.g. `data.dealSessionId`).',
         security: SECURITY,
         querystring: Type.Object({
           limit: Type.Optional(Type.Integer({ minimum: 1, maximum: 200 })),
@@ -112,7 +107,6 @@ export default async function clientNotificationsRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Mark notification read',
-        description: 'Marks one notification read. Idempotent. 404 if not the caller’s.',
         security: SECURITY,
         params: IdParams,
         response: { 200: Ok, 401: ERROR, 404: ERROR },
@@ -135,7 +129,6 @@ export default async function clientNotificationsRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Mark all read',
-        description: "Marks all of the caller's unread notifications read.",
         security: SECURITY,
         response: { 200: Ok, 401: ERROR },
       },

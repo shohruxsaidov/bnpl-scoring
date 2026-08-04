@@ -36,6 +36,7 @@ import {
 } from './finalize';
 import { loadLimitOffers } from './limit';
 import { retryAvailableAt, spendableLimit } from './cooldown';
+import { effectiveLimitOf } from '../../scoring/effective-limit';
 
 // ---------------------------------------------------------------------------
 // Client Scoring — a user self-scores in the mobile app to learn their credit
@@ -68,6 +69,13 @@ const LangHeaders = Type.Object({
 function reasonCategory(code: string) {
   return REJECT_REASON_CATEGORY[code as ScoringRejectReasonCode] ?? 'ineligible';
 }
+
+/**
+ * The term GET /status quotes its headline `creditLimit` over — the longest term
+ * the app offers (see CLIENT_LIMIT_TERMS in limit.ts), so the number on the home
+ * screen is the best case and every row of GET /limit falls at or below it.
+ */
+const STATUS_LIMIT_TERM_MONTHS = 24;
 
 export default async function clientScoringRoutes(app: FastifyInstance) {
   const fastify = app.withTypeProvider<TypeBoxTypeProvider>();
@@ -337,6 +345,10 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
       Type.Literal('rejected'),
       Type.Literal('error'),
     ]),
+    // NOT the raw per-month figure the model produced — the headline number the
+    // app shows, i.e. that figure scaled by the longest offered term (24 months)
+    // and capped at 30 000 000 som. Same rule and same ceiling GET /limit applies
+    // to its 24-month row, so the two screens can never quote different numbers.
     creditLimit: Type.Union([Type.String(), Type.Null()]),
     expiresAt: Type.Union([Type.String(), Type.Null()]),
     // True once the stored limit is past its TTL — the app offers a refresh.
@@ -367,16 +379,6 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Scoring status',
-        description:
-          "The user's latest scoring run and current stored credit limit. " +
-          '`retryAvailableAt` is the earliest a client-initiated run may be opened ' +
-          '— null means one may be opened now, which is the app\'s cue to enable ' +
-          'the scoring button. It is not a promise the run will pass, and the ' +
-          'merchant wizard does not honour it. A rejection cooldown reports no ' +
-          'limit at all: `creditLimit` and `expiresAt` stay null and the date ' +
-          'appears only under `retryAvailableAt`. `aggrementTxt` is static copy ' +
-          'in the `x-lang` language — the OneID / KATM steps the client must ' +
-          'complete before scoring — and does not depend on the run.',
         security: SECURITY,
         headers: LangHeaders,
         response: { 200: StatusResponse, 401: ERROR },
@@ -459,9 +461,19 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
       // retryable rejections (data_missing, oneid_locked), which never write a
       // cooldown at all and need an actionable "fix this and retry" screen
       // rather than a blank "never scored" one.
+      //
+      // creditLimit is reported over the longest offered term rather than raw:
+      // the stored figure is per-month and buys nothing on its own, so the app
+      // would otherwise have to know the scaling rule and the 30 000 000 cap to
+      // show a headline number. effectiveLimitOf is the same function GET /limit
+      // uses, which is what keeps the home screen and the term menu agreeing.
+      const headlineLimit = limit
+        ? String(effectiveLimitOf(Number(limit.creditLimit), STATUS_LIMIT_TERM_MONTHS))
+        : null;
+
       return {
         status,
-        creditLimit: limit ? limit.creditLimit : null,
+        creditLimit: headlineLimit,
         expiresAt: limit ? limit.expiresAt.toISOString() : null,
         expired,
         reasonCode,
@@ -487,13 +499,6 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Credit limit by term',
-        description:
-          'The stored per-month limit scaled by each offered term, capped at ' +
-          '30 000 000 som. `amount` is what the client would OWE over the term — ' +
-          'the wizard checks the marked-up basket total against it — so it is NOT ' +
-          'a goods budget: under a 20% tariff an amount of 9 000 000 buys a ' +
-          '7 500 000 basket. Every term comes back at 0 when there is no usable ' +
-          'limit; GET /status says why.',
         security: SECURITY,
         response: { 200: LimitResponse, 401: ERROR },
       },

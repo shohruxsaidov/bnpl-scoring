@@ -90,9 +90,6 @@ export default async function publicAppVersionRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Force-update check for the mobile app',
-        description:
-          'Called at launch, before login. Returns the verdict for the calling build. ' +
-          'The app MUST treat network failure, timeout and 5xx as `ok` — never as `force`.',
         querystring: Query,
         response: { 200: Response, 400: ERROR },
       },

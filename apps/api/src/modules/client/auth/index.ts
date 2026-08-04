@@ -780,11 +780,6 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Request a PIN-reset OTP',
-        description:
-          'Sends an OTP to reset (or first set) the account PIN. Requires a trusted ' +
-          'device (x-device-id) belonging to the given phone — a PIN is only usable ' +
-          'on one. A user on an unknown device should log in with their password ' +
-          'instead, which trusts the device.',
         body: Type.Object({
           phone: Type.String({ minLength: 1, maxLength: 20, examples: ['998901234567'] }),
         }),
@@ -1094,9 +1089,6 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Disable biometric key',
-        description:
-          'Removes this device (x-device-id) biometric public key, disabling ' +
-          'biometric login. PIN login is unaffected. Idempotent.',
         security: SECURITY,
         response: { 200: Ok, 400: ERROR, 401: ERROR },
       },
@@ -1133,11 +1125,6 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Request biometric challenge',
-        description:
-          'Mints a single-use challenge for this device (x-device-id) to sign with ' +
-          'its biometric private key. Unauthenticated by design — the signature IS ' +
-          'the credential. The challenge is bound to this device and expires within ' +
-          '120 seconds; each is valid for exactly one /biometric attempt.',
         response: {
           200: Type.Object({
             challengeId: Type.String(),
@@ -1221,10 +1208,6 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Refresh access token',
-        description:
-          'Exchanges a durable session token for a fresh access token and a new ' +
-          'session token. The supplied session token is revoked, so the client must ' +
-          'persist the returned sessionToken and use it for the next refresh.',
         body: Type.Object({
           sessionToken: Type.String({ minLength: 1, examples: ['sess_4b8e1d0a9c'] }),
         }),
@@ -1258,10 +1241,6 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Register push token',
-        description:
-          'Upserts the FCM push token and UI language for the current device ' +
-          '(x-device-id). Called after the app obtains/refreshes its FCM token. ' +
-          'Language (uz|ru, default ru) drives the locale of push title/body.',
         security: SECURITY,
         body: Type.Object({
           fcmToken: Type.String({ minLength: 1, maxLength: 4096, examples: ['fMEp...:APA91b...'] }),
@@ -1300,9 +1279,6 @@ export default async function clientAuthRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Log out',
-        description:
-          'Revokes the given session token. The client also wipes its stored access ' +
-          'and session tokens. The PIN is left intact — the user can return via PIN login.',
         security: SECURITY,
         body: Type.Object({
           sessionToken: Type.String({ minLength: 1, examples: ['sess_4b8e1d0a9c'] }),

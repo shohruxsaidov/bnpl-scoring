@@ -70,12 +70,6 @@ export default async function clientBannerRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Home-screen banners',
-        description:
-          'Live banners in display order. An empty array means the app should ' +
-          'hide the carousel entirely rather than show a placeholder. Banners ' +
-          'whose image fails to load, or whose `actionType` this build does not ' +
-          'know, must be dropped from the carousel — the rule is that a banner ' +
-          'which cannot be rendered in full does not exist.',
         security: SECURITY,
         parameters: XLANG,
         response: { 200: Type.Object({ banners: Type.Array(Banner) }), 401: ERROR },
@@ -115,13 +109,6 @@ export default async function clientBannerRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Count a banner impression',
-        description:
-          'Call once per banner per session, when the slide actually becomes ' +
-          'visible — not on every swipe, and not for slides the carousel has ' +
-          'rendered but not shown. Fire-and-forget: always 204, whether or not ' +
-          'the banner is still live, because an analytics ping must never turn ' +
-          'into an error the user sees, and a 404 here would report which ids ' +
-          'exist. Impressions are counted raw, with no per-user de-duplication.',
         security: SECURITY,
         parameters: XLANG,
         params: IdParams,

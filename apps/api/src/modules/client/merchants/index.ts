@@ -105,11 +105,6 @@ export default async function clientMerchantRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'List merchants',
-        description:
-          'Merchants a client can shop at: active, not hidden from the app, and ' +
-          'having at least one active branch. `q` filters by merchant name. ' +
-          '`total` is the number of merchants matching the filter, not the ' +
-          'catalog size.',
         security: SECURITY,
         parameters: XLANG,
         querystring: ListQuery,
@@ -142,10 +137,6 @@ export default async function clientMerchantRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Get merchant',
-        description:
-          'Returns a merchant with all of its active branches. Branches are ' +
-          'embedded in full rather than paginated. A merchant hidden from the ' +
-          'catalog responds 404, identically to one that does not exist.',
         security: SECURITY,
         parameters: XLANG,
         params: IdParams,

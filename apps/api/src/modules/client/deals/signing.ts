@@ -124,11 +124,6 @@ export default async function clientDealSigningRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Deals awaiting my signature',
-        description:
-          'Signing requests a merchant has sent to this client. A list, not a single item: ' +
-          'sessions are one-per-AGENT, so two different merchants can be asking at once and ' +
-          'the client must be able to tell which is which. This endpoint — not the push — is ' +
-          'the source of truth; the app polls it on foreground and never needs a notification.',
         security: SECURITY,
         response: { 200: Type.Object({ requests: Type.Array(SigningRequest) }), 401: ERROR },
       },
@@ -169,12 +164,6 @@ export default async function clientDealSigningRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Decline a signing request',
-        description:
-          'Recoverable by design. This cancels the SIGNING REQUEST, not the wizard run: the ' +
-          'commonest reason to decline is "the monthly payment is too high", and the Agent ' +
-          'should be able to drop the tariff and ask again in ten seconds — not rebuild the ' +
-          'deal and pay the credit bureau for a second claim. The rejection is recorded, so a ' +
-          'run refused three times before it was accepted does not read as one accepted first time.',
         security: SECURITY,
         params: IdParams,
         response: { 200: Type.Object({ ok: Type.Boolean() }), 401: ERROR, 404: ERROR },
@@ -203,9 +192,6 @@ export default async function clientDealSigningRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Open the MyID face-scan for signing',
-        description:
-          'Returns a MyID session id for the native SDK to drive. Note this is the MOBILE MyID ' +
-          'flow — there is no redirect URL, unlike the merchant browser flow.',
         security: SECURITY,
         params: IdParams,
         response: {
@@ -294,12 +280,6 @@ export default async function clientDealSigningRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Send the акцепт code',
-        description:
-          "On the client's own phone the SMS is not a second factor — whoever holds the " +
-          'unlocked handset has both the app and the message. It is kept because it is the ' +
-          'акцепт: the artifact that evidences consent to these terms, in the form a court ' +
-          'recognizes. What actually secures this step is the MyID scan before it and the terms ' +
-          'digest stamped after it.',
         security: SECURITY,
         params: IdParams,
         response: {
@@ -347,14 +327,6 @@ export default async function clientDealSigningRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Confirm the акцепт code and sign',
-        description:
-          'The last act, and the one that produces the Deal. Stamps consent onto the session ' +
-          'together with a digest of the exact terms consented to, then builds the Deal from ' +
-          'that session server-side — the agent is no longer asked to confirm what the client ' +
-          'has already signed. `dealCreated` reports whether that succeeded; when it is false ' +
-          'the signature still stands and the seller finishes at the counter. The REASON it ' +
-          'failed is deliberately not returned: every one of them is actionable only by the ' +
-          'agent, and this response is read by a phone.',
         security: SECURITY,
         params: IdParams,
         body: VerifyBody,

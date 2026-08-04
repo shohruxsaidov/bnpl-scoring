@@ -59,10 +59,6 @@ export default async function adminBuyoutRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: "Mark a buyout paid, attaching the proof of payment",
-        description:
-          "Accepts a single multipart PDF/PNG/JPEG document, stores it, and flips " +
-          "the buyout pending → paid. The transition is one-shot: paying an " +
-          "already-paid buyout is a 409, so its document is never replaced.",
         consumes: ["multipart/form-data"],
         params: IdParams,
       },

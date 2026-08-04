@@ -79,13 +79,6 @@ export default async function clientFaqRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Frequently asked questions',
-        description:
-          'Every active FAQ, in one call — there is no paging and no search ' +
-          'endpoint, because the whole list is small enough to filter on the ' +
-          'device. Entries of the same `category` arrive together; the app is ' +
-          'responsible for grouping them, for the section headings, and for the ' +
-          'order the sections appear in. An empty array means the help screen ' +
-          'should be hidden rather than shown empty.',
         security: SECURITY,
         headers: Headers,
         response: { 200: Type.Object({ faqs: Type.Array(Faq) }), 401: ERROR },

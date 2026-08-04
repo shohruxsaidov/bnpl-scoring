@@ -207,9 +207,6 @@ export default async function adminMerchantRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: "Upload a merchant logo",
-        description:
-          "Accepts a single PNG/JPEG/WebP file, replacing any existing logo. " +
-          "The previous logo is deleted from storage.",
         params: IdParams,
         consumes: ["multipart/form-data"],
         response: { 400: { $ref: "ErrorResponse#" }, 404: { $ref: "ErrorResponse#" } },
