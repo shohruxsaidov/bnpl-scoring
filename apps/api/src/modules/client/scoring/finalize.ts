@@ -28,8 +28,24 @@ import {
 } from '../../integrations/plumgate/card-scoring';
 import { notify } from '../notifications/service';
 
-/** Credit-limit validity window before a re-score is allowed (Q: 7 days). */
+/** How long an approved limit stays fresh enough to lend against (Q: 7 days). */
 export const CLIENT_LIMIT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * How long a durable rejection locks the client out of self-scoring.
+ *
+ * Deliberately its OWN constant even though it currently equals the limit TTL.
+ * The two answer different questions — "how stale may a lending decision be"
+ * versus "how long does a decline cost you" — and they only share a number by
+ * historical accident: the cooldown is stored as a 0-limit row, so it inherited
+ * that row's TTL. Naming it separately is what lets the answer to one move
+ * without silently moving the other, and gives the "try again on <date>" string
+ * the app now renders something to point at.
+ *
+ * Per-REASON tiering (a credit ban is not clearing in a week; a thin-file
+ * zero_limit might) is a product decision, not one to guess here.
+ */
+export const CLIENT_REJECTION_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * Terminal/next-step outcome of a client run, returned to the caller (the
@@ -44,14 +60,23 @@ export type ClientStepOutcome =
   | { status: 'scored'; creditLimit: string }
   | { status: 'error' };
 
-/** Upsert the user's current credit limit (whole som string; '0' on rejection). */
+/**
+ * Upsert the user's current credit limit (whole som string; '0' on rejection).
+ *
+ * `ttlMs` is explicit at every call site rather than defaulted, because the row
+ * means two different things depending on the value written: a positive limit is
+ * something to spend and expires on the freshness rule, while '0' is a rejection
+ * cooldown and expires on the lockout rule. One field, two policies — so the
+ * caller states which one it is applying.
+ */
 export async function writeClientCreditLimit(
   userId: number,
   scoringId: number,
   creditLimit: string,
+  ttlMs: number,
 ): Promise<{ creditLimit: string; expiresAt: Date }> {
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + CLIENT_LIMIT_TTL_MS);
+  const expiresAt = new Date(now.getTime() + ttlMs);
   await db
     .insert(userCreditLimits)
     .values({ userId, creditLimit, scoringId, scoredAt: now, expiresAt })
@@ -249,9 +274,19 @@ export async function runClientModel(
     await markRejected(scoring.id, result.engineRejected ? 'model_stop_factor' : 'zero_limit');
   }
 
-  // reject collapses to a 0 limit (the reason stays on the scorings run).
-  const limit = result.decision === 'approve' ? String(result.platformCreditLimit) : '0';
-  await writeClientCreditLimit(userId, scoring.id, limit);
+  // reject collapses to a 0 limit (the reason stays on the scorings run), and
+  // that 0 row carries the cooldown rather than a limit's freshness window —
+  // `decision` is what tells the two apart. runModelAndLimit guarantees an
+  // approve is never 0 (compute-limit.ts: platformCreditLimit === 0 ⇒ reject),
+  // so '0' in this table is always and only a cooldown marker.
+  const approved = result.decision === 'approve';
+  const limit = approved ? String(result.platformCreditLimit) : '0';
+  await writeClientCreditLimit(
+    userId,
+    scoring.id,
+    limit,
+    approved ? CLIENT_LIMIT_TTL_MS : CLIENT_REJECTION_COOLDOWN_MS,
+  );
 
   // Notify the terminal result (inbox + push). Idempotent per run via dedupeKey.
   if (result.decision === 'approve') {
@@ -359,7 +394,12 @@ export async function applyClientStep(
     // after they had would be a bug wearing the costume of a policy. Nor do they
     // get the "you were rejected" push; nothing was decided about them.
     if (!isRetryableRejectReason(step.reasonCode)) {
-      await writeClientCreditLimit(scoring.userId!, scoring.id, '0');
+      await writeClientCreditLimit(
+        scoring.userId!,
+        scoring.id,
+        '0',
+        CLIENT_REJECTION_COOLDOWN_MS,
+      );
       await notify({
         userId: scoring.userId!,
         type: 'scoring_rejected',

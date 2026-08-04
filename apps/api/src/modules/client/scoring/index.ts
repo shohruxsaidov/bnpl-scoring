@@ -33,6 +33,7 @@ import {
   resumeErroredClientRun,
 } from './finalize';
 import { loadLimitOffers } from './limit';
+import { retryAvailableAt, spendableLimit } from './cooldown';
 
 // ---------------------------------------------------------------------------
 // Client Scoring — a user self-scores in the mobile app to learn their credit
@@ -75,6 +76,10 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
     reasonMessage: Type.Optional(Type.String()),
     missingFields: Type.Optional(Type.Array(Type.String())),
     reason: Type.Optional(Type.String()),
+    // Same field and same meaning as on GET /status — carried here so the app can
+    // render the whole rejection screen off the response to the button press,
+    // without a follow-up poll just to learn the date. See cooldown.ts.
+    retryAvailableAt: Type.Optional(Type.String()),
   });
 
   /* ── POST /client/scoring/start — begin (or reuse) a scoring run ────────── */
@@ -127,14 +132,18 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
         // A zero limit inside its TTL is not a cached limit of nothing — it is the
         // cooldown a durable rejection leaves behind, and the TTL is what stops the
         // client re-firing chargeable KATM. Hold the line, but say what it is: the
-        // run that set it still carries the reason.
+        // run that set it still carries the reason, and expires_at is the date the
+        // door unlocks. This refusal is the behaviour retryAvailableAt describes,
+        // which is why both are derived from this same row (cooldown.ts).
         const declined = await loadLatestClientScoring(userId);
         const reasonCode = declined?.rejectReasonCode ?? 'zero_limit';
+        const retryAt = retryAvailableAt(limit);
         return {
           status: 'rejected' as const,
           reasonCode,
           reasonCategory: reasonCategory(reasonCode),
           reasonMessage: reasonMessage(lang, reasonCode),
+          ...(retryAt ? { retryAvailableAt: retryAt.toISOString() } : {}),
         };
       }
 
@@ -314,7 +323,17 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
     // True once the stored limit is past its TTL — the app offers a refresh.
     expired: Type.Boolean(),
     reasonCode: Type.Union([Type.String(), Type.Null()]),
+    // The coarse bucket the rejection screen switches on — see
+    // REJECT_REASON_CATEGORY. Mirrors what POST /start already returns, so the
+    // app picks its template the same way whichever call it got the rejection
+    // from, instead of hardcoding the reason-code table client-side.
+    reasonCategory: Type.Union([Type.String(), Type.Null()]),
     reasonMessage: Type.Union([Type.String(), Type.Null()]),
+    // The earliest a CLIENT-INITIATED run may be opened; null when one may be
+    // opened now. The app's whole rule is "null ⇒ the scoring button is live".
+    // See cooldown.ts — it is not a promise the run will pass, and the merchant
+    // wizard does not honour it.
+    retryAvailableAt: Type.Union([Type.String(), Type.Null()]),
   });
 
   fastify.get(
@@ -323,7 +342,14 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
       schema: {
         tags: TAGS,
         summary: 'Scoring status',
-        description: "The user's latest scoring run and current stored credit limit.",
+        description:
+          "The user's latest scoring run and current stored credit limit. " +
+          '`retryAvailableAt` is the earliest a client-initiated run may be opened ' +
+          '— null means one may be opened now, which is the app\'s cue to enable ' +
+          'the scoring button. It is not a promise the run will pass, and the ' +
+          'merchant wizard does not honour it. A rejection cooldown reports no ' +
+          'limit at all: `creditLimit` and `expiresAt` stay null and the date ' +
+          'appears only under `retryAvailableAt`.',
         security: SECURITY,
         response: { 200: StatusResponse, 401: ERROR },
       },
@@ -332,17 +358,29 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
     async (request) => {
       const userId = Number(request.user.sub);
       const lang = resolveLang(request.headers['x-lang'] as string | undefined);
-      const [scoring, [limit], blocking] = await Promise.all([
+      const [scoring, [row], blocking] = await Promise.all([
         loadLatestClientScoring(userId),
         db.select().from(userCreditLimits).where(eq(userCreditLimits.userId, userId)).limit(1),
         loadBlockingDeal(userId),
       ]);
 
+      // Split the one row into the two things it can be. Everything below reads
+      // `limit` (a limit, or nothing) and `retryAt` (a lockout, or nothing), so a
+      // cooldown can never be rendered as "your limit of 0 expires on <date>".
+      const limit = spendableLimit(row);
+      const retryAt = retryAvailableAt(row);
+
       // An open deal outranks whatever the last run says. Without this the app
       // would read the stale 'scored' run left behind by the very scoring that
       // funded the deal, next to the limit row createDeal deleted, and render
       // "approved — for nothing".
-      // TODO need to uncommit code below 
+      //
+      // No retryAvailableAt: an open deal is not a timed lockout. It lifts when
+      // the client finishes paying, which is a date we do not know and they can
+      // move by paying early — so the app must render this off `reasonCode`, not
+      // off a clock. (active_deal_exists is retryable and writes no 0-limit row,
+      // so the derivation above would return null here regardless.)
+      // TODO need to uncommit code below
       // if (blocking) {
       //   return {
       //     status: 'rejected' as const,
@@ -350,7 +388,9 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
       //     expiresAt: null,
       //     expired: false,
       //     reasonCode: 'active_deal_exists',
+      //     reasonCategory: reasonCategory('active_deal_exists'),
       //     reasonMessage: reasonMessage(lang, 'active_deal_exists'),
+      //     retryAvailableAt: null,
       //   };
       // }
 
@@ -379,17 +419,26 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
       // wizard refuses to reuse it. 'none' is what says that to the app, and the
       // `expired` flag below is what lets it word the prompt as "refresh" rather
       // than "get scored". Same treatment as a missing or empty limit row.
-      if (status === 'scored' && (!limit || !limit.creditLimit || expired)) {
+      if (status === 'scored' && (!limit || expired)) {
         status = 'none';
       }
 
+      // A rejected run is NOT collapsed the way a stale 'scored' one is, even
+      // once its cooldown has lapsed. Keeping the status and the reason while
+      // letting retryAvailableAt fall to null gives the app one rule — a null
+      // date means the button is live — and that same rule then covers the
+      // retryable rejections (data_missing, oneid_locked), which never write a
+      // cooldown at all and need an actionable "fix this and retry" screen
+      // rather than a blank "never scored" one.
       return {
         status,
         creditLimit: limit ? limit.creditLimit : null,
         expiresAt: limit ? limit.expiresAt.toISOString() : null,
         expired,
         reasonCode,
+        reasonCategory: reasonCode ? reasonCategory(reasonCode) : null,
         reasonMessage: status === 'rejected' ? reasonMessage(lang, reasonCode ?? undefined) : null,
+        retryAvailableAt: retryAt ? retryAt.toISOString() : null,
       };
     },
   );
