@@ -412,39 +412,6 @@ async function failWithin(
 }
 
 /**
- * Free deals whose payer walked away mid-OTP.
- *
- * Only 'pending' rows are swept. A 'confirming' row is NOT expired here and that
- * is the whole point: we do not know whether Plum debited it, and quietly
- * retiring it would destroy the only record that a payment might be owed. Those
- * are escalated to `debited_unbooked` instead, where a human sees them.
- */
-export async function sweepStalePlumSessions(): Promise<{ expired: number; escalated: number }> {
-  const cutoff = new Date(Date.now() - PLUM_SESSION_TTL_MS);
-
-  const expired = await db
-    .update(plumPaymentSessions)
-    .set({ status: 'expired', updatedAt: new Date() })
-    .where(
-      and(eq(plumPaymentSessions.status, 'pending'), lt(plumPaymentSessions.createdAt, cutoff)),
-    )
-    .returning({ id: plumPaymentSessions.id });
-
-  // A confirm that never came back. Rare — it needs a crash or a vendor hang in
-  // the seconds between claiming the row and writing the outcome — but it is the
-  // one case where money may be missing, so it goes in front of a person.
-  const escalated = await db
-    .update(plumPaymentSessions)
-    .set({ status: 'debited_unbooked', failureCode: 'confirm_interrupted', updatedAt: new Date() })
-    .where(
-      and(eq(plumPaymentSessions.status, 'confirming'), lt(plumPaymentSessions.updatedAt, cutoff)),
-    )
-    .returning({ id: plumPaymentSessions.id });
-
-  return { expired: expired.length, escalated: escalated.length };
-}
-
-/**
  * Book a payment Plum already took. The recovery action behind the admin stuck-
  * payments screen; it is the second half of confirmPlumPayment and nothing more.
  *
@@ -457,64 +424,66 @@ export async function bookStrandedPlumSession(
   sessionId: number,
   adminUserId: number,
 ): Promise<{ paymentId: number }> {
-  const outcome = await db.transaction(async (tx) => {
-    // FOR UPDATE, and on the SESSION rather than only the deal. The status guard
-    // below is the whole idempotency story, and an unlocked read makes it a lie:
-    // two concurrent presses would both see 'debited_unbooked', both pass, then
-    // serialise on the deal lock and book the same debit twice. Locking the row
-    // whose state is being guarded makes the second press block, re-read
-    // 'booked', and 409 — which is what the route already promises callers.
-    const [row] = await tx
-      .select()
-      .from(plumPaymentSessions)
-      .where(eq(plumPaymentSessions.id, sessionId))
-      .for('update')
-      .limit(1);
-    if (!row) throw coded('payment_session_not_found', 404);
-    if (row.status !== 'debited_unbooked') throw coded('payment_session_not_stranded', 409);
+  const outcome = await db
+    .transaction(async (tx) => {
+      // FOR UPDATE, and on the SESSION rather than only the deal. The status guard
+      // below is the whole idempotency story, and an unlocked read makes it a lie:
+      // two concurrent presses would both see 'debited_unbooked', both pass, then
+      // serialise on the deal lock and book the same debit twice. Locking the row
+      // whose state is being guarded makes the second press block, re-read
+      // 'booked', and 409 — which is what the route already promises callers.
+      const [row] = await tx
+        .select()
+        .from(plumPaymentSessions)
+        .where(eq(plumPaymentSessions.id, sessionId))
+        .for('update')
+        .limit(1);
+      if (!row) throw coded('payment_session_not_found', 404);
+      if (row.status !== 'debited_unbooked') throw coded('payment_session_not_stranded', 409);
 
-    await lockDeal(tx, row.dealId);
-    const payment = await applyPayment(tx, {
-      dealId: row.dealId,
-      amount: row.amountSom,
-      source: 'plum',
-      paymentType: 'plum',
-      adminUserId,
-      // The one place a Plum row carries a note: without it nothing on the
-      // payment itself says it was booked late, by hand, after a failure.
-      note: `Восстановлен платёж Plum (транзакция ${row.plumTransactionId ?? '—'})`,
-      provider: 'plum',
-    });
+      await lockDeal(tx, row.dealId);
+      const payment = await applyPayment(tx, {
+        dealId: row.dealId,
+        amount: row.amountSom,
+        source: 'plum',
+        paymentType: 'plum',
+        adminUserId,
+        // The one place a Plum row carries a note: without it nothing on the
+        // payment itself says it was booked late, by hand, after a failure.
+        note: `Восстановлен платёж Plum (транзакция ${row.plumTransactionId ?? '—'})`,
+        provider: 'plum',
+      });
 
-    await tx
-      .update(plumPaymentSessions)
-      .set({ status: 'booked', paymentId: payment.paymentId, updatedAt: new Date() })
-      .where(eq(plumPaymentSessions.id, row.id));
-
-    return { row, payment };
-  }).catch(async (err) => {
-    // An overpayment is not a failed attempt to be retried — it is a verdict.
-    // The debt shrank below this amount and never grows again, so every future
-    // press of Book collects the same 409. Recording that on the row keeps the
-    // worklist honest: the next operator sees "refund needed", not "untried".
-    //
-    // Deliberately narrow. A database blip or a lost connection must leave the
-    // row in `debited_unbooked` where it can still be booked once the cause is
-    // gone, so only OverpaymentError reclassifies.
-    if (err instanceof OverpaymentError) {
-      await db
+      await tx
         .update(plumPaymentSessions)
-        .set({ status: 'needs_refund', failureCode: 'overpayment', updatedAt: new Date() })
-        .where(
-          and(
-            eq(plumPaymentSessions.id, sessionId),
-            eq(plumPaymentSessions.status, 'debited_unbooked'),
-          ),
-        )
-        .catch(() => undefined);
-    }
-    throw err;
-  });
+        .set({ status: 'booked', paymentId: payment.paymentId, updatedAt: new Date() })
+        .where(eq(plumPaymentSessions.id, row.id));
+
+      return { row, payment };
+    })
+    .catch(async (err) => {
+      // An overpayment is not a failed attempt to be retried — it is a verdict.
+      // The debt shrank below this amount and never grows again, so every future
+      // press of Book collects the same 409. Recording that on the row keeps the
+      // worklist honest: the next operator sees "refund needed", not "untried".
+      //
+      // Deliberately narrow. A database blip or a lost connection must leave the
+      // row in `debited_unbooked` where it can still be booked once the cause is
+      // gone, so only OverpaymentError reclassifies.
+      if (err instanceof OverpaymentError) {
+        await db
+          .update(plumPaymentSessions)
+          .set({ status: 'needs_refund', failureCode: 'overpayment', updatedAt: new Date() })
+          .where(
+            and(
+              eq(plumPaymentSessions.id, sessionId),
+              eq(plumPaymentSessions.status, 'debited_unbooked'),
+            ),
+          )
+          .catch(() => undefined);
+      }
+      throw err;
+    });
 
   await enqueuePaymentReceivedPush({
     userId: outcome.row.userId,
