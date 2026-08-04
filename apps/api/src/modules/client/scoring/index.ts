@@ -23,6 +23,7 @@ import {
   REJECT_REASON_CATEGORY,
   type ScoringRejectReasonCode,
 } from '../../scoring/pipelines/types';
+import { StringEnum } from '@lib/typebox';
 import { resolveLang } from '../../../i18n/index';
 import { reasonMessage } from '../../../i18n/reason-codes';
 import { agreementText } from '../../../i18n/static-text';
@@ -46,6 +47,23 @@ import { retryAvailableAt, spendableLimit } from './cooldown';
 
 const SECURITY = [{ clientAuth: [] }];
 const ERROR = { $ref: 'ErrorResponse#' };
+
+// Declared as a `headers` schema rather than a $ref into
+// components.parameters, because @fastify/swagger only builds `parameters` from
+// querystring/params/headers and drops a raw `parameters` key on the floor — the
+// $ref form renders nothing in the docs. Same treatment as client/faqs.
+//
+// additionalProperties stays open (the default): this validates every request to
+// the route, so locking it down would reject Authorization, x-device-id and the
+// rest. Values outside the enum get a 400 from ajv instead of silently falling
+// back to uz, which is the point of declaring it.
+const LangHeaders = Type.Object({
+  'x-lang': Type.Optional(
+    StringEnum(['uz', 'ru'] as const, {
+      description: 'Response language. Defaults to uz when omitted.',
+    }),
+  ),
+});
 
 function reasonCategory(code: string) {
   return REJECT_REASON_CATEGORY[code as ScoringRejectReasonCode] ?? 'ineligible';
@@ -360,6 +378,7 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
           'in the `x-lang` language — the OneID / KATM steps the client must ' +
           'complete before scoring — and does not depend on the run.',
         security: SECURITY,
+        headers: LangHeaders,
         response: { 200: StatusResponse, 401: ERROR },
       },
       preHandler: guards,
