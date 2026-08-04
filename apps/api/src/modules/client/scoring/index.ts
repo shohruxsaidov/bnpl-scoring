@@ -25,6 +25,7 @@ import {
 } from '../../scoring/pipelines/types';
 import { resolveLang } from '../../../i18n/index';
 import { reasonMessage } from '../../../i18n/reason-codes';
+import { agreementText } from '../../../i18n/static-text';
 import type { GENDERS } from '../../integrations/katm/service/shared';
 import {
   applyClientStep,
@@ -334,6 +335,12 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
     // See cooldown.ts — it is not a promise the run will pass, and the merchant
     // wizard does not honour it.
     retryAvailableAt: Type.Union([Type.String(), Type.Null()]),
+    // Static instructions, in the caller's language (x-lang). Not derived from
+    // the run — the app shows them wherever it explains what to do before
+    // scoring, so it never has to ship the copy itself.
+    aggrementTxt: Type.String({
+      description: 'OneID / KATM setup instructions in the caller`s language',
+    }),
   });
 
   fastify.get(
@@ -349,7 +356,9 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
           'the scoring button. It is not a promise the run will pass, and the ' +
           'merchant wizard does not honour it. A rejection cooldown reports no ' +
           'limit at all: `creditLimit` and `expiresAt` stay null and the date ' +
-          'appears only under `retryAvailableAt`.',
+          'appears only under `retryAvailableAt`. `aggrementTxt` is static copy ' +
+          'in the `x-lang` language — the OneID / KATM steps the client must ' +
+          'complete before scoring — and does not depend on the run.',
         security: SECURITY,
         response: { 200: StatusResponse, 401: ERROR },
       },
@@ -391,6 +400,7 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
       //     reasonCategory: reasonCategory('active_deal_exists'),
       //     reasonMessage: reasonMessage(lang, 'active_deal_exists'),
       //     retryAvailableAt: null,
+      //     aggrementTxt: agreementText(lang),
       //   };
       // }
 
@@ -439,6 +449,7 @@ export default async function clientScoringRoutes(app: FastifyInstance) {
         reasonCategory: reasonCode ? reasonCategory(reasonCode) : null,
         reasonMessage: status === 'rejected' ? reasonMessage(lang, reasonCode ?? undefined) : null,
         retryAvailableAt: retryAt ? retryAt.toISOString() : null,
+        aggrementTxt: agreementText(lang),
       };
     },
   );
